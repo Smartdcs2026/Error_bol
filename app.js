@@ -1,7 +1,7 @@
 /** ==========================
  *  CONFIG (แก้จุดนี้)
  *  ========================== */
-const API_BASE = "https://curly-breeze-d4ba.somchaibutphon.workers.dev"; // ✅ ห้ามใส่ / ท้าย (แต่โค้ดนี้กันไว้ให้แล้ว)
+const API_BASE = "https://curly-breeze-d4ba.somchaibutphon.workers.dev";
 /** ========================== */
 
 let OPTIONS = { lpsList: [], errorList: [], auditList: [] };
@@ -11,9 +11,123 @@ const $ = (id) => document.getElementById(id);
 
 // ====== URL Helper: รองรับ API_BASE มี/ไม่มี "/" ======
 function apiUrl(path) {
-  const base = String(API_BASE || "").replace(/\/+$/, ""); // ตัด / ท้ายทั้งหมด
-  const p = String(path || "").replace(/^\/+/, "");        // ตัด / หน้า
+  const base = String(API_BASE || "").replace(/\/+$/, "");
+  const p = String(path || "").replace(/^\/+/, "");
   return `${base}/${p}`;
+}
+
+// ✅ แปลง ID เป็น URL รูปตามที่คุณกำหนด
+function driveImgUrl(id){
+  return `https://lh5.googleusercontent.com/d/${encodeURIComponent(id)}`;
+}
+
+// ✅ สร้างแกลเลอรีรูปแบบกริด สวย/เป็นระเบียบ
+function renderGalleryHtml(imageIds = []){
+  if (!Array.isArray(imageIds) || imageIds.length === 0) return "";
+
+  const cards = imageIds.map((id, i) => {
+    const url = driveImgUrl(id);
+    return `
+      <button type="button"
+        class="galItem"
+        data-url="${url}"
+        data-id="${escapeHtml(id)}"
+        aria-label="ดูรูปที่ ${i+1}"
+        style="all:unset;cursor:pointer"
+      >
+        <div class="galThumbWrap">
+          <img class="galThumb" src="${url}" alt="รูปที่ ${i+1}" loading="lazy">
+          <div class="galBadge">${i+1}</div>
+        </div>
+        <div class="galCap">ID: ${escapeHtml(id)}</div>
+      </button>
+    `;
+  }).join("");
+
+  // responsive grid: มือถือ 2 คอลัมน์ / จอใหญ่ 3-4 คอลัมน์
+  return `
+    <style>
+      .galGrid{
+        display:grid;
+        grid-template-columns: repeat(2, minmax(0,1fr));
+        gap:10px;
+        margin-top:10px;
+      }
+      @media (min-width: 640px){
+        .galGrid{ grid-template-columns: repeat(3, minmax(0,1fr)); }
+      }
+      @media (min-width: 1024px){
+        .galGrid{ grid-template-columns: repeat(4, minmax(0,1fr)); }
+      }
+      .galThumbWrap{
+        position:relative;
+        width:100%;
+        aspect-ratio: 4 / 3;
+        border-radius:14px;
+        overflow:hidden;
+        border:1px solid #d7ddea;
+        background:#f8fafc;
+        box-shadow: 0 6px 18px rgba(15,23,42,.06);
+      }
+      .galThumb{
+        width:100%;
+        height:100%;
+        object-fit:cover;
+        display:block;
+        transition: transform .18s ease;
+      }
+      .galItem:hover .galThumb{ transform: scale(1.03); }
+      .galBadge{
+        position:absolute;
+        top:8px;
+        left:8px;
+        background: rgba(15,23,42,.85);
+        color:#fff;
+        font-weight:800;
+        font-size:12px;
+        padding:4px 8px;
+        border-radius:999px;
+      }
+      .galCap{
+        margin-top:6px;
+        font-size:11px;
+        color:#64748b;
+        line-height:1.2;
+        white-space:nowrap;
+        overflow:hidden;
+        text-overflow:ellipsis;
+        max-width:100%;
+      }
+    </style>
+
+    <div style="margin-top:10px">
+      <div style="font-weight:800;margin-bottom:6px">รูปภาพที่แนบ (${imageIds.length})</div>
+      <div class="galGrid">${cards}</div>
+      <div style="margin-top:8px;color:#94a3b8;font-size:12px">แตะ/คลิกรูปเพื่อดูขนาดเต็ม</div>
+    </div>
+  `;
+}
+
+// ✅ ผูก event หลัง Swal เปิด เพื่อคลิกดูรูปใหญ่
+function bindGalleryClickInSwal(){
+  const root = Swal.getHtmlContainer();
+  if (!root) return;
+  const items = root.querySelectorAll(".galItem");
+  items.forEach(btn => {
+    btn.addEventListener("click", () => {
+      const url = btn.getAttribute("data-url");
+      const id = btn.getAttribute("data-id") || "";
+      Swal.fire({
+        title: "ดูรูป",
+        html: `
+          <div style="text-align:left;font-weight:800;margin-bottom:8px">ID: ${escapeHtml(id)}</div>
+          <img src="${url}" style="width:100%;max-height:70vh;object-fit:contain;border-radius:14px;border:1px solid #d7ddea;background:#fff" />
+        `,
+        confirmButtonText:"ปิด",
+        confirmButtonColor:"#2563eb",
+      });
+    });
+  });
 }
 
 init().catch(err => {
@@ -26,7 +140,6 @@ async function init(){
   buildInitialUploadFields();
   bindEvents();
 
-  // โหลด options + เติม dropdown (กันหน้าเงียบ)
   try {
     await loadOptions();
     fillLoginName();
@@ -34,10 +147,8 @@ async function init(){
   } catch (err) {
     console.error("loadOptions failed:", err);
     safeSetLoginMsg("โหลดรายชื่อ/ตัวเลือกไม่สำเร็จ กรุณาตรวจสอบ API_BASE, Worker, และ CORS");
-    // ยังให้หน้าอยู่ได้ แต่ dropdown จะว่าง
   }
 
-  // numeric only fields
   numericOnly($("labelCid"));
   numericOnly($("item"));
   numericOnly($("errorCaseQty"));
@@ -57,7 +168,6 @@ function setActiveTab(which){
   $("tabErrorBol").classList.toggle("active", which === "error");
   $("tabUnder500").classList.toggle("active", which === "u500");
 
-  // login แสดงเสมอจนกว่าจะ auth
   $("loginCard").classList.toggle("hidden", false);
   $("formCard").classList.add("hidden");
   $("under500Card").classList.add("hidden");
@@ -78,8 +188,6 @@ function bindEvents(){
 
 async function loadOptions(){
   const res = await fetch(apiUrl("/options"), { method:"GET" });
-
-  // กันกรณี Worker ตอบ Not Found (text) แล้ว res.json() พัง
   const text = await res.text();
   let json = {};
   try { json = JSON.parse(text); } catch(_) {}
@@ -88,37 +196,28 @@ async function loadOptions(){
     const msg = (json && json.error) ? json.error : `โหลดตัวเลือกไม่สำเร็จ (HTTP ${res.status})`;
     throw new Error(msg);
   }
-
   OPTIONS = json.data || { lpsList: [], errorList: [], auditList: [] };
 }
 
 function fillLoginName(){
   const sel = $("loginName");
-  sel.innerHTML =
-    `<option value="">-- เลือกชื่อ --</option>` +
+  sel.innerHTML = `<option value="">-- เลือกชื่อ --</option>` +
     (OPTIONS.lpsList || []).map(n => `<option>${escapeHtml(n)}</option>`).join("");
 }
 
 function fillFormDropdowns(){
-  // LPS
-  $("lps").innerHTML =
-    `<option value="">-- เลือก --</option>` +
+  $("lps").innerHTML = `<option value="">-- เลือก --</option>` +
     (OPTIONS.lpsList || []).map(n => `<option>${escapeHtml(n)}</option>`).join("");
 
-  // Error
-  $("errorReason").innerHTML =
-    `<option value="">-- เลือก --</option>` +
+  $("errorReason").innerHTML = `<option value="">-- เลือก --</option>` +
     (OPTIONS.errorList || []).map(n => `<option>${escapeHtml(n)}</option>`).join("");
 
-  // Audit
-  $("auditName").innerHTML =
-    `<option value="">-- เลือก --</option>` +
+  $("auditName").innerHTML = `<option value="">-- เลือก --</option>` +
     (OPTIONS.auditList || []).map(n => `<option>${escapeHtml(n)}</option>`).join("");
 }
 
 async function onLogin(){
   safeSetLoginMsg("");
-
   const name = $("loginName").value.trim();
   const pass = $("loginPass").value.trim();
 
@@ -150,7 +249,7 @@ async function onLogin(){
 
   AUTH = { name, pass };
   $("loginCard").classList.add("hidden");
-  setActiveTab("error"); // เข้า Error_BOL เป็นค่าเริ่มต้น
+  setActiveTab("error");
 }
 
 function onErrorReasonChange(){
@@ -322,24 +421,27 @@ async function submitForm(){
     return Swal.fire({ icon:"error", title:"บันทึกไม่สำเร็จ", text:"เชื่อมต่อระบบไม่ได้ (ตรวจสอบอินเทอร์เน็ต/Worker)" });
   }
 
-  const imgHtml = (json.imageIds || []).map(id => `
-    <img src="https://lh5.googleusercontent.com/d/${id}" style="width:100%;max-width:240px;border-radius:12px;border:1px solid #d7ddea;margin:6px 6px 0 0" />
-  `).join("");
+  // ✅ แกลเลอรีรูปแบบกริด + คลิกดูรูปใหญ่
+  const galleryHtml = renderGalleryHtml(json.imageIds || []);
 
   await Swal.fire({
     icon:"success",
     title:"บันทึกสำเร็จ",
     confirmButtonText:"ตกลง",
     confirmButtonColor:"#2563eb",
+    width: 920,
     html: `
       <div style="text-align:left;font-weight:700;line-height:1.7">
         <div><b>วันที่เวลา:</b> ${escapeHtml(json.timestamp || "-")}</div>
         <div><b>Ref:No.:</b> ${escapeHtml(p.refNo)}</div>
         <div><b>OTM (หัวหน้างาน):</b> ${escapeHtml(p.otm)}</div>
         <div style="margin-top:8px"><b>จำนวนรูป:</b> ${(json.imageIds||[]).length}</div>
-        ${imgHtml ? `<div style="margin-top:10px"><b>ตัวอย่างรูป (จาก ID):</b><div style="display:flex;flex-wrap:wrap">${imgHtml}</div></div>` : ""}
+        ${galleryHtml}
       </div>
-    `
+    `,
+    didOpen: () => {
+      bindGalleryClickInSwal();
+    }
   });
 
   resetForm();
@@ -360,7 +462,7 @@ async function collectFilesAsBase64(){
 function fileToBase64(file){
   return new Promise((resolve, reject) => {
     const r = new FileReader();
-    r.onload = () => resolve(r.result); // data:<type>;base64,xxxx
+    r.onload = () => resolve(r.result);
     r.onerror = reject;
     r.readAsDataURL(file);
   });
