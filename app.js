@@ -1,7 +1,7 @@
 /** ==========================
  *  CONFIG (แก้จุดนี้)
  *  ========================== */
-const API_BASE = "https://curly-breeze-d4ba.somchaibutphon.workers.dev/"; // <-- ใส่ของจริง
+const API_BASE = "https://curly-breeze-d4ba.somchaibutphon.workers.dev"; // ✅ ห้ามใส่ / ท้าย (แต่โค้ดนี้กันไว้ให้แล้ว)
 /** ========================== */
 
 let OPTIONS = { lpsList: [], errorList: [], auditList: [] };
@@ -9,16 +9,33 @@ let AUTH = { name: "", pass: "" };
 
 const $ = (id) => document.getElementById(id);
 
-init();
+// ====== URL Helper: รองรับ API_BASE มี/ไม่มี "/" ======
+function apiUrl(path) {
+  const base = String(API_BASE || "").replace(/\/+$/, ""); // ตัด / ท้ายทั้งหมด
+  const p = String(path || "").replace(/^\/+/, "");        // ตัด / หน้า
+  return `${base}/${p}`;
+}
+
+init().catch(err => {
+  console.error(err);
+  safeSetLoginMsg("เกิดข้อผิดพลาดระหว่างเริ่มระบบ: " + (err?.message || err));
+});
 
 async function init(){
   bindTabs();
   buildInitialUploadFields();
   bindEvents();
 
-  await loadOptions();
-  fillLoginName();
-  fillFormDropdowns();
+  // โหลด options + เติม dropdown (กันหน้าเงียบ)
+  try {
+    await loadOptions();
+    fillLoginName();
+    fillFormDropdowns();
+  } catch (err) {
+    console.error("loadOptions failed:", err);
+    safeSetLoginMsg("โหลดรายชื่อ/ตัวเลือกไม่สำเร็จ กรุณาตรวจสอบ API_BASE, Worker, และ CORS");
+    // ยังให้หน้าอยู่ได้ แต่ dropdown จะว่าง
+  }
 
   // numeric only fields
   numericOnly($("labelCid"));
@@ -26,19 +43,22 @@ async function init(){
   numericOnly($("errorCaseQty"));
 }
 
-function bindTabs(){
-  $("tabErrorBol").addEventListener("click", () => {
-    setActiveTab("error");
-  });
-  $("tabUnder500").addEventListener("click", () => {
-    setActiveTab("u500");
-  });
+function safeSetLoginMsg(msg){
+  const el = $("loginMsg");
+  if (el) el.textContent = msg || "";
 }
+
+function bindTabs(){
+  $("tabErrorBol").addEventListener("click", () => setActiveTab("error"));
+  $("tabUnder500").addEventListener("click", () => setActiveTab("u500"));
+}
+
 function setActiveTab(which){
   $("tabErrorBol").classList.toggle("active", which === "error");
   $("tabUnder500").classList.toggle("active", which === "u500");
 
-  $("loginCard").classList.toggle("hidden", false); // login แสดงเสมอจนกว่าจะ auth
+  // login แสดงเสมอจนกว่าจะ auth
+  $("loginCard").classList.toggle("hidden", false);
   $("formCard").classList.add("hidden");
   $("under500Card").classList.add("hidden");
 
@@ -57,42 +77,74 @@ function bindEvents(){
 }
 
 async function loadOptions(){
-  const res = await fetch(`${API_BASE}/options`, { method:"GET" });
-  const json = await res.json();
-  if (!json.ok) throw new Error(json.error || "โหลดตัวเลือกไม่สำเร็จ");
-  OPTIONS = json.data;
+  const res = await fetch(apiUrl("/options"), { method:"GET" });
+
+  // กันกรณี Worker ตอบ Not Found (text) แล้ว res.json() พัง
+  const text = await res.text();
+  let json = {};
+  try { json = JSON.parse(text); } catch(_) {}
+
+  if (!res.ok || !json.ok) {
+    const msg = (json && json.error) ? json.error : `โหลดตัวเลือกไม่สำเร็จ (HTTP ${res.status})`;
+    throw new Error(msg);
+  }
+
+  OPTIONS = json.data || { lpsList: [], errorList: [], auditList: [] };
 }
 
 function fillLoginName(){
   const sel = $("loginName");
-  sel.innerHTML = `<option value="">-- เลือกชื่อ --</option>` + OPTIONS.lpsList.map(n => `<option>${escapeHtml(n)}</option>`).join("");
+  sel.innerHTML =
+    `<option value="">-- เลือกชื่อ --</option>` +
+    (OPTIONS.lpsList || []).map(n => `<option>${escapeHtml(n)}</option>`).join("");
 }
+
 function fillFormDropdowns(){
   // LPS
-  $("lps").innerHTML = `<option value="">-- เลือก --</option>` + OPTIONS.lpsList.map(n => `<option>${escapeHtml(n)}</option>`).join("");
+  $("lps").innerHTML =
+    `<option value="">-- เลือก --</option>` +
+    (OPTIONS.lpsList || []).map(n => `<option>${escapeHtml(n)}</option>`).join("");
+
   // Error
-  $("errorReason").innerHTML = `<option value="">-- เลือก --</option>` + OPTIONS.errorList.map(n => `<option>${escapeHtml(n)}</option>`).join("");
+  $("errorReason").innerHTML =
+    `<option value="">-- เลือก --</option>` +
+    (OPTIONS.errorList || []).map(n => `<option>${escapeHtml(n)}</option>`).join("");
+
   // Audit
-  $("auditName").innerHTML = `<option value="">-- เลือก --</option>` + OPTIONS.auditList.map(n => `<option>${escapeHtml(n)}</option>`).join("");
+  $("auditName").innerHTML =
+    `<option value="">-- เลือก --</option>` +
+    (OPTIONS.auditList || []).map(n => `<option>${escapeHtml(n)}</option>`).join("");
 }
 
 async function onLogin(){
-  $("loginMsg").textContent = "";
+  safeSetLoginMsg("");
+
   const name = $("loginName").value.trim();
   const pass = $("loginPass").value.trim();
+
   if (!name || !pass) {
-    $("loginMsg").textContent = "กรุณาเลือกชื่อและกรอกรหัสผ่าน";
+    safeSetLoginMsg("กรุณาเลือกชื่อและกรอกรหัสผ่าน");
     return;
   }
 
-  const res = await fetch(`${API_BASE}/auth`, {
-    method:"POST",
-    headers:{ "Content-Type":"application/json" },
-    body: JSON.stringify({ name, pass })
-  });
-  const json = await res.json();
-  if (!json.ok) {
-    $("loginMsg").textContent = json.error || "เข้าสู่ระบบไม่สำเร็จ";
+  let json;
+  try {
+    const res = await fetch(apiUrl("/auth"), {
+      method:"POST",
+      headers:{ "Content-Type":"application/json" },
+      body: JSON.stringify({ name, pass })
+    });
+
+    const text = await res.text();
+    try { json = JSON.parse(text); } catch(_) { json = { ok:false, error:"รูปแบบข้อมูลตอบกลับไม่ถูกต้อง" }; }
+
+    if (!res.ok || !json.ok) {
+      safeSetLoginMsg(json.error || "เข้าสู่ระบบไม่สำเร็จ");
+      return;
+    }
+  } catch (err) {
+    console.error(err);
+    safeSetLoginMsg("เชื่อมต่อระบบไม่ได้ (ตรวจสอบ Worker/อินเทอร์เน็ต)");
     return;
   }
 
@@ -134,7 +186,7 @@ function addUploadField(label){
   const img = $(`${id}_img`);
   const txt = $(`${id}_txt`);
 
-  fileInput.addEventListener("change", async () => {
+  fileInput.addEventListener("change", () => {
     const f = fileInput.files && fileInput.files[0];
     if (!f) return;
     txt.textContent = `ไฟล์: ${f.name} (${Math.round(f.size/1024)} KB)`;
@@ -180,10 +232,11 @@ function validatePayload(p){
     if (!String(p[k]||"").trim()) return `กรุณากรอก ${n}`;
   }
   if (p.errorReason === "อื่นๆ" && !p.errorReasonOther.trim()) return "กรุณาระบุสาเหตุ (อื่นๆ)";
-  // numeric fields already filtered, but re-check
+
   if (!/^\d+$/.test(p.labelCid)) return "Label CID ต้องเป็นตัวเลขเท่านั้น";
   if (!/^\d+$/.test(p.item)) return "Item ต้องเป็นตัวเลขเท่านั้น";
   if (!/^\d+$/.test(p.errorCaseQty)) return "จำนวน ErrorCase ต้องเป็นตัวเลขเท่านั้น";
+
   return "";
 }
 
@@ -209,6 +262,7 @@ async function previewSummary(){
       <div style="margin-top:8px"><b>จำนวนรูปที่เลือก</b> ${fileCount}</div>
     </div>
   `;
+
   await Swal.fire({
     icon:"info",
     title:"สรุปข้อมูล",
@@ -230,13 +284,13 @@ async function submitForm(){
 
   const files = await collectFilesAsBase64();
   const signRes = await openSignatureFlow(p.otm, p.employeeName);
-  if (!signRes.ok) return; // user cancelled
+  if (!signRes.ok) return;
 
   const body = {
     name: AUTH.name,
     pass: AUTH.pass,
     payload: p,
-    files: files, // [{filename, base64}]
+    files: files,
     signatures: {
       supervisorBase64: signRes.supervisorBase64 || "",
       employeeBase64: signRes.employeeBase64 || ""
@@ -249,18 +303,25 @@ async function submitForm(){
     didOpen: () => Swal.showLoading()
   });
 
-  const res = await fetch(`${API_BASE}/submit`, {
-    method:"POST",
-    headers:{ "Content-Type":"application/json" },
-    body: JSON.stringify(body)
-  });
-  const json = await res.json();
+  let json;
+  try {
+    const res = await fetch(apiUrl("/submit"), {
+      method:"POST",
+      headers:{ "Content-Type":"application/json" },
+      body: JSON.stringify(body)
+    });
 
-  if (!json.ok) {
-    return Swal.fire({ icon:"error", title:"บันทึกไม่สำเร็จ", text: json.error || "เกิดข้อผิดพลาด" });
+    const text = await res.text();
+    try { json = JSON.parse(text); } catch(_) { json = { ok:false, error:"รูปแบบข้อมูลตอบกลับไม่ถูกต้อง" }; }
+
+    if (!res.ok || !json.ok) {
+      return Swal.fire({ icon:"error", title:"บันทึกไม่สำเร็จ", text: json.error || `HTTP ${res.status}` });
+    }
+  } catch (err2) {
+    console.error(err2);
+    return Swal.fire({ icon:"error", title:"บันทึกไม่สำเร็จ", text:"เชื่อมต่อระบบไม่ได้ (ตรวจสอบอินเทอร์เน็ต/Worker)" });
   }
 
-  // success summary + แสดงรูปจาก ID (ตาม format ที่คุณกำหนด)
   const imgHtml = (json.imageIds || []).map(id => `
     <img src="https://lh5.googleusercontent.com/d/${id}" style="width:100%;max-width:240px;border-radius:12px;border:1px solid #d7ddea;margin:6px 6px 0 0" />
   `).join("");
@@ -281,7 +342,6 @@ async function submitForm(){
     `
   });
 
-  // clear form
   resetForm();
 }
 
@@ -308,7 +368,6 @@ function fileToBase64(file){
 
 /** ====== Signature Flow (2 ลายเซ็น) ====== */
 async function openSignatureFlow(supervisorName, employeeName){
-  // modal 1: supervisor
   const sup = await signatureModal(`ลายเซ็นหัวหน้างาน`, `ผู้เซ็น: ${supervisorName || "-"}`);
   if (!sup.ok) return { ok:false };
 
@@ -350,7 +409,6 @@ async function signatureModal(title, subtitle){
     },
     preConfirm: () => {
       const canvas = document.getElementById(canvasId);
-      // export to PNG base64
       return canvas.toDataURL("image/png");
     }
   });
@@ -367,15 +425,13 @@ function enableSignature(canvas){
   const getPos = (e) => {
     const rect = canvas.getBoundingClientRect();
     const t = (e.touches && e.touches[0]) ? e.touches[0] : e;
-    return { x: (t.clientX - rect.left) * (canvas.width / rect.width),
-             y: (t.clientY - rect.top) * (canvas.height / rect.height) };
+    return {
+      x: (t.clientX - rect.left) * (canvas.width / rect.width),
+      y: (t.clientY - rect.top) * (canvas.height / rect.height)
+    };
   };
 
-  const down = (e) => {
-    drawing = true;
-    last = getPos(e);
-    e.preventDefault();
-  };
+  const down = (e) => { drawing = true; last = getPos(e); e.preventDefault(); };
   const move = (e) => {
     if (!drawing) return;
     const p = getPos(e);
@@ -388,11 +444,7 @@ function enableSignature(canvas){
     last = p;
     e.preventDefault();
   };
-  const up = (e) => {
-    drawing = false;
-    last = null;
-    e.preventDefault();
-  };
+  const up = (e) => { drawing = false; last = null; e.preventDefault(); };
 
   canvas.addEventListener("mousedown", down);
   canvas.addEventListener("mousemove", move);
@@ -421,5 +473,4 @@ function escapeHtml(s){
     .replaceAll(">","&gt;")
     .replaceAll('"',"&quot;")
     .replaceAll("'","&#039;");
-
 }
