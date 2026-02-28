@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>ฟอร์มบันทึก Error_BOL - S&LP</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <img class="logo" src="https://lh5.googleusercontent.com/d/1758AOZ5E3JbnzwrFA4u2kH8nZUPrr8iP" alt="logo">
+    <div class="brandText">
+      <div class="title">ระบบบันทึกข้อมูล S&LP</div>
+      <div class="subtitle">ฟอร์ม Error_BOL / &lt;500บาท</div>
+    </div>
+  </div>
+
+  <nav class="tabs">
+    <button id="tabErrorBol" class="tab active">Error_BOL</button>
+    <button id="tabUnder500" class="tab">&lt;500บาท</button>
+  </nav>
+</header>
+
+<main class="container">
+  <!-- LOGIN -->
+  <section id="loginCard" class="card">
+    <h2>เข้าสู่ระบบ</h2>
+    <div class="grid2">
+      <div class="field">
+        <label>ชื่อ (LPS)</label>
+        <select id="loginName"></select>
+      </div>
+      <div class="field">
+        <label>รหัสผ่าน</label>
+        <input id="loginPass" type="password" placeholder="กรอกรหัสผ่าน">
+      </div>
+    </div>
+    <button id="btnLogin" class="btn primary">เข้าสู่ระบบ</button>
+    <div id="loginMsg" class="msg"></div>
+  </section>
+
+  <!-- FORM ERROR_BOL -->
+  <section id="formCard" class="card hidden">
+    <h2>ฟอร์ม Error_BOL</h2>
+
+    <div class="grid2">
+      <div class="field">
+        <label>หมายเลขหนังสือออก (Ref:No.)</label>
+        <input id="refNo" placeholder="เช่น REF-2026-0001">
+      </div>
+
+      <div class="field">
+        <label>ชื่อ LPS</label>
+        <select id="lps"></select>
+      </div>
+
+      <div class="field">
+        <label>Label CID (ตัวเลขเท่านั้น)</label>
+        <input id="labelCid" inputmode="numeric" placeholder="กรอกตัวเลข">
+      </div>
+
+      <div class="field">
+        <label>สาเหตุ Error</label>
+        <select id="errorReason"></select>
+      </div>
+
+      <div class="field hidden" id="wrapErrorOther">
+        <label>ระบุสาเหตุ (อื่นๆ)</label>
+        <input id="errorReasonOther" placeholder="พิมพ์สาเหตุเพิ่มเติม">
+      </div>
+
+      <div class="field">
+        <label>Item (ตัวเลขเท่านั้น)</label>
+        <input id="item" inputmode="numeric" placeholder="กรอกตัวเลข">
+      </div>
+
+      <div class="field">
+        <label>จำนวน ErrorCase (ตัวเลขเท่านั้น)</label>
+        <input id="errorCaseQty" inputmode="numeric" placeholder="กรอกตัวเลข">
+      </div>
+
+      <div class="field">
+        <label>ชื่อ-สกุลพนักงาน</label>
+        <input id="employeeName" placeholder="ชื่อ-สกุล">
+      </div>
+
+      <div class="field">
+        <label>รหัสพนักงาน</label>
+        <input id="employeeCode" placeholder="เช่น 123456">
+      </div>
+
+      <div class="field">
+        <label>กะ</label>
+        <select id="shift">
+          <option value="">-- เลือก --</option>
+          <option>A</option><option>B</option><option>C</option><option>DH</option><option>NH</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label>OSM</label>
+        <input id="osm" placeholder="ชื่อ OSM">
+      </div>
+
+      <div class="field">
+        <label>OTM</label>
+        <input id="otm" placeholder="ชื่อ OTM">
+      </div>
+
+      <div class="field">
+        <label>พนง. AUDIT</label>
+        <select id="auditName"></select>
+      </div>
+    </div>
+
+    <hr class="sep">
+
+    <div class="uploadTitle">
+      <div>
+        <h3>อัปโหลดภาพ</h3>
+        <div class="hint">บันทึกเฉพาะ ID ของภาพ (คั่นด้วย |) และจัดเก็บในโฟลเดอร์ย่อยอัตโนมัติ</div>
+      </div>
+      <button id="btnAddImage" class="btn ghost">+ เพิ่มภาพ</button>
+    </div>
+
+    <div id="uploadGrid" class="uploadGrid"></div>
+
+    <div class="actions">
+      <button id="btnPreview" class="btn secondary">ดูสรุป</button>
+      <button id="btnSubmit" class="btn primary">บันทึก</button>
+    </div>
+  </section>
+
+  <!-- FORM UNDER 500 (placeholder) -->
+  <section id="under500Card" class="card hidden">
+    <h2>ฟอร์ม &lt;500บาท (จำลอง)</h2>
+    <p class="hint">ตอนนี้เป็นหน้า Placeholder รอรายละเอียดจริงในอนาคต</p>
+    <button class="btn secondary" disabled>บันทึก (ยังไม่เปิดใช้)</button>
+  </section>
+</main>
+
+<script src="./app.js"></script>
+</body>
+</html>
