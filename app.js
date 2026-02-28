@@ -153,7 +153,9 @@ async function init(){
   numericOnly($("item"));
   numericOnly($("errorCaseQty"));
 }
-
+if (AUTH.name){
+  setLpsFromLogin(AUTH.name);
+}
 function safeSetLoginMsg(msg){
   const el = $("loginMsg");
   if (el) el.textContent = msg || "";
@@ -248,9 +250,13 @@ async function onLogin(){
     return;
   }
 
-  AUTH = { name, pass };
-  $("loginCard").classList.add("hidden");
-  setActiveTab("error");
+ AUTH = { name, pass };
+
+// ✅ ตั้งค่า LPS อัตโนมัติจากคนที่ Login
+setLpsFromLogin(name);
+
+$("loginCard").classList.add("hidden");
+setActiveTab("error");
 }
 
 function onErrorReasonChange(){
@@ -576,5 +582,21 @@ function escapeHtml(s){
     .replaceAll(">","&gt;")
     .replaceAll('"',"&quot;")
     .replaceAll("'","&#039;");
+}
+function setLpsFromLogin(loginName){
+  const lpsSelect = $("lps");
+  if (!lpsSelect) return;
+
+  // ตั้งค่าเป็นชื่อที่ login
+  lpsSelect.value = loginName;
+
+  // ล็อกไม่ให้แก้ไข
+  lpsSelect.disabled = true;
+
+  // แสดงชื่อบนหัวฟอร์ม (ถ้ามี pill)
+  const pill = document.getElementById("userPill");
+  if (pill){
+    pill.textContent = "ผู้ใช้งาน: " + loginName;
+  }
 }
 
