@@ -1,7 +1,7 @@
 /** ==========================
  *  CONFIG (แก้จุดนี้)
  *  ========================== */
-const API_BASE = "https://YOUR-WORKER.workers.dev"; // <-- ใส่ของจริง
+const API_BASE = "https://curly-breeze-d4ba.somchaibutphon.workers.dev/"; // <-- ใส่ของจริง
 /** ========================== */
 
 let OPTIONS = { lpsList: [], errorList: [], auditList: [] };
@@ -421,4 +421,5 @@ function escapeHtml(s){
     .replaceAll(">","&gt;")
     .replaceAll('"',"&quot;")
     .replaceAll("'","&#039;");
+
 }
