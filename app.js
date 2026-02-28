@@ -158,7 +158,8 @@ function safeSetLoginMsg(msg){
   const el = $("loginMsg");
   if (el) el.textContent = msg || "";
 }
-
+const pill = document.getElementById("userPill");
+if (pill) pill.textContent = `ผู้ใช้งาน: ${AUTH.name}`;
 function bindTabs(){
   $("tabErrorBol").addEventListener("click", () => setActiveTab("error"));
   $("tabUnder500").addEventListener("click", () => setActiveTab("u500"));
@@ -576,3 +577,4 @@ function escapeHtml(s){
     .replaceAll('"',"&quot;")
     .replaceAll("'","&#039;");
 }
+
