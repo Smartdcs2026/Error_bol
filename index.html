@@ -7,7 +7,7 @@
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   <link rel="stylesheet" href="./style.css">
@@ -32,7 +32,14 @@
 <main class="container">
   <!-- LOGIN -->
   <section id="loginCard" class="card">
-    <h2>เข้าสู่ระบบ</h2>
+    <div class="cardHead">
+      <div>
+        <h2>เข้าสู่ระบบ</h2>
+        <div class="hint">เลือกชื่อและกรอกรหัสผ่าน เพื่อเข้าสู่ระบบ</div>
+      </div>
+      <div class="pill muted">S&LP • Secure Form</div>
+    </div>
+
     <div class="grid2">
       <div class="field">
         <label>ชื่อ (LPS)</label>
@@ -43,30 +50,68 @@
         <input id="loginPass" type="password" placeholder="กรอกรหัสผ่าน">
       </div>
     </div>
-    <button id="btnLogin" class="btn primary">เข้าสู่ระบบ</button>
+
+    <div class="actions left">
+      <button id="btnLogin" class="btn primary">เข้าสู่ระบบ</button>
+    </div>
+
     <div id="loginMsg" class="msg"></div>
   </section>
 
   <!-- FORM ERROR_BOL -->
   <section id="formCard" class="card hidden">
-    <h2>ฟอร์ม Error_BOL</h2>
+    <div class="cardHead">
+      <div>
+        <h2>ฟอร์ม Error_BOL</h2>
+        <div class="hint">กรอกข้อมูลให้ครบถ้วน ก่อนกด “บันทึก”</div>
+      </div>
 
-    <div class="grid2">
+      <!-- แสดงผู้ใช้งาน (คุณจะอัปเดตด้วย JS ได้ภายหลัง ถ้าต้องการ) -->
+      <div class="pill primary" id="userPill">ผู้ใช้งาน: -</div>
+    </div>
+
+    <hr class="sep">
+
+    <!-- ====== SECTION: ข้อมูลหลัก ====== -->
+    <div class="sectionTitle">
+      <span class="dot"></span>
+      <div>
+        <div class="sectionMain">ข้อมูลหลัก</div>
+        <div class="sectionSub">Ref:No. และผู้บันทึก (LPS)</div>
+      </div>
+    </div>
+
+    <div class="grid3">
       <div class="field">
         <label>หมายเลขหนังสือออก (Ref:No.)</label>
         <input id="refNo" placeholder="เช่น REF-2026-0001">
       </div>
 
       <div class="field">
-        <label>ชื่อ LPS</label>
+        <label>ชื่อ LPS (ตามผู้เข้าสู่ระบบ)</label>
+        <!-- ใช้ select เดิมเพื่อให้ app.js เซ็ตค่าได้ แล้วล็อก disabled -->
         <select id="lps"></select>
+        <div class="hint tiny">* ระบบจะตั้งค่าให้ตรงกับชื่อที่ Login และล็อกไม่ให้แก้</div>
       </div>
 
       <div class="field">
         <label>Label CID (ตัวเลขเท่านั้น)</label>
         <input id="labelCid" inputmode="numeric" placeholder="กรอกตัวเลข">
       </div>
+    </div>
 
+    <hr class="sep soft">
+
+    <!-- ====== SECTION: สาเหตุ/จำนวน ====== -->
+    <div class="sectionTitle">
+      <span class="dot"></span>
+      <div>
+        <div class="sectionMain">รายละเอียดความผิดพลาด</div>
+        <div class="sectionSub">สาเหตุ, Item และจำนวน ErrorCase</div>
+      </div>
+    </div>
+
+    <div class="grid3">
       <div class="field">
         <label>สาเหตุ Error</label>
         <select id="errorReason"></select>
@@ -86,7 +131,20 @@
         <label>จำนวน ErrorCase (ตัวเลขเท่านั้น)</label>
         <input id="errorCaseQty" inputmode="numeric" placeholder="กรอกตัวเลข">
       </div>
+    </div>
 
+    <hr class="sep soft">
+
+    <!-- ====== SECTION: ข้อมูลพนักงาน ====== -->
+    <div class="sectionTitle">
+      <span class="dot"></span>
+      <div>
+        <div class="sectionMain">ข้อมูลพนักงาน</div>
+        <div class="sectionSub">ชื่อ, รหัส และกะ</div>
+      </div>
+    </div>
+
+    <div class="grid3">
       <div class="field">
         <label>ชื่อ-สกุลพนักงาน</label>
         <input id="employeeName" placeholder="ชื่อ-สกุล">
@@ -104,14 +162,27 @@
           <option>A</option><option>B</option><option>C</option><option>DH</option><option>NH</option>
         </select>
       </div>
+    </div>
 
+    <hr class="sep soft">
+
+    <!-- ====== SECTION: ผู้เกี่ยวข้อง ====== -->
+    <div class="sectionTitle">
+      <span class="dot"></span>
+      <div>
+        <div class="sectionMain">ผู้เกี่ยวข้อง</div>
+        <div class="sectionSub">OSM / OTM / AUDIT</div>
+      </div>
+    </div>
+
+    <div class="grid3">
       <div class="field">
         <label>OSM</label>
         <input id="osm" placeholder="ชื่อ OSM">
       </div>
 
       <div class="field">
-        <label>OTM</label>
+        <label>OTM (หัวหน้างาน)</label>
         <input id="otm" placeholder="ชื่อ OTM">
       </div>
 
@@ -123,10 +194,11 @@
 
     <hr class="sep">
 
+    <!-- ====== SECTION: Upload ====== -->
     <div class="uploadTitle">
       <div>
         <h3>อัปโหลดภาพ</h3>
-        <div class="hint">บันทึกเฉพาะ ID ของภาพ (คั่นด้วย |) และจัดเก็บในโฟลเดอร์ย่อยอัตโนมัติ</div>
+        <div class="hint">เริ่มต้น 2 ช่อง (บัตรพนง., พนักงาน) และสามารถกด “+ เพิ่มภาพ” เพื่อเพิ่มได้</div>
       </div>
       <button id="btnAddImage" class="btn ghost">+ เพิ่มภาพ</button>
     </div>
@@ -141,8 +213,15 @@
 
   <!-- FORM UNDER 500 (placeholder) -->
   <section id="under500Card" class="card hidden">
-    <h2>ฟอร์ม &lt;500บาท (จำลอง)</h2>
-    <p class="hint">ตอนนี้เป็นหน้า Placeholder รอรายละเอียดจริงในอนาคต</p>
+    <div class="cardHead">
+      <div>
+        <h2>ฟอร์ม &lt;500บาท (จำลอง)</h2>
+        <div class="hint">ตอนนี้เป็นหน้า Placeholder รอรายละเอียดจริงในอนาคต</div>
+      </div>
+      <div class="pill muted">&lt;500฿ • Coming soon</div>
+    </div>
+
+    <hr class="sep">
     <button class="btn secondary" disabled>บันทึก (ยังไม่เปิดใช้)</button>
   </section>
 </main>
