@@ -672,19 +672,22 @@ function enableSignature(canvas){
  *  Reset
  *  ========================== */
 function resetForm(){
-  const ids = [
-    "refNo","labelCid","errorReasonOther","errorDescription",
-    "item","errorCaseQty","employeeName","employeeCode","osm","otm"
-  ];
-  ids.forEach(id => { if ($(id)) $(id).value = ""; });
+  // ✅ ใส่บรรทัดนี้ใน resetForm()
+  const ids = ["refNo","labelCid","errorReasonOther","errorDescription","item","errorCaseQty","employeeName","employeeCode","osm","otm"];
 
-  if ($("errorReason")) $("errorReason").value = "";
-  if ($("auditName")) $("auditName").value = "";
-  if ($("shift")) $("shift").value = "";
+  ids.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = "";
+  });
 
-  // lps ควรคงค่าเดิมจาก login ไม่ต้องล้าง
-  $("wrapErrorOther").classList.add("hidden");
+  document.getElementById("errorReason").value = "";
+  document.getElementById("auditName").value = "";
+  document.getElementById("shift").value = "";
 
+  // lps ไม่ต้องล้าง เพราะล็อกตาม login
+  document.getElementById("wrapErrorOther").classList.add("hidden");
+
+  // ล้าง/รีเซ็ตช่องอัปโหลดรูปให้กลับเป็น 2 ช่องเริ่มต้น
   buildInitialUploadFields();
 }
 
@@ -710,3 +713,4 @@ function setLpsFromLogin(loginName){
   const pill = document.getElementById("userPill");
   if (pill) pill.textContent = "ผู้ใช้งาน: " + loginName;
 }
+
