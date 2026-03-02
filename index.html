@@ -47,12 +47,12 @@
       </div>
       <div class="field">
         <label>รหัสผ่าน</label>
-        <input id="loginPass" type="password" placeholder="กรอกรหัสผ่าน">
+        <input id="loginPass" type="password" placeholder="กรอกรหัสผ่าน" autocomplete="current-password">
       </div>
     </div>
 
     <div class="actions left">
-      <button id="btnLogin" class="btn primary">เข้าสู่ระบบ</button>
+      <button id="btnLogin" class="btn primary" type="button">เข้าสู่ระบบ</button>
     </div>
 
     <div id="loginMsg" class="msg"></div>
@@ -65,8 +65,6 @@
         <h2>ฟอร์ม Error_BOL</h2>
         <div class="hint">กรอกข้อมูลให้ครบถ้วน ก่อนกด “บันทึก”</div>
       </div>
-
-      <!-- แสดงผู้ใช้งาน (คุณจะอัปเดตด้วย JS ได้ภายหลัง ถ้าต้องการ) -->
       <div class="pill primary" id="userPill">ผู้ใช้งาน: -</div>
     </div>
 
@@ -84,19 +82,18 @@
     <div class="grid3">
       <div class="field">
         <label>หมายเลขหนังสือออก (Ref:No.)</label>
-        <input id="refNo" placeholder="เช่น REF-2026-0001">
+        <input id="refNo" placeholder="เช่น REF-2026-0001" autocomplete="off">
       </div>
 
       <div class="field">
         <label>ชื่อ LPS (ตามผู้เข้าสู่ระบบ)</label>
-        <!-- ใช้ select เดิมเพื่อให้ app.js เซ็ตค่าได้ แล้วล็อก disabled -->
         <select id="lps"></select>
         <div class="hint tiny">* ระบบจะตั้งค่าให้ตรงกับชื่อที่ Login และล็อกไม่ให้แก้</div>
       </div>
 
       <div class="field">
         <label>Label CID (ตัวเลขเท่านั้น)</label>
-        <input id="labelCid" inputmode="numeric" placeholder="กรอกตัวเลข">
+        <input id="labelCid" inputmode="numeric" placeholder="กรอกตัวเลข" autocomplete="off">
       </div>
     </div>
 
@@ -107,7 +104,7 @@
       <span class="dot"></span>
       <div>
         <div class="sectionMain">รายละเอียดความผิดพลาด</div>
-        <div class="sectionSub">สาเหตุ, Item และจำนวน ErrorCase</div>
+        <div class="sectionSub">สาเหตุ, รายละเอียดบรรยาย, Item และจำนวน ErrorCase</div>
       </div>
     </div>
 
@@ -119,17 +116,24 @@
 
       <div class="field hidden" id="wrapErrorOther">
         <label>ระบุสาเหตุ (อื่นๆ)</label>
-        <input id="errorReasonOther" placeholder="พิมพ์สาเหตุเพิ่มเติม">
+        <input id="errorReasonOther" placeholder="พิมพ์สาเหตุเพิ่มเติม" autocomplete="off">
       </div>
 
       <div class="field">
         <label>Item (ตัวเลขเท่านั้น)</label>
-        <input id="item" inputmode="numeric" placeholder="กรอกตัวเลข">
+        <input id="item" inputmode="numeric" placeholder="กรอกตัวเลข" autocomplete="off">
       </div>
 
       <div class="field">
         <label>จำนวน ErrorCase (ตัวเลขเท่านั้น)</label>
-        <input id="errorCaseQty" inputmode="numeric" placeholder="กรอกตัวเลข">
+        <input id="errorCaseQty" inputmode="numeric" placeholder="กรอกตัวเลข" autocomplete="off">
+      </div>
+
+      <!-- ✅ เพิ่ม: อธิบาย/บรรยายสาเหตุ (เต็มแถว) -->
+      <div class="field fieldFull">
+        <label>รายละเอียด/คำอธิบายสาเหตุ (บรรยาย)</label>
+        <textarea id="errorDescription" rows="4" placeholder="อธิบายสาเหตุการเบิกสินค้า Error / เหตุการณ์ที่เกิดขึ้น / การแก้ไขเบื้องต้น"></textarea>
+        <div class="hint tiny">* ข้อมูลนี้จะถูกบันทึกลงชีท และแสดงใน PDF</div>
       </div>
     </div>
 
@@ -147,12 +151,12 @@
     <div class="grid3">
       <div class="field">
         <label>ชื่อ-สกุลพนักงาน</label>
-        <input id="employeeName" placeholder="ชื่อ-สกุล">
+        <input id="employeeName" placeholder="ชื่อ-สกุล" autocomplete="off">
       </div>
 
       <div class="field">
         <label>รหัสพนักงาน</label>
-        <input id="employeeCode" placeholder="เช่น 123456">
+        <input id="employeeCode" placeholder="เช่น 123456" autocomplete="off">
       </div>
 
       <div class="field">
@@ -178,12 +182,12 @@
     <div class="grid3">
       <div class="field">
         <label>OSM</label>
-        <input id="osm" placeholder="ชื่อ OSM">
+        <input id="osm" placeholder="ชื่อ OSM" autocomplete="off">
       </div>
 
       <div class="field">
         <label>OTM (หัวหน้างาน)</label>
-        <input id="otm" placeholder="ชื่อ OTM">
+        <input id="otm" placeholder="ชื่อ OTM" autocomplete="off">
       </div>
 
       <div class="field">
@@ -200,14 +204,14 @@
         <h3>อัปโหลดภาพ</h3>
         <div class="hint">เริ่มต้น 2 ช่อง (บัตรพนง., พนักงาน) และสามารถกด “+ เพิ่มภาพ” เพื่อเพิ่มได้</div>
       </div>
-      <button id="btnAddImage" class="btn ghost">+ เพิ่มภาพ</button>
+      <button id="btnAddImage" class="btn ghost" type="button">+ เพิ่มภาพ</button>
     </div>
 
     <div id="uploadGrid" class="uploadGrid"></div>
 
     <div class="actions">
-      <button id="btnPreview" class="btn secondary">ดูสรุป</button>
-      <button id="btnSubmit" class="btn primary">บันทึก</button>
+      <button id="btnPreview" class="btn secondary" type="button">ดูสรุป</button>
+      <button id="btnSubmit" class="btn primary" type="button">บันทึก</button>
     </div>
   </section>
 
@@ -222,11 +226,10 @@
     </div>
 
     <hr class="sep">
-    <button class="btn secondary" disabled>บันทึก (ยังไม่เปิดใช้)</button>
+    <button class="btn secondary" disabled type="button">บันทึก (ยังไม่เปิดใช้)</button>
   </section>
 </main>
 
 <script src="./app.js"></script>
 </body>
 </html>
-
