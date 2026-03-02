@@ -9,19 +9,22 @@ let AUTH = { name: "", pass: "" };
 
 const $ = (id) => document.getElementById(id);
 
-// ====== URL Helper: รองรับ API_BASE มี/ไม่มี "/" ======
+/** ==========================
+ *  URL Helper
+ *  ========================== */
 function apiUrl(path) {
   const base = String(API_BASE || "").replace(/\/+$/, "");
   const p = String(path || "").replace(/^\/+/, "");
   return `${base}/${p}`;
 }
 
-// ✅ แปลง ID เป็น URL รูปตามที่คุณกำหนด
+/** ==========================
+ *  Gallery (Drive Image)
+ *  ========================== */
 function driveImgUrl(id){
   return `https://lh5.googleusercontent.com/d/${encodeURIComponent(id)}`;
 }
 
-// ✅ สร้างแกลเลอรีรูปแบบกริด สวย/เป็นระเบียบ
 function renderGalleryHtml(imageIds = []){
   if (!Array.isArray(imageIds) || imageIds.length === 0) return "";
 
@@ -44,7 +47,6 @@ function renderGalleryHtml(imageIds = []){
     `;
   }).join("");
 
-  // responsive grid: มือถือ 2 คอลัมน์ / จอใหญ่ 3-4 คอลัมน์
   return `
     <style>
       .galGrid{
@@ -108,7 +110,6 @@ function renderGalleryHtml(imageIds = []){
   `;
 }
 
-// ✅ ผูก event หลัง Swal เปิด เพื่อคลิกดูรูปใหญ่
 function bindGalleryClickInSwal(){
   const root = Swal.getHtmlContainer();
   if (!root) return;
@@ -130,6 +131,9 @@ function bindGalleryClickInSwal(){
   });
 }
 
+/** ==========================
+ *  Init
+ *  ========================== */
 init().catch(err => {
   console.error(err);
   safeSetLoginMsg("เกิดข้อผิดพลาดระหว่างเริ่มระบบ: " + (err?.message || err));
@@ -149,19 +153,21 @@ async function init(){
     safeSetLoginMsg("โหลดรายชื่อ/ตัวเลือกไม่สำเร็จ กรุณาตรวจสอบ API_BASE, Worker, และ CORS");
   }
 
+  // numeric only
   numericOnly($("labelCid"));
   numericOnly($("item"));
   numericOnly($("errorCaseQty"));
+  numericOnly($("employeeCode")); // ✅ เพิ่มให้รหัสพนักงานเป็นเลขได้ (ถ้าต้องการ)
 }
-if (AUTH.name){
-  setLpsFromLogin(AUTH.name);
-}
+
 function safeSetLoginMsg(msg){
   const el = $("loginMsg");
   if (el) el.textContent = msg || "";
 }
-const pill = document.getElementById("userPill");
-if (pill) pill.textContent = `ผู้ใช้งาน: ${AUTH.name}`;
+
+/** ==========================
+ *  Tabs
+ *  ========================== */
 function bindTabs(){
   $("tabErrorBol").addEventListener("click", () => setActiveTab("error"));
   $("tabUnder500").addEventListener("click", () => setActiveTab("u500"));
@@ -181,6 +187,9 @@ function setActiveTab(which){
   }
 }
 
+/** ==========================
+ *  Events
+ *  ========================== */
 function bindEvents(){
   $("btnLogin").addEventListener("click", onLogin);
   $("errorReason").addEventListener("change", onErrorReasonChange);
@@ -189,6 +198,9 @@ function bindEvents(){
   $("btnSubmit").addEventListener("click", submitForm);
 }
 
+/** ==========================
+ *  Load Options
+ *  ========================== */
 async function loadOptions(){
   const res = await fetch(apiUrl("/options"), { method:"GET" });
   const text = await res.text();
@@ -219,6 +231,9 @@ function fillFormDropdowns(){
     (OPTIONS.auditList || []).map(n => `<option>${escapeHtml(n)}</option>`).join("");
 }
 
+/** ==========================
+ *  Login
+ *  ========================== */
 async function onLogin(){
   safeSetLoginMsg("");
   const name = $("loginName").value.trim();
@@ -250,26 +265,34 @@ async function onLogin(){
     return;
   }
 
- AUTH = { name, pass };
+  AUTH = { name, pass };
 
-// ✅ ตั้งค่า LPS อัตโนมัติจากคนที่ Login
-setLpsFromLogin(name);
+  // ✅ ตั้งค่า LPS ตามผู้ Login และล็อกไม่ให้แก้
+  setLpsFromLogin(name);
 
-$("loginCard").classList.add("hidden");
-setActiveTab("error");
+  // UI
+  $("loginCard").classList.add("hidden");
+  setActiveTab("error");
 }
 
+/** ==========================
+ *  Form helpers
+ *  ========================== */
 function onErrorReasonChange(){
   const v = $("errorReason").value;
   $("wrapErrorOther").classList.toggle("hidden", v !== "อื่นๆ");
 }
 
 function numericOnly(el){
+  if (!el) return;
   el.addEventListener("input", () => {
-    el.value = el.value.replace(/[^\d]/g, "");
+    el.value = String(el.value || "").replace(/[^\d]/g, "");
   });
 }
 
+/** ==========================
+ *  Upload fields
+ *  ========================== */
 function buildInitialUploadFields(){
   $("uploadGrid").innerHTML = "";
   addUploadField("บัตรพนง.");
@@ -300,6 +323,9 @@ function addUploadField(label){
   });
 }
 
+/** ==========================
+ *  Payload + Validation
+ *  ========================== */
 function collectPayload(){
   return {
     refNo: $("refNo").value.trim(),
@@ -307,6 +333,10 @@ function collectPayload(){
     labelCid: $("labelCid").value.trim(),
     errorReason: $("errorReason").value.trim(),
     errorReasonOther: $("errorReasonOther").value.trim(),
+
+    // ✅ เพิ่ม: รายละเอียดบรรยายสาเหตุ
+    errorDescription: ($("errorDescription") ? $("errorDescription").value.trim() : ""),
+
     item: $("item").value.trim(),
     errorCaseQty: $("errorCaseQty").value.trim(),
     employeeName: $("employeeName").value.trim(),
@@ -324,6 +354,8 @@ function validatePayload(p){
     ["lps","ชื่อ LPS"],
     ["labelCid","Label CID"],
     ["errorReason","สาเหตุ Error"],
+    ["errorDescription","รายละเอียด/คำอธิบายสาเหตุ"],
+
     ["item","Item"],
     ["errorCaseQty","จำนวน ErrorCase"],
     ["employeeName","ชื่อ-สกุลพนักงาน"],
@@ -343,9 +375,15 @@ function validatePayload(p){
   if (!/^\d+$/.test(p.item)) return "Item ต้องเป็นตัวเลขเท่านั้น";
   if (!/^\d+$/.test(p.errorCaseQty)) return "จำนวน ErrorCase ต้องเป็นตัวเลขเท่านั้น";
 
+  // ถ้ารหัสพนักงานต้องเป็นเลขเท่านั้น:
+  if (!/^\d+$/.test(p.employeeCode)) return "รหัสพนักงานต้องเป็นตัวเลขเท่านั้น";
+
   return "";
 }
 
+/** ==========================
+ *  Preview (SweetAlert)
+ *  ========================== */
 async function previewSummary(){
   const p = collectPayload();
   const err = validatePayload(p);
@@ -358,7 +396,13 @@ async function previewSummary(){
       <div><b>LPS</b> ${escapeHtml(p.lps)}</div>
       <div><b>Label CID</b> ${escapeHtml(p.labelCid)}</div>
       <div><b>สาเหตุ</b> ${escapeHtml(p.errorReason === "อื่นๆ" ? ("อื่นๆ: " + p.errorReasonOther) : p.errorReason)}</div>
-      <div><b>Item</b> ${escapeHtml(p.item)}</div>
+
+      <div style="margin-top:8px">
+        <b>รายละเอียด/คำอธิบาย:</b><br>
+        ${escapeHtml(p.errorDescription || "-").replaceAll("\n","<br>")}
+      </div>
+
+      <div style="margin-top:8px"><b>Item</b> ${escapeHtml(p.item)}</div>
       <div><b>จำนวน ErrorCase</b> ${escapeHtml(p.errorCaseQty)}</div>
       <div><b>พนักงาน</b> ${escapeHtml(p.employeeName)} (${escapeHtml(p.employeeCode)})</div>
       <div><b>กะ</b> ${escapeHtml(p.shift)}</div>
@@ -383,12 +427,17 @@ function countSelectedFiles(){
   return inputs.reduce((acc, el) => acc + ((el.files && el.files[0]) ? 1 : 0), 0);
 }
 
+/** ==========================
+ *  Submit
+ *  ========================== */
 async function submitForm(){
   const p = collectPayload();
   const err = validatePayload(p);
   if (err) return Swal.fire({ icon:"warning", title:"ข้อมูลไม่ครบ", text: err });
 
   const files = await collectFilesAsBase64();
+
+  // ✅ 2 ลายเซ็น
   const signRes = await openSignatureFlow(p.otm, p.employeeName);
   if (!signRes.ok) return;
 
@@ -418,7 +467,8 @@ async function submitForm(){
     });
 
     const text = await res.text();
-    try { json = JSON.parse(text); } catch(_) { json = { ok:false, error:"รูปแบบข้อมูลตอบกลับไม่ถูกต้อง" }; }
+    try { json = JSON.parse(text); }
+    catch(_) { json = { ok:false, error:"รูปแบบข้อมูลตอบกลับไม่ถูกต้อง" }; }
 
     if (!res.ok || !json.ok) {
       return Swal.fire({ icon:"error", title:"บันทึกไม่สำเร็จ", text: json.error || `HTTP ${res.status}` });
@@ -428,8 +478,25 @@ async function submitForm(){
     return Swal.fire({ icon:"error", title:"บันทึกไม่สำเร็จ", text:"เชื่อมต่อระบบไม่ได้ (ตรวจสอบอินเทอร์เน็ต/Worker)" });
   }
 
-  // ✅ แกลเลอรีรูปแบบกริด + คลิกดูรูปใหญ่
+  // ✅ แกลเลอรีรูป
   const galleryHtml = renderGalleryHtml(json.imageIds || []);
+
+  // ✅ ลายเซ็นโชว์แบบเอกสาร
+  const supSignThumb = signRes.supervisorBase64
+    ? `<img src="${signRes.supervisorBase64}" style="width:100%;max-height:120px;object-fit:contain;border:1px solid #d7ddea;border-radius:12px;background:#fff">`
+    : `<div style="color:#94a3b8">-</div>`;
+
+  const empSignThumb = signRes.employeeBase64
+    ? `<img src="${signRes.employeeBase64}" style="width:100%;max-height:120px;object-fit:contain;border:1px solid #d7ddea;border-radius:12px;background:#fff">`
+    : `<div style="color:#94a3b8">-</div>`;
+
+  // ✅ ปุ่มเปิด PDF (ต้องให้ Apps Script ส่งกลับ pdfUrl)
+  const pdfBtn = json.pdfUrl
+    ? `<a href="${json.pdfUrl}" target="_blank"
+          style="display:inline-block;margin-top:10px;padding:10px 12px;border-radius:12px;background:#2563eb;color:#fff;font-weight:800;text-decoration:none">
+          เปิดไฟล์ PDF รายงาน
+       </a>`
+    : `<div style="margin-top:10px;color:#dc2626;font-weight:800">ไม่พบลิงก์ PDF (ตรวจสอบฝั่ง Apps Script ว่าส่งกลับ pdfUrl แล้ว)</div>`;
 
   await Swal.fire({
     icon:"success",
@@ -439,21 +506,56 @@ async function submitForm(){
     width: 920,
     html: `
       <div style="text-align:left;font-weight:700;line-height:1.7">
+        <div style="font-size:16px;font-weight:900;margin-bottom:6px">รายงาน ERROR</div>
+
         <div><b>วันที่เวลา:</b> ${escapeHtml(json.timestamp || "-")}</div>
         <div><b>Ref:No.:</b> ${escapeHtml(p.refNo)}</div>
+        <div><b>LPS:</b> ${escapeHtml(p.lps)}</div>
+        <div><b>Label CID:</b> ${escapeHtml(p.labelCid)}</div>
+        <div><b>สาเหตุ:</b> ${escapeHtml(p.errorReason === "อื่นๆ" ? ("อื่นๆ: " + p.errorReasonOther) : p.errorReason)}</div>
+
+        <div style="margin-top:8px">
+          <b>รายละเอียด/คำอธิบาย:</b><br>
+          ${escapeHtml(p.errorDescription || "-").replaceAll("\n","<br>")}
+        </div>
+
+        <div style="margin-top:8px"><b>Item:</b> ${escapeHtml(p.item)}</div>
+        <div><b>จำนวน ErrorCase:</b> ${escapeHtml(p.errorCaseQty)}</div>
+
+        <div style="margin-top:8px"><b>พนักงาน:</b> ${escapeHtml(p.employeeName)} (${escapeHtml(p.employeeCode)})</div>
+        <div><b>กะ:</b> ${escapeHtml(p.shift)}</div>
+        <div><b>OSM:</b> ${escapeHtml(p.osm)}</div>
         <div><b>OTM (หัวหน้างาน):</b> ${escapeHtml(p.otm)}</div>
-        <div style="margin-top:8px"><b>จำนวนรูป:</b> ${(json.imageIds||[]).length}</div>
+        <div><b>AUDIT:</b> ${escapeHtml(p.auditName)}</div>
+
+        <div style="margin-top:10px;display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <div>
+            <div style="font-weight:900;margin-bottom:6px">ลายเซ็นหัวหน้างาน</div>
+            ${supSignThumb}
+            <div style="margin-top:6px;font-weight:800">ลงชื่อ: ${escapeHtml(p.otm || "-")}</div>
+          </div>
+          <div>
+            <div style="font-weight:900;margin-bottom:6px">ลายเซ็นพนักงาน</div>
+            ${empSignThumb}
+            <div style="margin-top:6px;font-weight:800">ลงชื่อ: ${escapeHtml(p.employeeName || "-")}</div>
+          </div>
+        </div>
+
+        <div style="margin-top:10px"><b>จำนวนรูป:</b> ${(json.imageIds||[]).length}</div>
         ${galleryHtml}
+
+        ${pdfBtn}
       </div>
     `,
-    didOpen: () => {
-      bindGalleryClickInSwal();
-    }
+    didOpen: () => bindGalleryClickInSwal()
   });
 
   resetForm();
 }
 
+/** ==========================
+ *  Files to Base64
+ *  ========================== */
 async function collectFilesAsBase64(){
   const inputs = Array.from(document.querySelectorAll('input[type="file"]'));
   const out = [];
@@ -475,7 +577,9 @@ function fileToBase64(file){
   });
 }
 
-/** ====== Signature Flow (2 ลายเซ็น) ====== */
+/** ==========================
+ *  Signature Flow (2 ลายเซ็น)
+ *  ========================== */
 async function openSignatureFlow(supervisorName, employeeName){
   const sup = await signatureModal(`ลายเซ็นหัวหน้างาน`, `ผู้เซ็น: ${supervisorName || "-"}`);
   if (!sup.ok) return { ok:false };
@@ -564,17 +668,29 @@ function enableSignature(canvas){
   canvas.addEventListener("touchend", up, { passive:false });
 }
 
+/** ==========================
+ *  Reset
+ *  ========================== */
 function resetForm(){
-  const ids = ["refNo","labelCid","errorReasonOther","item","errorCaseQty","employeeName","employeeCode","osm","otm"];
-  ids.forEach(id => $(id).value = "");
-  $("lps").value = "";
-  $("errorReason").value = "";
-  $("auditName").value = "";
-  $("shift").value = "";
+  const ids = [
+    "refNo","labelCid","errorReasonOther","errorDescription",
+    "item","errorCaseQty","employeeName","employeeCode","osm","otm"
+  ];
+  ids.forEach(id => { if ($(id)) $(id).value = ""; });
+
+  if ($("errorReason")) $("errorReason").value = "";
+  if ($("auditName")) $("auditName").value = "";
+  if ($("shift")) $("shift").value = "";
+
+  // lps ควรคงค่าเดิมจาก login ไม่ต้องล้าง
   $("wrapErrorOther").classList.add("hidden");
+
   buildInitialUploadFields();
 }
 
+/** ==========================
+ *  Utils
+ *  ========================== */
 function escapeHtml(s){
   return String(s ?? "")
     .replaceAll("&","&amp;")
@@ -583,20 +699,14 @@ function escapeHtml(s){
     .replaceAll('"',"&quot;")
     .replaceAll("'","&#039;");
 }
+
 function setLpsFromLogin(loginName){
   const lpsSelect = $("lps");
   if (!lpsSelect) return;
 
-  // ตั้งค่าเป็นชื่อที่ login
   lpsSelect.value = loginName;
-
-  // ล็อกไม่ให้แก้ไข
   lpsSelect.disabled = true;
 
-  // แสดงชื่อบนหัวฟอร์ม (ถ้ามี pill)
   const pill = document.getElementById("userPill");
-  if (pill){
-    pill.textContent = "ผู้ใช้งาน: " + loginName;
-  }
+  if (pill) pill.textContent = "ผู้ใช้งาน: " + loginName;
 }
-
