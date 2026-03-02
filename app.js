@@ -1,4 +1,12 @@
 /** ==========================
+ *  app.js (FULL) - Error_BOL S&LP
+ *  - ใช้ Cloudflare Worker เป็น API (options/auth/submit)
+ *  - รองรับ upload รูปแบบเพิ่มช่องได้
+ *  - รองรับลายเซ็น 2 จุด
+ *  - แสดงผลสำเร็จพร้อม Gallery + ปุ่มเปิด PDF (ถ้า backend ส่ง pdfUrl)
+ *  ========================== */
+
+/** ==========================
  *  CONFIG (แก้จุดนี้)
  *  ========================== */
 const API_BASE = "https://curly-breeze-d4ba.somchaibutphon.workers.dev";
@@ -21,11 +29,11 @@ function apiUrl(path) {
 /** ==========================
  *  Gallery (Drive Image)
  *  ========================== */
-function driveImgUrl(id){
+function driveImgUrl(id) {
   return `https://lh5.googleusercontent.com/d/${encodeURIComponent(id)}`;
 }
 
-function renderGalleryHtml(imageIds = []){
+function renderGalleryHtml(imageIds = []) {
   if (!Array.isArray(imageIds) || imageIds.length === 0) return "";
 
   const cards = imageIds.map((id, i) => {
@@ -35,12 +43,12 @@ function renderGalleryHtml(imageIds = []){
         class="galItem"
         data-url="${url}"
         data-id="${escapeHtml(id)}"
-        aria-label="ดูรูปที่ ${i+1}"
+        aria-label="ดูรูปที่ ${i + 1}"
         style="all:unset;cursor:pointer"
       >
         <div class="galThumbWrap">
-          <img class="galThumb" src="${url}" alt="รูปที่ ${i+1}" loading="lazy">
-          <div class="galBadge">${i+1}</div>
+          <img class="galThumb" src="${url}" alt="รูปที่ ${i + 1}" loading="lazy">
+          <div class="galBadge">${i + 1}</div>
         </div>
         <div class="galCap">ID: ${escapeHtml(id)}</div>
       </button>
@@ -110,7 +118,7 @@ function renderGalleryHtml(imageIds = []){
   `;
 }
 
-function bindGalleryClickInSwal(){
+function bindGalleryClickInSwal() {
   const root = Swal.getHtmlContainer();
   if (!root) return;
   const items = root.querySelectorAll(".galItem");
@@ -124,8 +132,8 @@ function bindGalleryClickInSwal(){
           <div style="text-align:left;font-weight:800;margin-bottom:8px">ID: ${escapeHtml(id)}</div>
           <img src="${url}" style="width:100%;max-height:70vh;object-fit:contain;border-radius:14px;border:1px solid #d7ddea;background:#fff" />
         `,
-        confirmButtonText:"ปิด",
-        confirmButtonColor:"#2563eb",
+        confirmButtonText: "ปิด",
+        confirmButtonColor: "#2563eb",
       });
     });
   });
@@ -139,7 +147,7 @@ init().catch(err => {
   safeSetLoginMsg("เกิดข้อผิดพลาดระหว่างเริ่มระบบ: " + (err?.message || err));
 });
 
-async function init(){
+async function init() {
   bindTabs();
   buildInitialUploadFields();
   bindEvents();
@@ -157,10 +165,10 @@ async function init(){
   numericOnly($("labelCid"));
   numericOnly($("item"));
   numericOnly($("errorCaseQty"));
-  numericOnly($("employeeCode")); // ✅ เพิ่มให้รหัสพนักงานเป็นเลขได้ (ถ้าต้องการ)
+  numericOnly($("employeeCode")); // ถ้าต้องการให้เป็นเลขอย่างเดียว
 }
 
-function safeSetLoginMsg(msg){
+function safeSetLoginMsg(msg) {
   const el = $("loginMsg");
   if (el) el.textContent = msg || "";
 }
@@ -168,44 +176,50 @@ function safeSetLoginMsg(msg){
 /** ==========================
  *  Tabs
  *  ========================== */
-function bindTabs(){
-  $("tabErrorBol").addEventListener("click", () => setActiveTab("error"));
-  $("tabUnder500").addEventListener("click", () => setActiveTab("u500"));
+function bindTabs() {
+  $("tabErrorBol")?.addEventListener("click", () => setActiveTab("error"));
+  $("tabUnder500")?.addEventListener("click", () => setActiveTab("u500"));
 }
 
-function setActiveTab(which){
-  $("tabErrorBol").classList.toggle("active", which === "error");
-  $("tabUnder500").classList.toggle("active", which === "u500");
+function setActiveTab(which) {
+  $("tabErrorBol")?.classList.toggle("active", which === "error");
+  $("tabUnder500")?.classList.toggle("active", which === "u500");
 
-  $("loginCard").classList.toggle("hidden", false);
-  $("formCard").classList.add("hidden");
-  $("under500Card").classList.add("hidden");
+  $("loginCard")?.classList.toggle("hidden", false);
+  $("formCard")?.classList.add("hidden");
+  $("under500Card")?.classList.add("hidden");
 
   if (AUTH.name) {
-    if (which === "error") $("formCard").classList.remove("hidden");
-    else $("under500Card").classList.remove("hidden");
+    if (which === "error") $("formCard")?.classList.remove("hidden");
+    else $("under500Card")?.classList.remove("hidden");
   }
 }
 
 /** ==========================
  *  Events
  *  ========================== */
-function bindEvents(){
-  $("btnLogin").addEventListener("click", onLogin);
-  $("errorReason").addEventListener("change", onErrorReasonChange);
-  $("btnAddImage").addEventListener("click", () => addUploadField("ภาพอื่นๆ"));
-  $("btnPreview").addEventListener("click", previewSummary);
-  $("btnSubmit").addEventListener("click", submitForm);
+function bindEvents() {
+  $("btnLogin")?.addEventListener("click", onLogin);
+  $("errorReason")?.addEventListener("change", onErrorReasonChange);
+  $("btnAddImage")?.addEventListener("click", () => addUploadField("ภาพอื่นๆ"));
+  $("btnPreview")?.addEventListener("click", previewSummary);
+  $("btnSubmit")?.addEventListener("click", submitForm);
+
+  // Enter เพื่อ Login
+  $("loginPass")?.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") onLogin();
+  });
 }
 
 /** ==========================
  *  Load Options
  *  ========================== */
-async function loadOptions(){
-  const res = await fetch(apiUrl("/options"), { method:"GET" });
+async function loadOptions() {
+  const res = await fetch(apiUrl("/options"), { method: "GET" });
   const text = await res.text();
+
   let json = {};
-  try { json = JSON.parse(text); } catch(_) {}
+  try { json = JSON.parse(text); } catch (_) {}
 
   if (!res.ok || !json.ok) {
     const msg = (json && json.error) ? json.error : `โหลดตัวเลือกไม่สำเร็จ (HTTP ${res.status})`;
@@ -214,30 +228,39 @@ async function loadOptions(){
   OPTIONS = json.data || { lpsList: [], errorList: [], auditList: [] };
 }
 
-function fillLoginName(){
+function fillLoginName() {
   const sel = $("loginName");
+  if (!sel) return;
   sel.innerHTML = `<option value="">-- เลือกชื่อ --</option>` +
     (OPTIONS.lpsList || []).map(n => `<option>${escapeHtml(n)}</option>`).join("");
 }
 
-function fillFormDropdowns(){
-  $("lps").innerHTML = `<option value="">-- เลือก --</option>` +
-    (OPTIONS.lpsList || []).map(n => `<option>${escapeHtml(n)}</option>`).join("");
+function fillFormDropdowns() {
+  const lps = $("lps");
+  const er = $("errorReason");
+  const audit = $("auditName");
 
-  $("errorReason").innerHTML = `<option value="">-- เลือก --</option>` +
-    (OPTIONS.errorList || []).map(n => `<option>${escapeHtml(n)}</option>`).join("");
-
-  $("auditName").innerHTML = `<option value="">-- เลือก --</option>` +
-    (OPTIONS.auditList || []).map(n => `<option>${escapeHtml(n)}</option>`).join("");
+  if (lps) {
+    lps.innerHTML = `<option value="">-- เลือก --</option>` +
+      (OPTIONS.lpsList || []).map(n => `<option>${escapeHtml(n)}</option>`).join("");
+  }
+  if (er) {
+    er.innerHTML = `<option value="">-- เลือก --</option>` +
+      (OPTIONS.errorList || []).map(n => `<option>${escapeHtml(n)}</option>`).join("");
+  }
+  if (audit) {
+    audit.innerHTML = `<option value="">-- เลือก --</option>` +
+      (OPTIONS.auditList || []).map(n => `<option>${escapeHtml(n)}</option>`).join("");
+  }
 }
 
 /** ==========================
  *  Login
  *  ========================== */
-async function onLogin(){
+async function onLogin() {
   safeSetLoginMsg("");
-  const name = $("loginName").value.trim();
-  const pass = $("loginPass").value.trim();
+  const name = ($("loginName")?.value || "").trim();
+  const pass = ($("loginPass")?.value || "").trim();
 
   if (!name || !pass) {
     safeSetLoginMsg("กรุณาเลือกชื่อและกรอกรหัสผ่าน");
@@ -247,13 +270,14 @@ async function onLogin(){
   let json;
   try {
     const res = await fetch(apiUrl("/auth"), {
-      method:"POST",
-      headers:{ "Content-Type":"application/json" },
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name, pass })
     });
 
     const text = await res.text();
-    try { json = JSON.parse(text); } catch(_) { json = { ok:false, error:"รูปแบบข้อมูลตอบกลับไม่ถูกต้อง" }; }
+    try { json = JSON.parse(text); }
+    catch (_) { json = { ok: false, error: "รูปแบบข้อมูลตอบกลับไม่ถูกต้อง" }; }
 
     if (!res.ok || !json.ok) {
       safeSetLoginMsg(json.error || "เข้าสู่ระบบไม่สำเร็จ");
@@ -267,23 +291,23 @@ async function onLogin(){
 
   AUTH = { name, pass };
 
-  // ✅ ตั้งค่า LPS ตามผู้ Login และล็อกไม่ให้แก้
+  // ตั้งค่า LPS ตาม login และล็อก
   setLpsFromLogin(name);
 
   // UI
-  $("loginCard").classList.add("hidden");
+  $("loginCard")?.classList.add("hidden");
   setActiveTab("error");
 }
 
 /** ==========================
  *  Form helpers
  *  ========================== */
-function onErrorReasonChange(){
-  const v = $("errorReason").value;
-  $("wrapErrorOther").classList.toggle("hidden", v !== "อื่นๆ");
+function onErrorReasonChange() {
+  const v = $("errorReason")?.value || "";
+  $("wrapErrorOther")?.classList.toggle("hidden", v !== "อื่นๆ");
 }
 
-function numericOnly(el){
+function numericOnly(el) {
   if (!el) return;
   el.addEventListener("input", () => {
     el.value = String(el.value || "").replace(/[^\d]/g, "");
@@ -293,13 +317,18 @@ function numericOnly(el){
 /** ==========================
  *  Upload fields
  *  ========================== */
-function buildInitialUploadFields(){
-  $("uploadGrid").innerHTML = "";
+function buildInitialUploadFields() {
+  const grid = $("uploadGrid");
+  if (!grid) return;
+  grid.innerHTML = "";
   addUploadField("บัตรพนง.");
   addUploadField("พนักงาน");
 }
 
-function addUploadField(label){
+function addUploadField(label) {
+  const grid = $("uploadGrid");
+  if (!grid) return;
+
   const id = "file_" + Math.random().toString(16).slice(2);
   const box = document.createElement("div");
   box.className = "uploadBox";
@@ -309,85 +338,85 @@ function addUploadField(label){
     <img class="previewImg" id="${id}_img" alt="">
     <div class="small" id="${id}_txt">ยังไม่เลือกรูป</div>
   `;
-  $("uploadGrid").appendChild(box);
+  grid.appendChild(box);
 
   const fileInput = $(id);
   const img = $(`${id}_img`);
   const txt = $(`${id}_txt`);
 
-  fileInput.addEventListener("change", () => {
+  fileInput?.addEventListener("change", () => {
     const f = fileInput.files && fileInput.files[0];
     if (!f) return;
-    txt.textContent = `ไฟล์: ${f.name} (${Math.round(f.size/1024)} KB)`;
-    img.src = URL.createObjectURL(f);
+    if (txt) txt.textContent = `ไฟล์: ${f.name} (${Math.round(f.size / 1024)} KB)`;
+    if (img) img.src = URL.createObjectURL(f);
   });
 }
 
 /** ==========================
  *  Payload + Validation
  *  ========================== */
-function collectPayload(){
+function collectPayload() {
   return {
-    refNo: $("refNo").value.trim(),
-    lps: $("lps").value.trim(),
-    labelCid: $("labelCid").value.trim(),
-    errorReason: $("errorReason").value.trim(),
-    errorReasonOther: $("errorReasonOther").value.trim(),
+    refNo: ($("refNo")?.value || "").trim(),
+    lps: ($("lps")?.value || "").trim(),
+    labelCid: ($("labelCid")?.value || "").trim(),
+    errorReason: ($("errorReason")?.value || "").trim(),
+    errorReasonOther: ($("errorReasonOther")?.value || "").trim(),
+    errorDescription: ($("errorDescription")?.value || "").trim(), // textarea
 
-    // ✅ เพิ่ม: รายละเอียดบรรยายสาเหตุ
-    errorDescription: ($("errorDescription") ? $("errorDescription").value.trim() : ""),
-
-    item: $("item").value.trim(),
-    errorCaseQty: $("errorCaseQty").value.trim(),
-    employeeName: $("employeeName").value.trim(),
-    employeeCode: $("employeeCode").value.trim(),
-    shift: $("shift").value.trim(),
-    osm: $("osm").value.trim(),
-    otm: $("otm").value.trim(),
-    auditName: $("auditName").value.trim()
+    item: ($("item")?.value || "").trim(),
+    errorCaseQty: ($("errorCaseQty")?.value || "").trim(),
+    employeeName: ($("employeeName")?.value || "").trim(),
+    employeeCode: ($("employeeCode")?.value || "").trim(),
+    shift: ($("shift")?.value || "").trim(),
+    osm: ($("osm")?.value || "").trim(),
+    otm: ($("otm")?.value || "").trim(),
+    auditName: ($("auditName")?.value || "").trim()
   };
 }
 
-function validatePayload(p){
+function validatePayload(p) {
   const required = [
-    ["refNo","Ref:No."],
-    ["lps","ชื่อ LPS"],
-    ["labelCid","Label CID"],
-    ["errorReason","สาเหตุ Error"],
-    ["errorDescription","รายละเอียด/คำอธิบายสาเหตุ"],
-
-    ["item","Item"],
-    ["errorCaseQty","จำนวน ErrorCase"],
-    ["employeeName","ชื่อ-สกุลพนักงาน"],
-    ["employeeCode","รหัสพนักงาน"],
-    ["shift","กะ"],
-    ["osm","OSM"],
-    ["otm","OTM"],
-    ["auditName","พนง. AUDIT"]
+    ["refNo", "Ref:No."],
+    ["lps", "ชื่อ LPS"],
+    ["labelCid", "Label CID"],
+    ["errorReason", "สาเหตุ Error"],
+    ["errorDescription", "รายละเอียด/คำอธิบายสาเหตุ"],
+    ["item", "Item"],
+    ["errorCaseQty", "จำนวน ErrorCase"],
+    ["employeeName", "ชื่อ-สกุลพนักงาน"],
+    ["employeeCode", "รหัสพนักงาน"],
+    ["shift", "กะ"],
+    ["osm", "OSM"],
+    ["otm", "OTM"],
+    ["auditName", "พนง. AUDIT"]
   ];
 
-  for (const [k, n] of required){
-    if (!String(p[k]||"").trim()) return `กรุณากรอก ${n}`;
+  for (const [k, n] of required) {
+    if (!String(p[k] || "").trim()) return `กรุณากรอก ${n}`;
   }
-  if (p.errorReason === "อื่นๆ" && !p.errorReasonOther.trim()) return "กรุณาระบุสาเหตุ (อื่นๆ)";
+
+  if (p.errorReason === "อื่นๆ" && !p.errorReasonOther.trim()) {
+    return "กรุณาระบุสาเหตุ (อื่นๆ)";
+  }
 
   if (!/^\d+$/.test(p.labelCid)) return "Label CID ต้องเป็นตัวเลขเท่านั้น";
   if (!/^\d+$/.test(p.item)) return "Item ต้องเป็นตัวเลขเท่านั้น";
   if (!/^\d+$/.test(p.errorCaseQty)) return "จำนวน ErrorCase ต้องเป็นตัวเลขเท่านั้น";
 
-  // ถ้ารหัสพนักงานต้องเป็นเลขเท่านั้น:
+  // ถ้าต้องการให้ employeeCode เป็นเลขเท่านั้น
   if (!/^\d+$/.test(p.employeeCode)) return "รหัสพนักงานต้องเป็นตัวเลขเท่านั้น";
 
   return "";
 }
 
 /** ==========================
- *  Preview (SweetAlert)
+ *  Preview
  *  ========================== */
-async function previewSummary(){
+async function previewSummary() {
   const p = collectPayload();
   const err = validatePayload(p);
-  if (err) return Swal.fire({ icon:"warning", title:"ข้อมูลไม่ครบ", text: err });
+  if (err) return Swal.fire({ icon: "warning", title: "ข้อมูลไม่ครบ", text: err });
 
   const fileCount = countSelectedFiles();
   const html = `
@@ -396,12 +425,10 @@ async function previewSummary(){
       <div><b>LPS</b> ${escapeHtml(p.lps)}</div>
       <div><b>Label CID</b> ${escapeHtml(p.labelCid)}</div>
       <div><b>สาเหตุ</b> ${escapeHtml(p.errorReason === "อื่นๆ" ? ("อื่นๆ: " + p.errorReasonOther) : p.errorReason)}</div>
-
       <div style="margin-top:8px">
         <b>รายละเอียด/คำอธิบาย:</b><br>
         ${escapeHtml(p.errorDescription || "-").replaceAll("\n","<br>")}
       </div>
-
       <div style="margin-top:8px"><b>Item</b> ${escapeHtml(p.item)}</div>
       <div><b>จำนวน ErrorCase</b> ${escapeHtml(p.errorCaseQty)}</div>
       <div><b>พนักงาน</b> ${escapeHtml(p.employeeName)} (${escapeHtml(p.employeeCode)})</div>
@@ -414,15 +441,15 @@ async function previewSummary(){
   `;
 
   await Swal.fire({
-    icon:"info",
-    title:"สรุปข้อมูล",
+    icon: "info",
+    title: "สรุปข้อมูล",
     html,
-    confirmButtonText:"ตกลง",
-    confirmButtonColor:"#2563eb"
+    confirmButtonText: "ตกลง",
+    confirmButtonColor: "#2563eb"
   });
 }
 
-function countSelectedFiles(){
+function countSelectedFiles() {
   const inputs = Array.from(document.querySelectorAll('input[type="file"]'));
   return inputs.reduce((acc, el) => acc + ((el.files && el.files[0]) ? 1 : 0), 0);
 }
@@ -430,22 +457,25 @@ function countSelectedFiles(){
 /** ==========================
  *  Submit
  *  ========================== */
-async function submitForm(){
+async function submitForm() {
   const p = collectPayload();
   const err = validatePayload(p);
-  if (err) return Swal.fire({ icon:"warning", title:"ข้อมูลไม่ครบ", text: err });
+  if (err) return Swal.fire({ icon: "warning", title: "ข้อมูลไม่ครบ", text: err });
 
-  const files = await collectFilesAsBase64();
+  // จำกัดจำนวนรูปกัน payload ใหญ่เกิน (ปรับได้)
+  const files = await collectFilesAsBase64({ maxFiles: 6, maxMBEach: 4 });
 
-  // ✅ 2 ลายเซ็น
+  // ลายเซ็น 2 จุด
   const signRes = await openSignatureFlow(p.otm, p.employeeName);
   if (!signRes.ok) return;
 
+  // ✅ สำคัญ: Worker/Backend ของคุณ "ต้องรับรูปแบบนี้"
+  // ถ้า backend ของคุณเป็น Apps Script เดิม (action=submit) ให้เปลี่ยนเป็น {action:"submit", ...}
   const body = {
     name: AUTH.name,
     pass: AUTH.pass,
     payload: p,
-    files: files,
+    files,
     signatures: {
       supervisorBase64: signRes.supervisorBase64 || "",
       employeeBase64: signRes.employeeBase64 || ""
@@ -453,35 +483,47 @@ async function submitForm(){
   };
 
   Swal.fire({
-    title:"กำลังบันทึก...",
-    allowOutsideClick:false,
+    title: "กำลังบันทึก...",
+    allowOutsideClick: false,
     didOpen: () => Swal.showLoading()
   });
 
   let json;
   try {
     const res = await fetch(apiUrl("/submit"), {
-      method:"POST",
-      headers:{ "Content-Type":"application/json" },
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body)
     });
 
     const text = await res.text();
+
+    // ✅ ช่วย debug กรณีไม่ใช่ JSON
     try { json = JSON.parse(text); }
-    catch(_) { json = { ok:false, error:"รูปแบบข้อมูลตอบกลับไม่ถูกต้อง" }; }
+    catch (_) {
+      console.error("Non-JSON response:", text);
+      return Swal.fire({
+        icon: "error",
+        title: "บันทึกไม่สำเร็จ",
+        html: `<div style="text-align:left">
+          <div><b>รูปแบบข้อมูลตอบกลับไม่ถูกต้อง</b></div>
+          <div style="margin-top:6px;color:#64748b;font-size:12px">Backend ไม่ได้ส่ง JSON กลับมา</div>
+          <pre style="white-space:pre-wrap;background:#0b1220;color:#e2e8f0;padding:10px;border-radius:10px;max-height:220px;overflow:auto">${escapeHtml(text).slice(0,2000)}</pre>
+        </div>`
+      });
+    }
 
     if (!res.ok || !json.ok) {
-      return Swal.fire({ icon:"error", title:"บันทึกไม่สำเร็จ", text: json.error || `HTTP ${res.status}` });
+      return Swal.fire({ icon: "error", title: "บันทึกไม่สำเร็จ", text: json.error || `HTTP ${res.status}` });
     }
   } catch (err2) {
     console.error(err2);
-    return Swal.fire({ icon:"error", title:"บันทึกไม่สำเร็จ", text:"เชื่อมต่อระบบไม่ได้ (ตรวจสอบอินเทอร์เน็ต/Worker)" });
+    return Swal.fire({ icon: "error", title: "บันทึกไม่สำเร็จ", text: "เชื่อมต่อระบบไม่ได้ (ตรวจสอบอินเทอร์เน็ต/Worker)" });
   }
 
-  // ✅ แกลเลอรีรูป
   const galleryHtml = renderGalleryHtml(json.imageIds || []);
 
-  // ✅ ลายเซ็นโชว์แบบเอกสาร
+  // แสดงลายเซ็นที่เซ็นจากหน้าเว็บ (ชัดสุด)
   const supSignThumb = signRes.supervisorBase64
     ? `<img src="${signRes.supervisorBase64}" style="width:100%;max-height:120px;object-fit:contain;border:1px solid #d7ddea;border-radius:12px;background:#fff">`
     : `<div style="color:#94a3b8">-</div>`;
@@ -490,19 +532,18 @@ async function submitForm(){
     ? `<img src="${signRes.employeeBase64}" style="width:100%;max-height:120px;object-fit:contain;border:1px solid #d7ddea;border-radius:12px;background:#fff">`
     : `<div style="color:#94a3b8">-</div>`;
 
-  // ✅ ปุ่มเปิด PDF (ต้องให้ Apps Script ส่งกลับ pdfUrl)
   const pdfBtn = json.pdfUrl
     ? `<a href="${json.pdfUrl}" target="_blank"
-          style="display:inline-block;margin-top:10px;padding:10px 12px;border-radius:12px;background:#2563eb;color:#fff;font-weight:800;text-decoration:none">
-          เปิดไฟล์ PDF รายงาน
+        style="display:inline-block;margin-top:10px;padding:10px 12px;border-radius:12px;background:#2563eb;color:#fff;font-weight:800;text-decoration:none">
+        เปิดไฟล์ PDF รายงาน
        </a>`
-    : `<div style="margin-top:10px;color:#dc2626;font-weight:800">ไม่พบลิงก์ PDF (ตรวจสอบฝั่ง Apps Script ว่าส่งกลับ pdfUrl แล้ว)</div>`;
+    : `<div style="margin-top:10px;color:#dc2626;font-weight:800">ไม่พบลิงก์ PDF (ตรวจสอบ backend ว่าส่งกลับ pdfUrl แล้ว)</div>`;
 
   await Swal.fire({
-    icon:"success",
-    title:"บันทึกสำเร็จ",
-    confirmButtonText:"ตกลง",
-    confirmButtonColor:"#2563eb",
+    icon: "success",
+    title: "บันทึกสำเร็จ",
+    confirmButtonText: "ตกลง",
+    confirmButtonColor: "#2563eb",
     width: 920,
     html: `
       <div style="text-align:left;font-weight:700;line-height:1.7">
@@ -554,21 +595,44 @@ async function submitForm(){
 }
 
 /** ==========================
- *  Files to Base64
+ *  Files to Base64 (with limits)
  *  ========================== */
-async function collectFilesAsBase64(){
+async function collectFilesAsBase64({ maxFiles = 6, maxMBEach = 4 } = {}) {
   const inputs = Array.from(document.querySelectorAll('input[type="file"]'));
-  const out = [];
-  for (const el of inputs){
+  const picked = [];
+
+  for (const el of inputs) {
     const f = el.files && el.files[0];
-    if (!f) continue;
+    if (f) picked.push(f);
+  }
+
+  if (picked.length > maxFiles) {
+    await Swal.fire({
+      icon: "warning",
+      title: "รูปเยอะเกินไป",
+      text: `เลือกได้สูงสุด ${maxFiles} รูป (ตอนนี้เลือก ${picked.length})`
+    });
+    throw new Error("Too many files");
+  }
+
+  const out = [];
+  for (const f of picked) {
+    const mb = f.size / (1024 * 1024);
+    if (mb > maxMBEach) {
+      await Swal.fire({
+        icon: "warning",
+        title: "ไฟล์ใหญ่เกินไป",
+        text: `ไฟล์ "${f.name}" มีขนาด ${mb.toFixed(1)} MB (กำหนดไว้ไม่เกิน ${maxMBEach} MB)`
+      });
+      throw new Error("File too large");
+    }
     const base64 = await fileToBase64(f);
     out.push({ filename: f.name, base64 });
   }
   return out;
 }
 
-function fileToBase64(file){
+function fileToBase64(file) {
   return new Promise((resolve, reject) => {
     const r = new FileReader();
     r.onload = () => resolve(r.result);
@@ -580,17 +644,17 @@ function fileToBase64(file){
 /** ==========================
  *  Signature Flow (2 ลายเซ็น)
  *  ========================== */
-async function openSignatureFlow(supervisorName, employeeName){
+async function openSignatureFlow(supervisorName, employeeName) {
   const sup = await signatureModal(`ลายเซ็นหัวหน้างาน`, `ผู้เซ็น: ${supervisorName || "-"}`);
-  if (!sup.ok) return { ok:false };
+  if (!sup.ok) return { ok: false };
 
   const emp = await signatureModal(`ลายเซ็นพนักงานที่เบิกสินค้า Error`, `ผู้เซ็น: ${employeeName || "-"}`);
-  if (!emp.ok) return { ok:false };
+  if (!emp.ok) return { ok: false };
 
-  return { ok:true, supervisorBase64: sup.base64, employeeBase64: emp.base64 };
+  return { ok: true, supervisorBase64: sup.base64, employeeBase64: emp.base64 };
 }
 
-async function signatureModal(title, subtitle){
+async function signatureModal(title, subtitle) {
   const canvasId = "sigCanvas_" + Math.random().toString(16).slice(2);
   const html = `
     <div style="text-align:left">
@@ -607,17 +671,17 @@ async function signatureModal(title, subtitle){
   const res = await Swal.fire({
     title,
     html,
-    showCancelButton:true,
-    confirmButtonText:"ยืนยันลายเซ็น",
-    cancelButtonText:"ยกเลิก",
-    confirmButtonColor:"#2563eb",
+    showCancelButton: true,
+    confirmButtonText: "ยืนยันลายเซ็น",
+    cancelButtonText: "ยกเลิก",
+    confirmButtonColor: "#2563eb",
     didOpen: () => {
       const canvas = document.getElementById(canvasId);
       const btnClear = document.getElementById(canvasId + "_clear");
       enableSignature(canvas);
       btnClear.onclick = () => {
         const ctx = canvas.getContext("2d");
-        ctx.clearRect(0,0,canvas.width,canvas.height);
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
       };
     },
     preConfirm: () => {
@@ -626,11 +690,12 @@ async function signatureModal(title, subtitle){
     }
   });
 
-  if (!res.isConfirmed) return { ok:false };
-  return { ok:true, base64: res.value };
+  if (!res.isConfirmed) return { ok: false };
+  return { ok: true, base64: res.value };
 }
 
-function enableSignature(canvas){
+function enableSignature(canvas) {
+  if (!canvas) return;
   const ctx = canvas.getContext("2d");
   let drawing = false;
   let last = null;
@@ -663,47 +728,61 @@ function enableSignature(canvas){
   canvas.addEventListener("mousemove", move);
   window.addEventListener("mouseup", up);
 
-  canvas.addEventListener("touchstart", down, { passive:false });
-  canvas.addEventListener("touchmove", move, { passive:false });
-  canvas.addEventListener("touchend", up, { passive:false });
+  canvas.addEventListener("touchstart", down, { passive: false });
+  canvas.addEventListener("touchmove", move, { passive: false });
+  canvas.addEventListener("touchend", up, { passive: false });
 }
 
 /** ==========================
  *  Reset
  *  ========================== */
-function resetForm(){
-  // ✅ ใส่บรรทัดนี้ใน resetForm()
-  const ids = ["refNo","labelCid","errorReasonOther","errorDescription","item","errorCaseQty","employeeName","employeeCode","osm","otm"];
+function resetForm() {
+  // ✅ บรรทัดนี้ต้องอยู่ "ในฟังก์ชัน resetForm()" เท่านั้น
+  const ids = [
+    "refNo",
+    "labelCid",
+    "errorReasonOther",
+    "errorDescription",
+    "item",
+    "errorCaseQty",
+    "employeeName",
+    "employeeCode",
+    "osm",
+    "otm"
+  ];
 
   ids.forEach(id => {
     const el = document.getElementById(id);
     if (el) el.value = "";
   });
 
-  document.getElementById("errorReason").value = "";
-  document.getElementById("auditName").value = "";
-  document.getElementById("shift").value = "";
+  const er = document.getElementById("errorReason");
+  const audit = document.getElementById("auditName");
+  const shift = document.getElementById("shift");
 
-  // lps ไม่ต้องล้าง เพราะล็อกตาม login
-  document.getElementById("wrapErrorOther").classList.add("hidden");
+  if (er) er.value = "";
+  if (audit) audit.value = "";
+  if (shift) shift.value = "";
 
-  // ล้าง/รีเซ็ตช่องอัปโหลดรูปให้กลับเป็น 2 ช่องเริ่มต้น
+  document.getElementById("wrapErrorOther")?.classList.add("hidden");
+
+  // รีเซ็ต upload กลับเป็น 2 ช่องเริ่มต้น
   buildInitialUploadFields();
 }
 
 /** ==========================
  *  Utils
  *  ========================== */
-function escapeHtml(s){
+function escapeHtml(s) {
   return String(s ?? "")
-    .replaceAll("&","&amp;")
-    .replaceAll("<","&lt;")
-    .replaceAll(">","&gt;")
-    .replaceAll('"',"&quot;")
-    .replaceAll("'","&#039;");
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
 }
 
-function setLpsFromLogin(loginName){
+function setLpsFromLogin(loginName) {
   const lpsSelect = $("lps");
   if (!lpsSelect) return;
 
@@ -713,4 +792,3 @@ function setLpsFromLogin(loginName){
   const pill = document.getElementById("userPill");
   if (pill) pill.textContent = "ผู้ใช้งาน: " + loginName;
 }
-
