@@ -363,6 +363,7 @@ function collectPayload() {
     errorReason: ($("errorReason")?.value || "").trim(),
     errorReasonOther: ($("errorReasonOther")?.value || "").trim(),
     errorDescription: ($("errorDescription")?.value || "").trim(), // textarea
+    errorDate: ($("errorDate")?.value || "").trim(),
 
     item: ($("item")?.value || "").trim(),
     errorCaseQty: ($("errorCaseQty")?.value || "").trim(),
@@ -386,6 +387,7 @@ function validatePayload(p) {
     ["errorCaseQty", "จำนวน ErrorCase"],
     ["employeeName", "ชื่อ-สกุลพนักงาน"],
     ["employeeCode", "รหัสพนักงาน"],
+    ["errorDate", "วันที่เบิกสินค้า Error"],
     ["shift", "กะ"],
     ["osm", "OSM"],
     ["otm", "OTM"],
@@ -432,6 +434,7 @@ async function previewSummary() {
       <div style="margin-top:8px"><b>Item</b> ${escapeHtml(p.item)}</div>
       <div><b>จำนวน ErrorCase</b> ${escapeHtml(p.errorCaseQty)}</div>
       <div><b>พนักงาน</b> ${escapeHtml(p.employeeName)} (${escapeHtml(p.employeeCode)})</div>
+      <div><b>วันที่เบิกสินค้า Error</b> ${escapeHtml(p.errorDate)}</div>
       <div><b>กะ</b> ${escapeHtml(p.shift)}</div>
       <div><b>OSM</b> ${escapeHtml(p.osm)}</div>
       <div><b>OTM</b> ${escapeHtml(p.otm)}</div>
@@ -564,6 +567,7 @@ async function submitForm() {
         <div><b>จำนวน ErrorCase:</b> ${escapeHtml(p.errorCaseQty)}</div>
 
         <div style="margin-top:8px"><b>พนักงาน:</b> ${escapeHtml(p.employeeName)} (${escapeHtml(p.employeeCode)})</div>
+        <div><b>วันที่เบิกสินค้า Error:</b> ${escapeHtml(p.errorDate)}</div>
         <div><b>กะ:</b> ${escapeHtml(p.shift)}</div>
         <div><b>OSM:</b> ${escapeHtml(p.osm)}</div>
         <div><b>OTM (หัวหน้างาน):</b> ${escapeHtml(p.otm)}</div>
@@ -746,6 +750,7 @@ function resetForm() {
     "item",
     "errorCaseQty",
     "employeeName",
+    "errorDate",
     "employeeCode",
     "osm",
     "otm"
@@ -792,3 +797,4 @@ function setLpsFromLogin(loginName) {
   const pill = document.getElementById("userPill");
   if (pill) pill.textContent = "ผู้ใช้งาน: " + loginName;
 }
+
