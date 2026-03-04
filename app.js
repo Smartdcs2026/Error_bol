@@ -580,18 +580,26 @@ async function submitForm() {
         <div><b>OTM (หัวหน้างาน):</b> ${escapeHtml(p.otm)}</div>
         <div><b>AUDIT:</b> ${escapeHtml(p.auditName)}</div>
 
-        <div style="margin-top:10px;display:grid;grid-template-columns:1fr 1fr;gap:10px">
-          <div>
-            <div style="font-weight:900;margin-bottom:6px">ลายเซ็นหัวหน้างาน</div>
-            ${supSignThumb}
-            <div style="margin-top:6px;font-weight:800">ลงชื่อ: ${escapeHtml(p.otm || "-")}</div>
-          </div>
-          <div>
-            <div style="font-weight:900;margin-bottom:6px">ลายเซ็นพนักงาน</div>
-            ${empSignThumb}
-            <div style="margin-top:6px;font-weight:800">ลงชื่อ: ${escapeHtml(p.employeeName || "-")}</div>
-          </div>
-        </div>
+       <div style="margin-top:10px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
+  <div>
+    <div style="font-weight:900;margin-bottom:6px">ลายเซ็นหัวหน้างาน</div>
+    ${supSignThumb}
+    <div style="margin-top:6px;font-weight:800">ลงชื่อ: ${escapeHtml(p.otm || "-")}</div>
+  </div>
+
+  <div>
+    <div style="font-weight:900;margin-bottom:6px">ลายเซ็นพนักงาน</div>
+    ${empSignThumb}
+    <div style="margin-top:6px;font-weight:800">ลงชื่อ: ${escapeHtml(p.employeeName || "-")}</div>
+  </div>
+
+  <div>
+    <div style="font-weight:900;margin-bottom:6px">ลายเซ็นล่ามแปลภาษา</div>
+    ${intSignThumb}
+    <div style="margin-top:6px;font-weight:800">ลงชื่อ: ${escapeHtml(p.interpreterName || "-")}</div>
+  </div>
+</div>
+       
 
         <div style="margin-top:10px"><b>จำนวนรูป:</b> ${(json.imageIds||[]).length}</div>
         ${galleryHtml}
@@ -808,6 +816,7 @@ function setLpsFromLogin(loginName) {
   const pill = document.getElementById("userPill");
   if (pill) pill.textContent = "ผู้ใช้งาน: " + loginName;
 }
+
 
 
 
