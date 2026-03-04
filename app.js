@@ -111,7 +111,7 @@ async function init() {
   numericOnly($("labelCid"));
   numericOnly($("item"));
   numericOnly($("errorCaseQty"));
-  numericOnly($("employeeCode"));
+  alnumUpperOnly($("employeeCode")); // ✅ A-Z 0-9 เท่านั้น + ตัวใหญ่
 
   // default tab
   setActiveTab("error");
@@ -423,7 +423,7 @@ function validatePayload(p) {
   if (!/^\d+$/.test(p.labelCid)) return "Label CID ต้องเป็นตัวเลขเท่านั้น";
   if (!/^\d+$/.test(p.item)) return "Item ต้องเป็นตัวเลขเท่านั้น";
   if (!/^\d+$/.test(p.errorCaseQty)) return "จำนวน ErrorCase ต้องเป็นตัวเลขเท่านั้น";
-  if (!/^\d+$/.test(p.employeeCode)) return "รหัสพนักงานต้องเป็นตัวเลขเท่านั้น";
+  if (!/^[A-Z0-9]+$/.test(p.employeeCode)) return "รหัสพนักงานต้องเป็น A-Z หรือ/และ 0-9 เท่านั้น ";
 
   if (!/^\d{4}-\d{2}-\d{2}$/.test(p.errorDate)) return "รูปแบบวันที่เบิกสินค้าไม่ถูกต้อง";
 
@@ -888,3 +888,23 @@ function setLpsFromLogin(loginName) {
 }
 
 
+function alnumUpperOnly(el) {
+  if (!el) return;
+
+  const sanitize = () => {
+    // 1) แปลงเป็นตัวใหญ่
+    // 2) เอาเฉพาะ A-Z และ 0-9 เท่านั้น (ตัดทุกอักขระพิเศษ/ช่องว่าง/ไทย)
+    const v = String(el.value || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+    if (el.value !== v) el.value = v;
+  };
+
+  el.addEventListener("input", sanitize);
+
+  // กันกรณี paste ด้วยเมาส์/คีย์ลัด
+  el.addEventListener("paste", () => {
+    setTimeout(sanitize, 0);
+  });
+
+  // กันตอนหลุดโฟกัส (เผื่อ browser แปลกๆ)
+  el.addEventListener("blur", sanitize);
+}
