@@ -408,7 +408,7 @@ function validatePayload(p) {
     ["shift", "กะ"],
     ["osm", "OSM"],
     ["otm", "OTM"],
-    ["interpreterName", "ชื่อ-สกุลล่ามแปลภาษา"],
+    // ["interpreterName", "ชื่อ-สกุลล่ามแปลภาษา"],
     ["auditName", "พนง. AUDIT"]
   ];
 
@@ -881,3 +881,4 @@ function setLpsFromLogin(loginName) {
   const pill = document.getElementById("userPill");
   if (pill) pill.textContent = "ผู้ใช้งาน: " + loginName;
 }
+
