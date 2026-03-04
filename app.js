@@ -39,12 +39,10 @@ function renderGalleryHtml(imageIds = []) {
   const cards = imageIds.map((id, i) => {
     const url = driveImgUrl(id);
     return `
-      <button type="button"
-        class="galItem"
+      <button type="button" class="galItem"
         data-url="${url}"
         data-id="${escapeHtml(id)}"
         aria-label="ดูรูปที่ ${i + 1}"
-        style="all:unset;cursor:pointer"
       >
         <div class="galThumbWrap">
           <img class="galThumb" src="${url}" alt="รูปที่ ${i + 1}" loading="lazy">
@@ -56,62 +54,8 @@ function renderGalleryHtml(imageIds = []) {
   }).join("");
 
   return `
-    <style>
-      .galGrid{
-        display:grid;
-        grid-template-columns: repeat(2, minmax(0,1fr));
-        gap:10px;
-        margin-top:10px;
-      }
-      @media (min-width: 640px){
-        .galGrid{ grid-template-columns: repeat(3, minmax(0,1fr)); }
-      }
-      @media (min-width: 1024px){
-        .galGrid{ grid-template-columns: repeat(4, minmax(0,1fr)); }
-      }
-      .galThumbWrap{
-        position:relative;
-        width:100%;
-        aspect-ratio: 4 / 3;
-        border-radius:14px;
-        overflow:hidden;
-        border:1px solid #d7ddea;
-        background:#f8fafc;
-        box-shadow: 0 6px 18px rgba(15,23,42,.06);
-      }
-      .galThumb{
-        width:100%;
-        height:100%;
-        object-fit:cover;
-        display:block;
-        transition: transform .18s ease;
-      }
-      .galItem:hover .galThumb{ transform: scale(1.03); }
-      .galBadge{
-        position:absolute;
-        top:8px;
-        left:8px;
-        background: rgba(15,23,42,.85);
-        color:#fff;
-        font-weight:800;
-        font-size:12px;
-        padding:4px 8px;
-        border-radius:999px;
-      }
-      .galCap{
-        margin-top:6px;
-        font-size:11px;
-        color:#64748b;
-        line-height:1.2;
-        white-space:nowrap;
-        overflow:hidden;
-        text-overflow:ellipsis;
-        max-width:100%;
-      }
-    </style>
-
     <div style="margin-top:10px">
-      <div style="font-weight:800;margin-bottom:6px">รูปภาพที่แนบ (${imageIds.length})</div>
+      <div style="font-weight:900;margin-bottom:6px">รูปภาพที่แนบ (${imageIds.length})</div>
       <div class="galGrid">${cards}</div>
       <div style="margin-top:8px;color:#94a3b8;font-size:12px">แตะ/คลิกรูปเพื่อดูขนาดเต็ม</div>
     </div>
@@ -816,6 +760,7 @@ function setLpsFromLogin(loginName) {
   const pill = document.getElementById("userPill");
   if (pill) pill.textContent = "ผู้ใช้งาน: " + loginName;
 }
+
 
 
 
