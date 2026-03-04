@@ -408,7 +408,7 @@ function validatePayload(p) {
     ["shift", "กะ"],
     ["osm", "OSM"],
     ["otm", "OTM"],
-    // ["interpreterName", "ชื่อ-สกุลล่ามแปลภาษา"],
+    // ✅ interpreterName ไม่บังคับแล้ว
     ["auditName", "พนง. AUDIT"]
   ];
 
@@ -425,7 +425,6 @@ function validatePayload(p) {
   if (!/^\d+$/.test(p.errorCaseQty)) return "จำนวน ErrorCase ต้องเป็นตัวเลขเท่านั้น";
   if (!/^\d+$/.test(p.employeeCode)) return "รหัสพนักงานต้องเป็นตัวเลขเท่านั้น";
 
-  // date (YYYY-MM-DD)
   if (!/^\d{4}-\d{2}-\d{2}$/.test(p.errorDate)) return "รูปแบบวันที่เบิกสินค้าไม่ถูกต้อง";
 
   return "";
@@ -462,7 +461,7 @@ async function previewSummary() {
 
       <div style="margin-top:8px"><b>OSM</b> ${escapeHtml(p.osm)}</div>
       <div><b>OTM</b> ${escapeHtml(p.otm)}</div>
-      <div><b>ล่าม</b> ${escapeHtml(p.interpreterName)}</div>
+      <div><b>ล่าม:</b> ${escapeHtml(p.interpreterName || "-")}</div>
       <div><b>AUDIT</b> ${escapeHtml(p.auditName)}</div>
 
       <div style="margin-top:8px"><b>จำนวนรูปที่เลือก</b> ${fileCount}</div>
@@ -619,7 +618,7 @@ async function submitForm() {
           <div>
             <div class="sigBoxTitle">ลายเซ็นล่ามแปลภาษา</div>
             ${intSignThumb}
-            <div class="sigName">ลงชื่อ: ${escapeHtml(p.interpreterName || "-")}</div>
+           <div class="sigName">ลงชื่อ: ${escapeHtml(p.interpreterName || "-")}</div>
           </div>
         </div>
 
@@ -703,6 +702,12 @@ async function openSignatureFlow(supervisorName, employeeName, interpreterName) 
 
   const emp = await signatureModal("ลายเซ็นพนักงานที่เบิกสินค้า Error", `ผู้เซ็น: ${employeeName || "-"}`);
   if (!emp.ok) return { ok: false };
+
+  // ✅ ถ้าไม่กรอกชื่อ “ล่าม” ให้ข้ามลายเซ็นล่าม
+  const hasInterpreter = String(interpreterName || "").trim().length > 0;
+  if (!hasInterpreter) {
+    return { ok: true, supervisorBase64: sup.base64, employeeBase64: emp.base64, interpreterBase64: "" };
+  }
 
   const intr = await signatureModal("ลายเซ็นล่ามแปลภาษา", `ผู้เซ็น: ${interpreterName || "-"}`);
   if (!intr.ok) return { ok: false };
@@ -881,4 +886,5 @@ function setLpsFromLogin(loginName) {
   const pill = document.getElementById("userPill");
   if (pill) pill.textContent = "ผู้ใช้งาน: " + loginName;
 }
+
 
