@@ -372,6 +372,7 @@ function collectPayload() {
     shift: ($("shift")?.value || "").trim(),
     osm: ($("osm")?.value || "").trim(),
     otm: ($("otm")?.value || "").trim(),
+    interpreterName: ($("interpreterName")?.value || "").trim(),
     auditName: ($("auditName")?.value || "").trim()
   };
 }
@@ -391,6 +392,7 @@ function validatePayload(p) {
     ["shift", "กะ"],
     ["osm", "OSM"],
     ["otm", "OTM"],
+    ["interpreterName", "ชื่อ-สกุลล่ามแปลภาษา"],
     ["auditName", "พนง. AUDIT"]
   ];
 
@@ -469,7 +471,7 @@ async function submitForm() {
   const files = await collectFilesAsBase64({ maxFiles: 6, maxMBEach: 4 });
 
   // ลายเซ็น 2 จุด
-  const signRes = await openSignatureFlow(p.otm, p.employeeName);
+  const signRes = await openSignatureFlow(p.otm, p.employeeName, p.interpreterName);
   if (!signRes.ok) return;
 
   // ✅ สำคัญ: Worker/Backend ของคุณ "ต้องรับรูปแบบนี้"
@@ -479,10 +481,11 @@ async function submitForm() {
     pass: AUTH.pass,
     payload: p,
     files,
-    signatures: {
-      supervisorBase64: signRes.supervisorBase64 || "",
-      employeeBase64: signRes.employeeBase64 || ""
-    }
+   signatures: {
+  supervisorBase64: signRes.supervisorBase64 || "",
+  employeeBase64: signRes.employeeBase64 || "",
+  interpreterBase64: signRes.interpreterBase64 || ""   // ✅ เพิ่ม
+}
   };
 
   Swal.fire({
@@ -534,6 +537,10 @@ async function submitForm() {
   const empSignThumb = signRes.employeeBase64
     ? `<img src="${signRes.employeeBase64}" style="width:100%;max-height:120px;object-fit:contain;border:1px solid #d7ddea;border-radius:12px;background:#fff">`
     : `<div style="color:#94a3b8">-</div>`;
+
+  const intSignThumb = signRes.interpreterBase64
+  ? `<img src="${signRes.interpreterBase64}" style="width:100%;max-height:120px;object-fit:contain;border:1px solid #d7ddea;border-radius:12px;background:#fff">`
+  : `<div style="color:#94a3b8">-</div>`;
 
   const pdfBtn = json.pdfUrl
     ? `<a href="${json.pdfUrl}" target="_blank"
@@ -648,14 +655,17 @@ function fileToBase64(file) {
 /** ==========================
  *  Signature Flow (2 ลายเซ็น)
  *  ========================== */
-async function openSignatureFlow(supervisorName, employeeName) {
+async function openSignatureFlow(supervisorName, employeeName, interpreterName) {
   const sup = await signatureModal(`ลายเซ็นหัวหน้างาน`, `ผู้เซ็น: ${supervisorName || "-"}`);
   if (!sup.ok) return { ok: false };
 
   const emp = await signatureModal(`ลายเซ็นพนักงานที่เบิกสินค้า Error`, `ผู้เซ็น: ${employeeName || "-"}`);
   if (!emp.ok) return { ok: false };
 
-  return { ok: true, supervisorBase64: sup.base64, employeeBase64: emp.base64 };
+  const intr = await signatureModal(`ลายเซ็นล่ามแปลภาษา`, `ผู้เซ็น: ${interpreterName || "-"}`);
+  if (!intr.ok) return { ok: false };
+
+  return { ok: true, supervisorBase64: sup.base64, employeeBase64: emp.base64, interpreterBase64: intr.base64 };
 }
 
 async function signatureModal(title, subtitle) {
@@ -797,4 +807,5 @@ function setLpsFromLogin(loginName) {
   const pill = document.getElementById("userPill");
   if (pill) pill.textContent = "ผู้ใช้งาน: " + loginName;
 }
+
 
