@@ -1,9 +1,10 @@
 /** ==========================
- *  app.js (FULL) - Error_BOL S&LP
+ *  app.js (FULL) - Error_BOL S&LP (PRO)
  *  - ใช้ Cloudflare Worker เป็น API (options/auth/submit)
- *  - รองรับ upload รูปแบบเพิ่มช่องได้
- *  - รองรับลายเซ็น 2 จุด
+ *  - รองรับ upload รูปแบบเพิ่มช่องได้ + ลบช่อง + จำกัดจำนวนรูป + validate type
+ *  - รองรับลายเซ็น 3 จุด (หัวหน้างาน/พนักงาน/ล่าม)
  *  - แสดงผลสำเร็จพร้อม Gallery + ปุ่มเปิด PDF (ถ้า backend ส่ง pdfUrl)
+ *  - ใช้ CSS Class (.galGrid/.sigGrid/.sigThumb) จาก style.css (ไม่ฝัง <style> ใน Swal)
  *  ========================== */
 
 /** ==========================
@@ -73,8 +74,9 @@ function bindGalleryClickInSwal() {
       Swal.fire({
         title: "ดูรูป",
         html: `
-          <div style="text-align:left;font-weight:800;margin-bottom:8px">ID: ${escapeHtml(id)}</div>
-          <img src="${url}" style="width:100%;max-height:70vh;object-fit:contain;border-radius:14px;border:1px solid #d7ddea;background:#fff" />
+          <div style="text-align:left;font-weight:900;margin-bottom:8px">ID: ${escapeHtml(id)}</div>
+          <img src="${url}"
+               style="width:100%;max-height:70vh;object-fit:contain;border-radius:14px;border:1px solid #d7ddea;background:#fff" />
         `,
         confirmButtonText: "ปิด",
         confirmButtonColor: "#2563eb",
@@ -109,7 +111,10 @@ async function init() {
   numericOnly($("labelCid"));
   numericOnly($("item"));
   numericOnly($("errorCaseQty"));
-  numericOnly($("employeeCode")); // ถ้าต้องการให้เป็นเลขอย่างเดียว
+  numericOnly($("employeeCode"));
+
+  // default tab
+  setActiveTab("error");
 }
 
 function safeSetLoginMsg(msg) {
@@ -129,14 +134,18 @@ function setActiveTab(which) {
   $("tabErrorBol")?.classList.toggle("active", which === "error");
   $("tabUnder500")?.classList.toggle("active", which === "u500");
 
-  $("loginCard")?.classList.toggle("hidden", false);
-  $("formCard")?.classList.add("hidden");
-  $("under500Card")?.classList.add("hidden");
-
-  if (AUTH.name) {
-    if (which === "error") $("formCard")?.classList.remove("hidden");
-    else $("under500Card")?.classList.remove("hidden");
+  // ถ้ายังไม่ login ให้เห็นหน้า login เท่านั้น
+  if (!AUTH.name) {
+    $("loginCard")?.classList.remove("hidden");
+    $("formCard")?.classList.add("hidden");
+    $("under500Card")?.classList.add("hidden");
+    return;
   }
+
+  // login แล้ว: แสดงตามแท็บ
+  $("loginCard")?.classList.add("hidden");
+  $("formCard")?.classList.toggle("hidden", which !== "error");
+  $("under500Card")?.classList.toggle("hidden", which !== "u500");
 }
 
 /** ==========================
@@ -144,8 +153,10 @@ function setActiveTab(which) {
  *  ========================== */
 function bindEvents() {
   $("btnLogin")?.addEventListener("click", onLogin);
+
   $("errorReason")?.addEventListener("change", onErrorReasonChange);
   $("btnAddImage")?.addEventListener("click", () => addUploadField("ภาพอื่นๆ"));
+
   $("btnPreview")?.addEventListener("click", previewSummary);
   $("btnSubmit")?.addEventListener("click", submitForm);
 
@@ -175,7 +186,9 @@ async function loadOptions() {
 function fillLoginName() {
   const sel = $("loginName");
   if (!sel) return;
-  sel.innerHTML = `<option value="">-- เลือกชื่อ --</option>` +
+
+  sel.innerHTML =
+    `<option value="">-- เลือกชื่อ --</option>` +
     (OPTIONS.lpsList || []).map(n => `<option>${escapeHtml(n)}</option>`).join("");
 }
 
@@ -185,15 +198,18 @@ function fillFormDropdowns() {
   const audit = $("auditName");
 
   if (lps) {
-    lps.innerHTML = `<option value="">-- เลือก --</option>` +
+    lps.innerHTML =
+      `<option value="">-- เลือก --</option>` +
       (OPTIONS.lpsList || []).map(n => `<option>${escapeHtml(n)}</option>`).join("");
   }
   if (er) {
-    er.innerHTML = `<option value="">-- เลือก --</option>` +
+    er.innerHTML =
+      `<option value="">-- เลือก --</option>` +
       (OPTIONS.errorList || []).map(n => `<option>${escapeHtml(n)}</option>`).join("");
   }
   if (audit) {
-    audit.innerHTML = `<option value="">-- เลือก --</option>` +
+    audit.innerHTML =
+      `<option value="">-- เลือก --</option>` +
       (OPTIONS.auditList || []).map(n => `<option>${escapeHtml(n)}</option>`).join("");
   }
 }
@@ -238,8 +254,7 @@ async function onLogin() {
   // ตั้งค่า LPS ตาม login และล็อก
   setLpsFromLogin(name);
 
-  // UI
-  $("loginCard")?.classList.add("hidden");
+  // เปลี่ยนหน้า
   setActiveTab("error");
 }
 
@@ -259,30 +274,54 @@ function numericOnly(el) {
 }
 
 /** ==========================
- *  Upload fields
+ *  Upload fields (add/remove + preview)
  *  ========================== */
 function buildInitialUploadFields() {
   const grid = $("uploadGrid");
   if (!grid) return;
   grid.innerHTML = "";
-  addUploadField("บัตรพนง.");
-  addUploadField("พนักงาน");
+  addUploadField("บัตรพนง.", { removable: false });
+  addUploadField("พนักงาน", { removable: false });
 }
 
-function addUploadField(label) {
+/**
+ * addUploadField(label, {removable:boolean})
+ */
+function addUploadField(label, opts = {}) {
+  const { removable = true } = opts;
+
   const grid = $("uploadGrid");
   if (!grid) return;
 
   const id = "file_" + Math.random().toString(16).slice(2);
   const box = document.createElement("div");
   box.className = "uploadBox";
+
   box.innerHTML = `
-    <div class="cap">${escapeHtml(label)}</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
+      <div class="cap">${escapeHtml(label)}</div>
+      ${removable ? `<button type="button" class="btn ghost" style="padding:6px 10px;border-radius:999px" data-remove="${id}">ลบ</button>` : ``}
+    </div>
+
     <input type="file" accept="image/*" id="${id}">
     <img class="previewImg" id="${id}_img" alt="">
     <div class="small" id="${id}_txt">ยังไม่เลือกรูป</div>
   `;
+
   grid.appendChild(box);
+
+  // remove
+  if (removable) {
+    const btn = box.querySelector(`[data-remove="${id}"]`);
+    btn?.addEventListener("click", () => {
+      // ปล่อย objectURL ถ้ามี
+      const img = $(`${id}_img`);
+      if (img && img.dataset.objectUrl) {
+        try { URL.revokeObjectURL(img.dataset.objectUrl); } catch (_) {}
+      }
+      box.remove();
+    });
+  }
 
   const fileInput = $(id);
   const img = $(`${id}_img`);
@@ -290,9 +329,38 @@ function addUploadField(label) {
 
   fileInput?.addEventListener("change", () => {
     const f = fileInput.files && fileInput.files[0];
-    if (!f) return;
+    if (!f) {
+      if (txt) txt.textContent = "ยังไม่เลือกรูป";
+      if (img) {
+        if (img.dataset.objectUrl) {
+          try { URL.revokeObjectURL(img.dataset.objectUrl); } catch (_) {}
+        }
+        img.removeAttribute("src");
+        img.dataset.objectUrl = "";
+      }
+      return;
+    }
+
+    // validate type เบื้องต้น
+    if (!/^image\//.test(f.type)) {
+      fileInput.value = "";
+      if (txt) txt.textContent = "ไฟล์ไม่ถูกต้อง (ต้องเป็นรูปภาพเท่านั้น)";
+      if (img) img.removeAttribute("src");
+      Swal.fire({ icon: "warning", title: "ไฟล์ไม่ถูกต้อง", text: "กรุณาเลือกไฟล์รูปภาพเท่านั้น" });
+      return;
+    }
+
     if (txt) txt.textContent = `ไฟล์: ${f.name} (${Math.round(f.size / 1024)} KB)`;
-    if (img) img.src = URL.createObjectURL(f);
+
+    if (img) {
+      // revoke url เก่า
+      if (img.dataset.objectUrl) {
+        try { URL.revokeObjectURL(img.dataset.objectUrl); } catch (_) {}
+      }
+      const url = URL.createObjectURL(f);
+      img.src = url;
+      img.dataset.objectUrl = url;
+    }
   });
 }
 
@@ -304,18 +372,22 @@ function collectPayload() {
     refNo: ($("refNo")?.value || "").trim(),
     lps: ($("lps")?.value || "").trim(),
     labelCid: ($("labelCid")?.value || "").trim(),
+
     errorReason: ($("errorReason")?.value || "").trim(),
     errorReasonOther: ($("errorReasonOther")?.value || "").trim(),
-    errorDescription: ($("errorDescription")?.value || "").trim(), // textarea
+    errorDescription: ($("errorDescription")?.value || "").trim(),
     errorDate: ($("errorDate")?.value || "").trim(),
 
     item: ($("item")?.value || "").trim(),
     errorCaseQty: ($("errorCaseQty")?.value || "").trim(),
+
     employeeName: ($("employeeName")?.value || "").trim(),
     employeeCode: ($("employeeCode")?.value || "").trim(),
     shift: ($("shift")?.value || "").trim(),
+
     osm: ($("osm")?.value || "").trim(),
     otm: ($("otm")?.value || "").trim(),
+
     interpreterName: ($("interpreterName")?.value || "").trim(),
     auditName: ($("auditName")?.value || "").trim()
   };
@@ -351,9 +423,10 @@ function validatePayload(p) {
   if (!/^\d+$/.test(p.labelCid)) return "Label CID ต้องเป็นตัวเลขเท่านั้น";
   if (!/^\d+$/.test(p.item)) return "Item ต้องเป็นตัวเลขเท่านั้น";
   if (!/^\d+$/.test(p.errorCaseQty)) return "จำนวน ErrorCase ต้องเป็นตัวเลขเท่านั้น";
-
-  // ถ้าต้องการให้ employeeCode เป็นเลขเท่านั้น
   if (!/^\d+$/.test(p.employeeCode)) return "รหัสพนักงานต้องเป็นตัวเลขเท่านั้น";
+
+  // date (YYYY-MM-DD)
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(p.errorDate)) return "รูปแบบวันที่เบิกสินค้าไม่ถูกต้อง";
 
   return "";
 }
@@ -372,19 +445,26 @@ async function previewSummary() {
       <div><b>Ref:No.</b> ${escapeHtml(p.refNo)}</div>
       <div><b>LPS</b> ${escapeHtml(p.lps)}</div>
       <div><b>Label CID</b> ${escapeHtml(p.labelCid)}</div>
+
       <div><b>สาเหตุ</b> ${escapeHtml(p.errorReason === "อื่นๆ" ? ("อื่นๆ: " + p.errorReasonOther) : p.errorReason)}</div>
+
       <div style="margin-top:8px">
         <b>รายละเอียด/คำอธิบาย:</b><br>
         ${escapeHtml(p.errorDescription || "-").replaceAll("\n","<br>")}
       </div>
+
       <div style="margin-top:8px"><b>Item</b> ${escapeHtml(p.item)}</div>
       <div><b>จำนวน ErrorCase</b> ${escapeHtml(p.errorCaseQty)}</div>
-      <div><b>พนักงาน</b> ${escapeHtml(p.employeeName)} (${escapeHtml(p.employeeCode)})</div>
+
+      <div style="margin-top:8px"><b>พนักงาน</b> ${escapeHtml(p.employeeName)} (${escapeHtml(p.employeeCode)})</div>
       <div><b>วันที่เบิกสินค้า Error</b> ${escapeHtml(p.errorDate)}</div>
       <div><b>กะ</b> ${escapeHtml(p.shift)}</div>
-      <div><b>OSM</b> ${escapeHtml(p.osm)}</div>
+
+      <div style="margin-top:8px"><b>OSM</b> ${escapeHtml(p.osm)}</div>
       <div><b>OTM</b> ${escapeHtml(p.otm)}</div>
+      <div><b>ล่าม</b> ${escapeHtml(p.interpreterName)}</div>
       <div><b>AUDIT</b> ${escapeHtml(p.auditName)}</div>
+
       <div style="margin-top:8px"><b>จำนวนรูปที่เลือก</b> ${fileCount}</div>
     </div>
   `;
@@ -414,22 +494,20 @@ async function submitForm() {
   // จำกัดจำนวนรูปกัน payload ใหญ่เกิน (ปรับได้)
   const files = await collectFilesAsBase64({ maxFiles: 6, maxMBEach: 4 });
 
-  // ลายเซ็น 2 จุด
+  // ลายเซ็น 3 จุด
   const signRes = await openSignatureFlow(p.otm, p.employeeName, p.interpreterName);
   if (!signRes.ok) return;
 
-  // ✅ สำคัญ: Worker/Backend ของคุณ "ต้องรับรูปแบบนี้"
-  // ถ้า backend ของคุณเป็น Apps Script เดิม (action=submit) ให้เปลี่ยนเป็น {action:"submit", ...}
   const body = {
     name: AUTH.name,
     pass: AUTH.pass,
     payload: p,
     files,
-   signatures: {
-  supervisorBase64: signRes.supervisorBase64 || "",
-  employeeBase64: signRes.employeeBase64 || "",
-  interpreterBase64: signRes.interpreterBase64 || ""   // ✅ เพิ่ม
-}
+    signatures: {
+      supervisorBase64: signRes.supervisorBase64 || "",
+      employeeBase64: signRes.employeeBase64 || "",
+      interpreterBase64: signRes.interpreterBase64 || ""
+    }
   };
 
   Swal.fire({
@@ -448,7 +526,7 @@ async function submitForm() {
 
     const text = await res.text();
 
-    // ✅ ช่วย debug กรณีไม่ใช่ JSON
+    // debug กรณีไม่ใช่ JSON
     try { json = JSON.parse(text); }
     catch (_) {
       console.error("Non-JSON response:", text);
@@ -473,25 +551,25 @@ async function submitForm() {
 
   const galleryHtml = renderGalleryHtml(json.imageIds || []);
 
-  // แสดงลายเซ็นที่เซ็นจากหน้าเว็บ (ชัดสุด)
+  // thumbs: ใช้ class จาก style.css
   const supSignThumb = signRes.supervisorBase64
-    ? `<img src="${signRes.supervisorBase64}" style="width:100%;max-height:120px;object-fit:contain;border:1px solid #d7ddea;border-radius:12px;background:#fff">`
+    ? `<img class="sigThumb" src="${signRes.supervisorBase64}" alt="sign supervisor">`
     : `<div style="color:#94a3b8">-</div>`;
 
   const empSignThumb = signRes.employeeBase64
-    ? `<img src="${signRes.employeeBase64}" style="width:100%;max-height:120px;object-fit:contain;border:1px solid #d7ddea;border-radius:12px;background:#fff">`
+    ? `<img class="sigThumb" src="${signRes.employeeBase64}" alt="sign employee">`
     : `<div style="color:#94a3b8">-</div>`;
 
   const intSignThumb = signRes.interpreterBase64
-  ? `<img src="${signRes.interpreterBase64}" style="width:100%;max-height:120px;object-fit:contain;border:1px solid #d7ddea;border-radius:12px;background:#fff">`
-  : `<div style="color:#94a3b8">-</div>`;
+    ? `<img class="sigThumb" src="${signRes.interpreterBase64}" alt="sign interpreter">`
+    : `<div style="color:#94a3b8">-</div>`;
 
   const pdfBtn = json.pdfUrl
     ? `<a href="${json.pdfUrl}" target="_blank"
-        style="display:inline-block;margin-top:10px;padding:10px 12px;border-radius:12px;background:#2563eb;color:#fff;font-weight:800;text-decoration:none">
+        style="display:inline-block;margin-top:10px;padding:10px 12px;border-radius:12px;background:#2563eb;color:#fff;font-weight:900;text-decoration:none">
         เปิดไฟล์ PDF รายงาน
        </a>`
-    : `<div style="margin-top:10px;color:#dc2626;font-weight:800">ไม่พบลิงก์ PDF (ตรวจสอบ backend ว่าส่งกลับ pdfUrl แล้ว)</div>`;
+    : `<div style="margin-top:10px;color:#dc2626;font-weight:900">ไม่พบลิงก์ PDF (ตรวจสอบ backend ว่าส่งกลับ pdfUrl แล้ว)</div>`;
 
   await Swal.fire({
     icon: "success",
@@ -522,28 +600,28 @@ async function submitForm() {
         <div><b>กะ:</b> ${escapeHtml(p.shift)}</div>
         <div><b>OSM:</b> ${escapeHtml(p.osm)}</div>
         <div><b>OTM (หัวหน้างาน):</b> ${escapeHtml(p.otm)}</div>
+        <div><b>ล่าม:</b> ${escapeHtml(p.interpreterName)}</div>
         <div><b>AUDIT:</b> ${escapeHtml(p.auditName)}</div>
 
-       <div class="sigGrid">
-  <div>
-    <div class="sigBoxTitle">ลายเซ็นหัวหน้างาน</div>
-    ${supSignThumb}
-    <div class="sigName">ลงชื่อ: ${escapeHtml(p.otm || "-")}</div>
-  </div>
+        <div class="sigGrid">
+          <div>
+            <div class="sigBoxTitle">ลายเซ็นหัวหน้างาน</div>
+            ${supSignThumb}
+            <div class="sigName">ลงชื่อ: ${escapeHtml(p.otm || "-")}</div>
+          </div>
 
-  <div>
-    <div class="sigBoxTitle">ลายเซ็นพนักงาน</div>
-    ${empSignThumb}
-    <div class="sigName">ลงชื่อ: ${escapeHtml(p.employeeName || "-")}</div>
-  </div>
+          <div>
+            <div class="sigBoxTitle">ลายเซ็นพนักงาน</div>
+            ${empSignThumb}
+            <div class="sigName">ลงชื่อ: ${escapeHtml(p.employeeName || "-")}</div>
+          </div>
 
-  <div>
-    <div class="sigBoxTitle">ลายเซ็นล่ามแปลภาษา</div>
-    ${intSignThumb}
-    <div class="sigName">ลงชื่อ: ${escapeHtml(p.interpreterName || "-")}</div>
-  </div>
-</div>
-       
+          <div>
+            <div class="sigBoxTitle">ลายเซ็นล่ามแปลภาษา</div>
+            ${intSignThumb}
+            <div class="sigName">ลงชื่อ: ${escapeHtml(p.interpreterName || "-")}</div>
+          </div>
+        </div>
 
         <div style="margin-top:10px"><b>จำนวนรูป:</b> ${(json.imageIds||[]).length}</div>
         ${galleryHtml}
@@ -569,6 +647,11 @@ async function collectFilesAsBase64({ maxFiles = 6, maxMBEach = 4 } = {}) {
     if (f) picked.push(f);
   }
 
+  if (picked.length === 0) {
+    // ไม่บังคับมีรูป แต่แจ้งเตือนให้ผู้ใช้รู้
+    // ถ้าคุณอยากบังคับ: throw new Error
+  }
+
   if (picked.length > maxFiles) {
     await Swal.fire({
       icon: "warning",
@@ -580,6 +663,12 @@ async function collectFilesAsBase64({ maxFiles = 6, maxMBEach = 4 } = {}) {
 
   const out = [];
   for (const f of picked) {
+    // validate type เบื้องต้น
+    if (!/^image\//.test(f.type)) {
+      await Swal.fire({ icon: "warning", title: "ไฟล์ไม่ถูกต้อง", text: `ไฟล์ "${f.name}" ต้องเป็นรูปภาพเท่านั้น` });
+      throw new Error("Invalid file type");
+    }
+
     const mb = f.size / (1024 * 1024);
     if (mb > maxMBEach) {
       await Swal.fire({
@@ -589,6 +678,7 @@ async function collectFilesAsBase64({ maxFiles = 6, maxMBEach = 4 } = {}) {
       });
       throw new Error("File too large");
     }
+
     const base64 = await fileToBase64(f);
     out.push({ filename: f.name, base64 });
   }
@@ -605,16 +695,16 @@ function fileToBase64(file) {
 }
 
 /** ==========================
- *  Signature Flow (2 ลายเซ็น)
+ *  Signature Flow (3 ลายเซ็น)
  *  ========================== */
 async function openSignatureFlow(supervisorName, employeeName, interpreterName) {
-  const sup = await signatureModal(`ลายเซ็นหัวหน้างาน`, `ผู้เซ็น: ${supervisorName || "-"}`);
+  const sup = await signatureModal("ลายเซ็นหัวหน้างาน", `ผู้เซ็น: ${supervisorName || "-"}`);
   if (!sup.ok) return { ok: false };
 
-  const emp = await signatureModal(`ลายเซ็นพนักงานที่เบิกสินค้า Error`, `ผู้เซ็น: ${employeeName || "-"}`);
+  const emp = await signatureModal("ลายเซ็นพนักงานที่เบิกสินค้า Error", `ผู้เซ็น: ${employeeName || "-"}`);
   if (!emp.ok) return { ok: false };
 
-  const intr = await signatureModal(`ลายเซ็นล่ามแปลภาษา`, `ผู้เซ็น: ${interpreterName || "-"}`);
+  const intr = await signatureModal("ลายเซ็นล่ามแปลภาษา", `ผู้เซ็น: ${interpreterName || "-"}`);
   if (!intr.ok) return { ok: false };
 
   return { ok: true, supervisorBase64: sup.base64, employeeBase64: emp.base64, interpreterBase64: intr.base64 };
@@ -622,14 +712,17 @@ async function openSignatureFlow(supervisorName, employeeName, interpreterName) 
 
 async function signatureModal(title, subtitle) {
   const canvasId = "sigCanvas_" + Math.random().toString(16).slice(2);
+  const clearId = canvasId + "_clear";
+
   const html = `
     <div style="text-align:left">
-      <div style="font-weight:800;margin-bottom:6px">${escapeHtml(subtitle)}</div>
+      <div style="font-weight:900;margin-bottom:6px">${escapeHtml(subtitle)}</div>
       <div style="border:1px solid #d7ddea;border-radius:12px;overflow:hidden">
-        <canvas id="${canvasId}" width="800" height="260" style="width:100%;height:220px;background:#fff;touch-action:none"></canvas>
+        <canvas id="${canvasId}" width="800" height="260"
+                style="width:100%;height:220px;background:#fff;touch-action:none"></canvas>
       </div>
       <div style="display:flex;gap:10px;margin-top:10px;justify-content:flex-end">
-        <button type="button" id="${canvasId}_clear" class="swal2-styled" style="background:#0f172a">ล้าง</button>
+        <button type="button" id="${clearId}" class="swal2-styled" style="background:#0f172a">ล้าง</button>
       </div>
     </div>
   `;
@@ -643,7 +736,7 @@ async function signatureModal(title, subtitle) {
     confirmButtonColor: "#2563eb",
     didOpen: () => {
       const canvas = document.getElementById(canvasId);
-      const btnClear = document.getElementById(canvasId + "_clear");
+      const btnClear = document.getElementById(clearId);
       enableSignature(canvas);
       btnClear.onclick = () => {
         const ctx = canvas.getContext("2d");
@@ -652,6 +745,11 @@ async function signatureModal(title, subtitle) {
     },
     preConfirm: () => {
       const canvas = document.getElementById(canvasId);
+      const isEmpty = isCanvasBlank(canvas);
+      if (isEmpty) {
+        Swal.showValidationMessage("กรุณาเซ็นชื่อก่อนกดยืนยัน");
+        return false;
+      }
       return canvas.toDataURL("image/png");
     }
   });
@@ -663,6 +761,12 @@ async function signatureModal(title, subtitle) {
 function enableSignature(canvas) {
   if (!canvas) return;
   const ctx = canvas.getContext("2d");
+
+  // ตั้งค่าปากกาให้คมขึ้น
+  ctx.lineWidth = 3;
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
+
   let drawing = false;
   let last = null;
 
@@ -679,8 +783,6 @@ function enableSignature(canvas) {
   const move = (e) => {
     if (!drawing) return;
     const p = getPos(e);
-    ctx.lineWidth = 3;
-    ctx.lineCap = "round";
     ctx.beginPath();
     ctx.moveTo(last.x, last.y);
     ctx.lineTo(p.x, p.y);
@@ -699,11 +801,22 @@ function enableSignature(canvas) {
   canvas.addEventListener("touchend", up, { passive: false });
 }
 
+function isCanvasBlank(canvas) {
+  if (!canvas) return true;
+  const ctx = canvas.getContext("2d");
+  const { width, height } = canvas;
+  const data = ctx.getImageData(0, 0, width, height).data;
+  // ถ้ามี pixel ที่ไม่โปร่งใส ถือว่าไม่ว่าง
+  for (let i = 3; i < data.length; i += 4) {
+    if (data[i] !== 0) return false;
+  }
+  return true;
+}
+
 /** ==========================
  *  Reset
  *  ========================== */
 function resetForm() {
-  // ✅ บรรทัดนี้ต้องอยู่ "ในฟังก์ชัน resetForm()" เท่านั้น
   const ids = [
     "refNo",
     "labelCid",
@@ -734,6 +847,14 @@ function resetForm() {
 
   document.getElementById("wrapErrorOther")?.classList.add("hidden");
 
+  // เคลียร์ objectURL ทั้งหมดก่อนสร้างใหม่ (กัน memory leak)
+  document.querySelectorAll(".previewImg").forEach(img => {
+    if (img.dataset && img.dataset.objectUrl) {
+      try { URL.revokeObjectURL(img.dataset.objectUrl); } catch (_) {}
+      img.dataset.objectUrl = "";
+    }
+  });
+
   // รีเซ็ต upload กลับเป็น 2 ช่องเริ่มต้น
   buildInitialUploadFields();
 }
@@ -760,9 +881,3 @@ function setLpsFromLogin(loginName) {
   const pill = document.getElementById("userPill");
   if (pill) pill.textContent = "ผู้ใช้งาน: " + loginName;
 }
-
-
-
-
-
-
