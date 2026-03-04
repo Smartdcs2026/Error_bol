@@ -763,6 +763,7 @@ function resetForm() {
     "errorDate",
     "employeeCode",
     "osm",
+    "interpreterName",
     "otm"
   ];
 
@@ -807,5 +808,6 @@ function setLpsFromLogin(loginName) {
   const pill = document.getElementById("userPill");
   if (pill) pill.textContent = "ผู้ใช้งาน: " + loginName;
 }
+
 
 
