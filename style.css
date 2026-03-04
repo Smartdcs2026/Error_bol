@@ -10,18 +10,21 @@
   --danger:#dc2626;
 
   --r:16px;
-  --shadow:0 12px 30px rgba(15,23,42,.06);
+  --shadow:0 10px 26px rgba(15,23,42,.06);
+  --shadow2:0 6px 16px rgba(15,23,42,.06);
 }
 
-*{box-sizing:border-box;font-family:"Kanit",system-ui,sans-serif}
-html,body{height:100%}
+*{ box-sizing:border-box; font-family:"Kanit",system-ui,sans-serif; }
+html,body{ height:100%; }
 body{
   margin:0;
   background:var(--bg);
   color:var(--text);
 }
 
-/* =============== Topbar =============== */
+/* =========================
+   Topbar
+========================= */
 .topbar{
   position:sticky;
   top:0;
@@ -54,9 +57,10 @@ body{
   background:#fff;
   padding:4px;
   border:1px solid var(--line);
+  flex:0 0 auto;
 }
 
-.brandText{min-width:0}
+.brandText{ min-width:0; }
 .brandText .title{
   font-weight:900;
   line-height:1.1;
@@ -72,7 +76,6 @@ body{
   text-overflow:ellipsis;
 }
 
-/* tabs */
 .tabs{
   display:flex;
   gap:8px;
@@ -84,21 +87,23 @@ body{
   background:#fff;
   padding:8px 12px;
   border-radius:999px;
-  font-weight:800;
+  font-weight:900;
   cursor:pointer;
   line-height:1;
   transition: transform .06s ease, background .12s ease, border-color .12s ease;
 }
-.tab:active{transform: translateY(1px)}
+.tab:active{ transform: translateY(1px); }
 .tab.active{
   background:var(--primary);
   border-color:var(--primary);
   color:#fff;
 }
 
-/* =============== Layout =============== */
+/* =========================
+   Layout
+========================= */
 .container{
-  max-width:1100px;          /* ✅ ใช้พื้นที่คุ้มขึ้นบนจอใหญ่ */
+  max-width:1180px;   /* ✅ ใช้พื้นที่คุ้มขึ้น */
   margin:16px auto;
   padding:0 16px;
 }
@@ -112,19 +117,6 @@ body{
   margin-bottom:14px;
 }
 
-h2{margin:0 0 10px 0;font-size:18px}
-h3{margin:0 0 6px 0;font-size:15px}
-.hint{color:var(--muted);font-size:13px}
-.hint.tiny{font-size:12px;color:var(--muted);margin-top:4px}
-
-.sep{
-  border:none;
-  border-top:1px solid var(--line);
-  margin:14px 0;
-}
-.sep.soft{margin:12px 0;opacity:.85}
-
-/* card head */
 .cardHead{
   display:flex;
   align-items:flex-start;
@@ -133,7 +125,23 @@ h3{margin:0 0 6px 0;font-size:15px}
   flex-wrap:wrap;
 }
 
-/* small pills */
+h2{ margin:0 0 8px 0; font-size:18px; }
+h3{ margin:0 0 6px 0; font-size:15px; }
+
+.hint{ color:var(--muted); font-size:13px; }
+.hint.tiny{ font-size:12px; margin-top:4px; }
+
+.sep{
+  border:none;
+  border-top:1px solid var(--line);
+  margin:14px 0;
+}
+.sep.soft{ margin:12px 0; opacity:.85; }
+
+.hidden{ display:none !important; }
+.msg{ margin-top:10px; color:var(--danger); font-weight:900; }
+
+/* pills */
 .pill{
   border:1px solid var(--line);
   background:#fff;
@@ -142,8 +150,9 @@ h3{margin:0 0 6px 0;font-size:15px}
   font-weight:900;
   font-size:12px;
   color:var(--text);
+  white-space:nowrap;
 }
-.pill.muted{color:var(--muted)}
+.pill.muted{ color:var(--muted); }
 .pill.primary{
   border-color: rgba(37,99,235,.25);
   background: rgba(37,99,235,.08);
@@ -158,16 +167,26 @@ h3{margin:0 0 6px 0;font-size:15px}
   margin:8px 0 10px 0;
 }
 .sectionTitle .dot{
-  width:10px;height:10px;border-radius:999px;
+  width:10px;
+  height:10px;
+  border-radius:999px;
   background:var(--primary);
   margin-top:6px;
+  flex:0 0 auto;
 }
-.sectionMain{font-weight:900}
-.sectionSub{font-size:12px;color:var(--muted);margin-top:2px}
+.sectionMain{ font-weight:900; }
+.sectionSub{ font-size:12px; color:var(--muted); margin-top:2px; }
 
-/* =============== Form Controls =============== */
-.field{display:flex;flex-direction:column;gap:6px}
-label{font-weight:800;font-size:14px}
+/* =========================
+   Form Controls
+========================= */
+.field{
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+  min-width:0;
+}
+label{ font-weight:900; font-size:14px; }
 
 input,select,textarea{
   border:1px solid var(--line);
@@ -179,38 +198,45 @@ input,select,textarea{
 }
 textarea{
   resize: vertical;
-  min-height: 100px;
+  min-height: 110px;
 }
+
 input:focus,select:focus,textarea:focus{
   border-color:var(--primary);
   box-shadow:0 0 0 3px rgba(37,99,235,.14);
 }
 
-.msg{margin-top:10px;color:var(--danger);font-weight:800}
-.hidden{display:none}
-
-/* =============== Grids =============== */
+/* =========================
+   Grids
+========================= */
 .grid2{
   display:grid;
   grid-template-columns:repeat(2, minmax(0,1fr));
   gap:12px;
 }
+
+/* ✅ grid3: จอใหญ่ 3, จอกลาง 2, มือถือ 1 */
 .grid3{
   display:grid;
   grid-template-columns:repeat(3, minmax(0,1fr));
   gap:12px;
 }
 @media (max-width:980px){
-  .grid3{grid-template-columns:repeat(2, minmax(0,1fr))}
+  .grid3{ grid-template-columns:repeat(2, minmax(0,1fr)); }
 }
 @media (max-width:720px){
-  .grid2{grid-template-columns:1fr}
-  .grid3{grid-template-columns:1fr}
-  .container{padding:0 12px}
-  .topbar{padding:10px 12px}
+  .grid2{ grid-template-columns:1fr; }
+  .grid3{ grid-template-columns:1fr; }
 }
 
-/* =============== Buttons =============== */
+/* ✅ fieldFull: ให้ textarea กินเต็มแถวใน grid3 */
+.fieldFull{
+  grid-column: 1 / -1;
+}
+
+/* =========================
+   Buttons & Actions
+========================= */
 .btn{
   border:none;
   border-radius:12px;
@@ -220,26 +246,19 @@ input:focus,select:focus,textarea:focus{
   line-height:1;
   transition: transform .06s ease, background .12s ease, box-shadow .12s ease, border-color .12s ease;
 }
-.btn:active{transform: translateY(1px)}
-.btn:disabled{opacity:.6;cursor:not-allowed}
+.btn:active{ transform: translateY(1px); }
+.btn:disabled{ opacity:.6; cursor:not-allowed; }
 
-.btn.primary{
-  background:var(--primary);
-  color:#fff;
-}
-.btn.primary:hover{background:var(--primary2)}
+.btn.primary{ background:var(--primary); color:#fff; }
+.btn.primary:hover{ background:var(--primary2); }
 
-.btn.secondary{
-  background:#0f172a;
-  color:#fff;
-}
-
+.btn.secondary{ background:#0f172a; color:#fff; }
 .btn.ghost{
   background:#fff;
   border:1px dashed var(--line);
   color:var(--text);
 }
-.btn.ghost:hover{border-style:solid}
+.btn.ghost:hover{ border-style:solid; }
 
 .actions{
   display:flex;
@@ -248,12 +267,14 @@ input:focus,select:focus,textarea:focus{
   margin-top:14px;
   flex-wrap:wrap;
 }
-.actions.left{justify-content:flex-start}
+.actions.left{ justify-content:flex-start; }
 
-/* =============== Upload =============== */
+/* =========================
+   Upload
+========================= */
 .uploadTitle{
   display:flex;
-  align-items:center;
+  align-items:flex-start;
   justify-content:space-between;
   gap:10px;
   flex-wrap:wrap;
@@ -266,7 +287,9 @@ input:focus,select:focus,textarea:focus{
   margin-top:10px;
 }
 @media (max-width:720px){
-  .uploadGrid{grid-template-columns:1fr}
+  .container{ padding:0 12px; }
+  .topbar{ padding:10px 12px; }
+  .uploadGrid{ grid-template-columns:1fr; }
 }
 
 .uploadBox{
@@ -274,8 +297,8 @@ input:focus,select:focus,textarea:focus{
   border-radius:16px;
   padding:12px;
   background:#fff;
+  box-shadow:var(--shadow2);
 }
-
 .uploadBox .cap{
   font-weight:900;
   margin-bottom:8px;
@@ -294,4 +317,142 @@ input:focus,select:focus,textarea:focus{
   font-size:12px;
   color:var(--muted);
   margin-top:6px;
+}
+
+/* =========================
+   Extra small screens
+========================= */
+@media (max-width:420px){
+  .tab{ padding:8px 10px; }
+  .btn{ width:100%; }
+  .actions{ justify-content:stretch; }
+}
+
+
+/* =========================
+   SweetAlert2 - Professional Theme
+========================= */
+.swal2-popup{
+  border-radius: 18px !important;
+  border: 1px solid var(--line) !important;
+  box-shadow: var(--shadow) !important;
+  padding: 18px 18px 16px !important;
+}
+
+.swal2-title{
+  font-weight: 900 !important;
+  color: var(--text) !important;
+  font-size: 18px !important;
+}
+
+.swal2-html-container{
+  margin: 10px 0 0 0 !important;
+  color: var(--text) !important;
+}
+
+.swal2-confirm, .swal2-cancel{
+  border-radius: 12px !important;
+  font-weight: 900 !important;
+  padding: 10px 14px !important;
+}
+
+.swal2-cancel{
+  background: #0f172a !important;
+}
+
+/* =========================
+   Gallery (ใช้ใน Swal)
+========================= */
+.galGrid{
+  display:grid;
+  grid-template-columns: repeat(2, minmax(0,1fr));
+  gap:10px;
+  margin-top:10px;
+}
+@media (min-width: 640px){
+  .galGrid{ grid-template-columns: repeat(3, minmax(0,1fr)); }
+}
+@media (min-width: 1024px){
+  .galGrid{ grid-template-columns: repeat(4, minmax(0,1fr)); }
+}
+
+.galItem{
+  all: unset;
+  cursor: pointer;
+  display:block;
+}
+
+.galThumbWrap{
+  position:relative;
+  width:100%;
+  aspect-ratio: 4 / 3;
+  border-radius:14px;
+  overflow:hidden;
+  border:1px solid var(--line);
+  background:#f8fafc;
+  box-shadow: var(--shadow2);
+}
+
+.galThumb{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  display:block;
+  transition: transform .18s ease;
+}
+.galItem:hover .galThumb{ transform: scale(1.03); }
+
+.galBadge{
+  position:absolute;
+  top:8px;
+  left:8px;
+  background: rgba(15,23,42,.85);
+  color:#fff;
+  font-weight:900;
+  font-size:12px;
+  padding:4px 8px;
+  border-radius:999px;
+}
+
+.galCap{
+  margin-top:6px;
+  font-size:11px;
+  color:var(--muted);
+  line-height:1.2;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  max-width:100%;
+}
+
+/* =========================
+   Signature thumbs (Swal)
+========================= */
+.sigGrid{
+  margin-top:10px;
+  display:grid;
+  grid-template-columns: repeat(3, minmax(0,1fr));
+  gap:10px;
+}
+@media (max-width: 720px){
+  .sigGrid{ grid-template-columns: 1fr; }
+}
+
+.sigBoxTitle{
+  font-weight:900;
+  margin-bottom:6px;
+}
+
+.sigThumb{
+  width:100%;
+  max-height:120px;
+  object-fit:contain;
+  border:1px solid var(--line);
+  border-radius:12px;
+  background:#fff;
+}
+
+.sigName{
+  margin-top:6px;
+  font-weight:900;
 }
