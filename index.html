@@ -35,19 +35,15 @@
     <div class="cardHead">
       <div>
         <h2>เข้าสู่ระบบ</h2>
-        <div class="hint">เลือกชื่อและกรอกรหัสผ่าน เพื่อเข้าสู่ระบบ</div>
+        <div class="hint">กรอกรหัสผ่าน</div>
       </div>
-      
     </div>
 
     <div class="grid2">
       <div class="field">
-        <label>ชื่อ (LPS)</label>
-        <select id="loginName"></select>
-      </div>
-      <div class="field">
         <label>รหัสผ่าน</label>
         <input id="loginPass" type="password" placeholder="กรอกรหัสผ่าน" autocomplete="current-password">
+        <div class="hint tiny">หากรหัสถูกต้อง ระบบจะระบุชื่อ</div>
       </div>
     </div>
 
@@ -70,7 +66,6 @@
 
     <hr class="sep">
 
-    <!-- ====== SECTION: ข้อมูลหลัก ====== -->
     <div class="sectionTitle">
       <span class="dot"></span>
       <div>
@@ -87,8 +82,8 @@
 
       <div class="field">
         <label>ชื่อ LPS (ตามผู้เข้าสู่ระบบ)</label>
-        <select id="lps"></select>
-        <div class="hint tiny">* ระบบจะตั้งค่าให้ตรงกับชื่อที่ Login และล็อกไม่ให้แก้</div>
+        <input id="lps" readonly>
+        <div class="hint tiny">* ระบบจะตั้งค่าให้อัตโนมัติ และไม่อนุญาตให้แก้ไข</div>
       </div>
 
       <div class="field">
@@ -99,7 +94,6 @@
 
     <hr class="sep soft">
 
-    <!-- ====== SECTION: สาเหตุ/จำนวน ====== -->
     <div class="sectionTitle">
       <span class="dot"></span>
       <div>
@@ -129,7 +123,6 @@
         <input id="errorCaseQty" inputmode="numeric" placeholder="กรอกตัวเลข" autocomplete="off">
       </div>
 
-      <!-- ✅ เพิ่ม: อธิบาย/บรรยายสาเหตุ (เต็มแถว) -->
       <div class="field fieldFull">
         <label>รายละเอียด/คำอธิบายสาเหตุ (บรรยาย)</label>
         <textarea id="errorDescription" rows="4" placeholder="อธิบายสาเหตุการเบิกสินค้า Error / เหตุการณ์ที่เกิดขึ้น / การแก้ไขเบื้องต้น"></textarea>
@@ -139,7 +132,6 @@
 
     <hr class="sep soft">
 
-    <!-- ====== SECTION: ข้อมูลพนักงาน ====== -->
     <div class="sectionTitle">
       <span class="dot"></span>
       <div>
@@ -158,23 +150,28 @@
         <label>รหัสพนักงาน</label>
         <input id="employeeCode" placeholder="เช่น 123456" autocomplete="off">
       </div>
-    <div class="field">
-  <label>วันที่เบิกสินค้า Error</label>
-  <input id="errorDate" type="date">
-  <div class="hint tiny">* เลือกวันที่เบิกสินค้า</div>
-</div>
+
+      <div class="field">
+        <label>วันที่เบิกสินค้า Error</label>
+        <input id="errorDate" type="date">
+        <div class="hint tiny">* เลือกวันที่เบิกสินค้า</div>
+      </div>
+
       <div class="field">
         <label>กะ</label>
         <select id="shift">
           <option value="">-- เลือก --</option>
-          <option>A</option><option>B</option><option>C</option><option>DH</option><option>NH</option>
+          <option>A</option>
+          <option>B</option>
+          <option>C</option>
+          <option>DH</option>
+          <option>NH</option>
         </select>
       </div>
     </div>
-   
+
     <hr class="sep soft">
 
-    <!-- ====== SECTION: ผู้เกี่ยวข้อง ====== -->
     <div class="sectionTitle">
       <span class="dot"></span>
       <div>
@@ -193,11 +190,13 @@
         <label>OTM (หัวหน้างาน)</label>
         <input id="otm" placeholder="ชื่อ OTM" autocomplete="off">
       </div>
-       <div class="field">
-  <label>ชื่อ-สกุลล่ามแปลภาษา</label>
-  <input id="interpreterName" placeholder="ชื่อ-สกุลล่าม" autocomplete="off">
-  <div class="hint tiny">* กรณีมีการสื่อสารผ่านล่าม</div>
-</div>
+
+      <div class="field">
+        <label>ชื่อ-สกุลล่ามแปลภาษา</label>
+        <input id="interpreterName" placeholder="ชื่อ-สกุลล่าม" autocomplete="off">
+        <div class="hint tiny">* กรณีมีการสื่อสารผ่านล่าม</div>
+      </div>
+
       <div class="field">
         <label>พนง. AUDIT</label>
         <select id="auditName"></select>
@@ -206,7 +205,6 @@
 
     <hr class="sep">
 
-    <!-- ====== SECTION: Upload ====== -->
     <div class="uploadTitle">
       <div>
         <h3>อัปโหลดภาพ</h3>
@@ -223,7 +221,7 @@
     </div>
   </section>
 
-  <!-- FORM UNDER 500 (placeholder) -->
+  <!-- FORM UNDER 500 -->
   <section id="under500Card" class="card hidden">
     <div class="cardHead">
       <div>
@@ -241,7 +239,3 @@
 <script src="./app.js"></script>
 </body>
 </html>
-
-
-
-
