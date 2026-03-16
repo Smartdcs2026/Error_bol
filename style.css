@@ -1,6 +1,6 @@
 :root{
-  --bg:#eef4fb;
-  --bg-soft:#f6f9fe;
+  --bg:#edf3fb;
+  --bg-soft:#f7faff;
   --card:#ffffff;
   --card-2:#f8fbff;
 
@@ -8,9 +8,9 @@
   --text-soft:#334155;
   --muted:#64748b;
 
-  --line:#d7e1ee;
-  --line-strong:#bfcfe3;
-  --line-dark:#9fb6d5;
+  --line:#d9e4f1;
+  --line-strong:#bfd1e6;
+  --line-deep:#9eb7d6;
 
   --primary:#2563eb;
   --primary-hover:#1d4ed8;
@@ -22,7 +22,7 @@
 
   --shadow-sm:0 6px 18px rgba(15,23,42,.05);
   --shadow:0 14px 34px rgba(15,23,42,.08);
-  --shadow-lg:0 18px 44px rgba(15,23,42,.11);
+  --shadow-lg:0 20px 46px rgba(15,23,42,.12);
 
   --r-xs:10px;
   --r-sm:14px;
@@ -39,7 +39,6 @@
 
   --input-h:48px;
   --tap:44px;
-
   --container:1120px;
 }
 
@@ -60,8 +59,8 @@ body{
   font-family:"Kanit",system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
   color:var(--text);
   background:
-    radial-gradient(circle at top left, rgba(37,99,235,.08), transparent 28%),
-    linear-gradient(180deg, #f8fbff 0%, var(--bg) 42%, #eaf1fa 100%);
+    radial-gradient(circle at top left, rgba(37,99,235,.08), transparent 26%),
+    linear-gradient(180deg, #f8fbff 0%, var(--bg) 42%, #e8f0fb 100%);
   line-height:1.5;
 }
 
@@ -102,7 +101,7 @@ a{
   backdrop-filter:blur(14px);
   -webkit-backdrop-filter:blur(14px);
   border-bottom:1px solid rgba(199,211,227,.95);
-  box-shadow:0 4px 16px rgba(15,23,42,.05);
+  box-shadow:0 4px 16px rgba(15,23,42,.04);
 }
 
 .brand{
@@ -164,7 +163,7 @@ a{
   min-height:40px;
   padding:10px 14px;
   border-radius:999px;
-  border:1px solid var(--line);
+  border:1.2px solid var(--line);
   background:#fff;
   color:var(--text);
   font-size:13px;
@@ -296,7 +295,7 @@ h3{
   min-height:34px;
   padding:8px 12px;
   border-radius:999px;
-  border:1px solid var(--line);
+  border:1.2px solid var(--line);
   background:#fff;
   color:var(--text);
   font-size:12px;
@@ -316,13 +315,15 @@ h3{
 }
 
 /* =========================
-   Section frame
+   Section header
 ========================= */
 .sectionTitle{
   display:flex;
   align-items:flex-start;
   gap:10px;
-  margin:6px 0 12px;
+  margin:14px 0 12px;
+  padding:0 0 10px 0;
+  border-bottom:1px solid var(--line);
 }
 
 .sectionTitle .dot{
@@ -349,9 +350,11 @@ h3{
   color:var(--muted);
 }
 
-/* กล่องล้อมแต่ละ section ชัดเจนขึ้น */
-.sectionBox{
-  margin-top:12px;
+/* ทำให้ช่วงข้อมูลต่อท้าย section ดูเป็นกรอบ */
+.sectionTitle + .grid2,
+.sectionTitle + .grid3,
+.sectionTitle + .grid4,
+.sectionTitle + .emailPanel{
   padding:14px;
   border:1.5px solid var(--line);
   border-radius:18px;
@@ -359,14 +362,15 @@ h3{
   box-shadow:var(--shadow-sm);
 }
 
-.sectionBox + .sectionBox{
-  margin-top:14px;
-}
-
-.sectionBox .sectionTitle{
-  margin-top:0;
-  margin-bottom:12px;
-  padding-bottom:10px;
+/* upload title */
+.uploadTitle{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:10px;
+  flex-wrap:wrap;
+  margin:14px 0 10px;
+  padding:0 0 10px 0;
   border-bottom:1px solid var(--line);
 }
 
@@ -426,7 +430,7 @@ textarea::placeholder{
 input:hover,
 select:hover,
 textarea:hover{
-  border-color:var(--line-dark);
+  border-color:var(--line-deep);
 }
 
 input:focus,
@@ -442,6 +446,10 @@ input[readonly]{
   color:#334155;
 }
 
+.fieldFull{
+  grid-column:1 / -1;
+}
+
 /* =========================
    Grid
 ========================= */
@@ -450,16 +458,31 @@ input[readonly]{
 .grid4{
   display:grid;
   gap:12px;
-}
-
-.grid2,
-.grid3,
-.grid4{
   grid-template-columns:1fr;
 }
 
-.fieldFull{
-  grid-column:1 / -1;
+/* =========================
+   Ref split input
+========================= */
+.refRow{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) 24px 92px;
+  gap:8px;
+  align-items:center;
+}
+
+.refDash{
+  text-align:center;
+  font-weight:900;
+  color:var(--muted);
+  font-size:18px;
+}
+
+#refYear{
+  text-align:center;
+  font-weight:900;
+  background:#f8fbff;
+  color:#334155;
 }
 
 /* =========================
@@ -522,7 +545,7 @@ input[readonly]{
 
 .btn.ghost:hover{
   background:#f8fbff;
-  border-color:var(--line-dark);
+  border-color:var(--line-deep);
 }
 
 .actions{
@@ -530,10 +553,14 @@ input[readonly]{
   flex-direction:column;
   gap:10px;
   margin-top:16px;
+  padding-top:16px;
+  border-top:1px solid var(--line);
 }
 
 .actions.left{
   align-items:flex-start;
+  border-top:none;
+  padding-top:0;
 }
 
 .actions .btn{
@@ -541,40 +568,8 @@ input[readonly]{
 }
 
 /* =========================
-   Ref split input
-========================= */
-.refRow{
-  display:grid;
-  grid-template-columns:minmax(0,1fr) 24px 92px;
-  gap:8px;
-  align-items:center;
-}
-
-.refDash{
-  text-align:center;
-  font-weight:900;
-  color:var(--muted);
-  font-size:18px;
-}
-
-#refYear{
-  text-align:center;
-  font-weight:900;
-  background:#f8fbff;
-  color:#334155;
-}
-
-/* =========================
    Upload
 ========================= */
-.uploadTitle{
-  display:flex;
-  align-items:flex-start;
-  justify-content:space-between;
-  gap:10px;
-  flex-wrap:wrap;
-}
-
 .uploadGrid{
   display:grid;
   grid-template-columns:1fr;
@@ -600,7 +595,7 @@ input[readonly]{
 .uploadBox input[type="file"]{
   padding:10px 12px;
   background:#f9fbff;
-  border:1.2px dashed var(--line-dark);
+  border:1.2px dashed var(--line-deep);
 }
 
 .previewImg{
@@ -624,7 +619,7 @@ input[readonly]{
    Email Selector
 ========================= */
 .emailPanel{
-  margin-top:12px;
+  margin-top:0;
   padding:14px;
   border:1.5px solid var(--line);
   border-radius:18px;
@@ -829,10 +824,10 @@ input[readonly]{
 }
 
 /* =========================
-   SweetAlert2 - New cleaner layout
+   SweetAlert2
 ========================= */
 .swal2-popup{
-  width:min(94vw, 880px) !important;
+  width:min(95vw, 920px) !important;
   border-radius:22px !important;
   border:1.5px solid var(--line) !important;
   background:linear-gradient(180deg,#ffffff 0%, #fbfdff 100%) !important;
@@ -890,7 +885,7 @@ input[readonly]{
   border-color:var(--primary) transparent var(--primary) transparent !important;
 }
 
-/* Summary layout */
+/* New summary layout */
 .swalSummary{
   display:flex;
   flex-direction:column;
@@ -972,7 +967,6 @@ input[readonly]{
   flex:0 0 auto;
 }
 
-/* แก้ Sweetalert ให้ข้อมูลไม่เป็นแถวยาว */
 .swalKvGrid{
   display:grid;
   grid-template-columns:1fr;
@@ -1090,7 +1084,7 @@ input[readonly]{
   font-weight:900;
 }
 
-/* Loading popup */
+/* loading */
 .swal2-popup.swalLoadingPopup{
   width:min(90vw, 360px) !important;
   padding:22px 18px 18px !important;
@@ -1104,7 +1098,7 @@ input[readonly]{
    Signature Modal
 ========================= */
 .sigSwalPopup{
-  width:min(94vw, 760px) !important;
+  width:min(95vw, 760px) !important;
   border-radius:22px !important;
   border:1.5px solid var(--line) !important;
   background:linear-gradient(180deg,#ffffff 0%, #fbfdff 100%) !important;
@@ -1292,7 +1286,7 @@ input[readonly]{
 /* =========================
    Responsive
 ========================= */
-@media (min-width: 520px){
+@media (min-width:520px){
   .grid2{
     grid-template-columns:repeat(2, minmax(0,1fr));
   }
@@ -1305,16 +1299,12 @@ input[readonly]{
     grid-template-columns:repeat(2, minmax(0,1fr));
   }
 
-  .emailSelector{
-    grid-template-columns:repeat(2, minmax(0,1fr));
-  }
-
   .swalKvGrid{
     grid-template-columns:repeat(2, minmax(0,1fr));
   }
 }
 
-@media (min-width: 760px){
+@media (min-width:760px){
   .container{
     padding:18px 16px 34px;
   }
@@ -1327,15 +1317,15 @@ input[readonly]{
     grid-template-columns:repeat(3, minmax(0,1fr));
   }
 
+  .emailSelector{
+    grid-template-columns:repeat(2, minmax(0,1fr));
+  }
+
   .sigGrid{
     grid-template-columns:repeat(3, minmax(0,1fr));
   }
 
   .galGrid{
-    grid-template-columns:repeat(3, minmax(0,1fr));
-  }
-
-  .emailSelector{
     grid-template-columns:repeat(3, minmax(0,1fr));
   }
 
@@ -1351,7 +1341,7 @@ input[readonly]{
   }
 }
 
-@media (min-width: 960px){
+@media (min-width:960px){
   .topbar{
     padding:14px 22px;
   }
@@ -1368,12 +1358,16 @@ input[readonly]{
     padding:22px;
   }
 
+  .emailSelector{
+    grid-template-columns:repeat(3, minmax(0,1fr));
+  }
+
   .galGrid{
     grid-template-columns:repeat(4, minmax(0,1fr));
   }
 }
 
-@media (max-width: 720px){
+@media (max-width:720px){
   .swal2-popup{
     width:min(95vw, 95vw) !important;
     padding:16px 12px 14px !important;
@@ -1436,14 +1430,14 @@ input[readonly]{
   }
 }
 
-@media (max-width: 520px){
+@media (max-width:520px){
   .refRow{
     grid-template-columns:minmax(0,1fr) 20px 84px;
     gap:6px;
   }
 }
 
-@media (max-width: 420px){
+@media (max-width:420px){
   .topbar{
     align-items:flex-start;
     flex-direction:column;
