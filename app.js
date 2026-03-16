@@ -960,7 +960,7 @@ function renderGalleryHtml(imageIds = []) {
           <img class="galThumb" src="${url}" alt="รูปที่ ${i + 1}" loading="lazy">
           <div class="galBadge">${i + 1}</div>
         </div>
-        <div class="galCap">ID: ${escapeHtml(id)}</div>
+        <div class="galCap">รูปภาพแนบ ${i + 1}</div>
       </button>
     `;
   }).join("");
@@ -983,15 +983,17 @@ function bindGalleryClickInSwal() {
       const url = btn.getAttribute("data-url");
       const id = btn.getAttribute("data-id") || "";
       Swal.fire({
-        title: "ดูรูป",
-        html: `
-          <div style="text-align:left;font-weight:900;margin-bottom:8px">ID: ${escapeHtml(id)}</div>
-          <img src="${url}"
-               style="width:100%;max-height:70vh;object-fit:contain;border-radius:14px;border:1px solid #d7ddea;background:#fff" />
-        `,
-        confirmButtonText: "ปิด",
-        confirmButtonColor: "#2563eb",
-      });
+  title: "ดูรูปภาพแนบ",
+  html: `
+    <div style="text-align:center">
+      <img src="${url}"
+           style="width:100%;max-height:72vh;object-fit:contain;border-radius:16px;border:1px solid #d7ddea;background:#fff" />
+    </div>
+  `,
+  confirmButtonText: "ปิด",
+  confirmButtonColor: "#2563eb",
+  width: 900
+});
     });
   });
 }
@@ -1314,44 +1316,105 @@ function validatePayload(p) {
 async function previewSummary() {
   const p = collectPayload();
   const err = validatePayload(p);
-  if (err) return Swal.fire({ icon: "warning", title: "ข้อมูลไม่ครบ", text: err });
+  if (err) {
+    return Swal.fire({
+      icon: "warning",
+      title: "ข้อมูลไม่ครบ",
+      text: err,
+      confirmButtonText: "ตกลง"
+    });
+  }
 
   const fileCount = countSelectedFiles();
+
   const html = `
-    <div style="text-align:left;line-height:1.7">
-      <div><b>Ref:No.</b> ${escapeHtml(p.refNo)}</div>
-      <div><b>LPS</b> ${escapeHtml(AUTH.name || "-")}</div>
-      <div><b>Label CID</b> ${escapeHtml(p.labelCid)}</div>
-
-      <div><b>สาเหตุ</b> ${escapeHtml(p.errorReason === "อื่นๆ" ? ("อื่นๆ: " + p.errorReasonOther) : p.errorReason)}</div>
-
-      <div style="margin-top:8px">
-        <b>รายละเอียด/คำอธิบาย:</b><br>
-        ${escapeHtml(p.errorDescription || "-").replaceAll("\n","<br>")}
+    <div class="swalSummary">
+      <div class="swalHero">
+        <div class="swalHeroTitle">สรุปข้อมูลก่อนบันทึก</div>
+        <div class="swalHeroSub">ตรวจสอบความถูกต้องอีกครั้งก่อนดำเนินการต่อ</div>
+        <div class="swalPillRow">
+          <div class="swalPill primary">LPS: ${escapeHtml(AUTH.name || "-")}</div>
+          <div class="swalPill">รูปแนบ ${fileCount} รูป</div>
+          <div class="swalPill">วันที่เบิก ${escapeHtml(p.errorDate || "-")}</div>
+        </div>
       </div>
 
-      <div style="margin-top:8px"><b>Item</b> ${escapeHtml(p.item)}</div>
-      <div><b>จำนวน ErrorCase</b> ${escapeHtml(p.errorCaseQty)}</div>
+      <div class="swalSection">
+        <div class="swalSectionTitle">ข้อมูลหลัก</div>
+        <div class="swalKvGrid">
+          <div class="swalKv">
+            <div class="swalKvLabel">Ref:No.</div>
+            <div class="swalKvValue">${escapeHtml(p.refNo)}</div>
+          </div>
+          <div class="swalKv">
+            <div class="swalKvLabel">Label CID</div>
+            <div class="swalKvValue">${escapeHtml(p.labelCid)}</div>
+          </div>
+          <div class="swalKv">
+            <div class="swalKvLabel">สาเหตุ Error</div>
+            <div class="swalKvValue">${escapeHtml(p.errorReason === "อื่นๆ" ? ("อื่นๆ: " + p.errorReasonOther) : p.errorReason)}</div>
+          </div>
+          <div class="swalKv">
+            <div class="swalKvLabel">กะ</div>
+            <div class="swalKvValue">${escapeHtml(p.shift)}</div>
+          </div>
+          <div class="swalKv">
+            <div class="swalKvLabel">Item</div>
+            <div class="swalKvValue">${escapeHtml(p.item)}</div>
+          </div>
+          <div class="swalKv">
+            <div class="swalKvLabel">จำนวน ErrorCase</div>
+            <div class="swalKvValue">${escapeHtml(p.errorCaseQty)}</div>
+          </div>
+        </div>
+      </div>
 
-      <div style="margin-top:8px"><b>พนักงาน</b> ${escapeHtml(p.employeeName)} (${escapeHtml(p.employeeCode)})</div>
-      <div><b>วันที่เบิกสินค้า Error</b> ${escapeHtml(p.errorDate)}</div>
-      <div><b>กะ</b> ${escapeHtml(p.shift)}</div>
+      <div class="swalSection">
+        <div class="swalSectionTitle">รายละเอียดเหตุการณ์</div>
+        <div class="swalDesc">
+          <div class="swalDescLabel">คำอธิบาย / รายละเอียด</div>
+          <div class="swalDescValue">${escapeHtml(p.errorDescription || "-").replaceAll("\n","<br>")}</div>
+        </div>
+      </div>
 
-      <div style="margin-top:8px"><b>OSM</b> ${escapeHtml(p.osm)}</div>
-      <div><b>OTM</b> ${escapeHtml(p.otm)}</div>
-      <div><b>ล่าม:</b> ${escapeHtml(p.interpreterName || "-")}</div>
-      <div><b>AUDIT</b> ${escapeHtml(p.auditName)}</div>
-
-      <div style="margin-top:8px"><b>จำนวนรูปที่เลือก</b> ${fileCount}</div>
+      <div class="swalSection">
+        <div class="swalSectionTitle">ข้อมูลพนักงานและผู้เกี่ยวข้อง</div>
+        <div class="swalKvGrid">
+          <div class="swalKv">
+            <div class="swalKvLabel">ชื่อพนักงาน</div>
+            <div class="swalKvValue">${escapeHtml(p.employeeName)}</div>
+          </div>
+          <div class="swalKv">
+            <div class="swalKvLabel">รหัสพนักงาน</div>
+            <div class="swalKvValue">${escapeHtml(p.employeeCode)}</div>
+          </div>
+          <div class="swalKv">
+            <div class="swalKvLabel">OSM</div>
+            <div class="swalKvValue">${escapeHtml(p.osm)}</div>
+          </div>
+          <div class="swalKv">
+            <div class="swalKvLabel">OTM</div>
+            <div class="swalKvValue">${escapeHtml(p.otm)}</div>
+          </div>
+          <div class="swalKv">
+            <div class="swalKvLabel">ล่ามแปลภาษา</div>
+            <div class="swalKvValue">${escapeHtml(p.interpreterName || "-")}</div>
+          </div>
+          <div class="swalKv">
+            <div class="swalKvLabel">AUDIT</div>
+            <div class="swalKvValue">${escapeHtml(p.auditName)}</div>
+          </div>
+        </div>
+      </div>
     </div>
   `;
 
   await Swal.fire({
-    icon: "info",
-    title: "สรุปข้อมูล",
+    title: "ดูสรุปข้อมูล",
     html,
     confirmButtonText: "ตกลง",
-    confirmButtonColor: "#2563eb"
+    confirmButtonColor: "#2563eb",
+    width: 860
   });
 }
 
@@ -1390,10 +1453,15 @@ async function submitForm() {
   };
 
   Swal.fire({
-    title: "กำลังบันทึก...",
-    allowOutsideClick: false,
-    didOpen: () => Swal.showLoading()
-  });
+  title: "กำลังบันทึกข้อมูล",
+  html: `<div class="swalNote">กรุณารอสักครู่ ระบบกำลังอัปโหลดรูปภาพและสร้างเอกสาร</div>`,
+  allowOutsideClick: false,
+  allowEscapeKey: false,
+  customClass: {
+    popup: "swalLoadingPopup"
+  },
+  didOpen: () => Swal.showLoading()
+});
 
   let json;
   try {
@@ -1449,65 +1517,100 @@ async function submitForm() {
     : `<div style="margin-top:10px;color:#dc2626;font-weight:900">ไม่พบลิงก์ PDF</div>`;
 
   await Swal.fire({
-    icon: "success",
-    title: "บันทึกสำเร็จ",
-    confirmButtonText: "ตกลง",
-    confirmButtonColor: "#2563eb",
-    width: 920,
-    html: `
-      <div style="text-align:left;font-weight:700;line-height:1.7">
-        <div style="font-size:16px;font-weight:900;margin-bottom:6px">รายงาน ERROR</div>
-
-        <div><b>วันที่เวลา:</b> ${escapeHtml(json.timestamp || "-")}</div>
-        <div><b>Ref:No.:</b> ${escapeHtml(p.refNo)}</div>
-        <div><b>LPS:</b> ${escapeHtml(AUTH.name || json.lpsName || "-")}</div>
-        <div><b>Label CID:</b> ${escapeHtml(p.labelCid)}</div>
-        <div><b>สาเหตุ:</b> ${escapeHtml(p.errorReason === "อื่นๆ" ? ("อื่นๆ: " + p.errorReasonOther) : p.errorReason)}</div>
-
-        <div style="margin-top:8px">
-          <b>รายละเอียด/คำอธิบาย:</b><br>
-          ${escapeHtml(p.errorDescription || "-").replaceAll("\n","<br>")}
+  icon: "success",
+  title: "บันทึกสำเร็จ",
+  confirmButtonText: "ปิดหน้าต่าง",
+  confirmButtonColor: "#2563eb",
+  width: 920,
+  html: `
+    <div class="swalSummary">
+      <div class="swalHero">
+        <div class="swalHeroTitle">บันทึกรายการเรียบร้อยแล้ว</div>
+        <div class="swalHeroSub">ระบบได้จัดเก็บข้อมูล รูปภาพ และไฟล์ PDF เรียบร้อย</div>
+        <div class="swalPillRow">
+          <div class="swalPill primary">LPS: ${escapeHtml(AUTH.name || json.lpsName || "-")}</div>
+          <div class="swalPill">Ref: ${escapeHtml(p.refNo)}</div>
+          <div class="swalPill">รูปแนบ ${(json.imageIds || []).length} รูป</div>
         </div>
+      </div>
 
-        <div style="margin-top:8px"><b>Item:</b> ${escapeHtml(p.item)}</div>
-        <div><b>จำนวน ErrorCase:</b> ${escapeHtml(p.errorCaseQty)}</div>
+      <div class="swalSection">
+        <div class="swalSectionTitle">ข้อมูลสรุป</div>
+        <div class="swalKvGrid">
+          <div class="swalKv">
+            <div class="swalKvLabel">วันที่เวลา</div>
+            <div class="swalKvValue">${escapeHtml(json.timestamp || "-")}</div>
+          </div>
+          <div class="swalKv">
+            <div class="swalKvLabel">Label CID</div>
+            <div class="swalKvValue">${escapeHtml(p.labelCid)}</div>
+          </div>
+          <div class="swalKv">
+            <div class="swalKvLabel">สาเหตุ</div>
+            <div class="swalKvValue">${escapeHtml(p.errorReason === "อื่นๆ" ? ("อื่นๆ: " + p.errorReasonOther) : p.errorReason)}</div>
+          </div>
+          <div class="swalKv">
+            <div class="swalKvLabel">กะ</div>
+            <div class="swalKvValue">${escapeHtml(p.shift)}</div>
+          </div>
+          <div class="swalKv">
+            <div class="swalKvLabel">Item</div>
+            <div class="swalKvValue">${escapeHtml(p.item)}</div>
+          </div>
+          <div class="swalKv">
+            <div class="swalKvLabel">จำนวน ErrorCase</div>
+            <div class="swalKvValue">${escapeHtml(p.errorCaseQty)}</div>
+          </div>
+        </div>
+      </div>
 
-        <div style="margin-top:8px"><b>พนักงาน:</b> ${escapeHtml(p.employeeName)} (${escapeHtml(p.employeeCode)})</div>
-        <div><b>วันที่เบิกสินค้า Error:</b> ${escapeHtml(p.errorDate)}</div>
-        <div><b>กะ:</b> ${escapeHtml(p.shift)}</div>
-        <div><b>OSM:</b> ${escapeHtml(p.osm)}</div>
-        <div><b>OTM (หัวหน้างาน):</b> ${escapeHtml(p.otm)}</div>
-        <div><b>ล่าม:</b> ${escapeHtml(p.interpreterName || "-")}</div>
-        <div><b>AUDIT:</b> ${escapeHtml(p.auditName)}</div>
+      <div class="swalSection">
+        <div class="swalSectionTitle">รายละเอียดเหตุการณ์</div>
+        <div class="swalDesc">
+          <div class="swalDescLabel">คำอธิบาย / รายละเอียด</div>
+          <div class="swalDescValue">${escapeHtml(p.errorDescription || "-").replaceAll("\n","<br>")}</div>
+        </div>
+      </div>
 
+      <div class="swalSection">
+        <div class="swalSectionTitle">ผู้เกี่ยวข้องและลายเซ็น</div>
         <div class="sigGrid">
           <div>
-            <div class="sigBoxTitle">ลายเซ็นหัวหน้างาน</div>
+            <div class="sigBoxTitle">หัวหน้างาน</div>
             ${supSignThumb}
-            <div class="sigName">ลงชื่อ: ${escapeHtml(p.otm || "-")}</div>
+            <div class="sigName">${escapeHtml(p.otm || "-")}</div>
           </div>
 
           <div>
-            <div class="sigBoxTitle">ลายเซ็นพนักงาน</div>
+            <div class="sigBoxTitle">พนักงาน</div>
             ${empSignThumb}
-            <div class="sigName">ลงชื่อ: ${escapeHtml(p.employeeName || "-")}</div>
+            <div class="sigName">${escapeHtml(p.employeeName || "-")}</div>
           </div>
 
           <div>
-            <div class="sigBoxTitle">ลายเซ็นล่ามแปลภาษา</div>
+            <div class="sigBoxTitle">ล่ามแปลภาษา</div>
             ${intSignThumb}
-            <div class="sigName">ลงชื่อ: ${escapeHtml(p.interpreterName || "-")}</div>
+            <div class="sigName">${escapeHtml(p.interpreterName || "-")}</div>
           </div>
         </div>
-
-        <div style="margin-top:10px"><b>จำนวนรูป:</b> ${(json.imageIds || []).length}</div>
-        ${galleryHtml}
-
-        ${pdfBtn}
       </div>
-    `,
-    didOpen: () => bindGalleryClickInSwal()
-  });
+
+      <div class="swalSection">
+        <div class="swalSectionTitle">รูปภาพแนบ</div>
+        ${galleryHtml || `<div class="swalNote">ไม่มีรูปภาพแนบ</div>`}
+      </div>
+
+      ${json.pdfUrl ? `
+        <div class="swalActionLink">
+          <a href="${json.pdfUrl}" target="_blank">เปิดไฟล์ PDF รายงาน</a>
+        </div>
+      ` : `
+        <div class="swalNote" style="color:#dc2626;font-weight:900">ไม่พบลิงก์ PDF</div>
+      `}
+    </div>
+  `,
+  didOpen: () => bindGalleryClickInSwal()
+});
 
   resetForm();
 }
