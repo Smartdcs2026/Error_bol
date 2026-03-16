@@ -921,7 +921,7 @@
 /** ==========================
  *  CONFIG
  *  ========================== */
-const API_BASE = "https://bol.somchaibutphon.workers.dev";
+const API_BASE = "https://bol.somchaibutphon.workers.dev/";
 /** ========================== */
 
 let OPTIONS = { errorList: [], auditList: [] };
