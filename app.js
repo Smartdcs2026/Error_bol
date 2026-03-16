@@ -1769,3 +1769,58 @@ function alnumUpperOnly(el) {
   el.addEventListener("paste", () => setTimeout(sanitize, 0));
   el.addEventListener("blur", sanitize);
 }
+
+
+
+
+async function onLogin() {
+  safeSetLoginMsg("");
+  const pass = ($("loginPass")?.value || "").trim();
+
+  if (!pass) {
+    safeSetLoginMsg("กรุณากรอกรหัสผ่าน");
+    return;
+  }
+
+  let json;
+  try {
+    const url = apiUrl("/auth");
+    console.log("LOGIN URL:", url);
+
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ pass })
+    });
+
+    const text = await res.text();
+    console.log("LOGIN STATUS:", res.status);
+    console.log("LOGIN RESPONSE:", text);
+
+    try {
+      json = JSON.parse(text);
+    } catch (_) {
+      safeSetLoginMsg("Backend ตอบกลับไม่ใช่ JSON");
+      return;
+    }
+
+    if (!res.ok || !json.ok) {
+      safeSetLoginMsg(json.error || "เข้าสู่ระบบไม่สำเร็จ");
+      return;
+    }
+  } catch (err) {
+    console.error("LOGIN FETCH ERROR:", err);
+    safeSetLoginMsg("เชื่อมต่อระบบไม่ได้ (ตรวจสอบ Worker/อินเทอร์เน็ต)");
+    return;
+  }
+
+  const lpsName = String(json.name || "").trim();
+  if (!lpsName) {
+    safeSetLoginMsg("ไม่พบชื่อผู้ใช้งานจากระบบ");
+    return;
+  }
+
+  AUTH = { name: lpsName, pass };
+  setLpsFromLogin(lpsName);
+  setActiveTab("error");
+}
