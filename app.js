@@ -2861,6 +2861,7 @@ function enableSignature(canvas) {
   ctx.lineWidth = 3;
   ctx.lineCap = "round";
   ctx.lineJoin = "round";
+  ctx.strokeStyle = "#1d4ed8"; // ปากกาสีน้ำเงิน
 
   let drawing = false;
   let last = null;
