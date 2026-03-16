@@ -2814,7 +2814,19 @@ async function signatureModal(title, subtitle) {
         ></canvas>
       </div>
       <div style="display:flex;gap:10px;margin-top:10px;justify-content:flex-end">
-        <button type="button" id="${clearId}" class="swal2-styled" style="background:#0f172a">ล้าง</button>
+        <button
+  type="button"
+  id="${clearId}"
+  class="swal2-styled"
+  style="
+    background:#ffffff;
+    color:#0f172a;
+    border:1px solid #cbd5e1;
+    font-weight:900;
+  "
+>
+  ล้าง
+</button>
       </div>
     </div>
   `;
@@ -2853,7 +2865,6 @@ async function signatureModal(title, subtitle) {
   if (!res.isConfirmed) return { ok: false };
   return { ok: true, base64: res.value };
 }
-
 function enableSignature(canvas) {
   if (!canvas) return;
   const ctx = canvas.getContext("2d");
