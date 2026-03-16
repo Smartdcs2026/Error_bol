@@ -1114,3 +1114,30 @@ input[readonly]{
     scroll-behavior:auto !important;
   }
 }
+.refRow{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) 24px 92px;
+  gap:8px;
+  align-items:center;
+}
+
+.refDash{
+  text-align:center;
+  font-weight:900;
+  color:var(--muted);
+  font-size:18px;
+}
+
+#refYear{
+  text-align:center;
+  font-weight:900;
+  background:#f8fbff;
+  color:#334155;
+}
+
+@media (max-width: 520px){
+  .refRow{
+    grid-template-columns:minmax(0,1fr) 20px 86px;
+    gap:6px;
+  }
+}
