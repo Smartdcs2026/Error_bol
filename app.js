@@ -2876,7 +2876,7 @@ function enableSignature(canvas) {
   if (!canvas) return;
   const ctx = canvas.getContext("2d");
 
-  ctx.lineWidth = 3;
+  ctx.lineWidth = 2.8;
   ctx.lineCap = "round";
   ctx.lineJoin = "round";
   ctx.strokeStyle = "#1d4ed8"; // ปากกาสีน้ำเงิน
