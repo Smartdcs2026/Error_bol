@@ -2823,6 +2823,13 @@ async function signatureModal(title, subtitle) {
           type="button"
           id="${clearId}"
           class="sigActionBtn sigActionBtn-clear"
+          style="
+            background:#ffffff !important;
+            color:#0f172a !important;
+            border:1px solid #cbd5e1 !important;
+            box-shadow:0 6px 18px rgba(15,23,42,.05) !important;
+            font-weight:900 !important;
+          "
         >
           ล้างลายเซ็น
         </button>
