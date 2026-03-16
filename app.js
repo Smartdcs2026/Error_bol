@@ -1935,7 +1935,7 @@
  *  - รองรับ upload รูปแบบเพิ่มช่องได้ + ลบช่อง + จำกัดจำนวนรูป + validate type
  *  - รองรับลายเซ็น 3 จุด (หัวหน้างาน/พนักงาน/ล่าม)
  *  - แสดงผลสำเร็จพร้อม Gallery + ปุ่มเปิด PDF
- *  - Ref:No. กรอกเฉพาะตัวเลข ระบบเติม -ปี พ.ศ. ให้อัตโนมัติ
+ *  - Ref:No. แบบแยกช่อง เลขรัน + ปี พ.ศ. เพื่อไม่ให้ค่ามั่ว
  *  ========================== */
 
 /** ==========================
@@ -1961,50 +1961,32 @@ function apiUrl(path) {
 }
 
 /** ==========================
- *  Ref Helper
+ *  Ref Helper (split input)
+ *  ใช้คู่กับ index.html แบบ:
+ *  - input id="refRunning"
+ *  - input id="refYear" readonly
  *  ========================== */
 function getCurrentBuddhistYear() {
-  return new Date().getFullYear() + 543;
+  return String(new Date().getFullYear() + 543);
 }
 
-function buildRefNo(value) {
-  const raw = String(value || "").trim();
-  if (!raw) return "";
+function bindRefInputs() {
+  const runningEl = $("refRunning");
+  const yearEl = $("refYear");
+  if (!runningEl || !yearEl) return;
 
-  const year = String(getCurrentBuddhistYear());
-  const fullMatch = raw.match(/^(\d+)-(\d{4})$/);
-  if (fullMatch) {
-    return `${fullMatch[1]}-${fullMatch[2]}`;
-  }
+  yearEl.value = getCurrentBuddhistYear();
 
-  let digits = raw.replace(/[^\d]/g, "");
-  if (!digits) return "";
-
-  if (digits.endsWith(year) && digits.length > year.length) {
-    digits = digits.slice(0, -year.length);
-  }
-
-  return digits ? `${digits}-${year}` : "";
+  runningEl.addEventListener("input", () => {
+    runningEl.value = String(runningEl.value || "").replace(/[^\d]/g, "");
+  });
 }
 
-function bindRefAutoFormat() {
-  const el = $("refNo");
-  if (!el) return;
-
-  el.addEventListener("input", () => {
-    const year = String(getCurrentBuddhistYear());
-    let digits = String(el.value || "").replace(/[^\d]/g, "");
-
-    if (digits.endsWith(year) && digits.length > year.length) {
-      digits = digits.slice(0, -year.length);
-    }
-
-    el.value = digits ? `${digits}-${year}` : "";
-  });
-
-  el.addEventListener("blur", () => {
-    el.value = buildRefNo(el.value);
-  });
+function getRefNoValue() {
+  const running = String($("refRunning")?.value || "").replace(/[^\d]/g, "").trim();
+  const year = String($("refYear")?.value || "").trim() || getCurrentBuddhistYear();
+  if (!running) return "";
+  return `${running}-${year}`;
 }
 
 /** ==========================
@@ -2085,7 +2067,7 @@ async function init() {
   bindTabs();
   buildInitialUploadFields();
   bindEvents();
-  bindRefAutoFormat();
+  bindRefInputs();
 
   try {
     await loadOptions();
@@ -2357,7 +2339,7 @@ function addUploadField(label, opts = {}) {
  *  ========================== */
 function collectPayload() {
   return {
-    refNo: buildRefNo(($("refNo")?.value || "").trim()),
+    refNo: getRefNoValue(),
     labelCid: ($("labelCid")?.value || "").trim(),
     errorReason: ($("errorReason")?.value || "").trim(),
     errorReasonOther: ($("errorReasonOther")?.value || "").trim(),
@@ -2396,6 +2378,8 @@ function validatePayload(p) {
     if (!String(p[k] || "").trim()) return `กรุณากรอก ${n}`;
   }
 
+  const refRunning = String($("refRunning")?.value || "").trim();
+  if (!/^\d+$/.test(refRunning)) return "กรุณากรอกเลข Ref เป็นตัวเลขเท่านั้น";
   if (!/^\d+-\d{4}$/.test(p.refNo)) return "Ref:No. ไม่ถูกต้อง";
 
   if (p.errorReason === "อื่นๆ" && !p.errorReasonOther.trim()) {
@@ -2922,25 +2906,12 @@ function enableSignature(canvas) {
   canvas.addEventListener("touchend", up, { passive: false });
 }
 
-function isCanvasBlank(canvas) {
-  if (!canvas) return true;
-
-  const ctx = canvas.getContext("2d");
-  const { width, height } = canvas;
-  const data = ctx.getImageData(0, 0, width, height).data;
-
-  for (let i = 3; i < data.length; i += 4) {
-    if (data[i] !== 0) return false;
-  }
-  return true;
-}
-
 /** ==========================
  *  Reset
  *  ========================== */
 function resetForm() {
   const ids = [
-    "refNo",
+    "refRunning",
     "labelCid",
     "errorReasonOther",
     "errorDescription",
@@ -2955,19 +2926,21 @@ function resetForm() {
   ];
 
   ids.forEach((id) => {
-    const el = document.getElementById(id);
+    const el = $(id);
     if (el) el.value = "";
   });
 
-  const er = document.getElementById("errorReason");
-  const audit = document.getElementById("auditName");
-  const shift = document.getElementById("shift");
+  const er = $("errorReason");
+  const audit = $("auditName");
+  const shift = $("shift");
+  const refYear = $("refYear");
 
   if (er) er.value = "";
   if (audit) audit.value = "";
   if (shift) shift.value = "";
+  if (refYear) refYear.value = getCurrentBuddhistYear();
 
-  document.getElementById("wrapErrorOther")?.classList.add("hidden");
+  $("wrapErrorOther")?.classList.add("hidden");
 
   document.querySelectorAll(".previewImg").forEach((img) => {
     if (img.dataset && img.dataset.objectUrl) {
@@ -2986,6 +2959,18 @@ function resetForm() {
 /** ==========================
  *  Utils
  *  ========================== */
+function isCanvasBlank(canvas) {
+  if (!canvas) return true;
+  const ctx = canvas.getContext("2d");
+  const { width, height } = canvas;
+  const data = ctx.getImageData(0, 0, width, height).data;
+
+  for (let i = 3; i < data.length; i += 4) {
+    if (data[i] !== 0) return false;
+  }
+  return true;
+}
+
 function escapeHtml(s) {
   return String(s ?? "")
     .replaceAll("&", "&amp;")
