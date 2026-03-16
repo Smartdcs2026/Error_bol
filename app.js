@@ -2803,51 +2803,58 @@ async function signatureModal(title, subtitle) {
   const clearId = canvasId + "_clear";
 
   const html = `
-    <div style="text-align:left">
-      <div style="font-weight:900;margin-bottom:6px">${escapeHtml(subtitle)}</div>
-      <div style="border:1px solid #d7ddea;border-radius:12px;overflow:hidden">
+    <div class="sigModalWrap">
+      <div class="sigModalHead">
+        <div class="sigModalSub">${escapeHtml(subtitle || "")}</div>
+        <div class="sigModalTip">กรุณาเซ็นภายในกรอบด้านล่าง โดยใช้เมาส์หรือนิ้วลากเขียนลายเซ็น</div>
+      </div>
+
+      <div class="sigCanvasCard">
         <canvas
           id="${canvasId}"
           width="800"
           height="260"
-          style="width:100%;height:220px;background:#fff;touch-action:none"
+          class="sigCanvasElm"
         ></canvas>
       </div>
-      <div style="display:flex;gap:10px;margin-top:10px;justify-content:flex-end">
+
+      <div class="sigModalFoot">
         <button
-  type="button"
-  id="${clearId}"
-  class="swal2-styled"
-  style="
-    background:#ffffff;
-    color:#0f172a;
-    border:1px solid #cbd5e1;
-    font-weight:900;
-  "
->
-  ล้าง
-</button>
+          type="button"
+          id="${clearId}"
+          class="sigActionBtn sigActionBtn-clear"
+        >
+          ล้างลายเซ็น
+        </button>
       </div>
     </div>
   `;
 
   const res = await Swal.fire({
-    title,
+    title: escapeHtml(title || "ลายเซ็น"),
     html,
     showCancelButton: true,
     confirmButtonText: "ยืนยันลายเซ็น",
     cancelButtonText: "ยกเลิก",
-    confirmButtonColor: "#2563eb",
+    buttonsStyling: false,
+    customClass: {
+      popup: "sigSwalPopup",
+      title: "sigSwalTitle",
+      htmlContainer: "sigSwalHtml",
+      actions: "sigSwalActions",
+      confirmButton: "sigBtn sigBtn-confirm",
+      cancelButton: "sigBtn sigBtn-cancel"
+    },
     didOpen: () => {
       const canvas = document.getElementById(canvasId);
       const btnClear = document.getElementById(clearId);
 
       enableSignature(canvas);
 
-      btnClear.onclick = () => {
+      btnClear?.addEventListener("click", () => {
         const ctx = canvas.getContext("2d");
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-      };
+      });
     },
     preConfirm: () => {
       const canvas = document.getElementById(canvasId);
