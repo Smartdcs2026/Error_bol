@@ -1,11 +1,11 @@
 /** ==========================
- *  CONFIG
+ *  FRONTEND APP
+ *  app.js
  *  ========================== */
 const API_BASE = "https://bol.somchaibutphon.workers.dev";
 const ITEM_NOT_FOUND_TEXT = "-ไม่พบรายการสินค้า-";
 const ITEM_LOOKUP_MIN_LEN = 3;
-const ITEM_LOOKUP_DEBOUNCE_MS = 180;
-const ITEM_LOOKUP_TIMEOUT_MS = 8000;
+const ITEM_LOOKUP_DEBOUNCE_MS = 420;
 
 /** ==========================
  *  STATE
@@ -23,8 +23,6 @@ let ITEM_LOOKUP_STATE = {
 
 const ITEM_LOCAL_CACHE = new Map();
 let itemLookupTimer = null;
-let itemLookupController = null;
-let itemLookupSeq = 0;
 
 const $ = (id) => document.getElementById(id);
 
@@ -386,20 +384,18 @@ function onItemInputLookup() {
 
   itemLookupTimer = setTimeout(() => {
     lookupItemRealtime(item).catch((err) => {
-      if (err?.name === "AbortError") return;
-
       console.error("lookupItemRealtime error:", err);
+
       ITEM_LOOKUP_STATE = {
         item,
         description: ITEM_NOT_FOUND_TEXT,
         displayText: `${item} | ${ITEM_NOT_FOUND_TEXT}`,
         found: false,
-        loading: false,
-        apiError: true
+        loading: false
       };
 
       ITEM_LOCAL_CACHE.set(item, { ...ITEM_LOOKUP_STATE });
-      renderItemLookupState(ITEM_LOOKUP_STATE);
+      renderItemLookupState({ ...ITEM_LOOKUP_STATE, apiError: true });
     });
   }, ITEM_LOOKUP_DEBOUNCE_MS);
 }
@@ -415,16 +411,14 @@ async function onItemBlurLookup() {
     return;
   }
 
-  try {
-    await lookupItemRealtime(item, true);
-  } catch (_) {}
+  await lookupItemRealtime(item, true).catch(() => {});
 }
 
 async function lookupItemRealtime(item, immediate = false) {
   const clean = String(item || "").replace(/[^\d]/g, "").trim();
   if (!clean) return;
 
-  if (!immediate && ITEM_LOOKUP_STATE.item === clean && ITEM_LOOKUP_STATE.description && !ITEM_LOOKUP_STATE.loading) {
+  if (!immediate && ITEM_LOOKUP_STATE.item === clean && ITEM_LOOKUP_STATE.description) {
     return;
   }
 
@@ -435,13 +429,6 @@ async function lookupItemRealtime(item, immediate = false) {
     return;
   }
 
-  if (itemLookupController) {
-    try { itemLookupController.abort(); } catch (_) {}
-  }
-
-  itemLookupController = new AbortController();
-  const thisSeq = ++itemLookupSeq;
-
   renderItemLookupState({
     item: clean,
     description: "",
@@ -450,46 +437,31 @@ async function lookupItemRealtime(item, immediate = false) {
     loading: true
   });
 
-  const timeoutId = setTimeout(() => {
-    try { itemLookupController.abort(); } catch (_) {}
-  }, ITEM_LOOKUP_TIMEOUT_MS);
+  const url = apiUrl(`/itemLookup?item=${encodeURIComponent(clean)}`);
+  const res = await fetch(url, { method: "GET" });
+  const text = await res.text();
 
+  let json = {};
   try {
-    const url = apiUrl(`/itemLookup?item=${encodeURIComponent(clean)}`);
-    const res = await fetch(url, {
-      method: "GET",
-      signal: itemLookupController.signal,
-      cache: "no-store"
-    });
-
-    const text = await res.text();
-
-    let json = {};
-    try {
-      json = JSON.parse(text);
-    } catch (_) {
-      throw new Error("Backend itemLookup ตอบกลับไม่ใช่ JSON");
-    }
-
-    if (!res.ok || !json.ok) {
-      throw new Error(json.error || `itemLookup HTTP ${res.status}`);
-    }
-
-    if (thisSeq !== itemLookupSeq) return;
-
-    ITEM_LOOKUP_STATE = {
-      item: json.item || clean,
-      description: json.description || ITEM_NOT_FOUND_TEXT,
-      displayText: json.displayText || `${clean} | ${ITEM_NOT_FOUND_TEXT}`,
-      found: !!json.found,
-      loading: false
-    };
-
-    ITEM_LOCAL_CACHE.set(clean, { ...ITEM_LOOKUP_STATE });
-    renderItemLookupState(ITEM_LOOKUP_STATE);
-  } finally {
-    clearTimeout(timeoutId);
+    json = JSON.parse(text);
+  } catch (_) {
+    throw new Error("Backend itemLookup ตอบกลับไม่ใช่ JSON");
   }
+
+  if (!res.ok || !json.ok) {
+    throw new Error(json.error || `itemLookup HTTP ${res.status}`);
+  }
+
+  ITEM_LOOKUP_STATE = {
+    item: json.item || clean,
+    description: json.description || ITEM_NOT_FOUND_TEXT,
+    displayText: json.displayText || `${clean} | ${ITEM_NOT_FOUND_TEXT}`,
+    found: !!json.found,
+    loading: false
+  };
+
+  ITEM_LOCAL_CACHE.set(clean, { ...ITEM_LOOKUP_STATE });
+  renderItemLookupState(ITEM_LOOKUP_STATE);
 }
 
 function renderItemLookupState(state) {
