@@ -1,5 +1,5 @@
 :root{
-  --bg:#edf3fb;
+  --bg:#eef4fb;
   --bg-soft:#f7faff;
   --card:#ffffff;
   --card-2:#f8fbff;
@@ -29,16 +29,7 @@
   --r:18px;
   --r-lg:24px;
 
-  --space-1:4px;
-  --space-2:8px;
-  --space-3:12px;
-  --space-4:16px;
-  --space-5:20px;
-  --space-6:24px;
-  --space-7:28px;
-
-  --input-h:48px;
-  --tap:44px;
+  --input-h:46px;
   --container:1120px;
 }
 
@@ -113,9 +104,9 @@ a{
 }
 
 .logo{
-  width:46px;
-  height:46px;
-  flex:0 0 46px;
+  width:44px;
+  height:44px;
+  flex:0 0 44px;
   border-radius:14px;
   object-fit:contain;
   padding:5px;
@@ -160,8 +151,8 @@ a{
 }
 
 .tab{
-  min-height:40px;
-  padding:10px 14px;
+  min-height:38px;
+  padding:9px 13px;
   border-radius:999px;
   border:1.2px solid var(--line);
   background:#fff;
@@ -246,7 +237,7 @@ h2{
 }
 
 h3{
-  font-size:16px;
+  font-size:15px;
   font-weight:900;
   line-height:1.25;
 }
@@ -259,7 +250,7 @@ h3{
 }
 
 .hint.tiny{
-  font-size:12px;
+  font-size:11.5px;
 }
 
 .msg{
@@ -286,14 +277,14 @@ h3{
 }
 
 /* =========================
-   Pills
+   Pill
 ========================= */
 .pill{
   display:inline-flex;
   align-items:center;
   gap:6px;
-  min-height:34px;
-  padding:8px 12px;
+  min-height:32px;
+  padding:7px 11px;
   border-radius:999px;
   border:1.2px solid var(--line);
   background:#fff;
@@ -315,15 +306,15 @@ h3{
 }
 
 /* =========================
-   Section header
+   Section header / divider
 ========================= */
 .sectionTitle{
   display:flex;
   align-items:flex-start;
   gap:10px;
-  margin:14px 0 12px;
+  margin:14px 0 10px;
   padding:0 0 10px 0;
-  border-bottom:1px solid var(--line);
+  border-bottom:2px solid #e4edf7;
 }
 
 .sectionTitle .dot{
@@ -350,19 +341,18 @@ h3{
   color:var(--muted);
 }
 
-/* ทำให้ช่วงข้อมูลต่อท้าย section ดูเป็นกรอบ */
+/* กล่องในแต่ละหมวด */
 .sectionTitle + .grid2,
 .sectionTitle + .grid3,
 .sectionTitle + .grid4,
 .sectionTitle + .emailPanel{
-  padding:14px;
+  padding:12px;
   border:1.5px solid var(--line);
   border-radius:18px;
   background:linear-gradient(180deg,#ffffff 0%, #fbfdff 100%);
   box-shadow:var(--shadow-sm);
 }
 
-/* upload title */
 .uploadTitle{
   display:flex;
   align-items:flex-start;
@@ -371,7 +361,7 @@ h3{
   flex-wrap:wrap;
   margin:14px 0 10px;
   padding:0 0 10px 0;
-  border-bottom:1px solid var(--line);
+  border-bottom:2px solid #e4edf7;
 }
 
 /* =========================
@@ -401,14 +391,13 @@ textarea{
   border-radius:14px;
   background:#fff;
   color:var(--text);
-  padding:12px 14px;
+  padding:11px 13px;
   font-size:15px;
   outline:none;
   transition:
     border-color .18s ease,
     box-shadow .18s ease,
-    background .18s ease,
-    transform .08s ease;
+    background .18s ease;
 }
 
 input,
@@ -417,7 +406,7 @@ select{
 }
 
 textarea{
-  min-height:118px;
+  min-height:112px;
   resize:vertical;
   line-height:1.55;
 }
@@ -457,7 +446,7 @@ input[readonly]{
 .grid3,
 .grid4{
   display:grid;
-  gap:12px;
+  gap:10px;
   grid-template-columns:1fr;
 }
 
@@ -466,8 +455,8 @@ input[readonly]{
 ========================= */
 .refRow{
   display:grid;
-  grid-template-columns:minmax(0,1fr) 24px 92px;
-  gap:8px;
+  grid-template-columns:minmax(0,1fr) 22px 82px;
+  gap:6px;
   align-items:center;
 }
 
@@ -475,7 +464,7 @@ input[readonly]{
   text-align:center;
   font-weight:900;
   color:var(--muted);
-  font-size:18px;
+  font-size:17px;
 }
 
 #refYear{
@@ -492,8 +481,8 @@ input[readonly]{
   display:inline-flex;
   align-items:center;
   justify-content:center;
-  min-height:46px;
-  padding:12px 16px;
+  min-height:44px;
+  padding:11px 15px;
   border:none;
   border-radius:14px;
   cursor:pointer;
@@ -539,7 +528,7 @@ input[readonly]{
 .btn.ghost{
   color:var(--text);
   background:#fff;
-  border:1.3px solid var(--line-strong);
+  border:1.2px solid var(--line-strong);
   box-shadow:var(--shadow-sm);
 }
 
@@ -548,13 +537,32 @@ input[readonly]{
   border-color:var(--line-deep);
 }
 
+/* ปุ่มใน email toolbar ให้เล็กลง */
+.emailToolbarBtns .btn{
+  min-height:34px;
+  padding:7px 10px;
+  font-size:12px;
+  border-radius:10px;
+}
+
+/* ปุ่มลบรูปเล็กลง */
+.uploadBox .btn.ghost{
+  min-height:30px;
+  padding:6px 10px;
+  font-size:12px;
+  border-radius:10px;
+}
+
+/* =========================
+   Actions
+========================= */
 .actions{
   display:flex;
   flex-direction:column;
   gap:10px;
   margin-top:16px;
-  padding-top:16px;
-  border-top:1px solid var(--line);
+  padding-top:14px;
+  border-top:2px solid #e4edf7;
 }
 
 .actions.left{
@@ -573,27 +581,27 @@ input[readonly]{
 .uploadGrid{
   display:grid;
   grid-template-columns:1fr;
-  gap:12px;
+  gap:10px;
   margin-top:12px;
 }
 
 .uploadBox{
   background:linear-gradient(180deg,#ffffff 0%, #fbfdff 100%);
   border:1.5px solid var(--line);
-  border-radius:18px;
-  padding:14px;
+  border-radius:16px;
+  padding:12px;
   box-shadow:var(--shadow-sm);
 }
 
 .uploadBox .cap{
-  font-size:14px;
+  font-size:13px;
   font-weight:900;
   color:var(--text);
-  margin-bottom:10px;
+  margin-bottom:8px;
 }
 
 .uploadBox input[type="file"]{
-  padding:10px 12px;
+  padding:9px 10px;
   background:#f9fbff;
   border:1.2px dashed var(--line-deep);
 }
@@ -602,7 +610,7 @@ input[readonly]{
   width:100%;
   aspect-ratio:4 / 3;
   margin-top:10px;
-  border-radius:14px;
+  border-radius:12px;
   border:1px solid var(--line);
   background:linear-gradient(180deg,#f8fbff,#eef4fb);
   object-fit:cover;
@@ -610,7 +618,7 @@ input[readonly]{
 
 .small{
   margin-top:8px;
-  font-size:12px;
+  font-size:11.5px;
   line-height:1.45;
   color:var(--muted);
 }
@@ -620,7 +628,7 @@ input[readonly]{
 ========================= */
 .emailPanel{
   margin-top:0;
-  padding:14px;
+  padding:12px;
   border:1.5px solid var(--line);
   border-radius:18px;
   background:linear-gradient(180deg,#ffffff 0%, #fbfdff 100%);
@@ -629,21 +637,23 @@ input[readonly]{
 
 .emailToolbar{
   display:flex;
-  align-items:flex-start;
+  align-items:center;
   justify-content:space-between;
-  gap:12px;
+  gap:10px;
   flex-wrap:wrap;
-  margin-bottom:12px;
+  margin-bottom:10px;
+  padding-bottom:10px;
+  border-bottom:1px solid #e4edf7;
 }
 
 .emailToolbarBtns{
   display:flex;
-  gap:8px;
+  gap:6px;
   flex-wrap:wrap;
 }
 
 .emailSelectedText{
-  font-size:13px;
+  font-size:12px;
   font-weight:900;
   color:var(--text-soft);
 }
@@ -651,20 +661,20 @@ input[readonly]{
 .emailSelector{
   display:grid;
   grid-template-columns:1fr;
-  gap:10px;
+  gap:8px;
 }
 
 .emailItem{
   position:relative;
   display:flex;
   align-items:center;
-  gap:12px;
-  padding:12px 14px;
-  border:1.3px solid var(--line);
-  border-radius:16px;
+  gap:10px;
+  padding:9px 10px;
+  border:1.2px solid var(--line);
+  border-radius:12px;
   background:#fff;
   cursor:pointer;
-  transition:border-color .18s ease, box-shadow .18s ease, transform .12s ease;
+  transition:border-color .18s ease, box-shadow .18s ease;
 }
 
 .emailItem:hover{
@@ -679,12 +689,12 @@ input[readonly]{
 }
 
 .emailCheckBox{
-  width:22px;
-  height:22px;
-  border-radius:8px;
+  width:18px;
+  height:18px;
+  border-radius:6px;
   border:2px solid #cbd5e1;
   background:#fff;
-  flex:0 0 22px;
+  flex:0 0 18px;
   position:relative;
 }
 
@@ -696,20 +706,21 @@ input[readonly]{
 .emailItem input:checked + .emailCheckBox::after{
   content:"";
   position:absolute;
-  left:6px;
-  top:2px;
-  width:5px;
-  height:10px;
+  left:4px;
+  top:1px;
+  width:4px;
+  height:8px;
   border:solid #fff;
   border-width:0 2px 2px 0;
   transform:rotate(45deg);
 }
 
 .emailText{
-  font-size:14px;
+  font-size:12.5px;
   font-weight:800;
   color:var(--text);
   word-break:break-word;
+  line-height:1.35;
 }
 
 .emailEmpty{
@@ -742,7 +753,7 @@ input[readonly]{
   position:relative;
   width:100%;
   aspect-ratio:4 / 3;
-  border-radius:16px;
+  border-radius:14px;
   overflow:hidden;
   background:#f8fbff;
   border:1px solid var(--line);
@@ -764,21 +775,21 @@ input[readonly]{
   position:absolute;
   top:8px;
   left:8px;
-  min-width:28px;
-  min-height:28px;
+  min-width:24px;
+  min-height:24px;
   display:flex;
   align-items:center;
   justify-content:center;
-  padding:4px 8px;
+  padding:3px 6px;
   border-radius:999px;
   background:rgba(15,23,42,.82);
   color:#fff;
-  font-size:12px;
+  font-size:11px;
   font-weight:900;
 }
 
 .galCap{
-  margin-top:6px;
+  margin-top:5px;
   color:var(--muted);
   font-size:11px;
   line-height:1.35;
@@ -793,13 +804,13 @@ input[readonly]{
 .sigGrid{
   display:grid;
   grid-template-columns:1fr;
-  gap:12px;
-  margin-top:12px;
+  gap:10px;
+  margin-top:10px;
 }
 
 .sigBoxTitle{
   margin-bottom:6px;
-  font-size:14px;
+  font-size:13px;
   font-weight:900;
   color:var(--text);
   text-align:center;
@@ -807,9 +818,9 @@ input[readonly]{
 
 .sigThumb{
   width:100%;
-  max-height:130px;
+  max-height:120px;
   object-fit:contain;
-  border-radius:14px;
+  border-radius:12px;
   border:1px solid var(--line);
   background:#fff;
   box-shadow:var(--shadow-sm);
@@ -817,27 +828,27 @@ input[readonly]{
 
 .sigName{
   margin-top:7px;
-  font-size:13px;
+  font-size:12px;
   font-weight:900;
   color:var(--text-soft);
   text-align:center;
 }
 
 /* =========================
-   SweetAlert2
+   SweetAlert2 - compact redesign
 ========================= */
 .swal2-popup{
-  width:min(95vw, 920px) !important;
-  border-radius:22px !important;
+  width:min(95vw, 860px) !important;
+  border-radius:20px !important;
   border:1.5px solid var(--line) !important;
   background:linear-gradient(180deg,#ffffff 0%, #fbfdff 100%) !important;
   box-shadow:0 24px 60px rgba(15,23,42,.16) !important;
-  padding:18px 14px 14px !important;
+  padding:16px 12px 12px !important;
 }
 
 .swal2-title{
   margin:0 !important;
-  font-size:20px !important;
+  font-size:19px !important;
   line-height:1.2 !important;
   font-weight:900 !important;
   color:var(--text) !important;
@@ -845,7 +856,7 @@ input[readonly]{
 }
 
 .swal2-html-container{
-  margin:12px 0 0 0 !important;
+  margin:10px 0 0 0 !important;
   padding:0 !important;
   color:var(--text) !important;
   font-size:14px !important;
@@ -860,16 +871,16 @@ input[readonly]{
   align-items:center !important;
   gap:10px !important;
   flex-wrap:wrap !important;
-  margin:16px 0 0 0 !important;
+  margin:14px 0 0 0 !important;
 }
 
 .swal2-styled{
   min-width:140px !important;
-  min-height:46px !important;
-  border-radius:14px !important;
+  min-height:44px !important;
+  border-radius:12px !important;
   font-weight:900 !important;
   font-size:14px !important;
-  padding:11px 16px !important;
+  padding:10px 14px !important;
   box-shadow:none !important;
 }
 
@@ -885,23 +896,23 @@ input[readonly]{
   border-color:var(--primary) transparent var(--primary) transparent !important;
 }
 
-/* New summary layout */
+/* summary */
 .swalSummary{
   display:flex;
   flex-direction:column;
-  gap:12px;
+  gap:10px;
 }
 
 .swalHero{
   text-align:center;
-  padding:12px;
+  padding:10px;
   border:1.5px solid var(--line);
-  border-radius:18px;
+  border-radius:16px;
   background:linear-gradient(180deg,#f8fbff 0%, #eef4ff 100%);
 }
 
 .swalHeroTitle{
-  font-size:17px;
+  font-size:16px;
   font-weight:900;
   color:var(--text);
   line-height:1.2;
@@ -909,7 +920,7 @@ input[readonly]{
 
 .swalHeroSub{
   margin-top:4px;
-  font-size:12px;
+  font-size:11.5px;
   color:var(--muted);
   font-weight:700;
 }
@@ -918,19 +929,19 @@ input[readonly]{
   display:flex;
   justify-content:center;
   flex-wrap:wrap;
-  gap:8px;
-  margin-top:10px;
+  gap:6px;
+  margin-top:8px;
 }
 
 .swalPill{
   display:inline-flex;
   align-items:center;
-  min-height:30px;
-  padding:6px 10px;
+  min-height:28px;
+  padding:5px 9px;
   border-radius:999px;
   border:1px solid var(--line);
   background:#fff;
-  font-size:12px;
+  font-size:11.5px;
   font-weight:900;
   color:var(--text);
 }
@@ -943,25 +954,27 @@ input[readonly]{
 
 .swalSection{
   border:1.5px solid var(--line);
-  border-radius:18px;
-  padding:12px;
+  border-radius:16px;
+  padding:10px;
   background:#fff;
 }
 
 .swalSectionTitle{
-  font-size:14px;
+  font-size:13px;
   font-weight:900;
   color:var(--text);
-  margin-bottom:10px;
+  margin-bottom:8px;
   display:flex;
   align-items:center;
   gap:8px;
+  padding-bottom:8px;
+  border-bottom:1px solid #e9eff7;
 }
 
 .swalSectionTitle::before{
   content:"";
-  width:9px;
-  height:9px;
+  width:8px;
+  height:8px;
   border-radius:999px;
   background:linear-gradient(180deg,var(--primary),#60a5fa);
   flex:0 0 auto;
@@ -970,52 +983,52 @@ input[readonly]{
 .swalKvGrid{
   display:grid;
   grid-template-columns:1fr;
-  gap:10px;
+  gap:8px;
 }
 
 .swalKv{
-  border:1.2px solid #e4edf7;
-  border-radius:14px;
-  padding:10px;
+  border:1px solid #e4edf7;
+  border-radius:12px;
+  padding:9px 10px;
   background:#fcfdff;
   min-width:0;
 }
 
 .swalKvLabel{
-  font-size:11px;
+  font-size:10.5px;
   font-weight:800;
   color:var(--muted);
-  margin-bottom:4px;
+  margin-bottom:3px;
   line-height:1.3;
 }
 
 .swalKvValue{
-  font-size:14px;
+  font-size:13px;
   font-weight:900;
   color:var(--text);
-  line-height:1.45;
+  line-height:1.4;
   word-break:break-word;
 }
 
 .swalDesc{
-  border:1.2px solid #e4edf7;
-  border-radius:14px;
-  padding:12px;
+  border:1px solid #e4edf7;
+  border-radius:12px;
+  padding:10px;
   background:#fcfdff;
 }
 
 .swalDescLabel{
-  font-size:11px;
+  font-size:10.5px;
   font-weight:800;
   color:var(--muted);
-  margin-bottom:6px;
+  margin-bottom:5px;
 }
 
 .swalDescValue{
-  font-size:14px;
+  font-size:13px;
   font-weight:700;
   color:var(--text);
-  line-height:1.7;
+  line-height:1.65;
   white-space:pre-wrap;
   word-break:break-word;
 }
@@ -1030,9 +1043,9 @@ input[readonly]{
   display:inline-flex;
   align-items:center;
   justify-content:center;
-  min-height:44px;
+  min-height:42px;
   padding:10px 14px;
-  border-radius:14px;
+  border-radius:12px;
   background:linear-gradient(180deg,var(--primary),var(--primary-hover));
   color:#fff;
   font-weight:900;
@@ -1041,74 +1054,75 @@ input[readonly]{
 
 .swalNote{
   text-align:center;
-  font-size:12px;
+  font-size:11.5px;
   color:var(--muted);
-  margin-top:2px;
 }
 
 .swalEmailList{
   display:flex;
   flex-wrap:wrap;
-  gap:8px;
+  gap:6px;
 }
 
 .swalEmailChip{
   display:inline-flex;
   align-items:center;
-  min-height:30px;
-  padding:6px 10px;
+  min-height:28px;
+  padding:5px 9px;
   border-radius:999px;
   border:1px solid var(--line);
   background:#fff;
-  font-size:12px;
+  font-size:11.5px;
   font-weight:900;
   color:var(--text);
 }
 
 .swalEmailOk{
-  padding:10px 12px;
-  border-radius:14px;
+  padding:9px 10px;
+  border-radius:12px;
   background:rgba(22,163,74,.08);
   border:1px solid rgba(22,163,74,.18);
   color:#166534;
   font-weight:900;
-  margin-bottom:10px;
+  margin-bottom:8px;
+  font-size:12px;
 }
 
 .swalEmailFail{
-  padding:10px 12px;
-  border-radius:14px;
+  padding:9px 10px;
+  border-radius:12px;
   background:rgba(220,38,38,.07);
   border:1px solid rgba(220,38,38,.18);
   color:#991b1b;
   font-weight:900;
+  font-size:12px;
 }
 
 /* loading */
 .swal2-popup.swalLoadingPopup{
-  width:min(90vw, 360px) !important;
-  padding:22px 18px 18px !important;
+  width:min(90vw, 340px) !important;
+  padding:20px 16px 16px !important;
 }
 
 .swal2-popup.swalLoadingPopup .swal2-title{
-  font-size:18px !important;
+  font-size:17px !important;
 }
 
 /* =========================
-   Signature Modal
+   Signature modal
 ========================= */
 .sigSwalPopup{
   width:min(95vw, 760px) !important;
-  border-radius:22px !important;
+  border-radius:20px !important;
   border:1.5px solid var(--line) !important;
   background:linear-gradient(180deg,#ffffff 0%, #fbfdff 100%) !important;
   box-shadow:0 24px 60px rgba(15,23,42,.16) !important;
-  padding:18px 14px 14px !important;
+  padding:16px 12px 12px !important;
 }
 
 .sigSwalTitle{
   margin:0 !important;
-  font-size:20px !important;
+  font-size:19px !important;
   line-height:1.2 !important;
   font-weight:900 !important;
   color:var(--text) !important;
@@ -1116,7 +1130,7 @@ input[readonly]{
 }
 
 .sigSwalHtml{
-  margin:12px 0 0 0 !important;
+  margin:10px 0 0 0 !important;
   padding:0 !important;
   text-align:left !important;
 }
@@ -1124,18 +1138,18 @@ input[readonly]{
 .sigModalWrap{
   display:flex;
   flex-direction:column;
-  gap:12px;
+  gap:10px;
 }
 
 .sigModalHead{
-  padding:12px 14px;
+  padding:10px 12px;
   border:1.5px solid var(--line);
-  border-radius:18px;
+  border-radius:16px;
   background:linear-gradient(180deg,#f8fbff 0%, #eef4ff 100%);
 }
 
 .sigModalSub{
-  font-size:14px;
+  font-size:13px;
   font-weight:900;
   color:var(--text);
   line-height:1.4;
@@ -1143,7 +1157,7 @@ input[readonly]{
 
 .sigModalTip{
   margin-top:4px;
-  font-size:12px;
+  font-size:11.5px;
   color:var(--muted);
   font-weight:700;
   line-height:1.5;
@@ -1151,7 +1165,7 @@ input[readonly]{
 
 .sigCanvasCard{
   border:1.5px solid var(--line);
-  border-radius:18px;
+  border-radius:16px;
   overflow:hidden;
   background:linear-gradient(180deg,#ffffff 0%, #fbfdff 100%);
   box-shadow:var(--shadow-sm);
@@ -1177,23 +1191,13 @@ input[readonly]{
   display:inline-flex;
   align-items:center;
   justify-content:center;
-  min-height:44px;
-  padding:10px 16px;
-  border-radius:14px;
-  font-size:14px;
+  min-height:40px;
+  padding:10px 14px;
+  border-radius:12px;
+  font-size:13px;
   font-weight:900;
   line-height:1;
   cursor:pointer;
-  transition:
-    transform .12s ease,
-    box-shadow .18s ease,
-    background .18s ease,
-    border-color .18s ease,
-    color .18s ease;
-}
-
-.sigActionBtn:active{
-  transform:translateY(1px);
 }
 
 .sigActionBtn-clear{
@@ -1215,7 +1219,7 @@ input[readonly]{
   align-items:center !important;
   gap:10px !important;
   flex-wrap:wrap !important;
-  margin:16px 0 0 0 !important;
+  margin:14px 0 0 0 !important;
 }
 
 .sigBtn{
@@ -1223,56 +1227,24 @@ input[readonly]{
   align-items:center !important;
   justify-content:center !important;
   min-width:150px !important;
-  min-height:46px !important;
-  padding:12px 16px !important;
+  min-height:44px !important;
+  padding:11px 15px !important;
   border:none !important;
-  border-radius:14px !important;
+  border-radius:12px !important;
   font-size:14px !important;
   font-weight:900 !important;
   line-height:1 !important;
   cursor:pointer !important;
-  transition:
-    transform .12s ease,
-    box-shadow .18s ease,
-    filter .18s ease !important;
-}
-
-.sigBtn:active{
-  transform:translateY(1px);
 }
 
 .sigBtn-confirm{
   color:#ffffff !important;
   background:linear-gradient(180deg,var(--primary),var(--primary-hover)) !important;
-  box-shadow:0 10px 24px rgba(37,99,235,.22) !important;
-}
-
-.sigBtn-confirm:hover{
-  filter:brightness(.98);
 }
 
 .sigBtn-cancel{
   color:#ffffff !important;
   background:linear-gradient(180deg,#334155,#0f172a) !important;
-  box-shadow:0 10px 24px rgba(15,23,42,.16) !important;
-}
-
-.sigBtn-cancel:hover{
-  filter:brightness(.98);
-}
-
-.sigModalFoot .sigActionBtn-clear{
-  background:#ffffff !important;
-  color:#0f172a !important;
-  border:1px solid #cbd5e1 !important;
-  -webkit-text-fill-color:#0f172a !important;
-  opacity:1 !important;
-}
-
-.sigModalFoot .sigActionBtn-clear:hover{
-  background:#f8fbff !important;
-  color:#0f172a !important;
-  border-color:#94a3b8 !important;
 }
 
 /* =========================
@@ -1286,7 +1258,9 @@ input[readonly]{
 /* =========================
    Responsive
 ========================= */
-@media (min-width:520px){
+
+/* มือถือกว้างขึ้นนิด ให้ 2 ช่องทันที */
+@media (min-width:430px){
   .grid2{
     grid-template-columns:repeat(2, minmax(0,1fr));
   }
@@ -1296,6 +1270,10 @@ input[readonly]{
   }
 
   .uploadGrid{
+    grid-template-columns:repeat(2, minmax(0,1fr));
+  }
+
+  .emailSelector{
     grid-template-columns:repeat(2, minmax(0,1fr));
   }
 
@@ -1318,7 +1296,7 @@ input[readonly]{
   }
 
   .emailSelector{
-    grid-template-columns:repeat(2, minmax(0,1fr));
+    grid-template-columns:repeat(3, minmax(0,1fr));
   }
 
   .sigGrid{
@@ -1358,10 +1336,6 @@ input[readonly]{
     padding:22px;
   }
 
-  .emailSelector{
-    grid-template-columns:repeat(3, minmax(0,1fr));
-  }
-
   .galGrid{
     grid-template-columns:repeat(4, minmax(0,1fr));
   }
@@ -1370,7 +1344,7 @@ input[readonly]{
 @media (max-width:720px){
   .swal2-popup{
     width:min(95vw, 95vw) !important;
-    padding:16px 12px 14px !important;
+    padding:14px 10px 12px !important;
     border-radius:18px !important;
   }
 
@@ -1388,20 +1362,10 @@ input[readonly]{
     justify-content:center !important;
   }
 
-  .swalHero{
-    padding:10px;
-    border-radius:16px;
-  }
-
-  .swalSection{
-    padding:10px;
-    border-radius:16px;
-  }
-
   .sigSwalPopup{
     width:min(95vw, 95vw) !important;
     border-radius:18px !important;
-    padding:16px 12px 14px !important;
+    padding:14px 10px 12px !important;
   }
 
   .sigSwalTitle{
@@ -1409,7 +1373,7 @@ input[readonly]{
   }
 
   .sigCanvasElm{
-    height:200px;
+    height:190px;
   }
 
   .sigSwalActions{
@@ -1430,13 +1394,6 @@ input[readonly]{
   }
 }
 
-@media (max-width:520px){
-  .refRow{
-    grid-template-columns:minmax(0,1fr) 20px 84px;
-    gap:6px;
-  }
-}
-
 @media (max-width:420px){
   .topbar{
     align-items:flex-start;
@@ -1449,8 +1406,8 @@ input[readonly]{
   }
 
   .tab{
-    min-height:38px;
-    padding:9px 12px;
+    min-height:36px;
+    padding:8px 11px;
     font-size:12px;
   }
 
