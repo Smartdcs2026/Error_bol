@@ -2706,7 +2706,7 @@ async function lookupItemRealtime(item, immediate = false) {
     loading: true
   });
 
-  const url = apiUrl(`/itemLookup?item=${encodeURIComponent(clean)}`);
+const url = `${String(API_BASE || "").replace(/\/+$/, "")}/itemLookup?item=${encodeURIComponent(clean)}`;
   const res = await fetch(url, { method: "GET" });
   const text = await res.text();
 
