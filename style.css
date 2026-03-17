@@ -67,9 +67,6 @@ textarea{
   display:none !important;
 }
 
-/* =========================
-   TOPBAR
-   ========================= */
 .topbar{
   position:sticky;
   top:0;
@@ -153,9 +150,6 @@ textarea{
   border-color:transparent;
 }
 
-/* =========================
-   LAYOUT
-   ========================= */
 .container{
   width:100%;
   max-width:var(--container);
@@ -254,9 +248,6 @@ h3{
   color:var(--muted);
 }
 
-/* =========================
-   SECTION HEADER
-   ========================= */
 .sectionTitle{
   display:flex;
   align-items:flex-start;
@@ -298,9 +289,6 @@ h3{
   box-shadow:var(--shadow-sm);
 }
 
-/* =========================
-   GRID SYSTEM
-   ========================= */
 .grid2,
 .gridMain,
 .gridCompact,
@@ -316,9 +304,6 @@ h3{
   grid-column:auto;
 }
 
-/* =========================
-   FORM
-   ========================= */
 .field{
   display:flex;
   flex-direction:column;
@@ -400,9 +385,6 @@ input[readonly]{
   background:#f8fbff;
 }
 
-/* =========================
-   BUTTONS
-   ========================= */
 .btn{
   display:inline-flex;
   align-items:center;
@@ -472,9 +454,6 @@ input[readonly]{
   width:100%;
 }
 
-/* =========================
-   LOGIN
-   ========================= */
 .loginCardPro{
   max-width:460px;
   margin:8px auto 16px;
@@ -559,9 +538,6 @@ input[readonly]{
   margin-top:12px;
 }
 
-/* =========================
-   UPLOAD
-   ========================= */
 .uploadTitle{
   display:flex;
   align-items:center;
@@ -609,9 +585,6 @@ input[readonly]{
   color:var(--muted);
 }
 
-/* =========================
-   EMAIL
-   ========================= */
 .emailToolbar{
   display:flex;
   align-items:center;
@@ -698,9 +671,6 @@ input[readonly]{
   font-weight:800;
 }
 
-/* =========================
-   SWEETALERT SUMMARY
-   ========================= */
 .swalSummary{
   text-align:left;
 }
@@ -887,9 +857,6 @@ input[readonly]{
   box-shadow:0 8px 20px rgba(37,99,235,.20);
 }
 
-/* =========================
-   GALLERY
-   ========================= */
 .galGrid{
   display:grid;
   grid-template-columns:repeat(2, minmax(0,1fr));
@@ -945,9 +912,6 @@ input[readonly]{
   color:#334155;
 }
 
-/* =========================
-   SIGNATURE
-   ========================= */
 .sigGrid{
   display:grid;
   grid-template-columns:1fr;
@@ -978,9 +942,6 @@ input[readonly]{
   text-align:center;
 }
 
-/* =========================
-   SIGNATURE MODAL
-   ========================= */
 .sigModalWrap{
   text-align:left;
 }
@@ -1068,9 +1029,53 @@ input[readonly]{
   border:1px solid #dbe7f6;
 }
 
-/* =========================
-   RESPONSIVE
-   ========================= */
+/* ITEM LOOKUP */
+.itemLookupBox{
+  margin-top:8px;
+  padding:10px 12px;
+  border:1px solid #dbe7f6;
+  border-radius:12px;
+  background:linear-gradient(180deg,#f8fbff 0%, #eef5ff 100%);
+}
+
+.itemLookupLabel{
+  font-size:11px;
+  font-weight:900;
+  color:#64748b;
+  margin-bottom:4px;
+}
+
+.itemLookupText{
+  font-size:13.5px;
+  font-weight:900;
+  color:#0f172a;
+  line-height:1.45;
+  word-break:break-word;
+}
+
+.itemLookupBox.ok{
+  border-color:#bbf7d0;
+  background:#f0fdf4;
+}
+
+.itemLookupBox.ok .itemLookupText{
+  color:#166534;
+}
+
+.itemLookupBox.notfound{
+  border-color:#fecaca;
+  background:#fef2f2;
+}
+
+.itemLookupBox.notfound .itemLookupText{
+  color:#b91c1c;
+}
+
+.itemLookupBox.loading{
+  border-color:#dbe7f6;
+  background:#f8fbff;
+}
+
 @media (min-width:430px){
   .grid2,
   .uploadGrid,
