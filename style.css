@@ -191,15 +191,17 @@ textarea{
   flex-wrap:wrap;
 }
 
-h2{
+h1,h2,h3{
   margin:0;
+}
+
+h2{
   font-size:20px;
   font-weight:900;
   line-height:1.2;
 }
 
 h3{
-  margin:0;
   font-size:15px;
   font-weight:900;
 }
@@ -224,6 +226,10 @@ h3{
   color:var(--danger);
   font-size:14px;
   font-weight:900;
+}
+
+.msg:empty{
+  display:none;
 }
 
 .pill{
@@ -305,6 +311,10 @@ h3{
   display:grid;
   gap:10px;
   grid-template-columns:1fr;
+}
+
+.fieldSpan2{
+  grid-column:auto;
 }
 
 /* =========================
@@ -461,6 +471,180 @@ input[readonly]{
 
 .actions .btn{
   width:100%;
+}
+
+/* =========================
+   LOGIN PRO
+   ========================= */
+.loginCardPro{
+  max-width:720px;
+  margin:10px auto 16px;
+  padding:0;
+  overflow:hidden;
+}
+
+.loginCardPro::before{
+  height:6px;
+}
+
+.loginHero{
+  padding:18px 18px 14px;
+  background:
+    radial-gradient(circle at top right, rgba(96,165,250,.18), transparent 28%),
+    linear-gradient(180deg, #ffffff 0%, #f6faff 100%);
+  border-bottom:1px solid #e6eef9;
+}
+
+.loginHeroTop{
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+  margin-bottom:14px;
+}
+
+.loginBadge{
+  display:inline-flex;
+  align-items:center;
+  min-height:30px;
+  padding:6px 10px;
+  border-radius:999px;
+  background:linear-gradient(180deg,#2563eb,#1d4ed8);
+  color:#fff;
+  font-size:12px;
+  font-weight:900;
+  box-shadow:0 8px 18px rgba(37,99,235,.20);
+}
+
+.loginBadge.soft{
+  background:#eff6ff;
+  color:#1d4ed8;
+  box-shadow:none;
+  border:1px solid #dbeafe;
+}
+
+.loginHeroBody{
+  display:flex;
+  align-items:center;
+  gap:14px;
+}
+
+.loginLogoWrap{
+  width:72px;
+  height:72px;
+  flex:0 0 72px;
+  border-radius:22px;
+  background:#fff;
+  border:1px solid #dbe7f6;
+  box-shadow:0 10px 24px rgba(15,23,42,.08);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:10px;
+}
+
+.loginLogo{
+  width:100%;
+  height:100%;
+  object-fit:contain;
+}
+
+.loginHeroText{
+  min-width:0;
+  flex:1;
+}
+
+.loginTitle{
+  margin:0;
+  font-size:26px;
+  line-height:1.15;
+  font-weight:900;
+  color:#0f172a;
+}
+
+.loginSubtitle{
+  margin-top:6px;
+  font-size:14px;
+  line-height:1.6;
+  color:#475569;
+  max-width:560px;
+}
+
+.loginShell{
+  padding:16px;
+  background:linear-gradient(180deg,#fbfdff 0%, #f7fbff 100%);
+}
+
+.loginPanel{
+  border:1.5px solid #dce8f5;
+  border-radius:22px;
+  background:#fff;
+  box-shadow:0 14px 34px rgba(15,23,42,.06);
+  padding:16px;
+}
+
+.loginPanelHead{
+  margin-bottom:14px;
+}
+
+.loginPanelHead h2{
+  margin:0;
+  font-size:20px;
+  font-weight:900;
+  line-height:1.2;
+}
+
+.loginField{
+  gap:8px;
+}
+
+.loginField input{
+  min-height:54px;
+  padding:13px 14px;
+  font-size:16px;
+  border-radius:16px;
+}
+
+.loginAction{
+  margin-top:14px;
+}
+
+.loginBtn{
+  width:100%;
+  min-height:50px;
+  border-radius:16px;
+  font-size:15px;
+}
+
+.loginMeta{
+  display:grid;
+  grid-template-columns:1fr;
+  gap:10px;
+  margin-top:14px;
+}
+
+.loginMetaItem{
+  border:1px solid #e6eef9;
+  background:#fbfdff;
+  border-radius:16px;
+  padding:12px;
+}
+
+.loginMetaTitle{
+  font-size:13px;
+  font-weight:900;
+  color:#0f172a;
+  margin-bottom:4px;
+}
+
+.loginMetaText{
+  font-size:12.5px;
+  line-height:1.55;
+  color:#64748b;
+  font-weight:700;
+}
+
+.loginMsgBox{
+  margin-top:14px;
 }
 
 /* =========================
@@ -973,8 +1157,6 @@ input[readonly]{
 /* =========================
    RESPONSIVE
    ========================= */
-
-/* มือถือทั่วไป: ให้หลายส่วนเป็น 2 ช่องเพื่อประหยัดพื้นที่ */
 @media (min-width:430px){
   .grid2,
   .uploadGrid,
@@ -986,7 +1168,7 @@ input[readonly]{
     grid-template-columns:repeat(2, minmax(0,1fr));
   }
 
-  .gridMain .field:first-child{
+  .fieldSpan2{
     grid-column:1 / -1;
   }
 
@@ -1005,9 +1187,12 @@ input[readonly]{
   .sigGrid{
     grid-template-columns:repeat(2, minmax(0,1fr));
   }
+
+  .loginMeta{
+    grid-template-columns:repeat(2, minmax(0,1fr));
+  }
 }
 
-/* จอ tablet ขึ้นไป */
 @media (min-width:760px){
   .container{
     padding:18px 16px 34px;
@@ -1019,10 +1204,6 @@ input[readonly]{
 
   .gridMain{
     grid-template-columns:1.2fr 1fr 1fr;
-  }
-
-  .gridMain .field:first-child{
-    grid-column:auto;
   }
 
   .gridCompact{
@@ -1058,9 +1239,63 @@ input[readonly]{
     width:auto;
     min-width:140px;
   }
+
+  .fieldSpan2{
+    grid-column:auto;
+  }
+
+  .loginHero{
+    padding:22px 22px 16px;
+  }
+
+  .loginShell{
+    padding:18px;
+  }
+
+  .loginPanel{
+    padding:20px;
+  }
 }
 
-/* มือถือเล็กมาก */
+@media (max-width:520px){
+  .loginCardPro{
+    margin-top:4px;
+  }
+
+  .loginHeroBody{
+    flex-direction:column;
+    align-items:flex-start;
+  }
+
+  .loginLogoWrap{
+    width:64px;
+    height:64px;
+    border-radius:18px;
+  }
+
+  .loginTitle{
+    font-size:22px;
+  }
+
+  .loginSubtitle{
+    font-size:13px;
+  }
+
+  .loginHero,
+  .loginShell{
+    padding:14px;
+  }
+
+  .loginPanel{
+    padding:14px;
+    border-radius:18px;
+  }
+
+  .loginField input{
+    min-height:52px;
+  }
+}
+
 @media (max-width:420px){
   .topbar{
     align-items:flex-start;
