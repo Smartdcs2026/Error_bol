@@ -33,47 +33,37 @@
 
   <!-- LOGIN -->
   <section id="loginCard" class="card loginCardPro">
-  <div class="loginHero">
-    <div class="loginHeroBody">
-      <div class="loginLogoWrap">
-        <img
-          class="loginLogo"
-          src="https://lh5.googleusercontent.com/d/1758AOZ5E3JbnzwrFA4u2kH8nZUPrr8iP"
-          alt="logo"
-        >
-      </div>
-
+    <div class="loginHero">
       <div class="loginHeroText">
         <h1 class="loginTitle">ระบบบันทึกข้อมูล S&amp;LP</h1>
         <div class="loginSubtitle">เข้าสู่ระบบเพื่อใช้งานแบบฟอร์ม</div>
       </div>
     </div>
-  </div>
 
-  <div class="loginShell">
-    <div class="loginPanel">
-      <div class="loginPanelHead">
-        <h2>เข้าสู่ระบบ</h2>
+    <div class="loginShell">
+      <div class="loginPanel">
+        <div class="loginPanelHead">
+          <h2>เข้าสู่ระบบ</h2>
+        </div>
+
+        <div class="field loginField">
+          <label for="loginPass">รหัสผ่าน</label>
+          <input
+            id="loginPass"
+            type="password"
+            placeholder="กรอกรหัสผ่าน"
+            autocomplete="current-password"
+          >
+        </div>
+
+        <div class="loginAction">
+          <button id="btnLogin" class="btn primary loginBtn" type="button">เข้าสู่ระบบ</button>
+        </div>
+
+        <div id="loginMsg" class="msg loginMsgBox"></div>
       </div>
-
-      <div class="field loginField">
-        <label for="loginPass">รหัสผ่าน</label>
-        <input
-          id="loginPass"
-          type="password"
-          placeholder="กรอกรหัสผ่าน"
-          autocomplete="current-password"
-        >
-      </div>
-
-      <div class="loginAction">
-        <button id="btnLogin" class="btn primary loginBtn" type="button">เข้าสู่ระบบ</button>
-      </div>
-
-      <div id="loginMsg" class="msg loginMsgBox"></div>
     </div>
-  </div>
-</section>
+  </section>
 
   <!-- FORM ERROR_BOL -->
   <section id="formCard" class="card hidden">
@@ -85,7 +75,6 @@
       <div class="pill primary" id="userPill">ผู้ใช้งาน: -</div>
     </div>
 
-    <!-- ข้อมูลหลัก -->
     <div class="sectionTitle">
       <span class="dot"></span>
       <div>
@@ -131,7 +120,6 @@
       </div>
     </div>
 
-    <!-- รายละเอียดความผิดพลาด -->
     <div class="sectionTitle">
       <span class="dot"></span>
       <div>
@@ -170,7 +158,6 @@
       </div>
     </div>
 
-    <!-- ข้อมูลพนักงาน -->
     <div class="sectionTitle">
       <span class="dot"></span>
       <div>
@@ -210,7 +197,6 @@
       </div>
     </div>
 
-    <!-- ผู้เกี่ยวข้อง -->
     <div class="sectionTitle">
       <span class="dot"></span>
       <div>
@@ -244,7 +230,6 @@
       </div>
     </div>
 
-    <!-- อัปโหลดภาพ -->
     <div class="sectionTitle">
       <span class="dot"></span>
       <div>
@@ -262,7 +247,6 @@
       <div id="uploadGrid" class="uploadGrid"></div>
     </div>
 
-    <!-- ผู้รับอีเมล -->
     <div class="sectionTitle">
       <span class="dot"></span>
       <div>
@@ -283,7 +267,6 @@
       <div id="emailSelector" class="emailSelector"></div>
     </div>
 
-    <!-- ปุ่ม -->
     <div class="actions">
       <button id="btnPreview" class="btn secondary" type="button">ดูสรุป</button>
       <button id="btnSubmit" class="btn primary" type="button">บันทึก</button>
