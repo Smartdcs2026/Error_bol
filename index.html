@@ -18,7 +18,7 @@
   <div class="brand">
     <img class="logo" src="https://lh5.googleusercontent.com/d/1758AOZ5E3JbnzwrFA4u2kH8nZUPrr8iP" alt="logo">
     <div class="brandText">
-      <div class="title">ระบบบันทึกข้อมูล S&LP</div>
+      <div class="title">ระบบบันทึกข้อมูล S&amp;LP</div>
       <div class="subtitle">ฟอร์ม Error_BOL / &lt;500บาท</div>
     </div>
   </div>
@@ -32,29 +32,69 @@
 <main class="container">
 
   <!-- LOGIN -->
-  <section id="loginCard" class="card">
-    <div class="cardHead">
-      <div>
-        <h2>เข้าสู่ระบบ</h2>
-        <div class="hint">กรอกรหัสผ่านเพื่อเข้าใช้งานระบบ</div>
+  <section id="loginCard" class="card loginCardPro">
+    <div class="loginHero">
+      <div class="loginHeroTop">
+        <div class="loginBadge">S&amp;LP System</div>
+        <div class="loginBadge soft">Secure Access</div>
       </div>
-    </div>
 
-    <div class="panel">
-      <div class="grid2">
-        <div class="field">
-          <label for="loginPass">รหัสผ่าน</label>
-          <input id="loginPass" type="password" placeholder="กรอกรหัสผ่าน" autocomplete="current-password">
-          <div class="hint tiny">หากรหัสถูกต้อง ระบบจะระบุชื่อผู้ใช้งานให้อัตโนมัติ</div>
+      <div class="loginHeroBody">
+        <div class="loginLogoWrap">
+          <img
+            class="loginLogo"
+            src="https://lh5.googleusercontent.com/d/1758AOZ5E3JbnzwrFA4u2kH8nZUPrr8iP"
+            alt="logo"
+          >
+        </div>
+
+        <div class="loginHeroText">
+          <h1 class="loginTitle">เข้าสู่ระบบบันทึกข้อมูล S&amp;LP</h1>
+          <div class="loginSubtitle">
+            ใช้รหัสผ่านเพื่อเข้าใช้งานฟอร์ม Error_BOL และงานเอกสารที่เกี่ยวข้อง
+          </div>
         </div>
       </div>
     </div>
 
-    <div class="actions left">
-      <button id="btnLogin" class="btn primary" type="button">เข้าสู่ระบบ</button>
-    </div>
+    <div class="loginShell">
+      <div class="loginPanel">
+        <div class="loginPanelHead">
+          <h2>ยืนยันตัวตนผู้ใช้งาน</h2>
+          <div class="hint">กรอกรหัสผ่านของคุณเพื่อเข้าสู่ระบบ</div>
+        </div>
 
-    <div id="loginMsg" class="msg"></div>
+        <div class="field loginField">
+          <label for="loginPass">รหัสผ่าน</label>
+          <input
+            id="loginPass"
+            type="password"
+            placeholder="กรอกรหัสผ่าน"
+            autocomplete="current-password"
+          >
+          <div class="hint tiny">
+            หากรหัสผ่านถูกต้อง ระบบจะระบุชื่อผู้ใช้งานให้อัตโนมัติ
+          </div>
+        </div>
+
+        <div class="loginAction">
+          <button id="btnLogin" class="btn primary loginBtn" type="button">เข้าสู่ระบบ</button>
+        </div>
+
+        <div class="loginMeta">
+          <div class="loginMetaItem">
+            <div class="loginMetaTitle">ใช้งานง่ายบนมือถือ</div>
+            <div class="loginMetaText">ช่องกรอกและปุ่มถูกออกแบบให้กดสะดวกบนหน้าจอขนาดเล็ก</div>
+          </div>
+          <div class="loginMetaItem">
+            <div class="loginMetaTitle">เข้าระบบด้วยรหัสผ่าน</div>
+            <div class="loginMetaText">เมื่อยืนยันสำเร็จ ระบบจะเปิดแบบฟอร์มและระบุชื่อผู้ใช้งานให้ทันที</div>
+          </div>
+        </div>
+
+        <div id="loginMsg" class="msg loginMsgBox"></div>
+      </div>
+    </div>
   </section>
 
   <!-- FORM ERROR_BOL -->
@@ -78,7 +118,7 @@
 
     <div class="panel">
       <div class="gridMain">
-        <div class="field">
+        <div class="field fieldSpan2">
           <label for="refRunning">หมายเลขหนังสือออก (Ref:No.)</label>
           <div class="refRow">
             <input
@@ -163,7 +203,7 @@
 
     <div class="panel">
       <div class="gridEmployee">
-        <div class="field">
+        <div class="field fieldSpan2">
           <label for="employeeName">ชื่อ-สกุลพนักงาน</label>
           <input id="employeeName" placeholder="ชื่อ-สกุล" autocomplete="off">
         </div>
