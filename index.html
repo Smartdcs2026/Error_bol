@@ -31,7 +31,6 @@
 
 <main class="container">
 
-  <!-- LOGIN -->
   <section id="loginCard" class="card loginCardPro">
     <div class="loginHero">
       <div class="loginHeroText">
@@ -65,7 +64,6 @@
     </div>
   </section>
 
-  <!-- FORM ERROR_BOL -->
   <section id="formCard" class="card hidden">
     <div class="cardHead">
       <div>
@@ -143,6 +141,11 @@
         <div class="field">
           <label for="item">Item</label>
           <input id="item" inputmode="numeric" placeholder="กรอกตัวเลข" autocomplete="off">
+          <div id="itemLookupBox" class="itemLookupBox hidden">
+            <div class="itemLookupLabel">รายละเอียดสินค้า</div>
+            <div id="itemLookupText" class="itemLookupText">-</div>
+          </div>
+          <div id="itemLookupHint" class="hint tiny">เมื่อกรอก Item ระบบจะค้นหาชื่อสินค้าให้อัตโนมัติ</div>
         </div>
 
         <div class="field">
@@ -273,7 +276,6 @@
     </div>
   </section>
 
-  <!-- FORM UNDER 500 -->
   <section id="under500Card" class="card hidden">
     <div class="cardHead">
       <div>
