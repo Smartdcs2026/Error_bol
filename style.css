@@ -474,52 +474,23 @@ input[readonly]{
 }
 
 /* =========================
-   LOGIN PRO
+   LOGIN
    ========================= */
 .loginCardPro{
-  max-width:720px;
-  margin:10px auto 16px;
+  max-width:520px;
+  margin:14px auto 18px;
   padding:0;
   overflow:hidden;
 }
 
 .loginCardPro::before{
-  height:6px;
+  height:5px;
 }
 
 .loginHero{
-  padding:18px 18px 14px;
-  background:
-    radial-gradient(circle at top right, rgba(96,165,250,.18), transparent 28%),
-    linear-gradient(180deg, #ffffff 0%, #f6faff 100%);
+  padding:20px 20px 14px;
+  background:linear-gradient(180deg,#ffffff 0%, #f7fbff 100%);
   border-bottom:1px solid #e6eef9;
-}
-
-.loginHeroTop{
-  display:flex;
-  gap:8px;
-  flex-wrap:wrap;
-  margin-bottom:14px;
-}
-
-.loginBadge{
-  display:inline-flex;
-  align-items:center;
-  min-height:30px;
-  padding:6px 10px;
-  border-radius:999px;
-  background:linear-gradient(180deg,#2563eb,#1d4ed8);
-  color:#fff;
-  font-size:12px;
-  font-weight:900;
-  box-shadow:0 8px 18px rgba(37,99,235,.20);
-}
-
-.loginBadge.soft{
-  background:#eff6ff;
-  color:#1d4ed8;
-  box-shadow:none;
-  border:1px solid #dbeafe;
 }
 
 .loginHeroBody{
@@ -529,10 +500,10 @@ input[readonly]{
 }
 
 .loginLogoWrap{
-  width:72px;
-  height:72px;
-  flex:0 0 72px;
-  border-radius:22px;
+  width:64px;
+  height:64px;
+  flex:0 0 64px;
+  border-radius:18px;
   background:#fff;
   border:1px solid #dbe7f6;
   box-shadow:0 10px 24px rgba(15,23,42,.08);
@@ -554,19 +525,17 @@ input[readonly]{
 }
 
 .loginTitle{
-  margin:0;
-  font-size:26px;
+  font-size:24px;
   line-height:1.15;
   font-weight:900;
   color:#0f172a;
 }
 
 .loginSubtitle{
-  margin-top:6px;
-  font-size:14px;
-  line-height:1.6;
-  color:#475569;
-  max-width:560px;
+  margin-top:4px;
+  font-size:13px;
+  line-height:1.5;
+  color:#64748b;
 }
 
 .loginShell{
@@ -576,18 +545,17 @@ input[readonly]{
 
 .loginPanel{
   border:1.5px solid #dce8f5;
-  border-radius:22px;
+  border-radius:20px;
   background:#fff;
   box-shadow:0 14px 34px rgba(15,23,42,.06);
   padding:16px;
 }
 
 .loginPanelHead{
-  margin-bottom:14px;
+  margin-bottom:12px;
 }
 
 .loginPanelHead h2{
-  margin:0;
   font-size:20px;
   font-weight:900;
   line-height:1.2;
@@ -598,7 +566,7 @@ input[readonly]{
 }
 
 .loginField input{
-  min-height:54px;
+  min-height:52px;
   padding:13px 14px;
   font-size:16px;
   border-radius:16px;
@@ -613,34 +581,6 @@ input[readonly]{
   min-height:50px;
   border-radius:16px;
   font-size:15px;
-}
-
-.loginMeta{
-  display:grid;
-  grid-template-columns:1fr;
-  gap:10px;
-  margin-top:14px;
-}
-
-.loginMetaItem{
-  border:1px solid #e6eef9;
-  background:#fbfdff;
-  border-radius:16px;
-  padding:12px;
-}
-
-.loginMetaTitle{
-  font-size:13px;
-  font-weight:900;
-  color:#0f172a;
-  margin-bottom:4px;
-}
-
-.loginMetaText{
-  font-size:12.5px;
-  line-height:1.55;
-  color:#64748b;
-  font-weight:700;
 }
 
 .loginMsgBox{
@@ -728,7 +668,7 @@ input[readonly]{
   display:flex;
   align-items:center;
   gap:10px;
-  padding:10px 10px;
+  padding:10px;
   border:1.2px solid var(--line);
   border-radius:12px;
   background:#fff;
@@ -1066,7 +1006,9 @@ input[readonly]{
   text-align:center;
 }
 
-/* modal sign */
+/* =========================
+   SIGNATURE MODAL
+   ========================= */
 .sigModalWrap{
   text-align:left;
 }
@@ -1187,10 +1129,6 @@ input[readonly]{
   .sigGrid{
     grid-template-columns:repeat(2, minmax(0,1fr));
   }
-
-  .loginMeta{
-    grid-template-columns:repeat(2, minmax(0,1fr));
-  }
 }
 
 @media (min-width:760px){
@@ -1259,31 +1197,33 @@ input[readonly]{
 
 @media (max-width:520px){
   .loginCardPro{
-    margin-top:4px;
+    margin-top:6px;
+  }
+
+  .loginHero{
+    padding:16px 16px 12px;
+  }
+
+  .loginShell{
+    padding:14px;
   }
 
   .loginHeroBody{
-    flex-direction:column;
-    align-items:flex-start;
+    gap:12px;
   }
 
   .loginLogoWrap{
-    width:64px;
-    height:64px;
-    border-radius:18px;
+    width:58px;
+    height:58px;
+    border-radius:16px;
   }
 
   .loginTitle{
-    font-size:22px;
+    font-size:21px;
   }
 
   .loginSubtitle{
-    font-size:13px;
-  }
-
-  .loginHero,
-  .loginShell{
-    padding:14px;
+    font-size:12.5px;
   }
 
   .loginPanel{
