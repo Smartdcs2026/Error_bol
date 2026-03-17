@@ -2665,13 +2665,13 @@ function onItemInputLookup() {
   itemLookupTimer = setTimeout(() => {
     lookupItemRealtime(item).catch((err) => {
       console.error("lookupItemRealtime error:", err);
-      ITEM_LOOKUP_STATE = {
-        item,
-        description: "",
-        displayText: item,
-        found: false,
-        loading: false
-      };
+        ITEM_LOOKUP_STATE = {
+    item: json.item || clean,
+    description: json.description || "-ไม่พบรายการสินค้า-",
+    displayText: json.displayText || `${clean} | -ไม่พบรายการสินค้า-`,
+    found: !!json.found,
+    loading: false
+  };
       renderItemLookupState({
         item,
         description: "เชื่อมต่อระบบค้นหา Item ไม่สำเร็จ",
@@ -2764,10 +2764,10 @@ function renderItemLookupState(state) {
     return;
   }
 
-  box.classList.add("notfound");
+   box.classList.add("notfound");
   txt.textContent = apiError
-    ? "เชื่อมต่อระบบค้นหา Item ไม่สำเร็จ"
-    : `ไม่พบข้อมูลสินค้า สำหรับ Item ${item}`;
+    ? `Item ${item} | -ไม่พบรายการสินค้า-`
+    : `Item ${item} | -ไม่พบรายการสินค้า-`;
 }
 
 function getItemDisplayText() {
@@ -2924,11 +2924,8 @@ function validatePayload(p) {
 
   if (!/^\d+$/.test(p.labelCid)) return "Label CID ต้องเป็นตัวเลขเท่านั้น";
   if (!/^\d+$/.test(p.item)) return "Item ต้องเป็นตัวเลขเท่านั้น";
-  if (!ITEM_LOOKUP_STATE.item || ITEM_LOOKUP_STATE.item !== p.item) {
+    if (!ITEM_LOOKUP_STATE.item || ITEM_LOOKUP_STATE.item !== p.item) {
     return "กรุณารอสักครู่เพื่อให้ระบบค้นหา Item";
-  }
-  if (!ITEM_LOOKUP_STATE.found || !ITEM_LOOKUP_STATE.description) {
-    return "ไม่พบข้อมูล Item ในฐานข้อมูลสินค้า กรุณาตรวจสอบอีกครั้ง";
   }
   if (!/^\d+$/.test(p.errorCaseQty)) return "จำนวน ErrorCase ต้องเป็นตัวเลขเท่านั้น";
   if (!/^[A-Z0-9]+$/.test(p.employeeCode)) return "รหัสพนักงานต้องเป็น A-Z หรือ/และ 0-9 เท่านั้น";
