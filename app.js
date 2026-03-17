@@ -1595,60 +1595,62 @@ async function previewSummary() {
   const emails = p.emailRecipients || [];
 
   const html = `
-    <div class="swalSummary">
-      <div class="swalHero">
-        <div class="swalHeroTitle">สรุปข้อมูลก่อนบันทึก</div>
-        <div class="swalHeroSub">ตรวจสอบความถูกต้องอีกครั้งก่อนดำเนินการต่อ</div>
-        <div class="swalPillRow">
-          <div class="swalPill primary">LPS: ${escapeHtml(AUTH.name || "-")}</div>
-          <div class="swalPill">รูปแนบ ${fileCount} รูป</div>
-          <div class="swalPill">Email ${emails.length} รายการ</div>
-        </div>
-      </div>
-
-      <div class="swalSection">
-        <div class="swalSectionTitle">ข้อมูลหลัก</div>
-        <div class="swalKvGrid">
-          <div class="swalKv"><div class="swalKvLabel">Ref:No.</div><div class="swalKvValue">${escapeHtml(p.refNo)}</div></div>
-          <div class="swalKv"><div class="swalKvLabel">Label CID</div><div class="swalKvValue">${escapeHtml(p.labelCid)}</div></div>
-          <div class="swalKv"><div class="swalKvLabel">สาเหตุ Error</div><div class="swalKvValue">${escapeHtml(p.errorReason === "อื่นๆ" ? ("อื่นๆ: " + p.errorReasonOther) : p.errorReason)}</div></div>
-          <div class="swalKv"><div class="swalKvLabel">กะ</div><div class="swalKvValue">${escapeHtml(p.shift)}</div></div>
-          <div class="swalKv"><div class="swalKvLabel">Item</div><div class="swalKvValue">${escapeHtml(p.item)}</div></div>
-          <div class="swalKv"><div class="swalKvLabel">จำนวน ErrorCase</div><div class="swalKvValue">${escapeHtml(p.errorCaseQty)}</div></div>
-        </div>
-      </div>
-
-      <div class="swalSection">
-        <div class="swalSectionTitle">รายละเอียดเหตุการณ์</div>
-        <div class="swalDesc">
-          <div class="swalDescLabel">คำอธิบาย / รายละเอียด</div>
-          <div class="swalDescValue">${escapeHtml(p.errorDescription || "-").replaceAll("\n", "<br>")}</div>
-        </div>
-      </div>
-
-      <div class="swalSection">
-        <div class="swalSectionTitle">ข้อมูลพนักงานและผู้เกี่ยวข้อง</div>
-        <div class="swalKvGrid">
-          <div class="swalKv"><div class="swalKvLabel">ชื่อพนักงาน</div><div class="swalKvValue">${escapeHtml(p.employeeName)}</div></div>
-          <div class="swalKv"><div class="swalKvLabel">รหัสพนักงาน</div><div class="swalKvValue">${escapeHtml(p.employeeCode)}</div></div>
-          <div class="swalKv"><div class="swalKvLabel">OSM</div><div class="swalKvValue">${escapeHtml(p.osm)}</div></div>
-          <div class="swalKv"><div class="swalKvLabel">OTM</div><div class="swalKvValue">${escapeHtml(p.otm)}</div></div>
-          <div class="swalKv"><div class="swalKvLabel">ล่ามแปลภาษา</div><div class="swalKvValue">${escapeHtml(p.interpreterName || "-")}</div></div>
-          <div class="swalKv"><div class="swalKvLabel">AUDIT</div><div class="swalKvValue">${escapeHtml(p.auditName)}</div></div>
-        </div>
-      </div>
-
-      <div class="swalSection">
-        <div class="swalSectionTitle">ผู้รับอีเมล</div>
-        ${
-          emails.length
-            ? `<div class="swalEmailList">${emails.map(e => `<div class="swalEmailChip">${escapeHtml(e)}</div>`).join("")}</div>`
-            : `<div class="swalNote">ยังไม่ได้เลือกอีเมล ระบบจะบันทึกข้อมูลและสร้าง PDF อย่างเดียว</div>`
-        }
+  <div class="swalSummary">
+    <div class="swalHero">
+      <div class="swalHeroTitle">ตรวจสอบก่อนบันทึก</div>
+      <div class="swalHeroSub">กรุณาตรวจสอบข้อมูลสำคัญก่อนดำเนินการ</div>
+      <div class="swalPillRow">
+        <div class="swalPill primary">LPS: ${escapeHtml(AUTH.name || "-")}</div>
+        <div class="swalPill">รูป ${fileCount} รูป</div>
+        <div class="swalPill">Email ${emails.length}</div>
       </div>
     </div>
-  `;
 
+    <div class="swalSection">
+      <div class="swalSectionTitle">ข้อมูลเอกสาร</div>
+      <div class="swalKvGrid">
+        <div class="swalKv"><div class="swalKvLabel">Ref:No.</div><div class="swalKvValue">${escapeHtml(p.refNo)}</div></div>
+        <div class="swalKv"><div class="swalKvLabel">Label CID</div><div class="swalKvValue">${escapeHtml(p.labelCid)}</div></div>
+        <div class="swalKv"><div class="swalKvLabel">วันที่เบิกสินค้า</div><div class="swalKvValue">${escapeHtml(p.errorDate)}</div></div>
+        <div class="swalKv"><div class="swalKvLabel">กะ</div><div class="swalKvValue">${escapeHtml(p.shift)}</div></div>
+      </div>
+    </div>
+
+    <div class="swalSection">
+      <div class="swalSectionTitle">ข้อมูลความผิดพลาด</div>
+      <div class="swalKvGrid">
+        <div class="swalKv"><div class="swalKvLabel">สาเหตุ Error</div><div class="swalKvValue">${escapeHtml(p.errorReason === "อื่นๆ" ? ("อื่นๆ: " + p.errorReasonOther) : p.errorReason)}</div></div>
+        <div class="swalKv"><div class="swalKvLabel">Item</div><div class="swalKvValue">${escapeHtml(p.item)}</div></div>
+        <div class="swalKv"><div class="swalKvLabel">จำนวน ErrorCase</div><div class="swalKvValue">${escapeHtml(p.errorCaseQty)}</div></div>
+      </div>
+      <div class="swalDesc" style="margin-top:8px">
+        <div class="swalDescLabel">รายละเอียดเหตุการณ์</div>
+        <div class="swalDescValue">${escapeHtml(p.errorDescription || "-").replaceAll("\n", "<br>")}</div>
+      </div>
+    </div>
+
+    <div class="swalSection">
+      <div class="swalSectionTitle">ข้อมูลพนักงาน / ผู้เกี่ยวข้อง</div>
+      <div class="swalKvGrid">
+        <div class="swalKv"><div class="swalKvLabel">ชื่อพนักงาน</div><div class="swalKvValue">${escapeHtml(p.employeeName)}</div></div>
+        <div class="swalKv"><div class="swalKvLabel">รหัสพนักงาน</div><div class="swalKvValue">${escapeHtml(p.employeeCode)}</div></div>
+        <div class="swalKv"><div class="swalKvLabel">OSM</div><div class="swalKvValue">${escapeHtml(p.osm)}</div></div>
+        <div class="swalKv"><div class="swalKvLabel">OTM</div><div class="swalKvValue">${escapeHtml(p.otm)}</div></div>
+        <div class="swalKv"><div class="swalKvLabel">ล่าม</div><div class="swalKvValue">${escapeHtml(p.interpreterName || "-")}</div></div>
+        <div class="swalKv"><div class="swalKvLabel">AUDIT</div><div class="swalKvValue">${escapeHtml(p.auditName)}</div></div>
+      </div>
+    </div>
+
+    <div class="swalSection">
+      <div class="swalSectionTitle">ผู้รับอีเมล</div>
+      ${
+        emails.length
+          ? `<div class="swalEmailList">${emails.map(e => `<div class="swalEmailChip">${escapeHtml(e)}</div>`).join("")}</div>`
+          : `<div class="swalNote">ยังไม่ได้เลือกอีเมล ระบบจะบันทึกข้อมูลและสร้าง PDF อย่างเดียว</div>`
+      }
+    </div>
+  </div>
+`;
   await Swal.fire({
     title: "ดูสรุปข้อมูล",
     html,
@@ -1673,7 +1675,8 @@ async function submitForm() {
     return Swal.fire({
       icon: "warning",
       title: "ข้อมูลไม่ครบ",
-      text: err
+      text: err,
+      confirmButtonText: "ตกลง"
     });
   }
 
@@ -1700,7 +1703,14 @@ async function submitForm() {
 
   Swal.fire({
     title: "กำลังบันทึกข้อมูล",
-    html: `<div class="swalNote">กรุณารอสักครู่ ระบบกำลังอัปโหลดรูปภาพ สร้าง PDF และส่งอีเมล</div>`,
+    html: `
+      <div class="swalSummary">
+        <div class="swalHero">
+          <div class="swalHeroTitle">ระบบกำลังประมวลผล</div>
+          <div class="swalHeroSub">กำลังอัปโหลดรูปภาพ สร้าง PDF และตรวจสอบการส่งอีเมล</div>
+        </div>
+      </div>
+    `,
     allowOutsideClick: false,
     allowEscapeKey: false,
     customClass: { popup: "swalLoadingPopup" },
@@ -1723,7 +1733,17 @@ async function submitForm() {
       return Swal.fire({
         icon: "error",
         title: "บันทึกไม่สำเร็จ",
-        html: `<pre style="white-space:pre-wrap;background:#0b1220;color:#e2e8f0;padding:10px;border-radius:10px;max-height:220px;overflow:auto">${escapeHtml(text).slice(0, 2000)}</pre>`
+        html: `
+          <div class="swalSection">
+            <div class="swalSectionTitle">รายละเอียดข้อผิดพลาด</div>
+            <div class="swalDesc">
+              <div class="swalDescLabel">ข้อความจากระบบ</div>
+              <div class="swalDescValue">
+                <pre style="white-space:pre-wrap;background:#0b1220;color:#e2e8f0;padding:10px;border-radius:10px;max-height:220px;overflow:auto;margin:0;">${escapeHtml(text).slice(0, 2000)}</pre>
+              </div>
+            </div>
+          </div>
+        `
       });
     }
 
@@ -1739,25 +1759,26 @@ async function submitForm() {
     return Swal.fire({
       icon: "error",
       title: "บันทึกไม่สำเร็จ",
-      text: "เชื่อมต่อระบบไม่ได้ (ตรวจสอบอินเทอร์เน็ต/Worker)"
+      text: "เชื่อมต่อระบบไม่ได้ (ตรวจสอบอินเทอร์เน็ต / Worker / API)"
     });
   }
 
   const galleryHtml = renderGalleryHtml(json.imageIds || []);
   const emailResult = json.emailResult || {};
   const emailOk = !!emailResult.ok && !emailResult.skipped;
+  const pdfSizeText = String(json.pdfSizeText || "-");
 
   const supSignThumb = signRes.supervisorBase64
     ? `<img class="sigThumb" src="${signRes.supervisorBase64}" alt="sign supervisor">`
-    : `<div style="color:#94a3b8;text-align:center;padding:14px 0">-</div>`;
+    : `<div class="swalNote">ไม่มีลายเซ็น</div>`;
 
   const empSignThumb = signRes.employeeBase64
     ? `<img class="sigThumb" src="${signRes.employeeBase64}" alt="sign employee">`
-    : `<div style="color:#94a3b8;text-align:center;padding:14px 0">-</div>`;
+    : `<div class="swalNote">ไม่มีลายเซ็น</div>`;
 
   const intSignThumb = signRes.interpreterBase64
     ? `<img class="sigThumb" src="${signRes.interpreterBase64}" alt="sign interpreter">`
-    : `<div style="color:#94a3b8;text-align:center;padding:14px 0">-</div>`;
+    : `<div class="swalNote">ไม่มีลายเซ็น</div>`;
 
   await Swal.fire({
     icon: "success",
@@ -1769,24 +1790,91 @@ async function submitForm() {
       <div class="swalSummary">
         <div class="swalHero">
           <div class="swalHeroTitle">บันทึกรายการเรียบร้อยแล้ว</div>
-          <div class="swalHeroSub">ระบบได้จัดเก็บข้อมูล รูปภาพ และไฟล์ PDF เรียบร้อย</div>
+          <div class="swalHeroSub">ระบบจัดเก็บข้อมูล รูปภาพ และเอกสาร PDF เรียบร้อย</div>
           <div class="swalPillRow">
             <div class="swalPill primary">LPS: ${escapeHtml(AUTH.name || json.lpsName || "-")}</div>
-            <div class="swalPill">Ref: ${escapeHtml(p.refNo)}</div>
-            <div class="swalPill">รูปแนบ ${(json.imageIds || []).length} รูป</div>
-            <div class="swalPill">วินัย ${Number(json.disciplineMatchCount || 0)} รายการ</div>
+            <div class="swalPill">Ref: ${escapeHtml(p.refNo || "-")}</div>
+            <div class="swalPill">รูป ${Number((json.imageIds || []).length)}</div>
+            <div class="swalPill">วินัย ${Number(json.disciplineMatchCount || 0)}</div>
           </div>
         </div>
 
         <div class="swalSection">
-          <div class="swalSectionTitle">ข้อมูลสรุป</div>
+          <div class="swalSectionTitle">ข้อมูลเอกสาร</div>
           <div class="swalKvGrid">
-            <div class="swalKv"><div class="swalKvLabel">วันที่เวลา</div><div class="swalKvValue">${escapeHtml(json.timestamp || "-")}</div></div>
-            <div class="swalKv"><div class="swalKvLabel">Label CID</div><div class="swalKvValue">${escapeHtml(p.labelCid)}</div></div>
-            <div class="swalKv"><div class="swalKvLabel">สาเหตุ</div><div class="swalKvValue">${escapeHtml(p.errorReason === "อื่นๆ" ? ("อื่นๆ: " + p.errorReasonOther) : p.errorReason)}</div></div>
-            <div class="swalKv"><div class="swalKvLabel">กะ</div><div class="swalKvValue">${escapeHtml(p.shift)}</div></div>
-            <div class="swalKv"><div class="swalKvLabel">Item</div><div class="swalKvValue">${escapeHtml(p.item)}</div></div>
-            <div class="swalKv"><div class="swalKvLabel">จำนวน ErrorCase</div><div class="swalKvValue">${escapeHtml(p.errorCaseQty)}</div></div>
+            <div class="swalKv">
+              <div class="swalKvLabel">วันที่เวลา</div>
+              <div class="swalKvValue">${escapeHtml(json.timestamp || "-")}</div>
+            </div>
+            <div class="swalKv">
+              <div class="swalKvLabel">Ref:No.</div>
+              <div class="swalKvValue">${escapeHtml(p.refNo || "-")}</div>
+            </div>
+            <div class="swalKv">
+              <div class="swalKvLabel">Label CID</div>
+              <div class="swalKvValue">${escapeHtml(p.labelCid || "-")}</div>
+            </div>
+            <div class="swalKv">
+              <div class="swalKvLabel">ขนาด PDF</div>
+              <div class="swalKvValue">${escapeHtml(pdfSizeText)}</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="swalSection">
+          <div class="swalSectionTitle">ข้อมูลเหตุการณ์</div>
+          <div class="swalKvGrid">
+            <div class="swalKv">
+              <div class="swalKvLabel">สาเหตุ</div>
+              <div class="swalKvValue">${escapeHtml(p.errorReason === "อื่นๆ" ? ("อื่นๆ: " + p.errorReasonOther) : p.errorReason)}</div>
+            </div>
+            <div class="swalKv">
+              <div class="swalKvLabel">กะ</div>
+              <div class="swalKvValue">${escapeHtml(p.shift || "-")}</div>
+            </div>
+            <div class="swalKv">
+              <div class="swalKvLabel">Item</div>
+              <div class="swalKvValue">${escapeHtml(p.item || "-")}</div>
+            </div>
+            <div class="swalKv">
+              <div class="swalKvLabel">จำนวน ErrorCase</div>
+              <div class="swalKvValue">${escapeHtml(p.errorCaseQty || "-")}</div>
+            </div>
+          </div>
+
+          <div class="swalDesc" style="margin-top:8px;">
+            <div class="swalDescLabel">รายละเอียดเหตุการณ์</div>
+            <div class="swalDescValue">${escapeHtml(p.errorDescription || "-").replaceAll("\n", "<br>")}</div>
+          </div>
+        </div>
+
+        <div class="swalSection">
+          <div class="swalSectionTitle">พนักงาน / ผู้เกี่ยวข้อง</div>
+          <div class="swalKvGrid">
+            <div class="swalKv">
+              <div class="swalKvLabel">ชื่อพนักงาน</div>
+              <div class="swalKvValue">${escapeHtml(p.employeeName || "-")}</div>
+            </div>
+            <div class="swalKv">
+              <div class="swalKvLabel">รหัสพนักงาน</div>
+              <div class="swalKvValue">${escapeHtml(p.employeeCode || "-")}</div>
+            </div>
+            <div class="swalKv">
+              <div class="swalKvLabel">OSM</div>
+              <div class="swalKvValue">${escapeHtml(p.osm || "-")}</div>
+            </div>
+            <div class="swalKv">
+              <div class="swalKvLabel">OTM</div>
+              <div class="swalKvValue">${escapeHtml(p.otm || "-")}</div>
+            </div>
+            <div class="swalKv">
+              <div class="swalKvLabel">ล่าม</div>
+              <div class="swalKvValue">${escapeHtml(p.interpreterName || "-")}</div>
+            </div>
+            <div class="swalKv">
+              <div class="swalKvLabel">AUDIT</div>
+              <div class="swalKvValue">${escapeHtml(p.auditName || "-")}</div>
+            </div>
           </div>
         </div>
 
@@ -1796,18 +1884,37 @@ async function submitForm() {
             emailResult.skipped
               ? `<div class="swalNote">ไม่ได้ส่งอีเมล เพราะยังไม่ได้เลือกผู้รับ</div>`
               : emailOk
-                ? `<div class="swalEmailOk">ส่งอีเมลสำเร็จ ${Number(emailResult.count || 0)} รายการ</div>
-                   <div class="swalEmailList">${(emailResult.recipients || []).map(e => `<div class="swalEmailChip">${escapeHtml(e)}</div>`).join("")}</div>`
+                ? `
+                  <div class="swalEmailOk">
+                    ส่งอีเมลสำเร็จ ${Number(emailResult.count || 0)} รายการ
+                    ${emailResult.attachmentMode ? `• ${escapeHtml(emailResult.attachmentMode)}` : ""}
+                  </div>
+                  <div class="swalEmailList">
+                    ${(emailResult.recipients || []).map(e => `<div class="swalEmailChip">${escapeHtml(e)}</div>`).join("")}
+                  </div>
+                `
                 : `<div class="swalEmailFail">บันทึกข้อมูลสำเร็จ แต่ส่งอีเมลไม่สำเร็จ: ${escapeHtml(emailResult.error || "-")}</div>`
           }
         </div>
 
         <div class="swalSection">
-          <div class="swalSectionTitle">ผู้เกี่ยวข้องและลายเซ็น</div>
+          <div class="swalSectionTitle">ลายเซ็น</div>
           <div class="sigGrid">
-            <div><div class="sigBoxTitle">หัวหน้างาน</div>${supSignThumb}<div class="sigName">${escapeHtml(p.otm || "-")}</div></div>
-            <div><div class="sigBoxTitle">พนักงาน</div>${empSignThumb}<div class="sigName">${escapeHtml(p.employeeName || "-")}</div></div>
-            <div><div class="sigBoxTitle">ล่ามแปลภาษา</div>${intSignThumb}<div class="sigName">${escapeHtml(p.interpreterName || "-")}</div></div>
+            <div>
+              <div class="sigBoxTitle">หัวหน้างาน</div>
+              ${supSignThumb}
+              <div class="sigName">${escapeHtml(p.otm || "-")}</div>
+            </div>
+            <div>
+              <div class="sigBoxTitle">พนักงาน</div>
+              ${empSignThumb}
+              <div class="sigName">${escapeHtml(p.employeeName || "-")}</div>
+            </div>
+            <div>
+              <div class="sigBoxTitle">ล่ามแปลภาษา</div>
+              ${intSignThumb}
+              <div class="sigName">${escapeHtml(p.interpreterName || "-")}</div>
+            </div>
           </div>
         </div>
 
@@ -1816,11 +1923,15 @@ async function submitForm() {
           ${galleryHtml || `<div class="swalNote">ไม่มีรูปภาพแนบ</div>`}
         </div>
 
-        ${json.pdfUrl ? `
-          <div class="swalActionLink">
-            <a href="${json.pdfUrl}" target="_blank" rel="noopener noreferrer">เปิดไฟล์ PDF รายงาน</a>
-          </div>
-        ` : `<div class="swalNote" style="color:#dc2626;font-weight:900">ไม่พบลิงก์ PDF</div>`}
+        ${
+          json.pdfUrl
+            ? `
+              <div class="swalActionLink">
+                <a href="${json.pdfUrl}" target="_blank" rel="noopener noreferrer">เปิดไฟล์ PDF รายงาน</a>
+              </div>
+            `
+            : `<div class="swalNote" style="color:#dc2626;font-weight:900">ไม่พบลิงก์ PDF</div>`
+        }
       </div>
     `,
     didOpen: () => bindGalleryClickInSwal()
@@ -1828,7 +1939,6 @@ async function submitForm() {
 
   resetForm();
 }
-
 async function collectFilesAsBase64({ maxFiles = 6, maxMBEach = 4 } = {}) {
   const inputs = Array.from(document.querySelectorAll('#uploadGrid input[type="file"]'));
   const picked = [];
