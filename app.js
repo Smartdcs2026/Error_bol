@@ -1420,6 +1420,7 @@ let OPTIONS = {
   otmList: [],
   confirmCauseList: []
 };
+
 let AUTH = { name: "", pass: "" };
 
 let ITEM_LOOKUP_STATE = {
@@ -1535,7 +1536,7 @@ async function init() {
   buildInitialUploadFields();
   bindEvents();
   bindRefInputs();
-  fillTenureSelects();
+  buildWorkAgeOptions();
 
   try {
     await loadOptions();
@@ -1553,6 +1554,7 @@ async function init() {
   alnumUpperOnly($("employeeCode"));
 
   setActiveTab("error");
+  updateEmployeeConfirmPreview();
 }
 
 function safeSetLoginMsg(msg) {
@@ -1599,6 +1601,15 @@ function bindEvents() {
 
   $("item")?.addEventListener("input", onItemInputLookup);
   $("item")?.addEventListener("blur", onItemBlurLookup);
+
+  [
+    "employeeName", "employeeCode", "errorDate", "shift",
+    "errorReason", "errorReasonOther", "item", "errorCaseQty",
+    "confirmCauseOther"
+  ].forEach((id) => {
+    $(id)?.addEventListener("input", updateEmployeeConfirmPreview);
+    $(id)?.addEventListener("change", updateEmployeeConfirmPreview);
+  });
 }
 
 async function loadOptions() {
@@ -1630,7 +1641,6 @@ function fillFormDropdowns() {
   const audit = $("auditName");
   const osm = $("osm");
   const otm = $("otm");
-  const nationality = $("nationality");
 
   if (er) {
     er.innerHTML =
@@ -1655,83 +1665,99 @@ function fillFormDropdowns() {
       `<option value="">-- เลือก --</option>` +
       (OPTIONS.otmList || []).map((n) => `<option>${escapeHtml(n)}</option>`).join("");
   }
-
-  if (nationality) {
-    nationality.innerHTML = `
-      <option value="">-- เลือก --</option>
-      <option value="ไทย">ไทย</option>
-      <option value="พม่า">พม่า</option>
-      <option value="ลาว">ลาว</option>
-    `;
-  }
 }
 
-function fillTenureSelects() {
-  const y = $("tenureYear");
-  const m = $("tenureMonth");
-  if (y) {
-    y.innerHTML = `<option value="">-- ปี --</option>` +
+function buildWorkAgeOptions() {
+  const yearEl = $("workAgeYear");
+  const monthEl = $("workAgeMonth");
+
+  if (yearEl) {
+    yearEl.innerHTML =
+      `<option value="">-- ปี --</option>` +
       Array.from({ length: 41 }, (_, i) => `<option value="${i}">${i}</option>`).join("");
   }
-  if (m) {
-    m.innerHTML = `<option value="">-- เดือน --</option>` +
+
+  if (monthEl) {
+    monthEl.innerHTML =
+      `<option value="">-- เดือน --</option>` +
       Array.from({ length: 12 }, (_, i) => `<option value="${i}">${i}</option>`).join("");
   }
 }
 
 /** ==========================
- *  Confirm Cause Selector
+ *  Confirm Cause
  *  ========================== */
+function onErrorReasonChange() {
+  const v = $("errorReason")?.value || "";
+  $("wrapErrorOther")?.classList.toggle("hidden", v !== "อื่นๆ");
+  renderConfirmCauseSelector();
+  updateEmployeeConfirmPreview();
+}
+
 function renderConfirmCauseSelector() {
   const root = $("confirmCauseSelector");
   if (!root) return;
 
-  const list = Array.isArray(OPTIONS.confirmCauseList) ? OPTIONS.confirmCauseList : [];
-  if (!list.length) {
-    root.innerHTML = `<div class="causeEmpty">ไม่พบรายการในชีท Confirm_Cause</div>`;
-    updateConfirmCauseOtherVisibility();
+  const selectedBefore = getSelectedConfirmCauses();
+  const currentReason = String($("errorReason")?.value || "").trim();
+
+  const allItems = Array.isArray(OPTIONS.confirmCauseList) ? OPTIONS.confirmCauseList : [];
+  const filtered = allItems.filter((item) => {
+    const targets = Array.isArray(item.mainReasons) ? item.mainReasons : ["*"];
+    if (!targets.length || targets.includes("*")) return true;
+    return currentReason ? targets.includes(currentReason) : true;
+  });
+
+  if (!filtered.length) {
+    root.innerHTML = `<div class="confirmCauseEmpty">ไม่พบรายการสาเหตุประกอบในชีท Confirm_Cause</div>`;
+    updateConfirmCauseOtherState();
     return;
   }
 
   const groups = {};
-  for (const item of list) {
-    const g = String(item.group || "ทั่วไป").trim() || "ทั่วไป";
+  filtered.forEach((item) => {
+    const g = item.group || "อื่นๆ";
     if (!groups[g]) groups[g] = [];
     groups[g].push(item);
-  }
+  });
 
-  root.innerHTML = Object.keys(groups).map((groupName) => {
-    const cards = groups[groupName].map((item, i) => {
-      const value = String(item.text || "").trim();
-      const requireExtra = !!item.requireExtra;
+  root.innerHTML = Object.keys(groups).map((group) => {
+    const cards = groups[group].map((item, idx) => {
+      const id = `cc_${group}_${idx}_${Math.random().toString(16).slice(2)}`;
+      const checked = selectedBefore.includes(item.text) ? "checked" : "";
+      const requiresText = item.requiresText ? "1" : "0";
 
       return `
-        <label class="causeCard">
+        <label class="confirmCauseCard">
           <input
             type="checkbox"
             class="confirmCauseChk"
-            value="${escapeHtml(value)}"
-            data-require-extra="${requireExtra ? "Y" : "N"}"
+            value="${escapeHtml(item.text)}"
+            data-requires-text="${requiresText}"
+            ${checked}
           >
-          <span class="causeTick"></span>
-          <span class="causeText">${escapeHtml(value)}</span>
+          <span class="confirmCauseMark"></span>
+          <span class="confirmCauseText">${escapeHtml(item.text)}</span>
         </label>
       `;
     }).join("");
 
     return `
-      <div class="causeGroup">
-        <div class="causeGroupHead">${escapeHtml(groupName)}</div>
-        <div class="causeGrid">${cards}</div>
+      <div class="confirmCauseGroup">
+        <div class="confirmCauseGroupTitle">${escapeHtml(group)}</div>
+        <div class="confirmCauseGrid">${cards}</div>
       </div>
     `;
   }).join("");
 
-  root.querySelectorAll(".confirmCauseChk").forEach(chk => {
-    chk.addEventListener("change", updateConfirmCauseOtherVisibility);
+  root.querySelectorAll(".confirmCauseChk").forEach((chk) => {
+    chk.addEventListener("change", () => {
+      updateConfirmCauseOtherState();
+      updateEmployeeConfirmPreview();
+    });
   });
 
-  updateConfirmCauseOtherVisibility();
+  updateConfirmCauseOtherState();
 }
 
 function getSelectedConfirmCauses() {
@@ -1740,29 +1766,62 @@ function getSelectedConfirmCauses() {
     .filter(Boolean);
 }
 
-function hasCheckedRequireExtraCause() {
-  return Array.from(document.querySelectorAll(".confirmCauseChk:checked"))
-    .some(el => String(el.dataset.requireExtra || "").toUpperCase() === "Y");
-}
-
-function updateConfirmCauseOtherVisibility() {
+function updateConfirmCauseOtherState() {
   const wrap = $("wrapConfirmCauseOther");
-  if (!wrap) return;
-  wrap.classList.toggle("hidden", !hasCheckedRequireExtraCause());
+  const requiresText = Array.from(document.querySelectorAll(".confirmCauseChk:checked"))
+    .some(el => String(el.dataset.requiresText || "") === "1");
+
+  wrap?.classList.toggle("hidden", !requiresText);
 }
 
-function buildEmployeeConfirmTextFromPayload(p) {
-  const selected = Array.isArray(p.confirmCauseList) ? p.confirmCauseList.filter(Boolean) : [];
-  const lines = selected.map((txt, i) => `${i + 1}) ${txt}`);
-  if (String(p.confirmCauseOther || "").trim()) {
-    lines.push(`${lines.length + 1}) อื่นๆ: ${String(p.confirmCauseOther).trim()}`);
-  }
+function composeConfirmCauseSummary(selected, otherText) {
+  const list = Array.isArray(selected) ? selected.filter(Boolean) : [];
+  const other = String(otherText || "").trim();
+  const out = list.slice();
+  if (other) out.push("อื่นๆ: " + other);
+  return out.join(" | ");
+}
 
-  const causeText = lines.length
-    ? lines.join(" ")
-    : "ข้าพเจ้ายืนยันว่าได้รับทราบข้อผิดพลาดที่เกิดขึ้นตามข้อเท็จจริง";
+function buildEmployeeConfirmText(payload) {
+  const employeeName = String(payload.employeeName || "").trim() || "-";
+  const employeeCode = String(payload.employeeCode || "").trim() || "-";
+  const errorDate = String(payload.errorDate || "").trim() || "-";
+  const shift = String(payload.shift || "").trim() || "-";
+  const refNo = String(payload.refNo || "").trim() || "-";
+  const errorReason = String(payload.errorReason || "").trim() || "-";
+  const itemDisplay = String(payload.itemDisplay || getItemDisplayText() || "-").trim() || "-";
+  const errorCaseQty = String(payload.errorCaseQty || "").trim() || "-";
 
-  return `ข้าพเจ้า ${p.employeeName || "-"} รหัสพนักงาน ${p.employeeCode || "-"} วันที่ ${p.errorDate || "-"} ปฏิบัติงานกะ ${p.shift || "-"} ขอรับรองและยืนยันว่าได้รับทราบรายละเอียดเกี่ยวกับการเบิกสินค้า Error ตามเอกสารเลขที่อ้างอิง ${p.refNo || "-"} และยืนยันข้อเท็จจริงดังต่อไปนี้: ${causeText} รวมทั้งยินยอมให้ใช้เอกสารฉบับนี้เป็นหลักฐานประกอบการตรวจสอบภายในของหน่วยงาน และดำเนินการตามระเบียบบริษัท หากตรวจพบว่าข้อมูลที่ให้ไว้ไม่ถูกต้อง ไม่ครบถ้วน หรือขัดต่อข้อเท็จจริง`;
+  const selected = Array.isArray(payload.confirmCauseSelected) ? payload.confirmCauseSelected.filter(Boolean) : [];
+  const other = String(payload.confirmCauseOther || "").trim();
+
+  const lines = [];
+  selected.forEach((t, i) => lines.push(`${i + 1}) ${t}`));
+  if (other) lines.push(`${lines.length + 1}) อื่นๆ: ${other}`);
+
+  const factText = lines.length
+    ? lines.join("\n")
+    : "1) ข้าพเจ้ายืนยันว่ารับทราบข้อเท็จจริงตามเอกสารฉบับนี้";
+
+  return [
+    `ข้าพเจ้า ${employeeName} รหัสพนักงาน ${employeeCode} ปฏิบัติงานวันที่ ${errorDate} กะ ${shift} ขอรับรองว่าได้รับทราบรายละเอียดการเบิกสินค้า Error ตามเอกสารเลขที่อ้างอิง ${refNo}`,
+    `โดยมีสาเหตุหลักคือ ${errorReason} รายการสินค้า ${itemDisplay} และจำนวน ErrorCase ${errorCaseQty}`,
+    `ข้าพเจ้าขอยืนยันข้อเท็จจริงดังต่อไปนี้`,
+    factText,
+    `ทั้งนี้ ข้าพเจ้ายินยอมให้ใช้เอกสารฉบับนี้เป็นหลักฐานประกอบการตรวจสอบภายใน และการดำเนินการตามระเบียบของบริษัทต่อไป`
+  ].join("\n");
+}
+
+function updateEmployeeConfirmPreview() {
+  const preview = $("employeeConfirmPreview");
+  if (!preview) return;
+
+  const p = collectPayloadBase();
+  p.confirmCauseSelected = getSelectedConfirmCauses();
+  p.confirmCauseOther = ($("confirmCauseOther")?.value || "").trim();
+  p.employeeConfirmText = buildEmployeeConfirmText(p);
+
+  preview.value = p.employeeConfirmText;
 }
 
 /** ==========================
@@ -1865,11 +1924,9 @@ async function onLogin() {
   setActiveTab("error");
 }
 
-function onErrorReasonChange() {
-  const v = $("errorReason")?.value || "";
-  $("wrapErrorOther")?.classList.toggle("hidden", v !== "อื่นๆ");
-}
-
+/** ==========================
+ *  Basic sanitizers
+ *  ========================== */
 function numericOnly(el) {
   if (!el) return;
   el.addEventListener("input", () => {
@@ -1894,6 +1951,7 @@ function onItemInputLookup() {
       loading: false
     };
     renderItemLookupState(ITEM_LOOKUP_STATE);
+    updateEmployeeConfirmPreview();
     return;
   }
 
@@ -1905,6 +1963,7 @@ function onItemInputLookup() {
       found: false,
       loading: false
     });
+    updateEmployeeConfirmPreview();
     return;
   }
 
@@ -1912,6 +1971,7 @@ function onItemInputLookup() {
     const cached = ITEM_LOCAL_CACHE.get(item);
     ITEM_LOOKUP_STATE = { ...cached, loading: false };
     renderItemLookupState(ITEM_LOOKUP_STATE);
+    updateEmployeeConfirmPreview();
     return;
   }
 
@@ -1937,6 +1997,7 @@ function onItemInputLookup() {
 
       ITEM_LOCAL_CACHE.set(item, { ...ITEM_LOOKUP_STATE });
       renderItemLookupState({ ...ITEM_LOOKUP_STATE, apiError: true });
+      updateEmployeeConfirmPreview();
     });
   }, ITEM_LOOKUP_DEBOUNCE_MS);
 }
@@ -1949,6 +2010,7 @@ async function onItemBlurLookup() {
     const cached = ITEM_LOCAL_CACHE.get(item);
     ITEM_LOOKUP_STATE = { ...cached, loading: false };
     renderItemLookupState(ITEM_LOOKUP_STATE);
+    updateEmployeeConfirmPreview();
     return;
   }
 
@@ -1967,6 +2029,7 @@ async function lookupItemRealtime(item, immediate = false) {
     const cached = ITEM_LOCAL_CACHE.get(clean);
     ITEM_LOOKUP_STATE = { ...cached, loading: false };
     renderItemLookupState(ITEM_LOOKUP_STATE);
+    updateEmployeeConfirmPreview();
     return;
   }
 
@@ -2003,6 +2066,7 @@ async function lookupItemRealtime(item, immediate = false) {
 
   ITEM_LOCAL_CACHE.set(clean, { ...ITEM_LOOKUP_STATE });
   renderItemLookupState(ITEM_LOOKUP_STATE);
+  updateEmployeeConfirmPreview();
 }
 
 function renderItemLookupState(state) {
@@ -2143,7 +2207,7 @@ function addUploadField(label, opts = {}) {
 /** ==========================
  *  Payload + Validation
  *  ========================== */
-function collectPayload() {
+function collectPayloadBase() {
   return {
     refNo: getRefNoValue(),
     labelCid: ($("labelCid")?.value || "").trim(),
@@ -2157,18 +2221,28 @@ function collectPayload() {
     errorCaseQty: ($("errorCaseQty")?.value || "").trim(),
     employeeName: ($("employeeName")?.value || "").trim(),
     employeeCode: ($("employeeCode")?.value || "").trim(),
-    tenureYear: ($("tenureYear")?.value || "").trim(),
-    tenureMonth: ($("tenureMonth")?.value || "").trim(),
+    workAgeYear: ($("workAgeYear")?.value || "").trim(),
+    workAgeMonth: ($("workAgeMonth")?.value || "").trim(),
     nationality: ($("nationality")?.value || "").trim(),
     shift: ($("shift")?.value || "").trim(),
     osm: ($("osm")?.value || "").trim(),
     otm: ($("otm")?.value || "").trim(),
     interpreterName: ($("interpreterName")?.value || "").trim(),
     auditName: ($("auditName")?.value || "").trim(),
-    confirmCauseList: getSelectedConfirmCauses(),
-    confirmCauseOther: ($("confirmCauseOther")?.value || "").trim(),
     emailRecipients: getSelectedEmails()
   };
+}
+
+function collectPayload() {
+  const p = collectPayloadBase();
+  p.confirmCauseSelected = getSelectedConfirmCauses();
+  p.confirmCauseOther = ($("confirmCauseOther")?.value || "").trim();
+  p.employeeConfirmText = buildEmployeeConfirmText({
+    ...p,
+    confirmCauseSelected: p.confirmCauseSelected,
+    confirmCauseOther: p.confirmCauseOther
+  });
+  return p;
 }
 
 function validatePayload(p) {
@@ -2183,8 +2257,8 @@ function validatePayload(p) {
     ["employeeCode", "รหัสพนักงาน"],
     ["errorDate", "วันที่เบิกสินค้า Error"],
     ["shift", "กะ"],
-    ["tenureYear", "อายุงาน (ปี)"],
-    ["tenureMonth", "อายุงาน (เดือน)"],
+    ["workAgeYear", "อายุงาน (ปี)"],
+    ["workAgeMonth", "อายุงาน (เดือน)"],
     ["nationality", "สัญชาติ"],
     ["osm", "OSM"],
     ["otm", "OTM"],
@@ -2193,6 +2267,17 @@ function validatePayload(p) {
 
   for (const [k, n] of required) {
     if (!String(p[k] || "").trim()) return `กรุณากรอก ${n}`;
+  }
+
+  if (!Array.isArray(p.confirmCauseSelected) || !p.confirmCauseSelected.length) {
+    return "กรุณาเลือกข้อเท็จจริง/สาเหตุประกอบอย่างน้อย 1 รายการ";
+  }
+
+  const mustOther = Array.from(document.querySelectorAll(".confirmCauseChk:checked"))
+    .some(el => String(el.dataset.requiresText || "") === "1");
+
+  if (mustOther && !String(p.confirmCauseOther || "").trim()) {
+    return "กรุณาระบุรายละเอียดเพิ่มเติมในสาเหตุอื่นๆ";
   }
 
   const refRunning = String($("refRunning")?.value || "").trim();
@@ -2207,20 +2292,9 @@ function validatePayload(p) {
   if (!/^\d+$/.test(p.item)) return "Item ต้องเป็นตัวเลขเท่านั้น";
   if (!/^\d+$/.test(p.errorCaseQty)) return "จำนวน ErrorCase ต้องเป็นตัวเลขเท่านั้น";
   if (!/^[A-Z0-9]+$/.test(p.employeeCode)) return "รหัสพนักงานต้องเป็น A-Z หรือ/และ 0-9 เท่านั้น";
+  if (!/^\d+$/.test(p.workAgeYear)) return "อายุงาน (ปี) ต้องเป็นตัวเลข";
+  if (!/^\d+$/.test(p.workAgeMonth)) return "อายุงาน (เดือน) ต้องเป็นตัวเลข";
   if (!/^\d{4}-\d{2}-\d{2}$/.test(p.errorDate)) return "รูปแบบวันที่เบิกสินค้าไม่ถูกต้อง";
-
-  const y = Number(p.tenureYear);
-  const m = Number(p.tenureMonth);
-  if (Number.isNaN(y) || y < 0 || y > 40) return "อายุงาน (ปี) ไม่ถูกต้อง";
-  if (Number.isNaN(m) || m < 0 || m > 11) return "อายุงาน (เดือน) ไม่ถูกต้อง";
-
-  if (!Array.isArray(p.confirmCauseList) || p.confirmCauseList.length === 0) {
-    return "กรุณาเลือกข้อเท็จจริง/สาเหตุประกอบอย่างน้อย 1 รายการ";
-  }
-
-  if (hasCheckedRequireExtraCause() && !String(p.confirmCauseOther || "").trim()) {
-    return "กรุณาระบุรายละเอียดเพิ่มเติมของสาเหตุ (อื่นๆ)";
-  }
 
   return "";
 }
@@ -2243,8 +2317,7 @@ async function previewSummary() {
 
   const fileCount = countSelectedFiles();
   const emails = Array.isArray(p.emailRecipients) ? p.emailRecipients : [];
-  const confirmText = buildEmployeeConfirmTextFromPayload(p);
-  const causeHtml = renderSelectedCauseHtml(p.confirmCauseList, p.confirmCauseOther);
+  const causeSummary = composeConfirmCauseSummary(p.confirmCauseSelected, p.confirmCauseOther);
 
   await Swal.fire({
     title: "ตรวจสอบก่อนบันทึก",
@@ -2272,7 +2345,7 @@ async function previewSummary() {
               <div class="swalKvValue">${escapeHtml(p.labelCid || "-")}</div>
             </div>
             <div class="swalKv">
-              <div class="swalKvLabel">วันที่เกิดเหตุ</div>
+              <div class="swalKvLabel">วันที่เบิกสินค้า Error</div>
               <div class="swalKvValue">${escapeHtml(p.errorDate || "-")}</div>
             </div>
             <div class="swalKv">
@@ -2322,7 +2395,7 @@ async function previewSummary() {
             </div>
             <div class="swalKv">
               <div class="swalKvLabel">อายุงาน</div>
-              <div class="swalKvValue">${escapeHtml(`${p.tenureYear} ปี ${p.tenureMonth} เดือน`)}</div>
+              <div class="swalKvValue">${escapeHtml(`${p.workAgeYear} ปี ${p.workAgeMonth} เดือน`)}</div>
             </div>
             <div class="swalKv">
               <div class="swalKvLabel">สัญชาติ</div>
@@ -2349,10 +2422,14 @@ async function previewSummary() {
 
         <div class="swalSection">
           <div class="swalSectionTitle">ข้อเท็จจริงที่พนักงานยืนยัน</div>
-          ${causeHtml}
-          <div class="swalDesc" style="margin-top:10px;">
-            <div class="swalDescLabel">ข้อความคำยืนยันที่จะใช้ในเอกสาร</div>
-            <div class="swalDescValue">${escapeHtml(confirmText).replaceAll("\n", "<br>")}</div>
+          <div class="swalDesc">
+            <div class="swalDescLabel">รายการที่เลือก</div>
+            <div class="swalDescValue">${escapeHtml(causeSummary || "-").replaceAll("|", "<br>")}</div>
+          </div>
+
+          <div class="swalDesc" style="margin-top:8px;">
+            <div class="swalDescLabel">คำยืนยันของพนักงาน</div>
+            <div class="swalDescValue">${escapeHtml(p.employeeConfirmText || "-").replaceAll("\n", "<br>")}</div>
           </div>
         </div>
 
@@ -2391,22 +2468,6 @@ async function previewSummary() {
     confirmButtonColor: "#2563eb",
     width: 920
   });
-}
-
-function renderSelectedCauseHtml(list = [], other = "") {
-  const arr = Array.isArray(list) ? list.filter(Boolean) : [];
-  const chips = arr.map(txt => `<div class="swalEmailChip">${escapeHtml(txt)}</div>`).join("");
-
-  return `
-    <div class="swalEmailList">
-      ${chips || `<div class="swalNote">ไม่ได้เลือก</div>`}
-    </div>
-    ${
-      String(other || "").trim()
-        ? `<div class="swalDesc" style="margin-top:8px;"><div class="swalDescLabel">อื่นๆ</div><div class="swalDescValue">${escapeHtml(other)}</div></div>`
-        : ``
-    }
-  `;
 }
 
 function countSelectedFiles() {
@@ -2610,7 +2671,7 @@ async function submitForm() {
             </div>
             <div class="swalKv">
               <div class="swalKvLabel">อายุงาน</div>
-              <div class="swalKvValue">${escapeHtml(`${p.tenureYear} ปี ${p.tenureMonth} เดือน`)}</div>
+              <div class="swalKvValue">${escapeHtml(`${p.workAgeYear} ปี ${p.workAgeMonth} เดือน`)}</div>
             </div>
             <div class="swalKv">
               <div class="swalKvLabel">สัญชาติ</div>
@@ -2637,10 +2698,14 @@ async function submitForm() {
 
         <div class="swalSection">
           <div class="swalSectionTitle">ข้อเท็จจริงที่พนักงานยืนยัน</div>
-          ${renderSelectedCauseHtml(p.confirmCauseList, p.confirmCauseOther)}
+          <div class="swalDesc">
+            <div class="swalDescLabel">รายการที่เลือก</div>
+            <div class="swalDescValue">${escapeHtml(composeConfirmCauseSummary(p.confirmCauseSelected, p.confirmCauseOther) || "-").replaceAll("|", "<br>")}</div>
+          </div>
+
           <div class="swalDesc" style="margin-top:8px;">
-            <div class="swalDescLabel">ข้อความคำยืนยัน</div>
-            <div class="swalDescValue">${escapeHtml(json.employeeConfirmText || buildEmployeeConfirmTextFromPayload(p)).replaceAll("\n", "<br>")}</div>
+            <div class="swalDescLabel">คำยืนยันของพนักงาน</div>
+            <div class="swalDescValue">${escapeHtml(p.employeeConfirmText || "-").replaceAll("\n", "<br>")}</div>
           </div>
         </div>
 
@@ -2920,12 +2985,7 @@ function resetForm() {
     "employeeName",
     "errorDate",
     "employeeCode",
-    "tenureYear",
-    "tenureMonth",
-    "nationality",
-    "osm",
     "interpreterName",
-    "otm",
     "confirmCauseOther"
   ];
 
@@ -2938,19 +2998,29 @@ function resetForm() {
   const audit = $("auditName");
   const shift = $("shift");
   const refYear = $("refYear");
+  const osm = $("osm");
+  const otm = $("otm");
+  const nationality = $("nationality");
+  const workAgeYear = $("workAgeYear");
+  const workAgeMonth = $("workAgeMonth");
+  const preview = $("employeeConfirmPreview");
 
   if (er) er.value = "";
   if (audit) audit.value = "";
   if (shift) shift.value = "";
+  if (osm) osm.value = "";
+  if (otm) otm.value = "";
+  if (nationality) nationality.value = "";
+  if (workAgeYear) workAgeYear.value = "";
+  if (workAgeMonth) workAgeMonth.value = "";
   if (refYear) refYear.value = getCurrentBuddhistYear();
+  if (preview) preview.value = "";
 
   document.querySelectorAll(".emailChk").forEach(chk => chk.checked = false);
   updateEmailSelectedText();
 
-  document.querySelectorAll(".confirmCauseChk").forEach(chk => chk.checked = false);
-  updateConfirmCauseOtherVisibility();
-
   $("wrapErrorOther")?.classList.add("hidden");
+  $("wrapConfirmCauseOther")?.classList.add("hidden");
 
   document.querySelectorAll(".previewImg").forEach((img) => {
     if (img.dataset && img.dataset.objectUrl) {
@@ -2970,7 +3040,9 @@ function resetForm() {
   renderItemLookupState(ITEM_LOOKUP_STATE);
 
   buildInitialUploadFields();
+  renderConfirmCauseSelector();
   setLpsFromLogin(AUTH.name || "");
+  updateEmployeeConfirmPreview();
 }
 
 function isCanvasBlank(canvas) {
