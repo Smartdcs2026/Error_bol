@@ -1179,6 +1179,7 @@ textarea[readonly]{
   border:1px solid #dbe7f6;
   border-radius:12px;
   background:linear-gradient(180deg,#f8fbff 0%, #eef5ff 100%);
+  width:100%;
 }
 
 .itemLookupLabel{
@@ -1189,11 +1190,15 @@ textarea[readonly]{
 }
 
 .itemLookupText{
+  display:block;
+  width:100%;
   font-size:13.5px;
   font-weight:900;
   color:#0f172a;
-  line-height:1.45;
+  line-height:1.5;
   word-break:break-word;
+  overflow-wrap:anywhere;
+  white-space:normal;
 }
 
 .itemLookupBox.ok{
@@ -1218,7 +1223,6 @@ textarea[readonly]{
   border-color:#dbe7f6;
   background:#f8fbff;
 }
-
 /* ===== Tablet / Desktop ===== */
 @media (min-width:760px){
   .container{
@@ -1353,4 +1357,8 @@ textarea[readonly]{
     transition:none !important;
     scroll-behavior:auto !important;
   }
+}
+/* ให้ช่อง Item และผลค้นหาสินค้ากินเต็มแถว */
+.fieldItemFull{
+  grid-column:1 / -1;
 }
