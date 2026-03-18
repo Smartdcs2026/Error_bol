@@ -21,10 +21,6 @@
   --shadow-sm:0 4px 14px rgba(15,23,42,.05);
   --shadow:0 12px 28px rgba(15,23,42,.07);
 
-  --r-sm:12px;
-  --r:16px;
-  --r-lg:22px;
-
   --input-h:46px;
   --container:1100px;
 }
@@ -156,7 +152,7 @@ textarea{
   width:100%;
   max-width:var(--container);
   margin:0 auto;
-  padding:14px 12px 30px;
+  padding:12px 10px 28px;
 }
 
 .card{
@@ -165,7 +161,7 @@ textarea{
   border:1.4px solid var(--line);
   border-radius:20px;
   box-shadow:var(--shadow);
-  padding:16px;
+  padding:14px;
   margin-bottom:14px;
   overflow:hidden;
 }
@@ -196,15 +192,10 @@ h2{
   line-height:1.2;
 }
 
-h3{
-  font-size:15px;
-  font-weight:900;
-}
-
 .hint{
   margin-top:4px;
   color:var(--muted);
-  font-size:12.5px;
+  font-size:12px;
   line-height:1.45;
 }
 
@@ -246,16 +237,12 @@ h3{
   border-color:rgba(37,99,235,.20);
 }
 
-.pill.muted{
-  color:var(--muted);
-}
-
 /* ===== Section heading ===== */
 .sectionTitle{
   display:flex;
   align-items:flex-start;
   gap:10px;
-  margin:18px 0 10px;
+  margin:16px 0 8px;
   padding:0 2px 8px;
   border-bottom:1.5px solid #e7eef8;
 }
@@ -278,7 +265,7 @@ h3{
 
 .sectionSub{
   margin-top:2px;
-  font-size:11.5px;
+  font-size:11px;
   color:var(--muted);
   line-height:1.4;
 }
@@ -286,14 +273,15 @@ h3{
 /* ===== Panels ===== */
 .panel,
 .emailPanel{
-  padding:14px;
+  padding:12px;
   border:1.3px solid var(--line);
-  border-radius:18px;
+  border-radius:16px;
   background:linear-gradient(180deg,#ffffff 0%, #fbfdff 100%);
   box-shadow:var(--shadow-sm);
 }
 
-/* ===== Grid system ===== */
+/* ===== Grid ===== */
+/* มือถือ: 2 ช่องเป็นค่าปกติ */
 .grid2,
 .gridMain,
 .gridCompact,
@@ -301,10 +289,11 @@ h3{
 .uploadGrid,
 .emailSelector{
   display:grid;
-  gap:8px;
   grid-template-columns:repeat(2, minmax(0,1fr));
+  gap:8px;
 }
 
+/* อนุญาตให้บางช่องกินเต็มแถวจริง */
 .fieldSpan2{
   grid-column:1 / -1;
 }
@@ -320,16 +309,12 @@ h3{
   margin-top:10px;
 }
 
-.field label{
-  min-height:36px;
-  line-height:1.3;
-  letter-spacing:.1px;
-}
-
 label{
-  font-size:12.5px;
+  font-size:12px;
   font-weight:900;
   color:var(--text);
+  line-height:1.28;
+  min-height:30px;
 }
 
 /* ===== Inputs ===== */
@@ -380,10 +365,25 @@ textarea[readonly]{
   border-color:#d6e4f7;
 }
 
-/* ===== Ref fields ===== */
+/* ===== ช่องที่ควรเต็มแถว ===== */
+#lps,
+#employeeConfirmPreview,
+#errorDescription,
+#confirmCauseOther{
+  width:100%;
+}
+
+#employeeConfirmPreview{
+  min-height:140px;
+  resize:vertical;
+  font-size:14px;
+  line-height:1.72;
+}
+
+/* ===== Ref row ===== */
 .refRow{
   display:grid;
-  grid-template-columns:minmax(0,1fr) 18px 76px;
+  grid-template-columns:minmax(0,1fr) 16px 72px;
   gap:6px;
   align-items:center;
 }
@@ -462,11 +462,6 @@ textarea[readonly]{
   border-top:1.5px solid #e7eef8;
 }
 
-.actions.left{
-  border-top:none;
-  padding-top:0;
-}
-
 .actions .btn{
   width:100%;
 }
@@ -487,10 +482,6 @@ textarea[readonly]{
   padding:16px 16px 10px;
   background:linear-gradient(180deg,#ffffff 0%, #f8fbff 100%);
   border-bottom:1px solid #e6eef9;
-}
-
-.loginHeroText{
-  min-width:0;
 }
 
 .loginTitle{
@@ -530,10 +521,6 @@ textarea[readonly]{
   line-height:1.2;
 }
 
-.loginField{
-  gap:7px;
-}
-
 .loginField input{
   min-height:48px;
   padding:11px 12px;
@@ -550,10 +537,6 @@ textarea[readonly]{
   min-height:46px;
   border-radius:14px;
   font-size:15px;
-}
-
-.loginMsgBox{
-  margin-top:12px;
 }
 
 /* ===== Upload ===== */
@@ -577,7 +560,7 @@ textarea[readonly]{
 }
 
 .uploadBox .cap{
-  font-size:12.5px;
+  font-size:12px;
   font-weight:900;
   margin-bottom:8px;
 }
@@ -604,7 +587,7 @@ textarea[readonly]{
   color:var(--muted);
 }
 
-/* ===== Email selector ===== */
+/* ===== Email ===== */
 .emailToolbar{
   display:flex;
   align-items:center;
@@ -734,18 +717,12 @@ textarea[readonly]{
   align-items:flex-start;
   gap:10px;
   padding:12px;
-  min-height:72px;
   border:1.3px solid var(--line);
   border-radius:14px;
   background:#fff;
   cursor:pointer;
-  transition:border-color .18s ease, box-shadow .18s ease, transform .14s ease, background .18s ease;
+  transition:border-color .18s ease, box-shadow .18s ease, background .18s ease;
   box-shadow:var(--shadow-sm);
-}
-
-.confirmCauseCard:hover{
-  border-color:#b7cdf0;
-  box-shadow:0 8px 20px rgba(37,99,235,.08);
 }
 
 .confirmCauseCard input{
@@ -797,17 +774,7 @@ textarea[readonly]{
   box-shadow:0 10px 24px rgba(37,99,235,.10);
 }
 
-#employeeConfirmPreview{
-  min-height:150px;
-  resize:vertical;
-  font-size:14px;
-  line-height:1.75;
-  background:linear-gradient(180deg,#f8fbff 0%, #f2f7ff 100%);
-  color:#334155;
-  border-color:#d6e4f7;
-}
-
-/* ===== Swal UI ===== */
+/* ===== Swal ===== */
 .swalSummary{
   text-align:left;
 }
@@ -923,7 +890,6 @@ textarea[readonly]{
   line-height:1.6;
   font-weight:800;
   word-break:break-word;
-  white-space:normal;
 }
 
 .swalNote{
@@ -1216,43 +1182,7 @@ textarea[readonly]{
   background:#f8fbff;
 }
 
-/* ===== Responsive ===== */
-@media (min-width:430px){
-  .grid2,
-  .uploadGrid,
-  .emailSelector{
-    grid-template-columns:repeat(2, minmax(0,1fr));
-  }
-
-  .gridMain{
-    grid-template-columns:repeat(2, minmax(0,1fr));
-  }
-
-  .gridCompact{
-    grid-template-columns:repeat(2, minmax(0,1fr));
-  }
-
-  .gridEmployee{
-    grid-template-columns:repeat(2, minmax(0,1fr));
-  }
-
-  .swalKvGrid{
-    grid-template-columns:repeat(2, minmax(0,1fr));
-  }
-
-  .sigGrid{
-    grid-template-columns:repeat(2, minmax(0,1fr));
-  }
-
-  .confirmCauseGrid{
-    grid-template-columns:repeat(2, minmax(0,1fr));
-  }
-
-  .fieldSpan2{
-    grid-column:1 / -1;
-  }
-}
-
+/* ===== Tablet / Desktop ===== */
 @media (min-width:760px){
   .container{
     padding:18px 16px 32px;
@@ -1264,6 +1194,7 @@ textarea[readonly]{
 
   .gridMain{
     grid-template-columns:1.15fr 1fr 1fr;
+    gap:12px;
   }
 
   .gridCompact{
@@ -1278,10 +1209,12 @@ textarea[readonly]{
 
   .uploadGrid{
     grid-template-columns:repeat(2, minmax(0,1fr));
+    gap:12px;
   }
 
   .emailSelector{
     grid-template-columns:repeat(3, minmax(0,1fr));
+    gap:10px;
   }
 
   .confirmCauseGrid{
@@ -1328,38 +1261,15 @@ textarea[readonly]{
   }
 }
 
-@media (max-width:429px){
-  .topbar{
-    align-items:flex-start;
-    flex-direction:column;
-  }
-
-  .tabs{
-    width:100%;
-    justify-content:flex-start;
-  }
-
-  .brandText .title{
-    font-size:15px;
-  }
-
-  .brandText .subtitle{
-    font-size:11px;
+/* ===== จอเล็กมาก ===== */
+@media (max-width:380px){
+  .container{
+    padding:10px 8px 24px;
   }
 
   .card{
+    padding:12px;
     border-radius:18px;
-    padding:13px;
-  }
-
-  h2{
-    font-size:18px;
-  }
-
-  input,
-  select,
-  textarea{
-    font-size:16px;
   }
 
   .panel,
@@ -1367,13 +1277,24 @@ textarea[readonly]{
     padding:10px;
   }
 
-  .sectionTitle{
-    margin:15px 0 8px;
+  .grid2,
+  .gridMain,
+  .gridCompact,
+  .gridEmployee,
+  .uploadGrid,
+  .emailSelector{
+    gap:7px;
   }
 
-  .uploadTitle,
-  .emailToolbar{
-    align-items:flex-start;
+  input,
+  select,
+  textarea{
+    font-size:16px;
+    padding:10px 10px;
+  }
+
+  .confirmCauseGrid{
+    grid-template-columns:1fr;
   }
 
   .galGrid,
@@ -1382,42 +1303,8 @@ textarea[readonly]{
     grid-template-columns:1fr;
   }
 
-  .gridMain,
-  .gridCompact,
-  .gridEmployee,
-  .uploadGrid,
-  .emailSelector{
-    grid-template-columns:repeat(2, minmax(0,1fr));
-    gap:8px;
-  }
-
-  .confirmCauseGrid{
-    grid-template-columns:1fr;
-  }
-
-  .fieldSpan2{
-    grid-column:1 / -1;
-  }
-
-  .loginCardPro{
-    margin-top:6px;
-  }
-
-  .loginTitle{
-    font-size:17px;
-  }
-
-  .loginSubtitle{
-    font-size:11.5px;
-  }
-
   #employeeConfirmPreview{
-    min-height:140px;
-    font-size:15px;
-  }
-
-  .confirmCauseCard{
-    min-height:auto;
+    min-height:130px;
   }
 }
 
