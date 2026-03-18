@@ -139,15 +139,11 @@
       <input id="errorReasonOther" placeholder="พิมพ์สาเหตุเพิ่มเติม" autocomplete="off">
     </div>
 
-   <div class="field fieldItemFull">
-  <label for="item">Item</label>
-  <input id="item" inputmode="numeric" placeholder="กรอกตัวเลข" autocomplete="off">
-  <div id="itemLookupBox" class="itemLookupBox hidden">
-    <div class="itemLookupLabel">รายละเอียดสินค้า</div>
-    <div id="itemLookupText" class="itemLookupText">-</div>
-  </div>
-  <div id="itemLookupHint" class="hint tiny">เมื่อกรอก Item ระบบจะค้นหาชื่อสินค้าให้อัตโนมัติ</div>
-</div>
+    <div class="field">
+      <label for="item">Item</label>
+      <input id="item" inputmode="numeric" placeholder="กรอกตัวเลข" autocomplete="off">
+      <div id="itemLookupHint" class="hint tiny">เมื่อกรอก Item ระบบจะค้นหาชื่อสินค้าให้อัตโนมัติ</div>
+    </div>
 
     <div class="field">
       <label for="errorCaseQty">จำนวน ErrorCase</label>
@@ -155,11 +151,19 @@
     </div>
   </div>
 
+  <div id="itemLookupRow" class="itemLookupRow hidden">
+    <div id="itemLookupBox" class="itemLookupBox">
+      <div class="itemLookupLabel">รายละเอียดสินค้า</div>
+      <div id="itemLookupText" class="itemLookupText">-</div>
+    </div>
+  </div>
+
   <div class="field fieldBlock">
     <label for="errorDescription">รายละเอียด / คำอธิบายสาเหตุ</label>
     <textarea id="errorDescription" rows="4" placeholder="อธิบายสาเหตุการเบิกสินค้า Error / เหตุการณ์ที่เกิดขึ้น / การแก้ไขเบื้องต้น"></textarea>
-    <div class="hint tiny">ข้อมูลนี้จะถูกบันทึกอัตโนมัติ</div>
+    <div class="hint tiny">ข้อมูลนี้จะถูกบันทึก</div>
   </div>
+</div>
 </div>
   <div class="sectionTitle">
     <span class="dot"></span>
