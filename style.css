@@ -1361,4 +1361,58 @@ textarea[readonly]{
 /* ให้ช่อง Item และผลค้นหาสินค้ากินเต็มแถว */
 .fieldItemFull{
   grid-column:1 / -1;
+}/* กล่องผลค้นหา Item แยกเต็มแถวใต้ grid */
+.itemLookupRow{
+  margin-top:10px;
+  width:100%;
+}
+
+.itemLookupBox{
+  width:100%;
+  padding:10px 12px;
+  border:1px solid #dbe7f6;
+  border-radius:12px;
+  background:linear-gradient(180deg,#f8fbff 0%, #eef5ff 100%);
+}
+
+.itemLookupLabel{
+  font-size:11px;
+  font-weight:900;
+  color:#64748b;
+  margin-bottom:4px;
+}
+
+.itemLookupText{
+  display:block;
+  width:100%;
+  font-size:13.5px;
+  font-weight:900;
+  color:#0f172a;
+  line-height:1.5;
+  word-break:break-word;
+  overflow-wrap:anywhere;
+  white-space:normal;
+}
+
+.itemLookupBox.ok{
+  border-color:#bbf7d0;
+  background:#f0fdf4;
+}
+
+.itemLookupBox.ok .itemLookupText{
+  color:#166534;
+}
+
+.itemLookupBox.notfound{
+  border-color:#fecaca;
+  background:#fef2f2;
+}
+
+.itemLookupBox.notfound .itemLookupText{
+  color:#b91c1c;
+}
+
+.itemLookupBox.loading{
+  border-color:#dbe7f6;
+  background:#f8fbff;
 }
