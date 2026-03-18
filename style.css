@@ -68,11 +68,11 @@ textarea{
   position:sticky;
   top:0;
   z-index:100;
-  display:flex;
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto;
   align-items:center;
-  justify-content:space-between;
-  gap:10px;
-  padding:8px 12px;
+  gap:8px;
+  padding:8px 10px;
   background:rgba(255,255,255,.94);
   backdrop-filter:blur(12px);
   border-bottom:1px solid rgba(207,219,234,.95);
@@ -81,38 +81,40 @@ textarea{
 
 .topbarLeft{
   min-width:0;
-  flex:1 1 auto;
+  overflow:hidden;
 }
 
 .brandInline{
   display:flex;
   align-items:center;
-  gap:8px;
+  gap:6px;
   min-width:0;
   flex-wrap:nowrap;
 }
 
 .logo{
-  width:34px;
-  height:34px;
-  flex:0 0 34px;
-  border-radius:10px;
+  width:30px;
+  height:30px;
+  flex:0 0 30px;
+  border-radius:8px;
   object-fit:contain;
-  padding:3px;
+  padding:2px;
   background:#fff;
   border:1px solid var(--line);
 }
 
 .brandTextInline{
+  min-width:0;
   display:flex;
   align-items:center;
-  gap:8px;
-  min-width:0;
+  gap:6px;
   flex-wrap:nowrap;
+  overflow:hidden;
 }
 
 .brandTextInline .title{
-  font-size:15px;
+  min-width:0;
+  font-size:13px;
   font-weight:900;
   line-height:1.1;
   white-space:nowrap;
@@ -121,36 +123,39 @@ textarea{
 }
 
 .brandTextInline .subtitle{
-  font-size:11px;
+  font-size:10px;
   color:var(--muted);
   line-height:1.1;
   white-space:nowrap;
   overflow:hidden;
   text-overflow:ellipsis;
   margin-top:0;
+  flex:0 1 auto;
 }
 
 .tabsInline{
   display:flex;
   align-items:center;
   gap:6px;
-  flex:0 0 auto;
   flex-wrap:nowrap;
+  white-space:nowrap;
+  justify-content:flex-end;
 }
 
 .tab{
-  min-height:34px;
-  padding:7px 11px;
+  min-height:32px;
+  padding:6px 9px;
   border-radius:999px;
   border:1.2px solid var(--line);
   background:#fff;
   color:var(--text);
-  font-size:12px;
+  font-size:11px;
   font-weight:900;
   cursor:pointer;
   box-shadow:var(--shadow-sm);
   transition:.18s ease;
   white-space:nowrap;
+  flex:0 0 auto;
 }
 
 .tab.active{
@@ -158,54 +163,25 @@ textarea{
   color:#fff;
   border-color:transparent;
 }
-@media (max-width:640px){
+@media (max-width:520px){
   .topbar{
-    gap:8px;
-    padding:8px 10px;
-  }
-
-  .brandInline{
+    grid-template-columns:minmax(0,1fr) auto;
     gap:6px;
+    padding:7px 8px;
   }
 
-  .logo{
-    width:30px;
-    height:30px;
-    flex:0 0 30px;
-    border-radius:8px;
-    padding:2px;
-  }
-
-  .brandTextInline{
-    gap:6px;
-  }
-
-  .brandTextInline .title{
-    font-size:13px;
-  }
-
-  .brandTextInline .subtitle{
-    font-size:10px;
-  }
-
-  .tab{
-    min-height:32px;
-    padding:6px 9px;
-    font-size:11px;
-  }
-}
-@media (max-width:460px){
   .brandTextInline .subtitle{
     display:none;
   }
 
   .brandTextInline .title{
-    font-size:13px;
+    font-size:12px;
   }
 
   .tab{
-    padding:6px 8px;
-    font-size:10.5px;
+    min-height:30px;
+    padding:5px 8px;
+    font-size:10px;
   }
 }
 /* ===== Layout ===== */
