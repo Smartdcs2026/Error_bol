@@ -82,42 +82,36 @@
   </div>
 
   <div class="panel">
-    <div class="gridMain">
-      <div class="field fieldSpan2">
-        <label for="refRunning">หมายเลขหนังสือออก (Ref:No.)</label>
-        <div class="refRow">
-          <input
-            id="refRunning"
-            inputmode="numeric"
-            placeholder="เลข Ref"
-            autocomplete="off"
-            maxlength="10"
-          >
-          <div class="refDash">-</div>
-          <input
-            id="refYear"
-            type="text"
-            readonly
-            tabindex="-1"
-            aria-label="ปี พ.ศ."
-          >
-        </div>
-        <div class="hint tiny">กรอกเฉพาะเลข Ref ระบบจะเติมปี พ.ศ. ให้อัตโนมัติ</div>
+  <div class="gridMain">
+    <div class="field fieldSpan2">
+      <label for="refRunning">หมายเลขหนังสือออก (Ref:No.)</label>
+      <div class="refRow">
+        <input
+          id="refRunning"
+          inputmode="numeric"
+          placeholder="เลข Ref"
+          autocomplete="off"
+          maxlength="10"
+        >
+        <div class="refDash">-</div>
+        <input
+          id="refYear"
+          type="text"
+          readonly
+          tabindex="-1"
+          aria-label="ปี พ.ศ."
+        >
       </div>
+      <div class="hint tiny">กรอกเฉพาะเลข Ref ระบบจะเติมปี พ.ศ. ให้อัตโนมัติ</div>
+    </div>
 
-      <div class="field">
-        <label for="lps">ชื่อ LPS</label>
-        <input id="lps" readonly>
-        <div class="hint tiny">ระบบไม่อนุญาตให้แก้ไข</div>
-      </div>
-
-      <div class="field">
-        <label for="labelCid">Label CID</label>
-        <input id="labelCid" inputmode="numeric" placeholder="กรอกตัวเลข" autocomplete="off">
-      </div>
+    <div class="field fieldSpan2">
+      <label for="lps">ชื่อ LPS</label>
+      <input id="lps" readonly>
+      <div class="hint tiny">ระบบไม่อนุญาตให้แก้ไข</div>
     </div>
   </div>
-
+</div>
   <div class="sectionTitle">
     <span class="dot"></span>
     <div>
@@ -127,40 +121,44 @@
   </div>
 
   <div class="panel">
-    <div class="gridCompact">
-      <div class="field">
-        <label for="errorReason">สาเหตุ Error</label>
-        <select id="errorReason"></select>
-      </div>
-
-      <div class="field hidden" id="wrapErrorOther">
-        <label for="errorReasonOther">ระบุสาเหตุ (อื่นๆ)</label>
-        <input id="errorReasonOther" placeholder="พิมพ์สาเหตุเพิ่มเติม" autocomplete="off">
-      </div>
-
-      <div class="field">
-        <label for="item">Item</label>
-        <input id="item" inputmode="numeric" placeholder="กรอกตัวเลข" autocomplete="off">
-        <div id="itemLookupBox" class="itemLookupBox hidden">
-          <div class="itemLookupLabel">รายละเอียดสินค้า</div>
-          <div id="itemLookupText" class="itemLookupText">-</div>
-        </div>
-        <div id="itemLookupHint" class="hint tiny">เมื่อกรอก Item ระบบจะค้นหาชื่อสินค้าให้อัตโนมัติ</div>
-      </div>
-
-      <div class="field">
-        <label for="errorCaseQty">จำนวน ErrorCase</label>
-        <input id="errorCaseQty" inputmode="numeric" placeholder="กรอกตัวเลข" autocomplete="off">
-      </div>
+  <div class="gridCompact">
+    <div class="field">
+      <label for="labelCid">Label CID</label>
+      <input id="labelCid" inputmode="numeric" placeholder="กรอกตัวเลข" autocomplete="off">
     </div>
 
-    <div class="field fieldBlock">
-      <label for="errorDescription">รายละเอียด / คำอธิบายสาเหตุ</label>
-      <textarea id="errorDescription" rows="4" placeholder="อธิบายสาเหตุการเบิกสินค้า Error / เหตุการณ์ที่เกิดขึ้น / การแก้ไขเบื้องต้น"></textarea>
-      <div class="hint tiny">ข้อมูลนี้จะถูกบันทึกลงชีท และแสดงใน PDF</div>
+    <div class="field">
+      <label for="errorReason">สาเหตุ Error</label>
+      <select id="errorReason"></select>
+    </div>
+
+    <div class="field hidden" id="wrapErrorOther">
+      <label for="errorReasonOther">ระบุสาเหตุ (อื่นๆ)</label>
+      <input id="errorReasonOther" placeholder="พิมพ์สาเหตุเพิ่มเติม" autocomplete="off">
+    </div>
+
+    <div class="field">
+      <label for="item">Item</label>
+      <input id="item" inputmode="numeric" placeholder="กรอกตัวเลข" autocomplete="off">
+      <div id="itemLookupBox" class="itemLookupBox hidden">
+        <div class="itemLookupLabel">รายละเอียดสินค้า</div>
+        <div id="itemLookupText" class="itemLookupText">-</div>
+      </div>
+      <div id="itemLookupHint" class="hint tiny">เมื่อกรอก Item ระบบจะค้นหาชื่อสินค้าให้อัตโนมัติ</div>
+    </div>
+
+    <div class="field">
+      <label for="errorCaseQty">จำนวน ErrorCase</label>
+      <input id="errorCaseQty" inputmode="numeric" placeholder="กรอกตัวเลข" autocomplete="off">
     </div>
   </div>
 
+  <div class="field fieldBlock">
+    <label for="errorDescription">รายละเอียด / คำอธิบายสาเหตุ</label>
+    <textarea id="errorDescription" rows="4" placeholder="อธิบายสาเหตุการเบิกสินค้า Error / เหตุการณ์ที่เกิดขึ้น / การแก้ไขเบื้องต้น"></textarea>
+    <div class="hint tiny">ข้อมูลนี้จะถูกบันทึกอัตโนมัติ</div>
+  </div>
+</div>
   <div class="sectionTitle">
     <span class="dot"></span>
     <div>
