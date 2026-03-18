@@ -3509,11 +3509,22 @@ function buildEmployeeConfirmText(payload) {
   const shift = String(payload.shift || "").trim() || "-";
   const refNo = String(payload.refNo || "").trim() || "-";
   const errorReason = String(payload.errorReason || "").trim() || "-";
-  const itemDisplay = String(payload.itemDisplay || getItemDisplayText() || "-").trim() || "-";
+
+  const itemDisplayRaw = String(
+    payload.itemDisplay ||
+    ITEM_LOOKUP_STATE.displayText ||
+    getItemDisplayText() ||
+    ""
+  ).trim();
+
+  const itemDisplay = itemDisplayRaw || "ยังไม่พบรายละเอียดสินค้า";
   const errorCaseQty = String(payload.errorCaseQty || "").trim() || "-";
 
   const selected = Array.isArray(payload.confirmCauseSelected)
-    ? payload.confirmCauseSelected.filter(Boolean).map(v => String(v).trim()).filter(v => v && v !== "อื่นๆ")
+    ? payload.confirmCauseSelected
+        .filter(Boolean)
+        .map(v => String(v).trim())
+        .filter(v => v && v !== "อื่นๆ")
     : [];
 
   const other = String(payload.confirmCauseOther || "").trim();
@@ -3543,6 +3554,7 @@ function updateEmployeeConfirmPreview() {
   p.confirmCauseSelected = getSelectedConfirmCausesForNarrative();
   p.confirmCauseOther = ($("confirmCauseOther")?.value || "").trim();
   p.errorDate = formatDateToDisplay(p.errorDate);
+  p.itemDisplay = ITEM_LOOKUP_STATE.displayText || getItemDisplayText() || "";
   p.employeeConfirmText = buildEmployeeConfirmText(p);
 
   preview.value = p.employeeConfirmText;
@@ -3959,12 +3971,14 @@ function collectPayloadBase() {
 
 function collectPayload() {
   const p = collectPayloadBase();
+  p.itemDisplay = ITEM_LOOKUP_STATE.displayText || getItemDisplayText() || "";
   p.confirmCauseSelected = getSelectedConfirmCauses();
   p.confirmCauseOther = ($("confirmCauseOther")?.value || "").trim();
   p.employeeConfirmText = buildEmployeeConfirmText({
     ...p,
     confirmCauseSelected: getSelectedConfirmCausesForNarrative(),
-    confirmCauseOther: p.confirmCauseOther
+    confirmCauseOther: p.confirmCauseOther,
+    itemDisplay: p.itemDisplay
   });
   return p;
 }
