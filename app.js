@@ -3806,9 +3806,10 @@ async function lookupItemRealtime(item, immediate = false) {
 }
 
 function renderItemLookupState(state) {
+  const row = $("itemLookupRow");
   const box = $("itemLookupBox");
   const txt = $("itemLookupText");
-  if (!box || !txt) return;
+  if (!row || !box || !txt) return;
 
   const item = String(state?.item || "").trim();
   const desc = String(state?.description || "").trim();
@@ -3817,13 +3818,15 @@ function renderItemLookupState(state) {
   const found = !!state?.found;
   const apiError = !!state?.apiError;
 
-  box.classList.remove("hidden", "ok", "notfound", "loading");
+  row.classList.add("hidden");
+  box.classList.remove("ok", "notfound", "loading");
 
   if (!item) {
-    box.classList.add("hidden");
     txt.textContent = "-";
     return;
   }
+
+  row.classList.remove("hidden");
 
   if (loading) {
     box.classList.add("loading");
@@ -3842,7 +3845,6 @@ function renderItemLookupState(state) {
     ? `${item} | ${ITEM_NOT_FOUND_TEXT}`
     : `${displayText || `${item} | ${ITEM_NOT_FOUND_TEXT}`}`;
 }
-
 function getItemDisplayText() {
   if (ITEM_LOOKUP_STATE && ITEM_LOOKUP_STATE.displayText) {
     return ITEM_LOOKUP_STATE.displayText;
