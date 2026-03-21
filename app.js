@@ -3096,6 +3096,12 @@
  *  FRONTEND APP
  *  app.js
  *  ========================== */
+
+window.APP_AUTH_PASS = "";
+window.APP_AUTH_PASS = pass;
+localStorage.setItem("report500_pass", pass);
+
+
 const API_BASE = "https://bol.somchaibutphon.workers.dev";
 const ITEM_NOT_FOUND_TEXT = "-ไม่พบรายการสินค้า-";
 const ITEM_LOOKUP_MIN_LEN = 3;
