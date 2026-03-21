@@ -32,19 +32,13 @@ const Report500App = (() => {
     });
 
     tabUnder500.addEventListener("click", async () => {
+      const ok = await ensureSession();
+      if (!ok) return;
+
       tabUnder500.classList.add("active");
       tabError.classList.remove("active");
       formCard.classList.add("hidden");
       under500Card.classList.remove("hidden");
-
-      const ok = await ensureSession();
-      if (!ok) {
-        tabError.classList.add("active");
-        tabUnder500.classList.remove("active");
-        formCard.classList.remove("hidden");
-        under500Card.classList.add("hidden");
-        return;
-      }
 
       if (!under500Card.dataset.loaded) {
         await loadOptions();
@@ -68,33 +62,27 @@ const Report500App = (() => {
   async function ensureSession() {
     if (state.pass) return true;
 
+    if (window.APP_AUTH_PASS) {
+      state.pass = window.APP_AUTH_PASS;
+      return true;
+    }
+
     const cached = localStorage.getItem("report500_pass") || "";
     if (cached) {
       state.pass = cached;
+      window.APP_AUTH_PASS = cached;
       return true;
     }
 
     const passInput = document.getElementById("loginPass");
-    const passFromInput = (passInput?.value || "").trim();
-    let pass = passFromInput;
+    const pass = (passInput?.value || "").trim();
 
     if (!pass) {
-      const result = await Swal.fire({
-        title: "เข้าสู่ระบบสำหรับฟอร์ม <500",
-        input: "password",
-        inputLabel: "รหัสผ่าน",
-        inputPlaceholder: "กรอกรหัสผ่าน",
-        inputAttributes: { autocapitalize: "off", autocorrect: "off" },
-        showCancelButton: true,
-        confirmButtonText: "เข้าสู่ระบบ",
-        cancelButtonText: "ยกเลิก"
-      });
-      if (!result.isConfirmed) return false;
-      pass = String(result.value || "").trim();
-    }
-
-    if (!pass) {
-      await Swal.fire("ไม่สำเร็จ", "กรุณากรอกรหัสผ่าน", "warning");
+      await Swal.fire(
+        "กรุณาเข้าสู่ระบบก่อน",
+        "โปรด Login จากหน้าหลักก่อน แล้วค่อยเลือกแท็บ <500",
+        "warning"
+      );
       return false;
     }
 
@@ -106,11 +94,12 @@ const Report500App = (() => {
 
     const data = await res.json();
     if (!data.ok) {
-      await Swal.fire("ไม่สำเร็จ", data.message || data.error || "เข้าสู่ระบบไม่สำเร็จ", "error");
+      await Swal.fire("เข้าสู่ระบบไม่สำเร็จ", data.message || data.error || "", "error");
       return false;
     }
 
     state.pass = pass;
+    window.APP_AUTH_PASS = pass;
     localStorage.setItem("report500_pass", pass);
     return true;
   }
@@ -292,9 +281,13 @@ const Report500App = (() => {
     const dateText = `${yyyy}-${mm}-${dd}`;
     const timeText = `${hh}:${mi}`;
 
-    document.getElementById("rptIncidentDate")?.setAttribute("value", dateText);
-    document.getElementById("rptReportDate")?.setAttribute("value", dateText);
-    document.getElementById("rptIncidentTime")?.setAttribute("value", timeText);
+    const incidentDate = document.getElementById("rptIncidentDate");
+    const reportDate = document.getElementById("rptReportDate");
+    const incidentTime = document.getElementById("rptIncidentTime");
+
+    if (incidentDate && !incidentDate.value) incidentDate.value = dateText;
+    if (reportDate && !reportDate.value) reportDate.value = dateText;
+    if (incidentTime && !incidentTime.value) incidentTime.value = timeText;
   }
 
   async function previewSummary() {
