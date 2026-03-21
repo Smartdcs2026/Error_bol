@@ -1093,6 +1093,10 @@ textarea[readonly]{
   margin-bottom:10px;
 }
 
+.sigModalHead.compact{
+  margin-bottom:8px;
+}
+
 .sigModalSub{
   font-size:13px;
   font-weight:900;
@@ -1100,10 +1104,10 @@ textarea[readonly]{
 }
 
 .sigModalTip{
-  margin-top:4px;
-  font-size:12px;
+  margin-top:3px;
+  font-size:11.5px;
   color:#64748b;
-  line-height:1.45;
+  line-height:1.35;
 }
 
 .sigCanvasCard{
@@ -1111,6 +1115,10 @@ textarea[readonly]{
   border-radius:15px;
   background:#fff;
   overflow:hidden;
+}
+
+.sigCanvasCardWide{
+  border-radius:16px;
 }
 
 .sigCanvasElm{
@@ -1123,10 +1131,18 @@ textarea[readonly]{
   touch-action:none;
 }
 
+.sigCanvasElmLarge{
+  height:320px;
+}
+
 .sigModalFoot{
   margin-top:10px;
   display:flex;
   justify-content:flex-end;
+}
+
+.sigModalFoot.compact{
+  margin-top:8px;
 }
 
 .sigActionBtn{
@@ -1148,8 +1164,34 @@ textarea[readonly]{
   padding:18px !important;
 }
 
+.sigSwalPopupWide{
+  padding:12px !important;
+}
+
 .sigSwalTitle{
   font-weight:900 !important;
+}
+
+.sigSwalTitleCompact{
+  font-size:20px !important;
+  margin:0 0 6px 0 !important;
+}
+
+.sigSwalHtml{
+  margin:0 !important;
+}
+
+.sigSwalHtmlCompact{
+  margin:0 !important;
+  padding:0 !important;
+}
+
+.sigSwalActions{
+  margin-top:10px !important;
+}
+
+.sigSwalActionsCompact{
+  margin-top:8px !important;
 }
 
 .sigBtn{
@@ -1171,7 +1213,6 @@ textarea[readonly]{
   color:#0f172a;
   border:1px solid #dbe7f6;
 }
-
 /* ===== Item Lookup ===== */
 .itemLookupBox{
   margin-top:8px;
