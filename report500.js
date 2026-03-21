@@ -1,4 +1,4 @@
-const REPORT500_API_BASE = "https://visitor-entry-api.somchaibutphon.workers.dev";
+const REPORT500_API_BASE = "https://bol.somchaibutphon.workers.dev";
 
 const Report500App = (() => {
   const state = {
