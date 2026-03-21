@@ -1416,3 +1416,18 @@ textarea[readonly]{
   border-color:#dbe7f6;
   background:#f8fbff;
 }
+#btnAddImage{
+  color:#fff;
+  background:linear-gradient(180deg,#a21caf,#86198f);
+  border:1.2px solid #86198f;
+  box-shadow:0 8px 18px rgba(134,25,143,.24);
+}
+
+#btnAddImage:hover{
+  background:linear-gradient(180deg,#86198f,#701a75);
+  border-color:#701a75;
+}
+
+#btnAddImage:focus{
+  box-shadow:0 0 0 4px rgba(162,28,175,.18);
+}
