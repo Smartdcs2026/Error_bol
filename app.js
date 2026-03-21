@@ -4597,22 +4597,85 @@ async function openSignatureFlow(supervisorName, employeeName, interpreterName) 
   };
 }
 
+// async function signatureModal(title, subtitle) {
+//   const canvasId = "sigCanvas_" + Math.random().toString(16).slice(2);
+//   const clearId = canvasId + "_clear";
+
+//   const html = `
+//     <div class="sigModalWrap">
+//       <div class="sigModalHead">
+//         <div class="sigModalSub">${escapeHtml(subtitle || "")}</div>
+//         <div class="sigModalTip">กรุณาเซ็นภายในกรอบด้านล่าง โดยใช้เมาส์หรือนิ้วลากเขียนลายเซ็น</div>
+//       </div>
+
+//       <div class="sigCanvasCard">
+//         <canvas id="${canvasId}" width="800" height="260" class="sigCanvasElm"></canvas>
+//       </div>
+
+//       <div class="sigModalFoot">
+//         <button type="button" id="${clearId}" class="sigActionBtn sigActionBtn-clear">ล้างลายเซ็น</button>
+//       </div>
+//     </div>
+//   `;
+
+//   const res = await Swal.fire({
+//     title: escapeHtml(title || "ลายเซ็น"),
+//     html,
+//     showCancelButton: true,
+//     confirmButtonText: "ยืนยันลายเซ็น",
+//     cancelButtonText: "ยกเลิก",
+//     buttonsStyling: false,
+//     customClass: {
+//       popup: "sigSwalPopup",
+//       title: "sigSwalTitle",
+//       htmlContainer: "sigSwalHtml",
+//       actions: "sigSwalActions",
+//       confirmButton: "sigBtn sigBtn-confirm",
+//       cancelButton: "sigBtn sigBtn-cancel"
+//     },
+//     didOpen: () => {
+//       const canvas = document.getElementById(canvasId);
+//       const btnClear = document.getElementById(clearId);
+
+//       enableSignature(canvas);
+
+//       btnClear?.addEventListener("click", () => {
+//         const ctx = canvas.getContext("2d");
+//         ctx.clearRect(0, 0, canvas.width, canvas.height);
+//       });
+//     },
+//     preConfirm: () => {
+//       const canvas = document.getElementById(canvasId);
+//       const isEmpty = isCanvasBlank(canvas);
+
+//       if (isEmpty) {
+//         Swal.showValidationMessage("กรุณาเซ็นชื่อก่อนกดยืนยัน");
+//         return false;
+//       }
+
+//       return canvas.toDataURL("image/png");
+//     }
+//   });
+
+//   if (!res.isConfirmed) return { ok: false };
+//   return { ok: true, base64: res.value };
+// }
 async function signatureModal(title, subtitle) {
   const canvasId = "sigCanvas_" + Math.random().toString(16).slice(2);
   const clearId = canvasId + "_clear";
 
   const html = `
     <div class="sigModalWrap">
-      <div class="sigModalHead">
+      <div class="sigModalHead compact">
         <div class="sigModalSub">${escapeHtml(subtitle || "")}</div>
-        <div class="sigModalTip">กรุณาเซ็นภายในกรอบด้านล่าง โดยใช้เมาส์หรือนิ้วลากเขียนลายเซ็น</div>
+        <div class="sigModalTip">กรุณาเซ็นชื่อในกรอบด้านล่าง</div>
       </div>
 
-      <div class="sigCanvasCard">
-        <canvas id="${canvasId}" width="800" height="260" class="sigCanvasElm"></canvas>
+      <div class="sigCanvasCard sigCanvasCardWide">
+        <canvas id="${canvasId}" width="1200" height="340" class="sigCanvasElm sigCanvasElmLarge"></canvas>
       </div>
 
-      <div class="sigModalFoot">
+      <div class="sigModalFoot compact">
         <button type="button" id="${clearId}" class="sigActionBtn sigActionBtn-clear">ล้างลายเซ็น</button>
       </div>
     </div>
@@ -4625,11 +4688,12 @@ async function signatureModal(title, subtitle) {
     confirmButtonText: "ยืนยันลายเซ็น",
     cancelButtonText: "ยกเลิก",
     buttonsStyling: false,
+    width: 980,
     customClass: {
-      popup: "sigSwalPopup",
-      title: "sigSwalTitle",
-      htmlContainer: "sigSwalHtml",
-      actions: "sigSwalActions",
+      popup: "sigSwalPopup sigSwalPopupWide",
+      title: "sigSwalTitle sigSwalTitleCompact",
+      htmlContainer: "sigSwalHtml sigSwalHtmlCompact",
+      actions: "sigSwalActions sigSwalActionsCompact",
       confirmButton: "sigBtn sigBtn-confirm",
       cancelButton: "sigBtn sigBtn-cancel"
     },
@@ -4660,7 +4724,6 @@ async function signatureModal(title, subtitle) {
   if (!res.isConfirmed) return { ok: false };
   return { ok: true, base64: res.value };
 }
-
 function enableSignature(canvas) {
   if (!canvas) return;
   const ctx = canvas.getContext("2d");
