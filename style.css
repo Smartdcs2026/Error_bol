@@ -1472,3 +1472,22 @@ textarea[readonly]{
 #btnAddImage:focus{
   box-shadow:0 0 0 4px rgba(162,28,175,.18);
 }
+@media (max-width:640px){
+  .sigSwalPopupWide{
+    padding:10px !important;
+  }
+
+  .sigSwalTitleCompact{
+    font-size:17px !important;
+  }
+
+  .sigCanvasElmLarge{
+    height:260px;
+  }
+
+  .sigBtn{
+    min-height:40px;
+    padding:9px 12px;
+    font-size:13px;
+  }
+}
