@@ -3,13 +3,28 @@ const REPORT500_API_BASE = "https://bol.somchaibutphon.workers.dev";
 const Report500App = (() => {
   const state = {
     pass: "",
+    authName: "",
+    optionsLoaded: false,
     options: {
       reportTypes: [],
-      formOptions: {},
+      urgencyLevels: [],
+      reportTo: [],
+      locationTypes: [],
+      branches: [],
+      causeCategories: [],
+      departments: [],
+      reportedByOptions: [],
       incidentCategories: []
-    },
-    optionsLoaded: false
+    }
   };
+
+  const $ = (id) => document.getElementById(id);
+
+  function apiUrl(path) {
+    const base = String(REPORT500_API_BASE || "").replace(/\/+$/, "");
+    const p = String(path || "").replace(/^\/+/, "");
+    return `${base}/${p}`;
+  }
 
   function init() {
     bindModeIntegration();
@@ -18,8 +33,10 @@ const Report500App = (() => {
   }
 
   function bindModeIntegration() {
-    document.addEventListener("app:auth-success", () => {
-      syncPassFromShell();
+    document.addEventListener("app:auth-success", (ev) => {
+      state.pass = window.APP_AUTH_PASS || "";
+      state.authName = ev?.detail?.user?.name || "";
+      syncAuthToReportForm();
     });
 
     document.addEventListener("app:mode-change", async (ev) => {
@@ -28,6 +45,8 @@ const Report500App = (() => {
 
       const ok = await ensureSession();
       if (!ok) return;
+
+      syncAuthToReportForm();
 
       if (!state.optionsLoaded) {
         await loadOptions();
@@ -38,51 +57,40 @@ const Report500App = (() => {
   }
 
   function bindFormEvents() {
-    document.getElementById("btnRptAddPerson")?.addEventListener("click", addPersonRow);
-    document.getElementById("btnRptAddImage")?.addEventListener("click", addImageRow);
-    document.getElementById("btnRptPreview")?.addEventListener("click", previewSummary);
-    document.getElementById("btnRptSubmit")?.addEventListener("click", submitReport);
+    $("btnRptAddPerson")?.addEventListener("click", addPersonRow);
+    $("btnRptAddImage")?.addEventListener("click", addImageRow);
+    $("btnRptPreview")?.addEventListener("click", previewSummary);
+    $("btnRptSubmit")?.addEventListener("click", submitReport);
 
     document.querySelectorAll(".rptAddDetailBtn").forEach((btn) => {
       btn.addEventListener("click", () => addDetailRow(btn.dataset.target));
     });
   }
 
-  function syncPassFromShell() {
+  async function ensureSession() {
     if (window.APP_AUTH_PASS) {
       state.pass = window.APP_AUTH_PASS;
-      localStorage.setItem("report500_pass", window.APP_AUTH_PASS);
+      return true;
     }
+
+    await Swal.fire("กรุณาเข้าสู่ระบบก่อน", "โปรดเข้าสู่ระบบจากหน้าหลักก่อน แล้วค่อยเลือกแท็บ <500", "warning");
+    return false;
   }
 
-  async function ensureSession() {
-    if (state.pass) return true;
+  function syncAuthToReportForm() {
+    const name = window.APP_AUTH_USER?.name || state.authName || "";
+    const el = $("rptLoginUser");
+    if (el) el.value = name;
 
-    if (window.APP_AUTH_PASS) {
-      state.pass = window.APP_AUTH_PASS;
-      localStorage.setItem("report500_pass", window.APP_AUTH_PASS);
-      return true;
+    if ($("rptReportedBy") && !$("rptReportedBy").value && name) {
+      $("rptReportedBy").value = name;
     }
-
-    const cached = localStorage.getItem("report500_pass") || "";
-    if (cached) {
-      state.pass = cached;
-      window.APP_AUTH_PASS = cached;
-      return true;
-    }
-
-    await Swal.fire(
-      "กรุณาเข้าสู่ระบบก่อน",
-      "โปรดเข้าสู่ระบบจากหน้าหลักก่อน แล้วค่อยเลือกแท็บ <500",
-      "warning"
-    );
-    return false;
   }
 
   async function loadOptions(forceReload = false) {
     if (state.optionsLoaded && !forceReload) return;
 
-    const res = await fetch(`${REPORT500_API_BASE}/options`, { method: "GET" });
+    const res = await fetch(apiUrl("/options"), { method: "GET" });
     const raw = await res.json();
 
     if (!raw?.ok) {
@@ -92,29 +100,46 @@ const Report500App = (() => {
     const options = raw?.data?.reportFormOptions || {};
 
     state.options = {
-      reportTypes: Array.isArray(options.reportTypes) ? options.reportTypes : [],
-      formOptions: options.formOptions || {},
-      incidentCategories: Array.isArray(options.incidentCategories) ? options.incidentCategories : []
+      reportTypes: normalizeOptions(options.reportTypes),
+      urgencyLevels: normalizeOptions(options.urgencyLevels),
+      reportTo: normalizeOptions(options.reportTo),
+      locationTypes: normalizeOptions(options.locationTypes),
+      branches: normalizeOptions(options.branches),
+      causeCategories: normalizeOptions(options.causeCategories),
+      departments: normalizeOptions(options.departments),
+      reportedByOptions: normalizeOptions(options.reportedByOptions),
+      incidentCategories: normalizeOptions(options.incidentCategories)
     };
 
-    renderSelectWithOther("rptBranch", getGroupOptions("สาขา"), "rptBranchOtherWrap", "rptBranchOther", "ระบุสาขา (อื่นๆ)");
-    renderSelectWithOther("rptLocationType", getGroupOptions("ประเภทสถานที่"), "rptLocationTypeOtherWrap", "rptLocationTypeOther", "ระบุประเภทสถานที่ (อื่นๆ)");
-    renderSelectWithOther("rptCauseCategory", getGroupOptions("สาเหตุ"), "rptCauseCategoryOtherWrap", "rptCauseCategoryOther", "ระบุสาเหตุ (อื่นๆ)");
-    renderSelectWithOther("rptReportedBy", getGroupOptions("รายงานโดย"), "rptReportedByOtherWrap", "rptReportedByOther", "ระบุรายงานโดย (อื่นๆ)");
+    renderSelectWithOther(
+      "rptBranch",
+      state.options.branches,
+      "rptBranchOtherWrap",
+      "rptBranchOther",
+      "ระบุสาขา/หน่วยงาน (อื่นๆ)"
+    );
 
-    renderRadioGroupWithOther(
+    renderSelectWithOther(
+      "rptReportedBy",
+      state.options.reportedByOptions,
+      "rptReportedByOtherWrap",
+      "rptReportedByOther",
+      "ระบุรายงานโดย (อื่นๆ)"
+    );
+
+    renderCheckboxGroupWithOther(
       "rptReportTypeBox",
-      "rptReportType",
+      "rptReportTypes",
       state.options.reportTypes,
       "rptReportTypeOtherWrap",
       "rptReportTypeOther",
       "ระบุประเภทรายงาน (อื่นๆ)"
     );
 
-    renderRadioGroupWithOther(
+    renderCheckboxGroupWithOther(
       "rptUrgencyBox",
-      "rptUrgencyLevel",
-      getGroupOptions("ระดับความเร่งด่วน"),
+      "rptUrgencyLevels",
+      state.options.urgencyLevels,
       "rptUrgencyOtherWrap",
       "rptUrgencyOther",
       "ระบุระดับความเร่งด่วน (อื่นๆ)"
@@ -123,7 +148,7 @@ const Report500App = (() => {
     renderCheckboxGroupWithOther(
       "rptReportToBox",
       "rptReportTo",
-      getGroupOptions("ผู้รับรายงาน"),
+      state.options.reportTo,
       "rptReportToOtherWrap",
       "rptReportToOther",
       "ระบุผู้รับรายงาน (อื่นๆ)"
@@ -135,340 +160,449 @@ const Report500App = (() => {
       state.options.incidentCategories,
       "rptIncidentCategoriesOtherWrap",
       "rptIncidentCategoriesOther",
-      "ระบุรายละเอียดเหตุการณ์ (อื่นๆ)"
+      "ระบุหมวดเหตุการณ์ (อื่นๆ)"
     );
 
+    renderCheckboxGroupWithOther(
+      "rptCauseCategoryBox",
+      "rptCauseCategories",
+      state.options.causeCategories,
+      "rptCauseCategoryOtherWrap",
+      "rptCauseCategoryOther",
+      "ระบุสาเหตุ (อื่นๆ)"
+    );
+
+    renderLocationTypeGroup();
     state.optionsLoaded = true;
   }
 
-  function getGroupOptions(groupName) {
-    return state.options.formOptions[groupName] || [];
+  function normalizeOptions(list) {
+    return (Array.isArray(list) ? list : [])
+      .map((opt, i) => {
+        if (typeof opt === "string") return { seq: i + 1, label: opt, value: opt };
+        return {
+          seq: Number(opt?.seq || i + 1),
+          label: String(opt?.label || opt?.value || "").trim(),
+          value: String(opt?.value || opt?.label || "").trim()
+        };
+      })
+      .filter((x) => x.label && x.value)
+      .sort((a, b) => a.seq - b.seq);
   }
 
-  function appendOtherOptionClient(list) {
-    const arr = Array.isArray(list) ? [...list] : [];
-    const hasOther = arr.some((opt) => {
-      const label = String(opt?.label || "").trim();
-      const value = String(opt?.value || "").trim();
-      return label === "อื่นๆ" || value === "อื่นๆ";
+  function renderSelectWithOther(selectId, options, wrapId, inputId, otherPlaceholder) {
+    const select = $(selectId);
+    const wrap = $(wrapId);
+    const input = $(inputId);
+    if (!select) return;
+
+    const list = [{ label: "กรุณาเลือก", value: "" }, ...options];
+    select.innerHTML = list.map((opt) => {
+      return `<option value="${escapeHtml(opt.value)}">${escapeHtml(opt.label)}</option>`;
+    }).join("");
+
+    const toggle = () => {
+      const isOther = select.value === "Other" || select.value === "อื่นๆ";
+      if (wrap) wrap.classList.toggle("hidden", !isOther);
+      if (input) {
+        input.placeholder = otherPlaceholder || "ระบุข้อมูล";
+        if (!isOther) input.value = "";
+      }
+    };
+
+    select.addEventListener("change", toggle);
+    toggle();
+  }
+
+  function renderCheckboxGroupWithOther(containerId, name, options, wrapId, inputId, otherPlaceholder) {
+    const box = $(containerId);
+    const wrap = $(wrapId);
+    const input = $(inputId);
+    if (!box) return;
+
+    box.innerHTML = options.map((opt, idx) => {
+      const val = escapeHtml(opt.value);
+      const label = escapeHtml(opt.label);
+      return `
+        <label class="checkCard">
+          <input type="checkbox" name="${name}" value="${val}" data-other="${val === "Other" || val === "อื่นๆ" ? "1" : "0"}">
+          <span>${label}</span>
+        </label>
+      `;
+    }).join("");
+
+    const sync = () => {
+      const hasOther = [...box.querySelectorAll(`input[name="${name}"]`)]
+        .some((el) => el.checked && (el.value === "Other" || el.value === "อื่นๆ"));
+
+      if (wrap) wrap.classList.toggle("hidden", !hasOther);
+      if (input) {
+        input.placeholder = otherPlaceholder || "ระบุข้อมูล";
+        if (!hasOther) input.value = "";
+      }
+    };
+
+    box.querySelectorAll(`input[name="${name}"]`).forEach((el) => {
+      el.addEventListener("change", sync);
     });
 
-    if (!hasOther) {
-      arr.push({
-        seq: 999999,
-        label: "อื่นๆ",
-        value: "อื่นๆ",
-        default: false,
-        note: ""
+    sync();
+  }
+
+  function renderLocationTypeGroup() {
+    const box = $("rptLocationTypeBox");
+    if (!box) return;
+
+    box.innerHTML = state.options.locationTypes.map((opt) => {
+      const value = String(opt.value || "").trim();
+      const label = String(opt.label || "").trim();
+      const withTailInput = [
+        "Hypermarket Store",
+        "Super market Store",
+        "Value Store",
+        "Express Store"
+      ].includes(value);
+
+      return `
+        <div class="checkLine">
+          <label class="checkCard">
+            <input type="checkbox" name="rptLocationTypes" value="${escapeHtml(value)}" data-other="${value === "Other" ? "1" : "0"}">
+            <span>${escapeHtml(label)}</span>
+          </label>
+          ${withTailInput ? `
+            <input
+              type="text"
+              class="inlineTailInput"
+              data-location-detail="${escapeHtml(value)}"
+              placeholder="ระบุเพิ่มเติม"
+              disabled
+            >
+          ` : ``}
+        </div>
+      `;
+    }).join("");
+
+    box.querySelectorAll('input[name="rptLocationTypes"]').forEach((chk) => {
+      chk.addEventListener("change", () => {
+        const value = chk.value;
+        const tail = box.querySelector(`[data-location-detail="${cssEscape(value)}"]`);
+        if (tail) {
+          tail.disabled = !chk.checked;
+          if (!chk.checked) tail.value = "";
+        }
+
+        const hasOther = [...box.querySelectorAll('input[name="rptLocationTypes"]')]
+          .some((el) => el.checked && (el.value === "Other" || el.value === "อื่นๆ"));
+
+        $("rptLocationTypeOtherWrap")?.classList.toggle("hidden", !hasOther);
+        if (!hasOther && $("rptLocationTypeOther")) $("rptLocationTypeOther").value = "";
       });
-    }
-
-    return arr;
-  }
-
-  function renderSelectWithOther(id, options, wrapId, inputId, labelText) {
-    const el = document.getElementById(id);
-    if (!el) return;
-
-    const list = appendOtherOptionClient(options);
-
-    el.innerHTML =
-      `<option value="">-- เลือก --</option>` +
-      list.map((opt) => {
-        const selected = opt.default ? "selected" : "";
-        return `<option value="${escapeHtml(opt.value)}" ${selected}>${escapeHtml(opt.label)}</option>`;
-      }).join("");
-
-    let wrap = document.getElementById(wrapId);
-    if (!wrap) {
-      wrap = document.createElement("div");
-      wrap.id = wrapId;
-      wrap.className = "field hidden";
-      wrap.innerHTML = `
-        <label for="${inputId}">${escapeHtml(labelText)}</label>
-        <input id="${inputId}" type="text" placeholder="${escapeHtml(labelText)}">
-      `;
-      el.parentElement?.insertAdjacentElement("afterend", wrap);
-    }
-
-    el.addEventListener("change", () => {
-      toggleOtherWrapBySelect(id, wrapId);
     });
-
-    toggleOtherWrapBySelect(id, wrapId);
-  }
-
-  function renderRadioGroupWithOther(containerId, name, options, wrapId, inputId, labelText) {
-    const wrap = document.getElementById(containerId);
-    if (!wrap) return;
-
-    const list = appendOtherOptionClient(options);
-
-    wrap.innerHTML = list.map((opt, idx) => `
-      <label class="choiceItem">
-        <input type="radio" name="${name}" value="${escapeHtml(opt.value)}" ${opt.default || idx === 0 ? "checked" : ""}>
-        <span class="choiceText">${escapeHtml(opt.label)}</span>
-      </label>
-    `).join("");
-
-    let otherWrap = document.getElementById(wrapId);
-    if (!otherWrap) {
-      otherWrap = document.createElement("div");
-      otherWrap.id = wrapId;
-      otherWrap.className = "field hidden";
-      otherWrap.innerHTML = `
-        <label for="${inputId}">${escapeHtml(labelText)}</label>
-        <input id="${inputId}" type="text" placeholder="${escapeHtml(labelText)}">
-      `;
-      wrap.insertAdjacentElement("afterend", otherWrap);
-    }
-
-    wrap.querySelectorAll(`input[name="${name}"]`).forEach((el) => {
-      el.addEventListener("change", () => toggleOtherWrapByRadio(name, wrapId));
-    });
-
-    toggleOtherWrapByRadio(name, wrapId);
-  }
-
-  function renderCheckboxGroupWithOther(containerId, name, options, wrapId, inputId, labelText) {
-    const wrap = document.getElementById(containerId);
-    if (!wrap) return;
-
-    const list = appendOtherOptionClient(options);
-
-    wrap.innerHTML = list.map((opt) => `
-      <label class="choiceItem">
-        <input type="checkbox" name="${name}" value="${escapeHtml(opt.value)}">
-        <span class="choiceText">${escapeHtml(opt.label)}</span>
-      </label>
-    `).join("");
-
-    let otherWrap = document.getElementById(wrapId);
-    if (!otherWrap) {
-      otherWrap = document.createElement("div");
-      otherWrap.id = wrapId;
-      otherWrap.className = "field hidden";
-      otherWrap.innerHTML = `
-        <label for="${inputId}">${escapeHtml(labelText)}</label>
-        <input id="${inputId}" type="text" placeholder="${escapeHtml(labelText)}">
-      `;
-      wrap.insertAdjacentElement("afterend", otherWrap);
-    }
-
-    wrap.querySelectorAll(`input[name="${name}"]`).forEach((el) => {
-      el.addEventListener("change", () => toggleOtherWrapByCheckbox(name, wrapId));
-    });
-
-    toggleOtherWrapByCheckbox(name, wrapId);
-  }
-
-  function toggleOtherWrapBySelect(selectId, wrapId) {
-    const val = document.getElementById(selectId)?.value || "";
-    document.getElementById(wrapId)?.classList.toggle("hidden", val !== "อื่นๆ");
-  }
-
-  function toggleOtherWrapByRadio(name, wrapId) {
-    const val = document.querySelector(`input[name="${name}"]:checked`)?.value || "";
-    document.getElementById(wrapId)?.classList.toggle("hidden", val !== "อื่นๆ");
-  }
-
-  function toggleOtherWrapByCheckbox(name, wrapId) {
-    const checked = [...document.querySelectorAll(`input[name="${name}"]:checked`)].map((el) => el.value);
-    document.getElementById(wrapId)?.classList.toggle("hidden", !checked.includes("อื่นๆ"));
   }
 
   function buildInitialRows() {
-    if (!document.querySelector("#rptPeopleList .rptCard")) addPersonRow();
-    if (!document.querySelector("#rptDamageList .rptCard")) addDetailRow("rptDamageList");
-    if (!document.querySelector("#rptActionList .rptCard")) addDetailRow("rptActionList");
-    if (!document.querySelector("#rptEvidenceList .rptCard")) addDetailRow("rptEvidenceList");
-    if (!document.querySelector("#rptRootCauseList .rptCard")) addDetailRow("rptRootCauseList");
-    if (!document.querySelector("#rptPreventionList .rptCard")) addDetailRow("rptPreventionList");
-    if (!document.querySelector("#rptLessonList .rptCard")) addDetailRow("rptLessonList");
-    if (!document.querySelector("#rptImageList .rptCard")) addImageRow();
+    buildDetailBlock("rptDamageRows", 1);
+    buildDetailBlock("rptActionRows", 1);
+    buildDetailBlock("rptEvidenceRows", 1);
+    buildDetailBlock("rptRootCauseRows", 1);
+    buildDetailBlock("rptPreventionRows", 1);
+    buildDetailBlock("rptLessonRows", 1);
+
+    if (!$("rptPeopleRows")?.children.length) addPersonRow();
+    if (!$("rptImageRows")?.children.length) addImageRow();
   }
 
-  function addPersonRow() {
-    const wrap = document.getElementById("rptPeopleList");
-    if (!wrap) return;
-
-    const rowId = "rptPerson_" + Math.random().toString(16).slice(2);
-    const deptWrapId = rowId + "_deptOtherWrap";
-    const deptInputId = rowId + "_deptOther";
-
-    const row = document.createElement("div");
-    row.className = "rptCard";
-    row.innerHTML = `
-      <div class="rptCardHead">
-        <div class="rptCardTitle">ผู้เกี่ยวข้อง</div>
-        <button type="button" class="rptRemoveBtn">ลบ</button>
-      </div>
-      <div class="rptGrid2">
-        <div class="field">
-          <label>ผู้เกี่ยวข้อง</label>
-          <input type="text" class="rptPersonName" placeholder="ชื่อผู้เกี่ยวข้อง">
-        </div>
-        <div class="field">
-          <label>ตำแหน่ง</label>
-          <input type="text" class="rptPersonPosition" placeholder="ตำแหน่ง">
-        </div>
-        <div class="field">
-          <label>ส่วนงาน</label>
-          <select class="rptPersonDepartment">${buildSelectOptions(getGroupOptions("ส่วนงาน"))}</select>
-        </div>
-        <div id="${deptWrapId}" class="field hidden">
-          <label for="${deptInputId}">ระบุส่วนงาน (อื่นๆ)</label>
-          <input id="${deptInputId}" type="text" class="rptPersonDepartmentOther" placeholder="ระบุส่วนงาน (อื่นๆ)">
-        </div>
-        <div class="field">
-          <label>หมายเหตุ</label>
-          <input type="text" class="rptPersonRemark" placeholder="หมายเหตุ (ถ้ามี)">
-        </div>
-      </div>
-    `;
-
-    const deptSelect = row.querySelector(".rptPersonDepartment");
-    deptSelect?.addEventListener("change", () => {
-      const val = String(deptSelect.value || "").trim();
-      row.querySelector(`#${deptWrapId}`)?.classList.toggle("hidden", val !== "อื่นๆ");
-    });
-
-    row.querySelector(".rptRemoveBtn")?.addEventListener("click", () => row.remove());
-    wrap.appendChild(row);
+  function buildDetailBlock(containerId, count = 1) {
+    const box = $(containerId);
+    if (!box) return;
+    box.innerHTML = "";
+    for (let i = 0; i < count; i++) addDetailRow(containerId);
   }
 
   function addDetailRow(targetId) {
-    const wrap = document.getElementById(targetId);
-    if (!wrap) return;
+    const box = $(targetId);
+    if (!box) return;
 
     const row = document.createElement("div");
-    row.className = "rptCard";
+    row.className = "repeatRow";
     row.innerHTML = `
-      <div class="rptCardHead">
-        <div class="rptCardTitle">รายละเอียด</div>
-        <button type="button" class="rptRemoveBtn">ลบ</button>
+      <div class="repeatRowMain">
+        <textarea class="rptDetailText" rows="2" placeholder="กรอกรายละเอียด"></textarea>
       </div>
-      <div class="field">
-        <textarea class="rptDetailText rptTextArea" rows="4" placeholder="กรอกรายละเอียดเป็นข้อ"></textarea>
-      </div>
+      <button type="button" class="btnDangerGhost rptMiniBtn">ลบ</button>
     `;
 
-    row.querySelector(".rptRemoveBtn")?.addEventListener("click", () => row.remove());
-    wrap.appendChild(row);
+    row.querySelector("button")?.addEventListener("click", () => row.remove());
+    box.appendChild(row);
+  }
+
+  function addPersonRow() {
+    const box = $("rptPeopleRows");
+    if (!box) return;
+
+    const row = document.createElement("div");
+    row.className = "repeatCard";
+    row.innerHTML = `
+      <div class="grid2">
+        <div class="field">
+          <label>ผู้เกี่ยวข้อง</label>
+          <input type="text" class="rptPersonName">
+        </div>
+        <div class="field">
+          <label>ตำแหน่ง</label>
+          <input type="text" class="rptPersonPosition">
+        </div>
+        <div class="field">
+          <label>ส่วนงาน</label>
+          <input type="text" class="rptPersonDepartment">
+        </div>
+        <div class="field">
+          <label>หมายเหตุ</label>
+          <input type="text" class="rptPersonRemark">
+        </div>
+      </div>
+      <div class="repeatCardActions">
+        <button type="button" class="btnDangerGhost rptMiniBtn">ลบรายการนี้</button>
+      </div>
+    `;
+    row.querySelector("button")?.addEventListener("click", () => row.remove());
+    box.appendChild(row);
   }
 
   function addImageRow() {
-    const wrap = document.getElementById("rptImageList");
-    if (!wrap) return;
+    const box = $("rptImageRows");
+    if (!box) return;
 
+    const index = box.children.length + 1;
     const row = document.createElement("div");
-    row.className = "rptCard";
+    row.className = "repeatCard";
     row.innerHTML = `
-      <div class="rptCardHead">
-        <div class="rptCardTitle">รูปภาพประกอบ</div>
-        <button type="button" class="rptRemoveBtn">ลบ</button>
-      </div>
-      <div class="rptGrid2">
+      <div class="grid2">
         <div class="field">
-          <label>เลือกรูปภาพ</label>
+          <label>รูปภาพ ${index}</label>
           <input type="file" class="rptImageFile" accept="image/*">
         </div>
         <div class="field">
           <label>คำบรรยายภาพ</label>
-          <input type="text" class="rptImageCaption" placeholder="อธิบายภาพนี้">
+          <input type="text" class="rptImageCaption" placeholder="เช่น ภาพจุดเกิดเหตุ">
         </div>
       </div>
-      <div class="rptImagePreviewWrap">
-        <img class="rptImagePreview hidden" alt="preview">
-        <div class="rptImagePlaceholder">ยังไม่ได้เลือกรูป</div>
+      <div class="repeatCardActions">
+        <button type="button" class="btnDangerGhost rptMiniBtn">ลบรายการนี้</button>
       </div>
     `;
-
-    const fileInput = row.querySelector(".rptImageFile");
-    const preview = row.querySelector(".rptImagePreview");
-    const placeholder = row.querySelector(".rptImagePlaceholder");
-
-    fileInput?.addEventListener("change", () => {
-      const file = fileInput.files?.[0];
-      if (!file) return;
-
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        preview.src = e.target.result;
-        preview.classList.remove("hidden");
-        placeholder.classList.add("hidden");
-      };
-      reader.readAsDataURL(file);
-    });
-
-    row.querySelector(".rptRemoveBtn")?.addEventListener("click", () => row.remove());
-    wrap.appendChild(row);
+    row.querySelector("button")?.addEventListener("click", () => row.remove());
+    box.appendChild(row);
   }
 
   function setDefaultDates() {
-    const today = new Date();
-    const yyyy = today.getFullYear();
-    const mm = String(today.getMonth() + 1).padStart(2, "0");
-    const dd = String(today.getDate()).padStart(2, "0");
-    const hh = String(today.getHours()).padStart(2, "0");
-    const mi = String(today.getMinutes()).padStart(2, "0");
+    const today = formatDateInput(new Date());
+    if ($("rptIncidentDate") && !$("rptIncidentDate").value) $("rptIncidentDate").value = today;
+    if ($("rptReportDate") && !$("rptReportDate").value) $("rptReportDate").value = today;
+  }
 
-    const dateText = `${yyyy}-${mm}-${dd}`;
-    const timeText = `${hh}:${mi}`;
+  function formatDateInput(d) {
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, "0");
+    const dd = String(d.getDate()).padStart(2, "0");
+    return `${yyyy}-${mm}-${dd}`;
+  }
 
-    const incidentDate = document.getElementById("rptIncidentDate");
-    const reportDate = document.getElementById("rptReportDate");
-    const incidentTime = document.getElementById("rptIncidentTime");
+  function formatDateDisplay(value) {
+    if (!value) return "";
+    const m = String(value).match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (m) return `${m[3]}/${m[2]}/${m[1]}`;
+    return String(value);
+  }
 
-    if (incidentDate && !incidentDate.value) incidentDate.value = dateText;
-    if (reportDate && !reportDate.value) reportDate.value = dateText;
-    if (incidentTime && !incidentTime.value) incidentTime.value = timeText;
+  function getCheckedValues(name) {
+    return [...document.querySelectorAll(`input[name="${name}"]:checked`)]
+      .map((el) => String(el.value || "").trim())
+      .filter(Boolean);
+  }
+
+  function resolveSelectWithOther(selectId, otherId) {
+    const selected = $(selectId)?.value || "";
+    if (selected === "Other" || selected === "อื่นๆ") {
+      return String($(otherId)?.value || "").trim();
+    }
+    return String(selected || "").trim();
+  }
+
+  function collectLocationTypeDetails() {
+    const out = {
+      "Hypermarket Store": "",
+      "Super market Store": "",
+      "Value Store": "",
+      "Express Store": ""
+    };
+
+    document.querySelectorAll("[data-location-detail]").forEach((el) => {
+      const key = el.getAttribute("data-location-detail");
+      out[key] = String(el.value || "").trim();
+    });
+
+    return out;
+  }
+
+  function collectPeople() {
+    return [...document.querySelectorAll("#rptPeopleRows .repeatCard")]
+      .map((row) => ({
+        name: row.querySelector(".rptPersonName")?.value?.trim() || "",
+        position: row.querySelector(".rptPersonPosition")?.value?.trim() || "",
+        department: row.querySelector(".rptPersonDepartment")?.value?.trim() || "",
+        remark: row.querySelector(".rptPersonRemark")?.value?.trim() || ""
+      }))
+      .filter((x) => x.name || x.position || x.department || x.remark);
+  }
+
+  function collectDetailItems(containerId) {
+    return [...document.querySelectorAll(`#${containerId} .repeatRow`)]
+      .map((row, index) => ({
+        text: row.querySelector(".rptDetailText")?.value?.trim() || "",
+        sortOrder: index + 1
+      }))
+      .filter((x) => x.text);
+  }
+
+  async function collectImages() {
+    const rows = [...document.querySelectorAll("#rptImageRows .repeatCard")];
+    const out = [];
+
+    for (let i = 0; i < rows.length; i++) {
+      const fileInput = rows[i].querySelector(".rptImageFile");
+      const caption = rows[i].querySelector(".rptImageCaption")?.value?.trim() || "";
+      const file = fileInput?.files?.[0];
+      if (!file) continue;
+
+      const data = await readFileAsBase64(file);
+      out.push({
+        seq: i + 1,
+        name: file.name,
+        mimeType: file.type || "image/jpeg",
+        data,
+        caption
+      });
+    }
+
+    return out;
+  }
+
+  function readFileAsBase64(file) {
+    return new Promise((resolve, reject) => {
+      const fr = new FileReader();
+      fr.onload = () => {
+        const result = String(fr.result || "");
+        const base64 = result.includes(",") ? result.split(",")[1] : result;
+        resolve(base64);
+      };
+      fr.onerror = reject;
+      fr.readAsDataURL(file);
+    });
+  }
+
+  function collectPayload() {
+    return {
+      refNo: String($("rptRefNo")?.value || "").trim(),
+      branch: resolveSelectWithOther("rptBranch", "rptBranchOther"),
+      subject: String($("rptSubject")?.value || "").trim(),
+
+      reportTypes: getCheckedValues("rptReportTypes"),
+      reportTypeOtherText: String($("rptReportTypeOther")?.value || "").trim(),
+
+      urgencyLevels: getCheckedValues("rptUrgencyLevels"),
+      urgencyOtherText: String($("rptUrgencyOther")?.value || "").trim(),
+
+      reportTo: getCheckedValues("rptReportTo"),
+      reportToOtherText: String($("rptReportToOther")?.value || "").trim(),
+
+      incidentDate: formatDateDisplay($("rptIncidentDate")?.value || ""),
+      incidentTime: String($("rptIncidentTime")?.value || "").trim(),
+
+      incidentDescription: String($("rptIncidentDescription")?.value || "").trim(),
+      incidentLocation: String($("rptIncidentLocation")?.value || "").trim(),
+
+      locationTypes: getCheckedValues("rptLocationTypes"),
+      locationTypeOtherText: String($("rptLocationTypeOther")?.value || "").trim(),
+      locationTypeDetails: collectLocationTypeDetails(),
+      area: String($("rptArea")?.value || "").trim(),
+
+      incidentCategories: getCheckedValues("rptIncidentCategories"),
+      incidentCategoryOtherText: String($("rptIncidentCategoriesOther")?.value || "").trim(),
+
+      causeCategories: getCheckedValues("rptCauseCategories"),
+      causeCategoryOtherText: String($("rptCauseCategoryOther")?.value || "").trim(),
+
+      involvedPeople: collectPeople(),
+
+      damageItems: collectDetailItems("rptDamageRows"),
+      actionItems: collectDetailItems("rptActionRows"),
+      evidenceItems: collectDetailItems("rptEvidenceRows"),
+      rootCauseItems: collectDetailItems("rptRootCauseRows"),
+      preventionItems: collectDetailItems("rptPreventionRows"),
+      lessonItems: collectDetailItems("rptLessonRows"),
+
+      offenderStatement: String($("rptOffenderStatement")?.value || "").trim(),
+      summaryText: String($("rptSummaryText")?.value || "").trim(),
+      investigationLesson: String($("rptInvestigationLesson")?.value || "").trim(),
+
+      reportedBy: resolveSelectWithOther("rptReportedBy", "rptReportedByOther") || String($("rptLoginUser")?.value || "").trim(),
+      reporterPosition: String($("rptReporterPosition")?.value || "").trim(),
+      reportDate: formatDateDisplay($("rptReportDate")?.value || "")
+    };
   }
 
   async function previewSummary() {
     const payload = collectPayload();
     const html = `
-      <div style="text-align:left">
-        <b>เลขที่อ้างอิง:</b> ${escapeHtml(payload.refNo)}<br>
-        <b>สาขา:</b> ${escapeHtml(payload.branch)}<br>
-        <b>เรื่อง:</b> ${escapeHtml(payload.subject)}<br>
-        <b>ประเภทรายงาน:</b> ${escapeHtml(payload.reportType)}<br>
-        <b>ระดับความเร่งด่วน:</b> ${escapeHtml(payload.urgencyLevel)}<br>
-        <b>ผู้เกี่ยวข้อง:</b> ${payload.involvedPeople.length} รายการ<br>
-        <b>รูปภาพ:</b> ${document.querySelectorAll("#rptImageList .rptCard").length} รายการ
+      <div style="text-align:left;font-size:14px;line-height:1.6">
+        <div><b>เลขที่อ้างอิง:</b> ${escapeHtml(payload.refNo || "-")}</div>
+        <div><b>สาขา/หน่วยงาน:</b> ${escapeHtml(payload.branch || "-")}</div>
+        <div><b>เรื่อง:</b> ${escapeHtml(payload.subject || "-")}</div>
+        <div><b>ประเภทรายงาน:</b> ${escapeHtml((payload.reportTypes || []).join(" | ") || "-")}</div>
+        <div><b>ความเร่งด่วน:</b> ${escapeHtml((payload.urgencyLevels || []).join(" | ") || "-")}</div>
+        <div><b>ผู้รับรายงาน:</b> ${escapeHtml((payload.reportTo || []).join(" | ") || "-")}</div>
+        <div><b>วันที่/เวลา:</b> ${escapeHtml(payload.incidentDate || "-")} ${escapeHtml(payload.incidentTime || "")}</div>
+        <div><b>พื้นที่:</b> ${escapeHtml(payload.area || "-")}</div>
+        <div><b>รายงานโดย:</b> ${escapeHtml(payload.reportedBy || "-")}</div>
       </div>
     `;
 
     await Swal.fire({
-      title: "สรุปข้อมูลก่อนบันทึก",
+      title: "ตัวอย่างข้อมูลก่อนส่ง",
       html,
-      icon: "info",
-      width: 680
+      width: 760,
+      confirmButtonText: "ปิด"
     });
   }
 
   async function submitReport() {
-    const ok = await ensureSession();
-    if (!ok) return;
-
     try {
-      const payload = collectPayload();
-      const files = await collectFiles();
+      const ok = await ensureSession();
+      if (!ok) return;
 
-      const validationMsg = validatePayload(payload, files);
-      if (validationMsg) {
-        await Swal.fire("กรอกข้อมูลไม่ครบ", validationMsg, "warning");
-        return;
-      }
+      const payload = collectPayload();
+      const files = await collectImages();
+
+      const confirm = await Swal.fire({
+        icon: "question",
+        title: "ยืนยันการส่งรายงาน",
+        text: "ระบบจะบันทึกข้อมูล อัปโหลดรูป และสร้าง PDF",
+        showCancelButton: true,
+        confirmButtonText: "ส่งรายงาน",
+        cancelButtonText: "ยกเลิก"
+      });
+
+      if (!confirm.isConfirmed) return;
 
       Swal.fire({
-        title: "กำลังบันทึกข้อมูล",
-        text: "โปรดรอสักครู่",
+        title: "กำลังบันทึกข้อมูล...",
+        text: "กรุณารอสักครู่",
         allowOutsideClick: false,
         didOpen: () => Swal.showLoading()
       });
 
-      const res = await fetch(`${REPORT500_API_BASE}/report-submit`, {
+      const res = await fetch(apiUrl("/submitReport"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -478,195 +612,70 @@ const Report500App = (() => {
         })
       });
 
-      const data = await res.json();
-      if (!data.ok) {
-        throw new Error(data.message || data.error || "บันทึกไม่สำเร็จ");
+      const raw = await res.json();
+
+      if (!raw?.ok) {
+        throw new Error(raw?.message || raw?.error || "ส่งรายงานไม่สำเร็จ");
       }
 
       await Swal.fire({
-        title: "สำเร็จ",
+        icon: "success",
+        title: "บันทึกรายงานสำเร็จ",
         html: `
           <div style="text-align:left">
-            <b>รหัสรายงาน:</b> ${escapeHtml(data.reportId || "")}<br>
-            <b>สถานะ:</b> ${escapeHtml(data.status || "")}
+            <div><b>รหัสรายงาน:</b> ${escapeHtml(raw.reportId || "-")}</div>
+            <div><b>จำนวนรูป:</b> ${escapeHtml(String(raw.uploadedImageCount || 0))}</div>
+            ${raw.pdfUrl ? `<div style="margin-top:8px"><a href="${raw.pdfUrl}" target="_blank" rel="noopener">เปิด PDF</a></div>` : ""}
           </div>
-        `,
-        icon: "success",
-        showCancelButton: true,
-        confirmButtonText: "เปิด PDF",
-        cancelButtonText: "ปิด"
-      }).then((result) => {
-        if (result.isConfirmed && data.pdfUrl) {
-          window.open(data.pdfUrl, "_blank", "noopener");
-        }
+        `
       });
 
+      resetFormAfterSubmit();
     } catch (err) {
-      await Swal.fire("ไม่สำเร็จ", err.message || "เกิดข้อผิดพลาด", "error");
+      await Swal.fire("เกิดข้อผิดพลาด", err?.message || String(err), "error");
     }
   }
 
-  function collectPayload() {
-    return {
-      refNo: valueOf("rptRefNo"),
-      branch: valueWithOtherSelect("rptBranch", "rptBranchOther"),
-      subject: valueOf("rptSubject"),
-      reportType: valueWithOtherRadio("rptReportType", "rptReportTypeOther"),
-      urgencyLevel: valueWithOtherRadio("rptUrgencyLevel", "rptUrgencyOther"),
-      reportTo: valuesWithOtherCheckbox("rptReportTo", "rptReportToOther"),
-      incidentDate: valueOf("rptIncidentDate"),
-      incidentTime: valueOf("rptIncidentTime"),
-      incidentLocation: valueOf("rptIncidentLocation"),
-      locationType: valueWithOtherSelect("rptLocationType", "rptLocationTypeOther"),
-      area: valueOf("rptArea"),
-      incidentCategories: valuesWithOtherCheckbox("rptIncidentCategories", "rptIncidentCategoriesOther"),
-      causeCategory: valueWithOtherSelect("rptCauseCategory", "rptCauseCategoryOther"),
-      involvedPeople: collectPeople(),
-      detailItems: {
-        damageItems: collectDetailItems("rptDamageList"),
-        actionItems: collectDetailItems("rptActionList"),
-        evidenceItems: collectDetailItems("rptEvidenceList"),
-        rootCauseItems: collectDetailItems("rptRootCauseList"),
-        preventionItems: collectDetailItems("rptPreventionList"),
-        lessonItems: collectDetailItems("rptLessonList")
-      },
-      reportedBy: valueWithOtherSelect("rptReportedBy", "rptReportedByOther"),
-      reporterPosition: valueOf("rptReporterPosition"),
-      reportDate: valueOf("rptReportDate")
-    };
+  function resetFormAfterSubmit() {
+    const form = $("report500Form");
+    if (form) form.reset();
+
+    buildInitialRows();
+    renderLocationTypeGroup();
+    renderCheckboxGroupWithOther(
+      "rptReportTypeBox", "rptReportTypes", state.options.reportTypes,
+      "rptReportTypeOtherWrap", "rptReportTypeOther", "ระบุประเภทรายงาน (อื่นๆ)"
+    );
+    renderCheckboxGroupWithOther(
+      "rptUrgencyBox", "rptUrgencyLevels", state.options.urgencyLevels,
+      "rptUrgencyOtherWrap", "rptUrgencyOther", "ระบุระดับความเร่งด่วน (อื่นๆ)"
+    );
+    renderCheckboxGroupWithOther(
+      "rptReportToBox", "rptReportTo", state.options.reportTo,
+      "rptReportToOtherWrap", "rptReportToOther", "ระบุผู้รับรายงาน (อื่นๆ)"
+    );
+    renderCheckboxGroupWithOther(
+      "rptIncidentCategoriesBox", "rptIncidentCategories", state.options.incidentCategories,
+      "rptIncidentCategoriesOtherWrap", "rptIncidentCategoriesOther", "ระบุหมวดเหตุการณ์ (อื่นๆ)"
+    );
+    renderCheckboxGroupWithOther(
+      "rptCauseCategoryBox", "rptCauseCategories", state.options.causeCategories,
+      "rptCauseCategoryOtherWrap", "rptCauseCategoryOther", "ระบุสาเหตุ (อื่นๆ)"
+    );
+    setDefaultDates();
+    syncAuthToReportForm();
   }
 
-  function collectPeople() {
-    return [...document.querySelectorAll("#rptPeopleList .rptCard")]
-      .map((row, index) => ({
-        seq: index + 1,
-        personName: row.querySelector(".rptPersonName")?.value?.trim() || "",
-        personPosition: row.querySelector(".rptPersonPosition")?.value?.trim() || "",
-        personDepartment: valueWithOtherSelectFromRow(row, ".rptPersonDepartment", ".rptPersonDepartmentOther"),
-        personRemark: row.querySelector(".rptPersonRemark")?.value?.trim() || ""
-      }))
-      .filter((item) => item.personName || item.personPosition || item.personDepartment || item.personRemark);
-  }
-
-  function collectDetailItems(listId) {
-    return [...document.querySelectorAll(`#${listId} .rptDetailText`)]
-      .map((el, index) => ({
-        seq: index + 1,
-        text: el.value.trim()
-      }))
-      .filter((item) => item.text);
-  }
-
-  async function collectFiles() {
-    const rows = [...document.querySelectorAll("#rptImageList .rptCard")];
-    const out = [];
-
-    for (let i = 0; i < rows.length; i++) {
-      const file = rows[i].querySelector(".rptImageFile")?.files?.[0];
-      const caption = rows[i].querySelector(".rptImageCaption")?.value?.trim() || "";
-      if (!file) continue;
-
-      const data = await fileToBase64(file);
-      out.push({
-        seq: i + 1,
-        name: file.name,
-        mimeType: file.type || "image/jpeg",
-        data,
-        caption
-      });
-    }
-    return out;
-  }
-
-  function validatePayload(payload, files) {
-    const missing = [];
-
-    if (!payload.refNo) missing.push("เลขที่อ้างอิง");
-    if (!payload.branch) missing.push("สาขา");
-    if (!payload.subject) missing.push("เรื่อง");
-    if (!payload.reportType) missing.push("ประเภทรายงาน");
-    if (!payload.urgencyLevel) missing.push("ระดับความเร่งด่วน");
-    if (!payload.reportTo.length) missing.push("ผู้รับรายงาน");
-    if (!payload.incidentDate) missing.push("วันที่เกิดเหตุ");
-    if (!payload.incidentTime) missing.push("เวลาที่เกิดเหตุ");
-    if (!payload.incidentLocation) missing.push("สถานที่เกิดเหตุ");
-    if (!payload.locationType) missing.push("ประเภทสถานที่");
-    if (!payload.area) missing.push("บริเวณ");
-    if (!payload.incidentCategories.length) missing.push("รายละเอียดเหตุการณ์");
-    if (!payload.causeCategory) missing.push("สาเหตุ");
-    if (!payload.involvedPeople.length) missing.push("ผู้เกี่ยวข้อง");
-    if (!payload.detailItems.damageItems.length) missing.push("ความเสียหาย");
-    if (!payload.detailItems.actionItems.length) missing.push("การดำเนินการ");
-    if (!payload.detailItems.evidenceItems.length) missing.push("หลักฐานที่พบ/ประกอบ");
-    if (!payload.detailItems.rootCauseItems.length) missing.push("สาเหตุของเหตุการณ์ในครั้งนี้");
-    if (!payload.detailItems.preventionItems.length) missing.push("การป้องกันเกิดเหตุซ้ำ / เสนอแนะ");
-    if (!payload.detailItems.lessonItems.length) missing.push("ได้อะไรจากการสอบสวนครั้งนี้ / หรือมีข้อขัดข้อง");
-    if (!payload.reportedBy) missing.push("รายงานโดย");
-    if (!payload.reporterPosition) missing.push("ตำแหน่งผู้รายงาน");
-    if (!payload.reportDate) missing.push("วันที่รายงาน");
-
-    const validFiles = files.filter((f) => f.data && f.caption);
-    if (!validFiles.length) missing.push("รูปภาพพร้อมคำบรรยายอย่างน้อย 1 รายการ");
-
-    return missing.length ? missing.join(", ") : "";
-  }
-
-  function buildSelectOptions(options) {
-    const list = appendOtherOptionClient(options);
-    return `<option value="">-- เลือก --</option>` + list.map((opt) =>
-      `<option value="${escapeHtml(opt.value)}">${escapeHtml(opt.label)}</option>`
-    ).join("");
-  }
-
-  function valueOf(id) {
-    return document.getElementById(id)?.value?.trim() || "";
-  }
-
-  function valueWithOtherSelect(id, otherId) {
-    const val = valueOf(id);
-    if (val !== "อื่นๆ") return val;
-    return valueOf(otherId);
-  }
-
-  function valueWithOtherRadio(name, otherId) {
-    const val = document.querySelector(`input[name="${name}"]:checked`)?.value || "";
-    if (val !== "อื่นๆ") return val;
-    return valueOf(otherId);
-  }
-
-  function valuesWithOtherCheckbox(name, otherId) {
-    const values = [...document.querySelectorAll(`input[name="${name}"]:checked`)].map((el) => el.value);
-    return values
-      .map((v) => v === "อื่นๆ" ? valueOf(otherId) : v)
-      .filter(Boolean);
-  }
-
-  function valueWithOtherSelectFromRow(row, selectSelector, otherSelector) {
-    const selectEl = row.querySelector(selectSelector);
-    const otherEl = row.querySelector(otherSelector);
-    const val = String(selectEl?.value || "").trim();
-    if (val !== "อื่นๆ") return val;
-    return String(otherEl?.value || "").trim();
-  }
-
-  function fileToBase64(file) {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => {
-        const result = String(reader.result || "");
-        resolve(result.split(",")[1] || "");
-      };
-      reader.onerror = reject;
-      reader.readAsDataURL(file);
-    });
-  }
-
-  function escapeHtml(value) {
-    return String(value ?? "")
+  function escapeHtml(s) {
+    return String(s == null ? "" : s)
       .replace(/&/g, "&amp;")
       .replace(/</g, "&lt;")
       .replace(/>/g, "&gt;")
       .replace(/"/g, "&quot;");
+  }
+
+  function cssEscape(value) {
+    return String(value).replace(/"/g, '\\"');
   }
 
   return { init };
