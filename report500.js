@@ -7,43 +7,32 @@ const Report500App = (() => {
       reportTypes: [],
       formOptions: {},
       incidentCategories: []
-    }
+    },
+    optionsLoaded: false
   };
 
   function init() {
-    bindTabEvents();
+    bindModeIntegration();
     bindFormEvents();
     setDefaultDates();
   }
 
-  function bindTabEvents() {
-    const tabError = document.getElementById("tabErrorBol");
-    const tabUnder500 = document.getElementById("tabUnder500");
-    const formCard = document.getElementById("formCard");
-    const under500Card = document.getElementById("under500Card");
-
-    if (!tabError || !tabUnder500 || !formCard || !under500Card) return;
-
-    tabError.addEventListener("click", () => {
-      tabError.classList.add("active");
-      tabUnder500.classList.remove("active");
-      formCard.classList.remove("hidden");
-      under500Card.classList.add("hidden");
+  function bindModeIntegration() {
+    document.addEventListener("app:auth-success", () => {
+      syncPassFromShell();
     });
 
-    tabUnder500.addEventListener("click", async () => {
+    document.addEventListener("app:mode-change", async (ev) => {
+      const mode = ev?.detail?.mode || "";
+      if (mode !== "report500") return;
+
       const ok = await ensureSession();
       if (!ok) return;
 
-      tabUnder500.classList.add("active");
-      tabError.classList.remove("active");
-      formCard.classList.add("hidden");
-      under500Card.classList.remove("hidden");
-
-      if (!under500Card.dataset.loaded) {
+      if (!state.optionsLoaded) {
         await loadOptions();
         buildInitialRows();
-        under500Card.dataset.loaded = "1";
+        state.optionsLoaded = true;
       }
     });
   }
@@ -54,9 +43,16 @@ const Report500App = (() => {
     document.getElementById("btnRptPreview")?.addEventListener("click", previewSummary);
     document.getElementById("btnRptSubmit")?.addEventListener("click", submitReport);
 
-    document.querySelectorAll(".rptAddDetailBtn").forEach(btn => {
+    document.querySelectorAll(".rptAddDetailBtn").forEach((btn) => {
       btn.addEventListener("click", () => addDetailRow(btn.dataset.target));
     });
+  }
+
+  function syncPassFromShell() {
+    if (window.APP_AUTH_PASS) {
+      state.pass = window.APP_AUTH_PASS;
+      localStorage.setItem("report500_pass", window.APP_AUTH_PASS);
+    }
   }
 
   async function ensureSession() {
@@ -64,6 +60,7 @@ const Report500App = (() => {
 
     if (window.APP_AUTH_PASS) {
       state.pass = window.APP_AUTH_PASS;
+      localStorage.setItem("report500_pass", window.APP_AUTH_PASS);
       return true;
     }
 
@@ -74,45 +71,30 @@ const Report500App = (() => {
       return true;
     }
 
-    const passInput = document.getElementById("loginPass");
-    const pass = (passInput?.value || "").trim();
-
-    if (!pass) {
-      await Swal.fire(
-        "กรุณาเข้าสู่ระบบก่อน",
-        "โปรด Login จากหน้าหลักก่อน แล้วค่อยเลือกแท็บ <500",
-        "warning"
-      );
-      return false;
-    }
-
-    const res = await fetch(`${REPORT500_API_BASE}/auth`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ pass })
-    });
-
-    const data = await res.json();
-    if (!data.ok) {
-      await Swal.fire("เข้าสู่ระบบไม่สำเร็จ", data.message || data.error || "", "error");
-      return false;
-    }
-
-    state.pass = pass;
-    window.APP_AUTH_PASS = pass;
-    localStorage.setItem("report500_pass", pass);
-    return true;
+    await Swal.fire(
+      "กรุณาเข้าสู่ระบบก่อน",
+      "โปรดเข้าสู่ระบบจากหน้าหลักก่อน แล้วค่อยเลือกแท็บ <500",
+      "warning"
+    );
+    return false;
   }
 
-  async function loadOptions() {
+  async function loadOptions(forceReload = false) {
+    if (state.optionsLoaded && !forceReload) return;
+
     const res = await fetch(`${REPORT500_API_BASE}/options`, { method: "GET" });
     const raw = await res.json();
+
+    if (!raw?.ok) {
+      throw new Error(raw?.message || raw?.error || "โหลดตัวเลือกไม่สำเร็จ");
+    }
+
     const options = raw?.data?.reportFormOptions || {};
 
     state.options = {
-      reportTypes: options.reportTypes || [],
+      reportTypes: Array.isArray(options.reportTypes) ? options.reportTypes : [],
       formOptions: options.formOptions || {},
-      incidentCategories: options.incidentCategories || []
+      incidentCategories: Array.isArray(options.incidentCategories) ? options.incidentCategories : []
     };
 
     renderSelect("rptBranch", getGroupOptions("สาขา"));
@@ -124,6 +106,8 @@ const Report500App = (() => {
     renderRadioGroup("rptUrgencyBox", "rptUrgencyLevel", getGroupOptions("ระดับความเร่งด่วน"));
     renderCheckboxGroup("rptReportToBox", "rptReportTo", getGroupOptions("ผู้รับรายงาน"));
     renderCheckboxGroup("rptIncidentCategoriesBox", "rptIncidentCategories", state.options.incidentCategories);
+
+    state.optionsLoaded = true;
   }
 
   function getGroupOptions(groupName) {
@@ -133,14 +117,19 @@ const Report500App = (() => {
   function renderSelect(id, options) {
     const el = document.getElementById(id);
     if (!el) return;
-    el.innerHTML = `<option value="">-- เลือก --</option>` + options.map(opt =>
-      `<option value="${escapeHtml(opt.value)}">${escapeHtml(opt.label)}</option>`
-    ).join("");
+
+    el.innerHTML =
+      `<option value="">-- เลือก --</option>` +
+      options.map((opt) => {
+        const selected = opt.default ? "selected" : "";
+        return `<option value="${escapeHtml(opt.value)}" ${selected}>${escapeHtml(opt.label)}</option>`;
+      }).join("");
   }
 
   function renderRadioGroup(containerId, name, options) {
     const wrap = document.getElementById(containerId);
     if (!wrap) return;
+
     wrap.innerHTML = options.map((opt, idx) => `
       <label class="choiceItem">
         <input type="radio" name="${name}" value="${escapeHtml(opt.value)}" ${opt.default || idx === 0 ? "checked" : ""}>
@@ -152,7 +141,8 @@ const Report500App = (() => {
   function renderCheckboxGroup(containerId, name, options) {
     const wrap = document.getElementById(containerId);
     if (!wrap) return;
-    wrap.innerHTML = options.map(opt => `
+
+    wrap.innerHTML = options.map((opt) => `
       <label class="choiceItem">
         <input type="checkbox" name="${name}" value="${escapeHtml(opt.value)}">
         <span class="choiceText">${escapeHtml(opt.label)}</span>
@@ -201,7 +191,8 @@ const Report500App = (() => {
         </div>
       </div>
     `;
-    row.querySelector(".rptRemoveBtn").addEventListener("click", () => row.remove());
+
+    row.querySelector(".rptRemoveBtn")?.addEventListener("click", () => row.remove());
     wrap.appendChild(row);
   }
 
@@ -220,7 +211,8 @@ const Report500App = (() => {
         <textarea class="rptDetailText rptTextArea" rows="4" placeholder="กรอกรายละเอียดเป็นข้อ"></textarea>
       </div>
     `;
-    row.querySelector(".rptRemoveBtn").addEventListener("click", () => row.remove());
+
+    row.querySelector(".rptRemoveBtn")?.addEventListener("click", () => row.remove());
     wrap.appendChild(row);
   }
 
@@ -255,11 +247,12 @@ const Report500App = (() => {
     const preview = row.querySelector(".rptImagePreview");
     const placeholder = row.querySelector(".rptImagePlaceholder");
 
-    fileInput.addEventListener("change", () => {
+    fileInput?.addEventListener("change", () => {
       const file = fileInput.files?.[0];
       if (!file) return;
+
       const reader = new FileReader();
-      reader.onload = e => {
+      reader.onload = (e) => {
         preview.src = e.target.result;
         preview.classList.remove("hidden");
         placeholder.classList.add("hidden");
@@ -267,7 +260,13 @@ const Report500App = (() => {
       reader.readAsDataURL(file);
     });
 
-    row.querySelector(".rptRemoveBtn").addEventListener("click", () => row.remove());
+    row.querySelector(".rptRemoveBtn")?.addEventListener("click", () => {
+      if (preview?.src?.startsWith("blob:")) {
+        try { URL.revokeObjectURL(preview.src); } catch (_) {}
+      }
+      row.remove();
+    });
+
     wrap.appendChild(row);
   }
 
@@ -278,6 +277,7 @@ const Report500App = (() => {
     const dd = String(today.getDate()).padStart(2, "0");
     const hh = String(today.getHours()).padStart(2, "0");
     const mi = String(today.getMinutes()).padStart(2, "0");
+
     const dateText = `${yyyy}-${mm}-${dd}`;
     const timeText = `${hh}:${mi}`;
 
@@ -303,6 +303,7 @@ const Report500App = (() => {
         <b>รูปภาพ:</b> ${document.querySelectorAll("#rptImageList .rptCard").length} รายการ
       </div>
     `;
+
     await Swal.fire({
       title: "สรุปข้อมูลก่อนบันทึก",
       html,
@@ -359,7 +360,7 @@ const Report500App = (() => {
         showCancelButton: true,
         confirmButtonText: "เปิด PDF",
         cancelButtonText: "ปิด"
-      }).then(result => {
+      }).then((result) => {
         if (result.isConfirmed && data.pdfUrl) {
           window.open(data.pdfUrl, "_blank", "noopener");
         }
@@ -401,20 +402,24 @@ const Report500App = (() => {
   }
 
   function collectPeople() {
-    return [...document.querySelectorAll("#rptPeopleList .rptCard")].map((row, index) => ({
-      seq: index + 1,
-      personName: row.querySelector(".rptPersonName")?.value?.trim() || "",
-      personPosition: row.querySelector(".rptPersonPosition")?.value?.trim() || "",
-      personDepartment: row.querySelector(".rptPersonDepartment")?.value || "",
-      personRemark: row.querySelector(".rptPersonRemark")?.value?.trim() || ""
-    })).filter(item => item.personName || item.personPosition || item.personDepartment || item.personRemark);
+    return [...document.querySelectorAll("#rptPeopleList .rptCard")]
+      .map((row, index) => ({
+        seq: index + 1,
+        personName: row.querySelector(".rptPersonName")?.value?.trim() || "",
+        personPosition: row.querySelector(".rptPersonPosition")?.value?.trim() || "",
+        personDepartment: row.querySelector(".rptPersonDepartment")?.value || "",
+        personRemark: row.querySelector(".rptPersonRemark")?.value?.trim() || ""
+      }))
+      .filter((item) => item.personName || item.personPosition || item.personDepartment || item.personRemark);
   }
 
   function collectDetailItems(listId) {
-    return [...document.querySelectorAll(`#${listId} .rptDetailText`)].map((el, index) => ({
-      seq: index + 1,
-      text: el.value.trim()
-    })).filter(item => item.text);
+    return [...document.querySelectorAll(`#${listId} .rptDetailText`)]
+      .map((el, index) => ({
+        seq: index + 1,
+        text: el.value.trim()
+      }))
+      .filter((item) => item.text);
   }
 
   async function collectFiles() {
@@ -465,14 +470,14 @@ const Report500App = (() => {
     if (!payload.reporterPosition) missing.push("ตำแหน่งผู้รายงาน");
     if (!payload.reportDate) missing.push("วันที่รายงาน");
 
-    const validFiles = files.filter(f => f.data && f.caption);
+    const validFiles = files.filter((f) => f.data && f.caption);
     if (!validFiles.length) missing.push("รูปภาพพร้อมคำบรรยายอย่างน้อย 1 รายการ");
 
     return missing.length ? missing.join(", ") : "";
   }
 
   function buildSelectOptions(options) {
-    return `<option value="">-- เลือก --</option>` + options.map(opt =>
+    return `<option value="">-- เลือก --</option>` + options.map((opt) =>
       `<option value="${escapeHtml(opt.value)}">${escapeHtml(opt.label)}</option>`
     ).join("");
   }
@@ -486,7 +491,7 @@ const Report500App = (() => {
   }
 
   function checkedValues(name) {
-    return [...document.querySelectorAll(`input[name="${name}"]:checked`)].map(el => el.value);
+    return [...document.querySelectorAll(`input[name="${name}"]:checked`)].map((el) => el.value);
   }
 
   function fileToBase64(file) {
