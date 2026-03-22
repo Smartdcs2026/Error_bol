@@ -3092,13 +3092,8 @@
 //   el.addEventListener("blur", sanitize);
 // }
 
-/** ==========================
- *  FRONTEND APP
- *  app.js
- *  ========================== */
-
-
-
+window.APP_AUTH_PASS = "";
+window.APP_ACTIVE_MODE = "error";
 
 const API_BASE = "https://bol.somchaibutphon.workers.dev";
 const ITEM_NOT_FOUND_TEXT = "-ไม่พบรายการสินค้า-";
@@ -3189,60 +3184,6 @@ function formatDateToDisplay(value) {
   return s;
 }
 
-function renderGalleryHtml(imageIds = []) {
-  if (!Array.isArray(imageIds) || imageIds.length === 0) return "";
-
-  const cards = imageIds.map((id, i) => {
-    const url = driveImgUrl(id);
-    return `
-      <button type="button" class="galItem" data-url="${url}" aria-label="ดูรูปที่ ${i + 1}">
-        <div class="galThumbWrap">
-          <img class="galThumb" src="${url}" alt="รูปที่ ${i + 1}" loading="lazy">
-          <div class="galBadge">${i + 1}</div>
-        </div>
-        <div class="galCap">รูปภาพแนบ ${i + 1}</div>
-      </button>
-    `;
-  }).join("");
-
-  return `
-    <div style="margin-top:10px">
-      <div style="font-weight:900;margin-bottom:6px">รูปภาพที่แนบ (${imageIds.length})</div>
-      <div class="galGrid">${cards}</div>
-      <div style="margin-top:8px;color:#94a3b8;font-size:12px">แตะ/คลิกรูปเพื่อดูขนาดเต็ม</div>
-    </div>
-  `;
-}
-
-function bindGalleryClickInSwal() {
-  const root = Swal.getHtmlContainer();
-  if (!root) return;
-
-  const items = root.querySelectorAll(".galItem");
-  items.forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const url = btn.getAttribute("data-url");
-      if (!url) return;
-
-      Swal.fire({
-        title: "ดูรูปภาพแนบ",
-        html: `
-          <div style="text-align:center">
-            <img
-              src="${url}"
-              style="width:100%;max-height:72vh;object-fit:contain;border-radius:16px;border:1px solid #d7ddea;background:#fff"
-              alt="รูปภาพแนบ"
-            />
-          </div>
-        `,
-        confirmButtonText: "ปิด",
-        confirmButtonColor: "#2563eb",
-        width: 900
-      });
-    });
-  });
-}
-
 init().catch((err) => {
   console.error(err);
   safeSetLoginMsg("เกิดข้อผิดพลาดระหว่างเริ่มระบบ: " + (err?.message || err));
@@ -3254,6 +3195,7 @@ async function init() {
   bindEvents();
   bindRefInputs();
   buildWorkAgeOptions();
+  applyInitialShellState();
 
   try {
     await loadOptions();
@@ -3270,8 +3212,24 @@ async function init() {
   numericOnly($("errorCaseQty"));
   alnumUpperOnly($("employeeCode"));
 
-  setActiveTab("error");
   updateEmployeeConfirmPreview();
+}
+
+function applyInitialShellState() {
+  const hasSession = !!(window.APP_AUTH_PASS || localStorage.getItem("report500_pass"));
+
+  if (!hasSession) {
+    $("modeTabs")?.classList.add("hidden");
+    $("loginCard")?.classList.remove("hidden");
+    $("formCard")?.classList.add("hidden");
+    $("under500Card")?.classList.add("hidden");
+    return;
+  }
+
+  window.APP_AUTH_PASS = localStorage.getItem("report500_pass") || window.APP_AUTH_PASS || "";
+  $("modeTabs")?.classList.remove("hidden");
+  $("loginCard")?.classList.add("hidden");
+  setActiveTab(window.APP_ACTIVE_MODE || "error");
 }
 
 function safeSetLoginMsg(msg) {
@@ -3280,24 +3238,56 @@ function safeSetLoginMsg(msg) {
 }
 
 function bindTabs() {
-  $("tabErrorBol")?.addEventListener("click", () => setActiveTab("error"));
-  $("tabUnder500")?.addEventListener("click", () => setActiveTab("u500"));
+  $("tabErrorBol")?.addEventListener("click", async () => {
+    if (!(await ensureSessionBeforeSwitch())) return;
+    setActiveTab("error");
+  });
+
+  $("tabUnder500")?.addEventListener("click", async () => {
+    if (!(await ensureSessionBeforeSwitch())) return;
+    setActiveTab("u500");
+  });
+}
+
+async function ensureSessionBeforeSwitch() {
+  if (AUTH.name || window.APP_AUTH_PASS || localStorage.getItem("report500_pass")) {
+    return true;
+  }
+
+  await Swal.fire({
+    icon: "warning",
+    title: "กรุณาเข้าสู่ระบบก่อน",
+    text: "โปรดเข้าสู่ระบบจากหน้าหลักก่อน แล้วจึงเลือกแท็บที่ต้องการ"
+  });
+  return false;
 }
 
 function setActiveTab(which) {
+  window.APP_ACTIVE_MODE = which === "u500" ? "u500" : "error";
+
   $("tabErrorBol")?.classList.toggle("active", which === "error");
   $("tabUnder500")?.classList.toggle("active", which === "u500");
 
-  if (!AUTH.name) {
+  const loggedIn = !!(AUTH.name || window.APP_AUTH_PASS || localStorage.getItem("report500_pass"));
+
+  if (!loggedIn) {
+    $("modeTabs")?.classList.add("hidden");
     $("loginCard")?.classList.remove("hidden");
     $("formCard")?.classList.add("hidden");
     $("under500Card")?.classList.add("hidden");
     return;
   }
 
+  $("modeTabs")?.classList.remove("hidden");
   $("loginCard")?.classList.add("hidden");
   $("formCard")?.classList.toggle("hidden", which !== "error");
   $("under500Card")?.classList.toggle("hidden", which !== "u500");
+
+  document.dispatchEvent(
+    new CustomEvent("app:mode-change", {
+      detail: { mode: which === "u500" ? "report500" : "error" }
+    })
+  );
 }
 
 function bindEvents() {
@@ -3401,9 +3391,67 @@ function buildWorkAgeOptions() {
   }
 }
 
-/** ==========================
- *  Confirm Cause
- *  ========================== */
+async function onLogin() {
+  safeSetLoginMsg("");
+  const pass = ($("loginPass")?.value || "").trim();
+
+  if (!pass) {
+    safeSetLoginMsg("กรุณากรอกรหัสผ่าน");
+    return;
+  }
+
+  let json;
+  try {
+    const res = await fetch(apiUrl("/auth"), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ pass })
+    });
+
+    const text = await res.text();
+    try {
+      json = JSON.parse(text);
+    } catch (_) {
+      safeSetLoginMsg("Backend ตอบกลับไม่ใช่ JSON");
+      return;
+    }
+
+    if (!res.ok || !json.ok) {
+      safeSetLoginMsg(json.message || json.error || "เข้าสู่ระบบไม่สำเร็จ");
+      return;
+    }
+  } catch (err) {
+    console.error("LOGIN FETCH ERROR:", err);
+    safeSetLoginMsg("เชื่อมต่อระบบไม่ได้ (ตรวจสอบ Worker/อินเทอร์เน็ต)");
+    return;
+  }
+
+  const lpsName = String((json.user && json.user.name) || json.name || "").trim();
+  if (!lpsName) {
+    safeSetLoginMsg("ไม่พบชื่อผู้ใช้งานจากระบบ");
+    return;
+  }
+
+  window.APP_AUTH_PASS = pass;
+  localStorage.setItem("report500_pass", pass);
+
+  AUTH = { name: lpsName, pass };
+  setLpsFromLogin(lpsName);
+
+  $("modeTabs")?.classList.remove("hidden");
+  $("loginCard")?.classList.add("hidden");
+
+  document.dispatchEvent(
+    new CustomEvent("app:auth-success", {
+      detail: {
+        pass,
+        response: json
+      }
+    })
+  );
+
+  setActiveTab("error");
+}
 function onErrorReasonChange() {
   const v = $("errorReason")?.value || "";
   $("wrapErrorOther")?.classList.toggle("hidden", v !== "อื่นๆ");
@@ -3439,7 +3487,7 @@ function renderConfirmCauseSelector() {
   });
 
   root.innerHTML = Object.keys(groups).map((group) => {
-    const cards = groups[group].map((item, idx) => {
+    const cards = groups[group].map((item) => {
       const checked = selectedBefore.includes(item.text) ? "checked" : "";
       const requiresText = item.requiresText ? "1" : "0";
 
@@ -3564,9 +3612,6 @@ function updateEmployeeConfirmPreview() {
   preview.value = p.employeeConfirmText;
 }
 
-/** ==========================
- *  Email Selector
- *  ========================== */
 function renderEmailSelector() {
   const root = $("emailSelector");
   if (!root) return;
@@ -3614,69 +3659,6 @@ function updateEmailSelectedText() {
     ? `เลือกแล้ว ${selected.length} อีเมล`
     : "ยังไม่ได้เลือกอีเมล (ถ้าไม่เลือก ระบบจะไม่ส่งอีเมล)";
 }
-
-/** ==========================
- *  Login
- *  ========================== */
-async function onLogin() {
-  safeSetLoginMsg("");
-  const pass = ($("loginPass")?.value || "").trim();
-
-  if (!pass) {
-    safeSetLoginMsg("กรุณากรอกรหัสผ่าน");
-    return;
-  }
-
-  let json;
-  try {
-    const res = await fetch(apiUrl("/auth"), {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ pass })
-    });
-
-    const text = await res.text();
-    try {
-      json = JSON.parse(text);
-    } catch (_) {
-      safeSetLoginMsg("Backend ตอบกลับไม่ใช่ JSON");
-      return;
-    }
-
-    if (!res.ok || !json.ok) {
-      safeSetLoginMsg(json.error || "เข้าสู่ระบบไม่สำเร็จ");
-      return;
-    }
-  } catch (err) {
-    console.error("LOGIN FETCH ERROR:", err);
-    safeSetLoginMsg("เชื่อมต่อระบบไม่ได้ (ตรวจสอบ Worker/อินเทอร์เน็ต)");
-    return;
-  }
-
-  const lpsName = String(json.name || "").trim();
-  if (!lpsName) {
-    safeSetLoginMsg("ไม่พบชื่อผู้ใช้งานจากระบบ");
-    return;
-  }
-
-  AUTH = { name: lpsName, pass };
-  setLpsFromLogin(lpsName);
-  setActiveTab("error");
-}
-
-/** ==========================
- *  Basic sanitizers
- *  ========================== */
-function numericOnly(el) {
-  if (!el) return;
-  el.addEventListener("input", () => {
-    el.value = String(el.value || "").replace(/[^\d]/g, "");
-  });
-}
-
-/** ==========================
- *  ITEM LOOKUP FAST MODE
- *  ========================== */
 function onItemInputLookup() {
   const item = String($("item")?.value || "").replace(/[^\d]/g, "").trim();
 
@@ -3849,6 +3831,7 @@ function renderItemLookupState(state) {
     ? `${item} | ${ITEM_NOT_FOUND_TEXT}`
     : `${displayText || `${item} | ${ITEM_NOT_FOUND_TEXT}`}`;
 }
+
 function getItemDisplayText() {
   if (ITEM_LOOKUP_STATE && ITEM_LOOKUP_STATE.displayText) {
     return ITEM_LOOKUP_STATE.displayText;
@@ -3857,9 +3840,6 @@ function getItemDisplayText() {
   return item;
 }
 
-/** ==========================
- *  Upload fields
- *  ========================== */
 function buildInitialUploadFields() {
   const grid = $("uploadGrid");
   if (!grid) return;
@@ -3946,9 +3926,6 @@ function addUploadField(label, opts = {}) {
   });
 }
 
-/** ==========================
- *  Payload + Validation
- *  ========================== */
 function collectPayloadBase() {
   return {
     refNo: getRefNoValue(),
@@ -4042,10 +4019,6 @@ function validatePayload(p) {
 
   return "";
 }
-
-/** ==========================
- *  Preview
- *  ========================== */
 async function previewSummary() {
   const p = collectPayload();
   const err = validatePayload(p);
@@ -4125,87 +4098,6 @@ async function previewSummary() {
             <div class="swalDescValue">${escapeHtml(p.errorDescription || "-").replaceAll("\n", "<br>")}</div>
           </div>
         </div>
-
-        <div class="swalSection">
-          <div class="swalSectionTitle">ข้อมูลพนักงาน / ผู้เกี่ยวข้อง</div>
-          <div class="swalKvGrid">
-            <div class="swalKv">
-              <div class="swalKvLabel">ชื่อพนักงาน</div>
-              <div class="swalKvValue">${escapeHtml(p.employeeName || "-")}</div>
-            </div>
-            <div class="swalKv">
-              <div class="swalKvLabel">รหัสพนักงาน</div>
-              <div class="swalKvValue">${escapeHtml(p.employeeCode || "-")}</div>
-            </div>
-            <div class="swalKv">
-              <div class="swalKvLabel">อายุงาน</div>
-              <div class="swalKvValue">${escapeHtml(`${p.workAgeYear} ปี ${p.workAgeMonth} เดือน`)}</div>
-            </div>
-            <div class="swalKv">
-              <div class="swalKvLabel">สัญชาติ</div>
-              <div class="swalKvValue">${escapeHtml(p.nationality || "-")}</div>
-            </div>
-            <div class="swalKv">
-              <div class="swalKvLabel">OSM</div>
-              <div class="swalKvValue">${escapeHtml(p.osm || "-")}</div>
-            </div>
-            <div class="swalKv">
-              <div class="swalKvLabel">OTM</div>
-              <div class="swalKvValue">${escapeHtml(p.otm || "-")}</div>
-            </div>
-            <div class="swalKv">
-              <div class="swalKvLabel">ล่ามแปลภาษา</div>
-              <div class="swalKvValue">${escapeHtml(p.interpreterName || "-")}</div>
-            </div>
-            <div class="swalKv">
-              <div class="swalKvLabel">AUDIT</div>
-              <div class="swalKvValue">${escapeHtml(p.auditName || "-")}</div>
-            </div>
-          </div>
-        </div>
-
-        <div class="swalSection">
-          <div class="swalSectionTitle">ข้อเท็จจริงที่พนักงานยืนยัน</div>
-          <div class="swalDesc">
-            <div class="swalDescLabel">รายการที่เลือก</div>
-            <div class="swalDescValue">${escapeHtml(causeSummary || "-").replaceAll("|", "<br>")}</div>
-          </div>
-
-          <div class="swalDesc" style="margin-top:8px;">
-            <div class="swalDescLabel">คำยืนยันของพนักงาน</div>
-            <div class="swalDescValue">${escapeHtml(p.employeeConfirmText || "-").replaceAll("\n", "<br>")}</div>
-          </div>
-        </div>
-
-        <div class="swalSection">
-          <div class="swalSectionTitle">ผู้รับอีเมล</div>
-          ${
-            emails.length
-              ? `
-                <div class="swalEmailOk" style="margin-bottom:8px;">
-                  มีการเลือกผู้รับอีเมล ${emails.length} รายการ
-                </div>
-                <div class="swalEmailList">
-                  ${emails.map(e => `<div class="swalEmailChip">${escapeHtml(e)}</div>`).join("")}
-                </div>
-              `
-              : `<div class="swalNote">ยังไม่ได้เลือกอีเมล ระบบจะบันทึกข้อมูลและสร้าง PDF อย่างเดียว</div>`
-          }
-        </div>
-
-        <div class="swalSection">
-          <div class="swalSectionTitle">ไฟล์แนบ</div>
-          <div class="swalKvGrid">
-            <div class="swalKv">
-              <div class="swalKvLabel">จำนวนรูปที่เลือก</div>
-              <div class="swalKvValue">${fileCount} รูป</div>
-            </div>
-            <div class="swalKv">
-              <div class="swalKvLabel">สถานะการสร้างเอกสาร</div>
-              <div class="swalKvValue">ระบบจะสร้าง PDF หลังบันทึกสำเร็จ</div>
-            </div>
-          </div>
-        </div>
       </div>
     `,
     confirmButtonText: "ตกลง",
@@ -4219,9 +4111,6 @@ function countSelectedFiles() {
   return inputs.reduce((acc, el) => acc + ((el.files && el.files[0]) ? 1 : 0), 0);
 }
 
-/** ==========================
- *  Submit
- *  ========================== */
 async function submitForm() {
   const p = collectPayload();
   const err = validatePayload(p);
@@ -4245,7 +4134,7 @@ async function submitForm() {
   if (!signRes.ok) return;
 
   const body = {
-    pass: AUTH.pass,
+    pass: AUTH.pass || window.APP_AUTH_PASS,
     payload: p,
     files,
     signatures: {
@@ -4317,199 +4206,11 @@ async function submitForm() {
     });
   }
 
-  const galleryHtml = renderGalleryHtml(json.imageIds || []);
-  const emailResult = json.emailResult || {};
-  const emailOk = !!emailResult.ok && !emailResult.skipped;
-  const pdfSizeText = String(json.pdfSizeText || "-");
-
-  const supSignThumb = signRes.supervisorBase64
-    ? `<img class="sigThumb" src="${signRes.supervisorBase64}" alt="sign supervisor">`
-    : `<div class="swalNote">ไม่มีลายเซ็น</div>`;
-
-  const empSignThumb = signRes.employeeBase64
-    ? `<img class="sigThumb" src="${signRes.employeeBase64}" alt="sign employee">`
-    : `<div class="swalNote">ไม่มีลายเซ็น</div>`;
-
-  const intSignThumb = signRes.interpreterBase64
-    ? `<img class="sigThumb" src="${signRes.interpreterBase64}" alt="sign interpreter">`
-    : `<div class="swalNote">ไม่มีลายเซ็น</div>`;
-
   await Swal.fire({
     icon: "success",
     title: "บันทึกสำเร็จ",
     confirmButtonText: "ปิดหน้าต่าง",
-    confirmButtonColor: "#2563eb",
-    width: 920,
-    html: `
-      <div class="swalSummary">
-        <div class="swalHero">
-          <div class="swalHeroTitle">บันทึกรายการเรียบร้อยแล้ว</div>
-          <div class="swalHeroSub">ระบบจัดเก็บข้อมูล รูปภาพ และเอกสาร PDF เรียบร้อย</div>
-          <div class="swalPillRow">
-            <div class="swalPill primary">LPS: ${escapeHtml(AUTH.name || json.lpsName || "-")}</div>
-            <div class="swalPill">Ref: ${escapeHtml(p.refNo || "-")}</div>
-            <div class="swalPill">รูป ${Number((json.imageIds || []).length)}</div>
-            <div class="swalPill">วินัย ${Number(json.disciplineMatchCount || 0)}</div>
-          </div>
-        </div>
-
-        <div class="swalSection">
-          <div class="swalSectionTitle">ข้อมูลเอกสาร</div>
-          <div class="swalKvGrid">
-            <div class="swalKv">
-              <div class="swalKvLabel">วันที่เวลา</div>
-              <div class="swalKvValue">${escapeHtml(json.timestamp || "-")}</div>
-            </div>
-            <div class="swalKv">
-              <div class="swalKvLabel">Ref:No.</div>
-              <div class="swalKvValue">${escapeHtml(p.refNo || "-")}</div>
-            </div>
-            <div class="swalKv">
-              <div class="swalKvLabel">Label CID</div>
-              <div class="swalKvValue">${escapeHtml(p.labelCid || "-")}</div>
-            </div>
-            <div class="swalKv">
-              <div class="swalKvLabel">ขนาด PDF</div>
-              <div class="swalKvValue">${escapeHtml(pdfSizeText)}</div>
-            </div>
-          </div>
-        </div>
-
-        <div class="swalSection">
-          <div class="swalSectionTitle">ข้อมูลเหตุการณ์</div>
-          <div class="swalKvGrid">
-            <div class="swalKv">
-              <div class="swalKvLabel">สาเหตุ</div>
-              <div class="swalKvValue">${escapeHtml(p.errorReason === "อื่นๆ" ? ("อื่นๆ: " + p.errorReasonOther) : p.errorReason)}</div>
-            </div>
-            <div class="swalKv">
-              <div class="swalKvLabel">วันที่เบิกสินค้า Error</div>
-              <div class="swalKvValue">${escapeHtml(formatDateToDisplay(p.errorDate) || "-")}</div>
-            </div>
-            <div class="swalKv">
-              <div class="swalKvLabel">Item</div>
-              <div class="swalKvValue">${escapeHtml((json.itemDisplay || getItemDisplayText() || "-"))}</div>
-            </div>
-            <div class="swalKv">
-              <div class="swalKvLabel">จำนวน ErrorCase</div>
-              <div class="swalKvValue">${escapeHtml(p.errorCaseQty || "-")}</div>
-            </div>
-          </div>
-
-          <div class="swalDesc" style="margin-top:8px;">
-            <div class="swalDescLabel">รายละเอียดเหตุการณ์</div>
-            <div class="swalDescValue">${escapeHtml(p.errorDescription || "-").replaceAll("\n", "<br>")}</div>
-          </div>
-        </div>
-
-        <div class="swalSection">
-          <div class="swalSectionTitle">พนักงาน / ผู้เกี่ยวข้อง</div>
-          <div class="swalKvGrid">
-            <div class="swalKv">
-              <div class="swalKvLabel">ชื่อพนักงาน</div>
-              <div class="swalKvValue">${escapeHtml(p.employeeName || "-")}</div>
-            </div>
-            <div class="swalKv">
-              <div class="swalKvLabel">รหัสพนักงาน</div>
-              <div class="swalKvValue">${escapeHtml(p.employeeCode || "-")}</div>
-            </div>
-            <div class="swalKv">
-              <div class="swalKvLabel">อายุงาน</div>
-              <div class="swalKvValue">${escapeHtml(`${p.workAgeYear} ปี ${p.workAgeMonth} เดือน`)}</div>
-            </div>
-            <div class="swalKv">
-              <div class="swalKvLabel">สัญชาติ</div>
-              <div class="swalKvValue">${escapeHtml(p.nationality || "-")}</div>
-            </div>
-            <div class="swalKv">
-              <div class="swalKvLabel">OSM</div>
-              <div class="swalKvValue">${escapeHtml(p.osm || "-")}</div>
-            </div>
-            <div class="swalKv">
-              <div class="swalKvLabel">OTM</div>
-              <div class="swalKvValue">${escapeHtml(p.otm || "-")}</div>
-            </div>
-            <div class="swalKv">
-              <div class="swalKvLabel">ล่าม</div>
-              <div class="swalKvValue">${escapeHtml(p.interpreterName || "-")}</div>
-            </div>
-            <div class="swalKv">
-              <div class="swalKvLabel">AUDIT</div>
-              <div class="swalKvValue">${escapeHtml(p.auditName || "-")}</div>
-            </div>
-          </div>
-        </div>
-
-        <div class="swalSection">
-          <div class="swalSectionTitle">ข้อเท็จจริงที่พนักงานยืนยัน</div>
-          <div class="swalDesc">
-            <div class="swalDescLabel">รายการที่เลือก</div>
-            <div class="swalDescValue">${escapeHtml(composeConfirmCauseSummary(p.confirmCauseSelected, p.confirmCauseOther) || "-").replaceAll("|", "<br>")}</div>
-          </div>
-
-          <div class="swalDesc" style="margin-top:8px;">
-            <div class="swalDescLabel">คำยืนยันของพนักงาน</div>
-            <div class="swalDescValue">${escapeHtml(p.employeeConfirmText || "-").replaceAll("\n", "<br>")}</div>
-          </div>
-        </div>
-
-        <div class="swalSection">
-          <div class="swalSectionTitle">สถานะอีเมล</div>
-          ${
-            emailResult.skipped
-              ? `<div class="swalNote">ไม่ได้ส่งอีเมล เพราะยังไม่ได้เลือกผู้รับ</div>`
-              : emailOk
-                ? `
-                  <div class="swalEmailOk">
-                    ส่งอีเมลสำเร็จ ${Number(emailResult.count || 0)} รายการ
-                    ${emailResult.attachmentMode ? `• ${escapeHtml(emailResult.attachmentMode)}` : ""}
-                  </div>
-                  <div class="swalEmailList">
-                    ${(emailResult.recipients || []).map(e => `<div class="swalEmailChip">${escapeHtml(e)}</div>`).join("")}
-                  </div>
-                `
-                : `<div class="swalEmailFail">บันทึกข้อมูลสำเร็จ แต่ส่งอีเมลไม่สำเร็จ: ${escapeHtml(emailResult.error || "-")}</div>`
-          }
-        </div>
-
-        <div class="swalSection">
-          <div class="swalSectionTitle">ลายเซ็น</div>
-          <div class="sigGrid">
-            <div>
-              <div class="sigBoxTitle">หัวหน้างาน</div>
-              ${supSignThumb}
-              <div class="sigName">${escapeHtml(p.otm || "-")}</div>
-            </div>
-            <div>
-              <div class="sigBoxTitle">พนักงาน</div>
-              ${empSignThumb}
-              <div class="sigName">${escapeHtml(p.employeeName || "-")}</div>
-            </div>
-            <div>
-              <div class="sigBoxTitle">ล่ามแปลภาษา</div>
-              ${intSignThumb}
-              <div class="sigName">${escapeHtml(p.interpreterName || "-")}</div>
-            </div>
-          </div>
-        </div>
-
-        <div class="swalSection">
-          <div class="swalSectionTitle">รูปภาพแนบ</div>
-          ${galleryHtml || `<div class="swalNote">ไม่มีรูปภาพแนบ</div>`}
-        </div>
-
-        ${
-          json.pdfUrl
-            ? `
-              <div class="swalActionLink">
-                <a href="${json.pdfUrl}" target="_blank" rel="noopener noreferrer">เปิดไฟล์ PDF รายงาน</a>
-              </div>
-            `
-            : `<div class="swalNote" style="color:#dc2626;font-weight:900">ไม่พบลิงก์ PDF</div>`
-        }
-      </div>
-    `,
-    didOpen: () => bindGalleryClickInSwal()
+    confirmButtonColor: "#2563eb"
   });
 
   resetForm();
@@ -4570,9 +4271,6 @@ function fileToBase64(file) {
   });
 }
 
-/** ==========================
- *  Signature Flow
- *  ========================== */
 async function openSignatureFlow(supervisorName, employeeName, interpreterName) {
   const sup = await signatureModal("ลายเซ็นหัวหน้างาน", `ผู้เซ็น: ${supervisorName || "-"}`);
   if (!sup.ok) return { ok: false };
@@ -4601,69 +4299,6 @@ async function openSignatureFlow(supervisorName, employeeName, interpreterName) 
   };
 }
 
-// // async function signatureModal(title, subtitle) {
-// //   const canvasId = "sigCanvas_" + Math.random().toString(16).slice(2);
-// //   const clearId = canvasId + "_clear";
-
-// //   const html = `
-// //     <div class="sigModalWrap">
-// //       <div class="sigModalHead">
-// //         <div class="sigModalSub">${escapeHtml(subtitle || "")}</div>
-// //         <div class="sigModalTip">กรุณาเซ็นภายในกรอบด้านล่าง โดยใช้เมาส์หรือนิ้วลากเขียนลายเซ็น</div>
-// //       </div>
-
-// //       <div class="sigCanvasCard">
-// //         <canvas id="${canvasId}" width="800" height="260" class="sigCanvasElm"></canvas>
-// //       </div>
-
-// //       <div class="sigModalFoot">
-// //         <button type="button" id="${clearId}" class="sigActionBtn sigActionBtn-clear">ล้างลายเซ็น</button>
-// //       </div>
-// //     </div>
-// //   `;
-
-// //   const res = await Swal.fire({
-// //     title: escapeHtml(title || "ลายเซ็น"),
-// //     html,
-// //     showCancelButton: true,
-// //     confirmButtonText: "ยืนยันลายเซ็น",
-// //     cancelButtonText: "ยกเลิก",
-// //     buttonsStyling: false,
-// //     customClass: {
-// //       popup: "sigSwalPopup",
-// //       title: "sigSwalTitle",
-// //       htmlContainer: "sigSwalHtml",
-// //       actions: "sigSwalActions",
-// //       confirmButton: "sigBtn sigBtn-confirm",
-// //       cancelButton: "sigBtn sigBtn-cancel"
-// //     },
-// //     didOpen: () => {
-// //       const canvas = document.getElementById(canvasId);
-// //       const btnClear = document.getElementById(clearId);
-
-// //       enableSignature(canvas);
-
-// //       btnClear?.addEventListener("click", () => {
-// //         const ctx = canvas.getContext("2d");
-// //         ctx.clearRect(0, 0, canvas.width, canvas.height);
-// //       });
-// //     },
-// //     preConfirm: () => {
-// //       const canvas = document.getElementById(canvasId);
-// //       const isEmpty = isCanvasBlank(canvas);
-
-// //       if (isEmpty) {
-// //         Swal.showValidationMessage("กรุณาเซ็นชื่อก่อนกดยืนยัน");
-// //         return false;
-// //       }
-
-// //       return canvas.toDataURL("image/png");
-// //     }
-// //   });
-
-// //   if (!res.isConfirmed) return { ok: false };
-// //   return { ok: true, base64: res.value };
-// // }
 async function signatureModal(title, subtitle) {
   const canvasId = "sigCanvas_" + Math.random().toString(16).slice(2);
   const clearId = canvasId + "_clear";
@@ -4728,6 +4363,7 @@ async function signatureModal(title, subtitle) {
   if (!res.isConfirmed) return { ok: false };
   return { ok: true, base64: res.value };
 }
+
 function enableSignature(canvas) {
   if (!canvas) return;
   const ctx = canvas.getContext("2d");
@@ -4864,7 +4500,7 @@ function isCanvasBlank(canvas) {
     if (data[i] !== 0) return false;
   }
   return true;
-// }
+}
 
 function escapeHtml(s) {
   return String(s ?? "")
@@ -4900,6 +4536,5 @@ function alnumUpperOnly(el) {
   el.addEventListener("paste", () => setTimeout(sanitize, 0));
   el.addEventListener("blur", sanitize);
 }
-
 
 
