@@ -97,15 +97,46 @@ const Report500App = (() => {
       incidentCategories: Array.isArray(options.incidentCategories) ? options.incidentCategories : []
     };
 
-    renderSelect("rptBranch", getGroupOptions("สาขา"));
-    renderSelect("rptLocationType", getGroupOptions("ประเภทสถานที่"));
-    renderSelect("rptCauseCategory", getGroupOptions("สาเหตุ"));
-    renderSelect("rptReportedBy", getGroupOptions("รายงานโดย"));
+    renderSelectWithOther("rptBranch", getGroupOptions("สาขา"), "rptBranchOtherWrap", "rptBranchOther", "ระบุสาขา (อื่นๆ)");
+    renderSelectWithOther("rptLocationType", getGroupOptions("ประเภทสถานที่"), "rptLocationTypeOtherWrap", "rptLocationTypeOther", "ระบุประเภทสถานที่ (อื่นๆ)");
+    renderSelectWithOther("rptCauseCategory", getGroupOptions("สาเหตุ"), "rptCauseCategoryOtherWrap", "rptCauseCategoryOther", "ระบุสาเหตุ (อื่นๆ)");
+    renderSelectWithOther("rptReportedBy", getGroupOptions("รายงานโดย"), "rptReportedByOtherWrap", "rptReportedByOther", "ระบุรายงานโดย (อื่นๆ)");
 
-    renderRadioGroup("rptReportTypeBox", "rptReportType", state.options.reportTypes);
-    renderRadioGroup("rptUrgencyBox", "rptUrgencyLevel", getGroupOptions("ระดับความเร่งด่วน"));
-    renderCheckboxGroup("rptReportToBox", "rptReportTo", getGroupOptions("ผู้รับรายงาน"));
-    renderCheckboxGroup("rptIncidentCategoriesBox", "rptIncidentCategories", state.options.incidentCategories);
+    renderRadioGroupWithOther(
+      "rptReportTypeBox",
+      "rptReportType",
+      state.options.reportTypes,
+      "rptReportTypeOtherWrap",
+      "rptReportTypeOther",
+      "ระบุประเภทรายงาน (อื่นๆ)"
+    );
+
+    renderRadioGroupWithOther(
+      "rptUrgencyBox",
+      "rptUrgencyLevel",
+      getGroupOptions("ระดับความเร่งด่วน"),
+      "rptUrgencyOtherWrap",
+      "rptUrgencyOther",
+      "ระบุระดับความเร่งด่วน (อื่นๆ)"
+    );
+
+    renderCheckboxGroupWithOther(
+      "rptReportToBox",
+      "rptReportTo",
+      getGroupOptions("ผู้รับรายงาน"),
+      "rptReportToOtherWrap",
+      "rptReportToOther",
+      "ระบุผู้รับรายงาน (อื่นๆ)"
+    );
+
+    renderCheckboxGroupWithOther(
+      "rptIncidentCategoriesBox",
+      "rptIncidentCategories",
+      state.options.incidentCategories,
+      "rptIncidentCategoriesOtherWrap",
+      "rptIncidentCategoriesOther",
+      "ระบุรายละเอียดเหตุการณ์ (อื่นๆ)"
+    );
 
     state.optionsLoaded = true;
   }
@@ -114,40 +145,136 @@ const Report500App = (() => {
     return state.options.formOptions[groupName] || [];
   }
 
-  function renderSelect(id, options) {
+  function appendOtherOptionClient(list) {
+    const arr = Array.isArray(list) ? [...list] : [];
+    const hasOther = arr.some((opt) => {
+      const label = String(opt?.label || "").trim();
+      const value = String(opt?.value || "").trim();
+      return label === "อื่นๆ" || value === "อื่นๆ";
+    });
+
+    if (!hasOther) {
+      arr.push({
+        seq: 999999,
+        label: "อื่นๆ",
+        value: "อื่นๆ",
+        default: false,
+        note: ""
+      });
+    }
+
+    return arr;
+  }
+
+  function renderSelectWithOther(id, options, wrapId, inputId, labelText) {
     const el = document.getElementById(id);
     if (!el) return;
 
+    const list = appendOtherOptionClient(options);
+
     el.innerHTML =
       `<option value="">-- เลือก --</option>` +
-      options.map((opt) => {
+      list.map((opt) => {
         const selected = opt.default ? "selected" : "";
         return `<option value="${escapeHtml(opt.value)}" ${selected}>${escapeHtml(opt.label)}</option>`;
       }).join("");
+
+    let wrap = document.getElementById(wrapId);
+    if (!wrap) {
+      wrap = document.createElement("div");
+      wrap.id = wrapId;
+      wrap.className = "field hidden";
+      wrap.innerHTML = `
+        <label for="${inputId}">${escapeHtml(labelText)}</label>
+        <input id="${inputId}" type="text" placeholder="${escapeHtml(labelText)}">
+      `;
+      el.parentElement?.insertAdjacentElement("afterend", wrap);
+    }
+
+    el.addEventListener("change", () => {
+      toggleOtherWrapBySelect(id, wrapId);
+    });
+
+    toggleOtherWrapBySelect(id, wrapId);
   }
 
-  function renderRadioGroup(containerId, name, options) {
+  function renderRadioGroupWithOther(containerId, name, options, wrapId, inputId, labelText) {
     const wrap = document.getElementById(containerId);
     if (!wrap) return;
 
-    wrap.innerHTML = options.map((opt, idx) => `
+    const list = appendOtherOptionClient(options);
+
+    wrap.innerHTML = list.map((opt, idx) => `
       <label class="choiceItem">
         <input type="radio" name="${name}" value="${escapeHtml(opt.value)}" ${opt.default || idx === 0 ? "checked" : ""}>
         <span class="choiceText">${escapeHtml(opt.label)}</span>
       </label>
     `).join("");
+
+    let otherWrap = document.getElementById(wrapId);
+    if (!otherWrap) {
+      otherWrap = document.createElement("div");
+      otherWrap.id = wrapId;
+      otherWrap.className = "field hidden";
+      otherWrap.innerHTML = `
+        <label for="${inputId}">${escapeHtml(labelText)}</label>
+        <input id="${inputId}" type="text" placeholder="${escapeHtml(labelText)}">
+      `;
+      wrap.insertAdjacentElement("afterend", otherWrap);
+    }
+
+    wrap.querySelectorAll(`input[name="${name}"]`).forEach((el) => {
+      el.addEventListener("change", () => toggleOtherWrapByRadio(name, wrapId));
+    });
+
+    toggleOtherWrapByRadio(name, wrapId);
   }
 
-  function renderCheckboxGroup(containerId, name, options) {
+  function renderCheckboxGroupWithOther(containerId, name, options, wrapId, inputId, labelText) {
     const wrap = document.getElementById(containerId);
     if (!wrap) return;
 
-    wrap.innerHTML = options.map((opt) => `
+    const list = appendOtherOptionClient(options);
+
+    wrap.innerHTML = list.map((opt) => `
       <label class="choiceItem">
         <input type="checkbox" name="${name}" value="${escapeHtml(opt.value)}">
         <span class="choiceText">${escapeHtml(opt.label)}</span>
       </label>
     `).join("");
+
+    let otherWrap = document.getElementById(wrapId);
+    if (!otherWrap) {
+      otherWrap = document.createElement("div");
+      otherWrap.id = wrapId;
+      otherWrap.className = "field hidden";
+      otherWrap.innerHTML = `
+        <label for="${inputId}">${escapeHtml(labelText)}</label>
+        <input id="${inputId}" type="text" placeholder="${escapeHtml(labelText)}">
+      `;
+      wrap.insertAdjacentElement("afterend", otherWrap);
+    }
+
+    wrap.querySelectorAll(`input[name="${name}"]`).forEach((el) => {
+      el.addEventListener("change", () => toggleOtherWrapByCheckbox(name, wrapId));
+    });
+
+    toggleOtherWrapByCheckbox(name, wrapId);
+  }
+
+  function toggleOtherWrapBySelect(selectId, wrapId) {
+    const val = document.getElementById(selectId)?.value || "";
+    document.getElementById(wrapId)?.classList.toggle("hidden", val !== "อื่นๆ");
+  }
+
+  function toggleOtherWrapByRadio(name, wrapId) {
+    const val = document.querySelector(`input[name="${name}"]:checked`)?.value || "";
+    document.getElementById(wrapId)?.classList.toggle("hidden", val !== "อื่นๆ");
+  }
+
+  function toggleOtherWrapByCheckbox(name, wrapId) {
+    const checked = [...document.querySelectorAll(`input[name="${name}"]:checked`)].map((el) => el.value);
+    document.getElementById(wrapId)?.classList.toggle("hidden", !checked.includes("อื่นๆ"));
   }
 
   function buildInitialRows() {
@@ -164,6 +291,10 @@ const Report500App = (() => {
   function addPersonRow() {
     const wrap = document.getElementById("rptPeopleList");
     if (!wrap) return;
+
+    const rowId = "rptPerson_" + Math.random().toString(16).slice(2);
+    const deptWrapId = rowId + "_deptOtherWrap";
+    const deptInputId = rowId + "_deptOther";
 
     const row = document.createElement("div");
     row.className = "rptCard";
@@ -185,12 +316,22 @@ const Report500App = (() => {
           <label>ส่วนงาน</label>
           <select class="rptPersonDepartment">${buildSelectOptions(getGroupOptions("ส่วนงาน"))}</select>
         </div>
+        <div id="${deptWrapId}" class="field hidden">
+          <label for="${deptInputId}">ระบุส่วนงาน (อื่นๆ)</label>
+          <input id="${deptInputId}" type="text" class="rptPersonDepartmentOther" placeholder="ระบุส่วนงาน (อื่นๆ)">
+        </div>
         <div class="field">
           <label>หมายเหตุ</label>
           <input type="text" class="rptPersonRemark" placeholder="หมายเหตุ (ถ้ามี)">
         </div>
       </div>
     `;
+
+    const deptSelect = row.querySelector(".rptPersonDepartment");
+    deptSelect?.addEventListener("change", () => {
+      const val = String(deptSelect.value || "").trim();
+      row.querySelector(`#${deptWrapId}`)?.classList.toggle("hidden", val !== "อื่นๆ");
+    });
 
     row.querySelector(".rptRemoveBtn")?.addEventListener("click", () => row.remove());
     wrap.appendChild(row);
@@ -260,13 +401,7 @@ const Report500App = (() => {
       reader.readAsDataURL(file);
     });
 
-    row.querySelector(".rptRemoveBtn")?.addEventListener("click", () => {
-      if (preview?.src?.startsWith("blob:")) {
-        try { URL.revokeObjectURL(preview.src); } catch (_) {}
-      }
-      row.remove();
-    });
-
+    row.querySelector(".rptRemoveBtn")?.addEventListener("click", () => row.remove());
     wrap.appendChild(row);
   }
 
@@ -374,18 +509,18 @@ const Report500App = (() => {
   function collectPayload() {
     return {
       refNo: valueOf("rptRefNo"),
-      branch: valueOf("rptBranch"),
+      branch: valueWithOtherSelect("rptBranch", "rptBranchOther"),
       subject: valueOf("rptSubject"),
-      reportType: selectedRadio("rptReportType"),
-      urgencyLevel: selectedRadio("rptUrgencyLevel"),
-      reportTo: checkedValues("rptReportTo"),
+      reportType: valueWithOtherRadio("rptReportType", "rptReportTypeOther"),
+      urgencyLevel: valueWithOtherRadio("rptUrgencyLevel", "rptUrgencyOther"),
+      reportTo: valuesWithOtherCheckbox("rptReportTo", "rptReportToOther"),
       incidentDate: valueOf("rptIncidentDate"),
       incidentTime: valueOf("rptIncidentTime"),
       incidentLocation: valueOf("rptIncidentLocation"),
-      locationType: valueOf("rptLocationType"),
+      locationType: valueWithOtherSelect("rptLocationType", "rptLocationTypeOther"),
       area: valueOf("rptArea"),
-      incidentCategories: checkedValues("rptIncidentCategories"),
-      causeCategory: valueOf("rptCauseCategory"),
+      incidentCategories: valuesWithOtherCheckbox("rptIncidentCategories", "rptIncidentCategoriesOther"),
+      causeCategory: valueWithOtherSelect("rptCauseCategory", "rptCauseCategoryOther"),
       involvedPeople: collectPeople(),
       detailItems: {
         damageItems: collectDetailItems("rptDamageList"),
@@ -395,7 +530,7 @@ const Report500App = (() => {
         preventionItems: collectDetailItems("rptPreventionList"),
         lessonItems: collectDetailItems("rptLessonList")
       },
-      reportedBy: valueOf("rptReportedBy"),
+      reportedBy: valueWithOtherSelect("rptReportedBy", "rptReportedByOther"),
       reporterPosition: valueOf("rptReporterPosition"),
       reportDate: valueOf("rptReportDate")
     };
@@ -407,7 +542,7 @@ const Report500App = (() => {
         seq: index + 1,
         personName: row.querySelector(".rptPersonName")?.value?.trim() || "",
         personPosition: row.querySelector(".rptPersonPosition")?.value?.trim() || "",
-        personDepartment: row.querySelector(".rptPersonDepartment")?.value || "",
+        personDepartment: valueWithOtherSelectFromRow(row, ".rptPersonDepartment", ".rptPersonDepartmentOther"),
         personRemark: row.querySelector(".rptPersonRemark")?.value?.trim() || ""
       }))
       .filter((item) => item.personName || item.personPosition || item.personDepartment || item.personRemark);
@@ -477,7 +612,8 @@ const Report500App = (() => {
   }
 
   function buildSelectOptions(options) {
-    return `<option value="">-- เลือก --</option>` + options.map((opt) =>
+    const list = appendOtherOptionClient(options);
+    return `<option value="">-- เลือก --</option>` + list.map((opt) =>
       `<option value="${escapeHtml(opt.value)}">${escapeHtml(opt.label)}</option>`
     ).join("");
   }
@@ -486,12 +622,31 @@ const Report500App = (() => {
     return document.getElementById(id)?.value?.trim() || "";
   }
 
-  function selectedRadio(name) {
-    return document.querySelector(`input[name="${name}"]:checked`)?.value || "";
+  function valueWithOtherSelect(id, otherId) {
+    const val = valueOf(id);
+    if (val !== "อื่นๆ") return val;
+    return valueOf(otherId);
   }
 
-  function checkedValues(name) {
-    return [...document.querySelectorAll(`input[name="${name}"]:checked`)].map((el) => el.value);
+  function valueWithOtherRadio(name, otherId) {
+    const val = document.querySelector(`input[name="${name}"]:checked`)?.value || "";
+    if (val !== "อื่นๆ") return val;
+    return valueOf(otherId);
+  }
+
+  function valuesWithOtherCheckbox(name, otherId) {
+    const values = [...document.querySelectorAll(`input[name="${name}"]:checked`)].map((el) => el.value);
+    return values
+      .map((v) => v === "อื่นๆ" ? valueOf(otherId) : v)
+      .filter(Boolean);
+  }
+
+  function valueWithOtherSelectFromRow(row, selectSelector, otherSelector) {
+    const selectEl = row.querySelector(selectSelector);
+    const otherEl = row.querySelector(otherSelector);
+    const val = String(selectEl?.value || "").trim();
+    if (val !== "อื่นๆ") return val;
+    return String(otherEl?.value || "").trim();
   }
 
   function fileToBase64(file) {
