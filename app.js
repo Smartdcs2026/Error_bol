@@ -5181,8 +5181,11 @@ function bindEvents() {
   $("btnEmailClearAll")?.addEventListener("click", () => setAllEmailChecks(false));
 
   $("loginPass")?.addEventListener("keydown", (e) => {
-    if (e.key === "Enter") onLogin();
-  });
+  if (e.key === "Enter") {
+    e.preventDefault();
+    onLogin();
+  }
+});
 
   $("item")?.addEventListener("input", onItemInputLookup);
   $("item")?.addEventListener("blur", onItemBlurLookup);
@@ -5211,13 +5214,15 @@ async function loadOptions() {
     throw new Error(msg);
   }
 
-  OPTIONS = json.data || {
-    errorList: [],
-    auditList: [],
-    emailList: [],
-    osmList: [],
-    otmList: [],
-    confirmCauseList: []
+  const data = json.data || {};
+
+  OPTIONS = {
+    errorList: Array.isArray(data.errorList) ? data.errorList : [],
+    auditList: Array.isArray(data.auditList) ? data.auditList : [],
+    emailList: Array.isArray(data.emailList) ? data.emailList : [],
+    osmList: Array.isArray(data.osmList) ? data.osmList : [],
+    otmList: Array.isArray(data.otmList) ? data.otmList : [],
+    confirmCauseList: Array.isArray(data.confirmCauseList) ? data.confirmCauseList : [],
     reportFormOptions: data.reportFormOptions || {}
   };
 }
