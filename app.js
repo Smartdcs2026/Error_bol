@@ -5093,16 +5093,20 @@ async function init() {
 }
  
 function applyInitialShellState() {
-  const savedPass = localStorage.getItem("report500_pass") || "";
-  const hasSession = !!(window.APP_AUTH_PASS || savedPass);
+  // เริ่มต้นให้แสดงหน้า Login เสมอ
+  $("modeTabs")?.classList.add("hidden");
+  $("loginCard")?.classList.remove("hidden");
+  $("formCard")?.classList.add("hidden");
+  $("under500Card")?.classList.add("hidden");
 
-  if (!hasSession) {
-    $("modeTabs")?.classList.add("hidden");
-    $("loginCard")?.classList.remove("hidden");
-    $("formCard")?.classList.add("hidden");
-    $("under500Card")?.classList.add("hidden");
-    return;
-  }
+  // ล้างสถานะในหน่วยความจำ
+  window.APP_AUTH_PASS = "";
+  window.APP_AUTH_USER = null;
+  AUTH = { name: "", pass: "" };
+
+  // ถ้าต้องการให้จำรหัสไว้เฉย ๆ ก็เก็บได้
+  // แต่ไม่ให้ถือว่า login แล้วโดยอัตโนมัติ
+}
 
   window.APP_AUTH_PASS = savedPass || window.APP_AUTH_PASS || "";
   $("modeTabs")?.classList.remove("hidden");
@@ -5146,7 +5150,7 @@ function setActiveTab(which) {
   $("tabErrorBol")?.classList.toggle("active", which === "error");
   $("tabUnder500")?.classList.toggle("active", which === "u500");
 
-  const loggedIn = !!(AUTH.name || window.APP_AUTH_PASS || localStorage.getItem("report500_pass"));
+  const loggedIn = !!(AUTH.name && window.APP_AUTH_PASS);
 
   if (!loggedIn) {
     $("modeTabs")?.classList.add("hidden");
