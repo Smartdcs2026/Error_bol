@@ -4908,7 +4908,13 @@
  *  app.js
  *  ========================== */
 
+/** ==========================
+ *  FRONTEND APP
+ *  app.js
+ *  ========================== */
+
 window.APP_AUTH_PASS = "";
+window.APP_AUTH_USER = null;
 window.APP_ACTIVE_MODE = "error";
 
 const API_BASE = "https://bol.somchaibutphon.workers.dev";
@@ -4925,7 +4931,8 @@ let OPTIONS = {
   emailList: [],
   osmList: [],
   otmList: [],
-  confirmCauseList: []
+  confirmCauseList: [],
+  reportFormOptions: {}
 };
 
 let AUTH = { name: "", pass: "" };
@@ -5084,9 +5091,10 @@ async function init() {
 
   updateEmployeeConfirmPreview();
 }
-
+ 
 function applyInitialShellState() {
-  const hasSession = !!(window.APP_AUTH_PASS || localStorage.getItem("report500_pass"));
+  const savedPass = localStorage.getItem("report500_pass") || "";
+  const hasSession = !!(window.APP_AUTH_PASS || savedPass);
 
   if (!hasSession) {
     $("modeTabs")?.classList.add("hidden");
@@ -5096,7 +5104,7 @@ function applyInitialShellState() {
     return;
   }
 
-  window.APP_AUTH_PASS = localStorage.getItem("report500_pass") || window.APP_AUTH_PASS || "";
+  window.APP_AUTH_PASS = savedPass || window.APP_AUTH_PASS || "";
   $("modeTabs")?.classList.remove("hidden");
   $("loginCard")?.classList.add("hidden");
   setActiveTab(window.APP_ACTIVE_MODE || "error");
@@ -5210,6 +5218,7 @@ async function loadOptions() {
     osmList: [],
     otmList: [],
     confirmCauseList: []
+    reportFormOptions: data.reportFormOptions || {}
   };
 }
 
@@ -5480,8 +5489,8 @@ function updateEmailSelectedText() {
  *  ========================== */
 async function onLogin() {
   safeSetLoginMsg("");
-  const pass = ($("loginPass")?.value || "").trim();
 
+  const pass = String($("loginPass")?.value || "").trim();
   if (!pass) {
     safeSetLoginMsg("กรุณากรอกรหัสผ่าน");
     return;
@@ -5520,10 +5529,12 @@ async function onLogin() {
   }
 
   window.APP_AUTH_PASS = pass;
+  window.APP_AUTH_USER = json.user || { name: lpsName };
   localStorage.setItem("report500_pass", pass);
 
   AUTH = { name: lpsName, pass };
   setLpsFromLogin(lpsName);
+  fillSharedLoginUserUi_(json.user || { name: lpsName });
 
   $("modeTabs")?.classList.remove("hidden");
   $("loginCard")?.classList.add("hidden");
@@ -5532,6 +5543,7 @@ async function onLogin() {
     new CustomEvent("app:auth-success", {
       detail: {
         pass,
+        user: json.user || { name: lpsName },
         response: json
       }
     })
@@ -5539,7 +5551,15 @@ async function onLogin() {
 
   setActiveTab("error");
 }
+function fillSharedLoginUserUi_(user) {
+  const name = String(user?.name || "").trim();
 
+  const lpsEl = $("lps");
+  if (lpsEl && name) lpsEl.value = name;
+
+  const rptLoginUser = $("rptLoginUser");
+  if (rptLoginUser && name) rptLoginUser.value = name;
+}
 /** ==========================
  *  Basic sanitizers
  *  ========================== */
