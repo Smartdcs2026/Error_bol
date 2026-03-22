@@ -5152,6 +5152,12 @@ function setActiveTab(which) {
   $("loginCard")?.classList.add("hidden");
   $("formCard")?.classList.toggle("hidden", which !== "error");
   $("under500Card")?.classList.toggle("hidden", which !== "u500");
+
+  document.dispatchEvent(
+    new CustomEvent("app:mode-change", {
+      detail: { mode: which === "u500" ? "report500" : "error" }
+    })
+  );
 }
 
 function bindEvents() {
@@ -5521,6 +5527,15 @@ async function onLogin() {
 
   $("modeTabs")?.classList.remove("hidden");
   $("loginCard")?.classList.add("hidden");
+
+  document.dispatchEvent(
+    new CustomEvent("app:auth-success", {
+      detail: {
+        pass,
+        response: json
+      }
+    })
+  );
 
   setActiveTab("error");
 }
