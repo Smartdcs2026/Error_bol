@@ -20,7 +20,7 @@
       <img class="logo" src="https://lh5.googleusercontent.com/d/1758AOZ5E3JbnzwrFA4u2kH8nZUPrr8iP" alt="logo">
       <div class="brandText brandTextInline">
         <div class="title">ระบบบันทึกข้อมูล S&amp;LP</div>
-        <div class="subtitle">ฟอร์ม Error_BOL / &lt;500บาท / report500</div>
+        <div class="subtitle">ฟอร์ม Error_BOL / &lt;500บาท</div>
       </div>
     </div>
   </div>
@@ -28,7 +28,6 @@
   <nav class="tabs tabsInline">
     <button id="tabErrorBol" class="tab active" type="button">Error</button>
     <button id="tabUnder500" class="tab" type="button">&lt;500</button>
-    <button id="tabReport500" class="tab" type="button" data-report500-tab onclick="openReport500()">report500</button>
   </nav>
 </header>
 
@@ -363,173 +362,8 @@
     </div>
   </section>
 
-<!-- =========================
-REPORT500 START
-เพิ่มปุ่มแท็บนี้ใน form switcher เดิม
-<button type="button" class="switchBtn" data-report500-tab data-form="report500" onclick="openReport500()">report500</button>
-========================= -->
-
-<section id="report500Card" class="card hidden">
-  <div class="cardHeader">
-    <div>
-      <h2>ฟอร์ม report500</h2>
-      <p>ระบบรายงานเหตุการณ์แบบหลายหัวข้อ แยกจาก Error_BOL</p>
-    </div>
-  </div>
-
-  <form id="report500Form" onsubmit="return false;">
-    <div class="report500-card">
-      <h3>ข้อมูลหัวรายงาน</h3>
-      <div class="report500-grid cols-2">
-        <label><span>เลขอ้างอิง</span><input id="report500-refNo" type="text" readonly placeholder="ระบบสร้างอัตโนมัติ"></label>
-        <label><span>วันเวลารายงาน</span><input id="report500-reportDateTime" type="text" placeholder="dd/MM/yyyy HH:mm:ss"></label>
-        <label><span>สาขา *</span><input id="report500-branch" type="text"></label>
-        <label><span>ศูนย์กระจายสินค้า</span><input id="report500-dcName" type="text" value="SMART DC"></label>
-        <label class="span-2"><span>เรื่อง *</span><input id="report500-subject" type="text"></label>
-        <label><span>วันที่เกิดเหตุ *</span><input id="report500-incidentDate" type="text" placeholder="dd/MM/yyyy"></label>
-        <label><span>เวลาเกิดเหตุ *</span><input id="report500-incidentTime" type="text" placeholder="HH:mm"></label>
-        <label><span>สถานที่เกิดเหตุ *</span><input id="report500-location" type="text"></label>
-        <label><span>พื้นที่เกิดเหตุ</span><input id="report500-area" type="text"></label>
-        <label class="span-2"><span>รายละเอียดสถานที่เพิ่มเติม</span><input id="report500-locationDetail" type="text"></label>
-      </div>
-    </div>
-
-    <div class="report500-card">
-      <h3>ประเภทรายงาน / ความเร่งด่วน / ผู้รับรายงาน</h3>
-      <div class="report500-grid cols-2">
-        <div id="report500-reportTypes-group" class="report500-checkbox-group">
-          <div class="label-block">ประเภทรายงาน *</div>
-          <label><input type="checkbox" value="Situation Report"> Situation Report</label>
-          <label><input type="checkbox" value="Incident Report"> Incident Report</label>
-          <label><input type="checkbox" value="Accident Report"> Accident Report</label>
-          <label><input type="checkbox" value="อื่นๆ" data-other-toggle> อื่นๆ</label>
-          <div class="report500-other-wrap hidden"><input class="report500-other-input" type="text" placeholder="กรอกอื่นๆ"></div>
-        </div>
-        <div id="report500-urgencyLevels-group" class="report500-checkbox-group">
-          <div class="label-block">ระดับความเร่งด่วน</div>
-          <label><input type="checkbox" value="Immediate"> Immediate</label>
-          <label><input type="checkbox" value="Urgent"> Urgent</label>
-          <label><input type="checkbox" value="Normal"> Normal</label>
-          <label><input type="checkbox" value="อื่นๆ" data-other-toggle> อื่นๆ</label>
-          <div class="report500-other-wrap hidden"><input class="report500-other-input" type="text" placeholder="กรอกอื่นๆ"></div>
-        </div>
-        <div id="report500-reportReceivers-group" class="report500-checkbox-group span-2">
-          <div class="label-block">ผู้รับรายงาน *</div>
-          <div class="report500-grid cols-3 compact">
-            <label><input type="checkbox" value="GM. SKDC"> GM. SKDC</label>
-            <label><input type="checkbox" value="OM. SKDC"> OM. SKDC</label>
-            <label><input type="checkbox" value="OSM. SKDC"> OSM. SKDC</label>
-            <label><input type="checkbox" value="HR. Manager"> HR. Manager</label>
-            <label><input type="checkbox" value="S&LP. Manager"> S&amp;LP. Manager</label>
-            <label><input type="checkbox" value="FM. Manager"> FM. Manager</label>
-            <label><input type="checkbox" value="Safety Manager"> Safety Manager</label>
-            <label><input type="checkbox" value="System Manager"> System Manager</label>
-            <label><input type="checkbox" value="อื่นๆ" data-other-toggle> อื่นๆ</label>
-          </div>
-          <div class="report500-other-wrap hidden"><input class="report500-other-input" type="text" placeholder="กรอกอื่นๆ"></div>
-        </div>
-        <div id="report500-locationTypes-group" class="report500-checkbox-group span-2">
-          <div class="label-block">ประเภทพื้นที่</div>
-          <div class="report500-grid cols-3 compact">
-            <label><input type="checkbox" value="คลังสินค้า"> คลังสินค้า</label>
-            <label><input type="checkbox" value="ลานจอดรถ"> ลานจอดรถ</label>
-            <label><input type="checkbox" value="ประตูทางเข้าออก"> ประตูทางเข้าออก</label>
-            <label><input type="checkbox" value="พื้นที่โหลดสินค้า"> พื้นที่โหลดสินค้า</label>
-            <label><input type="checkbox" value="สำนักงาน"> สำนักงาน</label>
-            <label><input type="checkbox" value="อื่นๆ" data-other-toggle> อื่นๆ</label>
-          </div>
-          <div class="report500-other-wrap hidden"><input class="report500-other-input" type="text" placeholder="กรอกอื่นๆ"></div>
-        </div>
-      </div>
-    </div>
-
-    <div class="report500-card">
-      <h3>รายละเอียดเหตุการณ์</h3>
-      <div class="report500-grid cols-1">
-        <label><span>What happen *</span><textarea id="report500-whatHappened" rows="3"></textarea></label>
-        <label><span>Where did it happen</span><textarea id="report500-whereHappened" rows="2"></textarea></label>
-        <label><span>รายละเอียดเหตุการณ์เพิ่มเติม</span><textarea id="report500-incidentDetail" rows="4"></textarea></label>
-        <label><span>คำให้การของผู้เกี่ยวข้อง</span><textarea id="report500-statement" rows="3"></textarea></label>
-        <label><span>สรุปผลการตรวจสอบ</span><textarea id="report500-investigationSummary" rows="3"></textarea></label>
-        <label><span>ข้อสรุปเบื้องต้น</span><textarea id="report500-initialConclusion" rows="3"></textarea></label>
-      </div>
-    </div>
-
-    <div class="report500-card">
-      <div class="section-head"><h3>ผู้เกี่ยวข้อง</h3><button type="button" class="btnSecondary" data-r500-add="persons">เพิ่มแถว</button></div>
-      <div class="section-count">จำนวน <span data-r500-count="persons">0</span> รายการ</div>
-      <div id="report500-persons-wrap" class="report500-repeatable-wrap"></div>
-    </div>
-
-    <div class="report500-card">
-      <div class="section-head"><h3>ความเสียหาย</h3><button type="button" class="btnSecondary" data-r500-add="damages">เพิ่มแถว</button></div>
-      <div class="section-count">จำนวน <span data-r500-count="damages">0</span> รายการ</div>
-      <div id="report500-damages-wrap" class="report500-repeatable-wrap"></div>
-    </div>
-
-    <div class="report500-card">
-      <div class="section-head"><h3>การดำเนินการ</h3><button type="button" class="btnSecondary" data-r500-add="actions">เพิ่มแถว</button></div>
-      <div class="section-count">จำนวน <span data-r500-count="actions">0</span> รายการ</div>
-      <div id="report500-actions-wrap" class="report500-repeatable-wrap"></div>
-    </div>
-
-    <div class="report500-card"><div class="section-head"><h3>หลักฐาน</h3><button type="button" class="btnSecondary" data-r500-add="evidences">เพิ่มแถว</button></div><div id="report500-evidences-wrap" class="report500-repeatable-wrap"></div></div>
-    <div class="report500-card"><div class="section-head"><h3>สาเหตุ</h3><button type="button" class="btnSecondary" data-r500-add="causes">เพิ่มแถว</button></div><div id="report500-causes-wrap" class="report500-repeatable-wrap"></div></div>
-    <div class="report500-card"><div class="section-head"><h3>การป้องกันเหตุซ้ำ</h3><button type="button" class="btnSecondary" data-r500-add="preventions">เพิ่มแถว</button></div><div id="report500-preventions-wrap" class="report500-repeatable-wrap"></div></div>
-    <div class="report500-card"><div class="section-head"><h3>สิ่งที่ได้จากการสอบสวน</h3><button type="button" class="btnSecondary" data-r500-add="lessons">เพิ่มแถว</button></div><div id="report500-lessons-wrap" class="report500-repeatable-wrap"></div></div>
-
-    <div class="report500-card">
-      <div class="section-head"><h3>รูปภาพประกอบ</h3><button type="button" class="btnSecondary" data-r500-add="images">เพิ่มรูป</button></div>
-      <div class="section-count">จำนวน <span data-r500-count="images">0</span> รูป</div>
-      <div id="report500-images-wrap" class="report500-repeatable-wrap"></div>
-    </div>
-
-    <div class="report500-card">
-      <h3>ผู้จัดทำ / ตรวจสอบ / อนุมัติ</h3>
-      <div class="report500-grid cols-2">
-        <label><span>ผู้จัดทำรายงาน</span><input id="report500-preparedBy" type="text"></label>
-        <label><span>ตำแหน่งผู้จัดทำ</span><input id="report500-preparedPosition" type="text"></label>
-        <label><span>ผู้ตรวจสอบรายงาน</span><input id="report500-reviewedBy" type="text"></label>
-        <label><span>ตำแหน่งผู้ตรวจสอบ</span><input id="report500-reviewedPosition" type="text"></label>
-        <label><span>ผู้อนุมัติรายงาน</span><input id="report500-approvedBy" type="text"></label>
-        <label><span>ตำแหน่งผู้อนุมัติ</span><input id="report500-approvedPosition" type="text"></label>
-      </div>
-    </div>
-
-    <div class="report500-card">
-      <h3>สรุปท้ายฟอร์ม</h3>
-      <div class="report500-grid cols-2">
-        <label><span>ผลกระทบโดยรวม</span><select id="report500-overallImpact"><option value="">- เลือก -</option><option>ต่ำ</option><option>ปานกลาง</option><option>สูง</option><option>ร้ายแรง</option></select></label>
-        <label><span>หมายเหตุเพิ่มเติม</span><input id="report500-summaryRemark" type="text"></label>
-      </div>
-    </div>
-
-    <div class="report500-actions-bar">
-      <button type="button" id="report500-saveDraftBtn" class="btnGhost">บันทึกฉบับร่าง</button>
-      <button type="button" id="report500-submitBtn" class="btnPrimary">ส่งรายงาน</button>
-      <button type="button" id="report500-resetBtn" class="btnDanger">ล้างฟอร์ม</button>
-    </div>
-  </form>
-</section>
-
-<!-- templates -->
-<template id="report500-persons-template"><div class="report500-repeatable-item"><div class="item-head">ผู้เกี่ยวข้อง #<span data-seq-label>1</span><button type="button" data-r500-remove-row class="btnDanger btnSmall">ลบ</button></div><div class="report500-grid cols-2"><label><span>ชื่อ</span><input class="r500-person-name" type="text"></label><label><span>รหัสพนักงาน</span><input class="r500-person-employeeId" type="text"></label><label><span>ตำแหน่ง</span><input class="r500-person-position" type="text"></label><label><span>หน่วยงาน</span><input class="r500-person-department" type="text"></label><label><span>ประเภทผู้เกี่ยวข้อง</span><input class="r500-person-type" type="text"></label><label><span>บริษัท</span><input class="r500-person-company" type="text"></label><label><span>เบอร์โทรศัพท์</span><input class="r500-person-phone" type="text"></label><label><span>บทบาท</span><input class="r500-person-role" type="text"></label><label class="span-2"><span>คำให้การ</span><textarea class="r500-person-statement" rows="2"></textarea></label><label class="span-2"><span>หมายเหตุ</span><input class="r500-person-remark" type="text"></label></div></div></template>
-<template id="report500-damages-template"><div class="report500-repeatable-item"><div class="item-head">ความเสียหาย #<span data-seq-label>1</span><button type="button" data-r500-remove-row class="btnDanger btnSmall">ลบ</button></div><div class="report500-grid cols-2"><label><span>ประเภทความเสียหาย</span><input class="r500-damage-type" type="text"></label><label><span>รายการ</span><input class="r500-damage-item" type="text"></label><label class="span-2"><span>รายละเอียด</span><textarea class="r500-damage-detail" rows="2"></textarea></label><label><span>จำนวน</span><input class="r500-damage-qty" type="text"></label><label><span>หน่วยนับ</span><input class="r500-damage-unit" type="text"></label><label><span>มูลค่า</span><input class="r500-damage-amount" type="text"></label><label><span>ผู้รับผิดชอบ</span><input class="r500-damage-owner" type="text"></label><label><span>สถานะ</span><input class="r500-damage-status" type="text"></label><label class="span-2"><span>หมายเหตุ</span><input class="r500-damage-remark" type="text"></label></div></div></template>
-<template id="report500-actions-template"><div class="report500-repeatable-item"><div class="item-head">การดำเนินการ #<span data-seq-label>1</span><button type="button" data-r500-remove-row class="btnDanger btnSmall">ลบ</button></div><div class="report500-grid cols-2"><label><span>ประเภทการดำเนินการ</span><select class="r500-action-type" data-row-other-select><option value="">- เลือก -</option><option>ตรวจสารเสพติดเมทแอมเฟตามีน</option><option>ตรวจวัดปริมาณแอลกอฮอล์</option><option>สอบถามผู้เกี่ยวข้อง</option><option>ตรวจสอบกล้องวงจรปิด</option><option>ตรวจค้น</option><option>เชิญตัวสอบสวน</option><option>อื่นๆ</option></select></label><label class="report500-row-other-wrap hidden"><span>กรอกอื่นๆ</span><input class="report500-row-other-input r500-action-other" type="text"></label><label class="span-2"><span>รายละเอียดการดำเนินการ</span><textarea class="r500-action-detail" rows="2"></textarea></label><label><span>ผลการตรวจ</span><select class="r500-action-result"><option value="">- เลือก -</option><option>พบ</option><option>ไม่พบ</option><option>รอผล</option><option>ไม่เกี่ยวข้อง</option></select></label><label class="r500-detected-wrap"><span>ค่าที่ตรวจพบ</span><input class="r500-action-detectedValue" type="text"></label><label class="r500-detected-wrap"><span>หน่วยค่า</span><input class="r500-action-detectedUnit" type="text" placeholder="ng/ml หรือ mg%"></label><label><span>วันเวลาที่ดำเนินการ</span><input class="r500-action-dateTime" type="text" placeholder="dd/MM/yyyy HH:mm:ss"></label><label><span>ผู้ดำเนินการ</span><input class="r500-action-operator" type="text"></label><label><span>สถานที่ดำเนินการ</span><input class="r500-action-location" type="text"></label><label class="span-2"><span>หมายเหตุ</span><input class="r500-action-remark" type="text"></label></div></div></template>
-<template id="report500-evidences-template"><div class="report500-repeatable-item"><div class="item-head">หลักฐาน #<span data-seq-label>1</span><button type="button" data-r500-remove-row class="btnDanger btnSmall">ลบ</button></div><div class="report500-grid cols-2"><label><span>ประเภทหลักฐาน</span><select class="r500-evidence-type" data-row-other-select><option value="">- เลือก -</option><option>ภาพถ่าย</option><option>วิดีโอ</option><option>กล้องวงจรปิด</option><option>เอกสาร</option><option>คำให้การ</option><option>ผลตรวจสารเสพติด</option><option>ผลตรวจแอลกอฮอล์</option><option>อื่นๆ</option></select></label><label class="report500-row-other-wrap hidden"><span>กรอกอื่นๆ</span><input class="report500-row-other-input r500-evidence-other" type="text"></label><label class="span-2"><span>รายละเอียดหลักฐาน</span><textarea class="r500-evidence-detail" rows="2"></textarea></label><label><span>แหล่งที่มา</span><input class="r500-evidence-source" type="text"></label><label><span>เลขอ้างอิง</span><input class="r500-evidence-ref" type="text"></label><label><span>วันเวลาหลักฐาน</span><input class="r500-evidence-dateTime" type="text"></label><label><span>ผู้ตรวจพบ</span><input class="r500-evidence-foundBy" type="text"></label><label class="span-2"><span>ผลการตรวจหลักฐาน</span><input class="r500-evidence-result" type="text"></label><label class="span-2"><span>หมายเหตุ</span><input class="r500-evidence-remark" type="text"></label></div></div></template>
-<template id="report500-causes-template"><div class="report500-repeatable-item"><div class="item-head">สาเหตุ #<span data-seq-label>1</span><button type="button" data-r500-remove-row class="btnDanger btnSmall">ลบ</button></div><div class="report500-grid cols-2"><label><span>ประเภทสาเหตุ</span><select class="r500-cause-type" data-row-other-select><option value="">- เลือก -</option><option>บุคคล</option><option>กระบวนการ</option><option>อุปกรณ์</option><option>พื้นที่</option><option>ระบบ</option><option>อื่นๆ</option></select></label><label class="report500-row-other-wrap hidden"><span>กรอกอื่นๆ</span><input class="report500-row-other-input r500-cause-other" type="text"></label><label class="span-2"><span>รายละเอียดสาเหตุ</span><textarea class="r500-cause-detail" rows="2"></textarea></label><label><span>สาเหตุหลัก</span><input class="r500-cause-main" type="text"></label><label><span>สาเหตุรอง</span><input class="r500-cause-sub" type="text"></label><label class="span-2"><span>ปัจจัยที่เกี่ยวข้อง</span><input class="r500-cause-factor" type="text"></label><label class="span-2"><span>หมายเหตุ</span><input class="r500-cause-remark" type="text"></label></div></div></template>
-<template id="report500-preventions-template"><div class="report500-repeatable-item"><div class="item-head">การป้องกันเหตุซ้ำ #<span data-seq-label>1</span><button type="button" data-r500-remove-row class="btnDanger btnSmall">ลบ</button></div><div class="report500-grid cols-2"><label><span>ประเภทมาตรการ</span><select class="r500-prevention-type" data-row-other-select><option value="">- เลือก -</option><option>อบรม</option><option>กำชับการทำงาน</option><option>ปรับปรุงกระบวนการ</option><option>เพิ่มจุดตรวจ</option><option>ปรับปรุง CCTV</option><option>อื่นๆ</option></select></label><label class="report500-row-other-wrap hidden"><span>กรอกอื่นๆ</span><input class="report500-row-other-input r500-prevention-other" type="text"></label><label class="span-2"><span>รายละเอียดมาตรการ</span><textarea class="r500-prevention-detail" rows="2"></textarea></label><label><span>ผู้รับผิดชอบ</span><input class="r500-prevention-owner" type="text"></label><label><span>กำหนดเสร็จ</span><input class="r500-prevention-dueDate" type="text" placeholder="dd/MM/yyyy"></label><label><span>สถานะ</span><input class="r500-prevention-status" type="text"></label><label class="span-2"><span>ผลการติดตาม</span><input class="r500-prevention-followup" type="text"></label><label class="span-2"><span>หมายเหตุ</span><input class="r500-prevention-remark" type="text"></label></div></div></template>
-<template id="report500-lessons-template"><div class="report500-repeatable-item"><div class="item-head">สิ่งที่ได้จากการสอบสวน #<span data-seq-label>1</span><button type="button" data-r500-remove-row class="btnDanger btnSmall">ลบ</button></div><div class="report500-grid cols-2"><label><span>ประเภทข้อมูล</span><select class="r500-lesson-type" data-row-other-select><option value="">- เลือก -</option><option>สิ่งที่ได้จากการสอบสวน</option><option>ข้อขัดข้อง</option><option>ข้อสังเกต</option><option>ข้อเสนอแนะเพิ่มเติม</option><option>อื่นๆ</option></select></label><label class="report500-row-other-wrap hidden"><span>กรอกอื่นๆ</span><input class="report500-row-other-input r500-lesson-other" type="text"></label><label class="span-2"><span>รายละเอียด</span><textarea class="r500-lesson-detail" rows="2"></textarea></label><label class="span-2"><span>ข้อเสนอแนะ</span><input class="r500-lesson-suggestion" type="text"></label><label class="span-2"><span>หมายเหตุ</span><input class="r500-lesson-remark" type="text"></label></div></div></template>
-<template id="report500-images-template"><div class="report500-repeatable-item"><div class="item-head">รูปภาพ #<span data-seq-label>1</span><button type="button" data-r500-remove-row class="btnDanger btnSmall">ลบ</button></div><div class="report500-grid cols-2"><label class="span-2"><span>ไฟล์รูป</span><input class="r500-image-file" type="file" accept="image/*"></label><div class="span-2"><img class="r500-image-preview hidden" alt="preview"></div><label class="span-2"><span>คำบรรยายภาพ *</span><input class="r500-image-caption" type="text"></label><label><span>ประเภทภาพ</span><input class="r500-image-type" type="text"></label><label><span>วันเวลาถ่ายภาพ</span><input class="r500-image-dateTime" type="text" placeholder="dd/MM/yyyy HH:mm:ss"></label><label><span>ผู้แนบภาพ</span><input class="r500-image-uploadedBy" type="text"></label><label class="span-2"><span>หมายเหตุ</span><input class="r500-image-remark" type="text"></label></div></div></template>
-
-<!-- ท้าย body เดิม ให้เพิ่ม -->
-<script src="./report500.js"></script>
-<!-- REPORT500 END -->
-
-
 </main>
 
 <script src="./app.js"></script>
-<script src="./report500.js"></script>
 </body>
 </html>
