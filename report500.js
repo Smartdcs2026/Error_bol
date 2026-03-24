@@ -16,33 +16,20 @@
       remarkList: [],
       titleList: [],
       actionTypeList: [],
-      testResultList: []
+      testResultList: [],
+      emailList: []
     },
     state: {
-      ready: false,
-      people: [],
-      damages: [],
-      actions: [],
-      evidences: [],
-      causes: [],
-      preventions: [],
-      learnings: [],
-      images: []
+      ready: false
     }
   };
 
-  /* =========================
-   * BOOT
-   * ========================= */
   document.addEventListener("DOMContentLoaded", () => {
     bindReport500Events();
     primeReport500Defaults();
     loadReport500OptionsSafe();
   });
 
-  /* =========================
-   * BASIC HELPERS
-   * ========================= */
   function $(id) {
     return document.getElementById(id);
   }
@@ -65,20 +52,17 @@
       .replace(/&/g, "&amp;")
       .replace(/</g, "&lt;")
       .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;");
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
   }
 
   function api(path) {
-    if (typeof apiUrl === "function") return apiUrl(path);
+    if (typeof window.apiUrl === "function") return window.apiUrl(path);
     return path;
   }
 
   function getAuthName() {
-    try {
-      return text(window.AUTH?.name || "");
-    } catch (_) {
-      return "";
-    }
+    return text(window.AUTH?.name || "");
   }
 
   function isOtherValue(v) {
@@ -140,15 +124,15 @@
     });
   }
 
-  /* =========================
-   * INIT
-   * ========================= */
   function bindReport500Events() {
     $("rptBranch")?.addEventListener("change", syncSingleOtherWraps);
     $("rptIncidentLocation")?.addEventListener("change", syncSingleOtherWraps);
 
     $("btnRptAddPerson")?.addEventListener("click", () => addPersonRow());
     $("btnRptAddImage")?.addEventListener("click", () => addImageRow());
+
+    $("btnRptEmailCheckAll")?.addEventListener("click", () => setAllRptEmailChecks(true));
+    $("btnRptEmailClearAll")?.addEventListener("click", () => setAllRptEmailChecks(false));
 
     qa(".rptAddDetailBtn").forEach(btn => {
       btn.addEventListener("click", () => {
@@ -191,9 +175,6 @@
     if (el) el.textContent = "-" + currentThaiYear();
   }
 
-  /* =========================
-   * LOAD OPTIONS
-   * ========================= */
   async function loadReport500OptionsSafe() {
     try {
       const res = await fetch(api("/report500/options"), { method: "GET" });
@@ -236,6 +217,8 @@
       reporter.innerHTML = opts.join("");
       if (authName) reporter.value = authName;
     }
+
+    renderRptEmailSelector();
   }
 
   function fillSelectFromOptionList(selectEl, list, placeholder) {
@@ -271,7 +254,6 @@
       const label = text(item?.label || item?.value || "");
       const requiresText = item?.requiresText ? "1" : "0";
       const placeholder = text(item?.placeholder || "ระบุข้อมูลเพิ่มเติม");
-      const inputId = `${groupName}_${idx}`;
       const otherId = `${groupName}_other_${idx}`;
 
       return `
@@ -304,6 +286,40 @@
     });
   }
 
+  function renderRptEmailSelector() {
+    const root = $("rptEmailSelector");
+    if (!root) return;
+
+    const emails = toArray(RPT.options.emailList);
+    if (!emails.length) {
+      root.innerHTML = `<div class="optionMatrixEmpty">ไม่พบรายการอีเมลใน Google Sheet</div>`;
+      return;
+    }
+
+    root.innerHTML = emails.map(item => {
+      const value = text(item?.value || item?.label || "");
+      return `
+        <label class="emailItem">
+          <input type="checkbox" class="rptEmailChk" value="${esc(value)}">
+          <span class="emailCheckBox"></span>
+          <span class="emailText">${esc(value)}</span>
+        </label>
+      `;
+    }).join("");
+  }
+
+  function setAllRptEmailChecks(flag) {
+    qa(".rptEmailChk").forEach(chk => {
+      chk.checked = !!flag;
+    });
+  }
+
+  function getSelectedRptEmails() {
+    return qa(".rptEmailChk:checked")
+      .map(el => text(el.value))
+      .filter(Boolean);
+  }
+
   function syncSingleOtherWraps() {
     $("rptBranchOtherWrap")?.classList.toggle("hidden", !isOtherValue($("rptBranch")?.value));
     $("rptIncidentLocationOtherWrap")?.classList.toggle("hidden", !isOtherValue($("rptIncidentLocation")?.value));
@@ -323,9 +339,6 @@
     }
   }
 
-  /* =========================
-   * DYNAMIC ROWS
-   * ========================= */
   function addPersonRow() {
     const root = $("rptPeopleList");
     if (!root) return;
@@ -560,7 +573,7 @@
     `;
     root.appendChild(wrap);
 
-    q(".rptImageFile", wrap)?.addEventListener("change", async (e) => {
+    q(".rptImageFile", wrap)?.addEventListener("change", (e) => {
       const file = e.target.files?.[0];
       const empty = q(".rptImagePreviewEmpty", wrap);
       const img = q(".rptImagePreview", wrap);
@@ -593,9 +606,6 @@
     });
   }
 
-  /* =========================
-   * COLLECT DATA
-   * ========================= */
   function collectMatrixValues(rootId) {
     const root = $(rootId);
     if (!root) return [];
@@ -710,13 +720,13 @@
 
       reportedBy: text($("rptReportedBy")?.value) || authName,
       reporterPosition: text($("rptReporterPosition")?.value),
-      reportDate: normalizeDateToDisplay($("rptReportDate")?.value)
+      reportDate: normalizeDateToDisplay($("rptReportDate")?.value),
+
+      emailRecipients: getSelectedRptEmails(),
+      emailOther: text($("rptEmailOther")?.value)
     };
   }
 
-  /* =========================
-   * VALIDATION
-   * ========================= */
   function validateReport500(payload) {
     if (!getAuthName()) return "กรุณาเข้าสู่ระบบก่อน";
     if (!payload.refNo) return "กรุณากรอก Ref No.";
@@ -761,9 +771,6 @@
     return "";
   }
 
-  /* =========================
-   * PREVIEW
-   * ========================= */
   async function previewReport500Summary() {
     const payload = collectReport500Payload();
     const err = validateReport500(payload);
@@ -818,6 +825,18 @@
           </div>
         </div>
 
+        <div class="swalSection">
+          <div class="swalSectionTitle">อีเมล</div>
+          <div class="swalDesc">
+            <div class="swalDescLabel">ผู้รับที่เลือก</div>
+            <div class="swalDescValue">${esc((payload.emailRecipients || []).join(", ") || "-")}</div>
+          </div>
+          <div class="swalDesc" style="margin-top:8px;">
+            <div class="swalDescLabel">อีเมลอื่นๆ</div>
+            <div class="swalDescValue">${esc(payload.emailOther || "-")}</div>
+          </div>
+        </div>
+
         <div class="swalNote" style="margin-top:12px;">
           ผู้เกี่ยวข้อง ${payload.persons.length} รายการ • ความเสียหาย ${payload.damages.length} รายการ •
           การดำเนินการ ${payload.actions.length} รายการ • หลักฐาน ${payload.evidences.length} รายการ •
@@ -853,9 +872,6 @@
     }).filter(Boolean).join(" | ");
   }
 
-  /* =========================
-   * SUBMIT
-   * ========================= */
   async function submitReport500Form() {
     const payload = collectReport500Payload();
     const err = validateReport500(payload);
@@ -872,7 +888,7 @@
 
     await Swal.fire({
       title: "กำลังบันทึก Report500",
-      text: "ระบบกำลังอัปโหลดข้อมูลและสร้าง PDF",
+      text: "ระบบกำลังอัปโหลดข้อมูล สร้าง PDF และตรวจสอบการส่งอีเมล",
       allowOutsideClick: false,
       didOpen: () => Swal.showLoading()
     });
@@ -934,6 +950,14 @@
                 `
                 : ``
             }
+
+            ${
+              json.emailResult?.skipped
+                ? `<div class="swalNote" style="margin-top:10px;">ไม่ได้ส่งอีเมล เพราะยังไม่ได้เลือกผู้รับ</div>`
+                : json.emailResult?.ok
+                  ? `<div class="swalNote" style="margin-top:10px;color:#16a34a;font-weight:800;">ส่งอีเมลสำเร็จ ${json.emailResult.recipients?.length || 0} รายการ</div>`
+                  : `<div class="swalNote" style="margin-top:10px;color:#dc2626;font-weight:800;">ส่งอีเมลไม่สำเร็จ: ${esc(json.emailResult?.error || "-")}</div>`
+            }
           </div>
         `
       });
@@ -944,7 +968,14 @@
       await Swal.fire({
         icon: "error",
         title: "บันทึกไม่สำเร็จ",
-        text: err2?.message || "เชื่อมต่อระบบไม่ได้"
+        html: `
+          <div class="swalSection" style="text-align:left">
+            <div class="swalSectionTitle">รายละเอียดข้อผิดพลาด</div>
+            <div class="swalDesc">
+              <div class="swalDescValue">${esc(err2?.message || "เชื่อมต่อระบบไม่ได้")}</div>
+            </div>
+          </div>
+        `
       });
     }
   }
@@ -964,6 +995,7 @@
     $("rptSummaryText").value = "";
     $("rptReporterPosition").value = "";
     $("rptReportDate").value = todayInputValue();
+    $("rptEmailOther").value = "";
 
     qa(".rptMatrixChk").forEach(chk => {
       chk.checked = false;
@@ -972,6 +1004,10 @@
       const input = otherWrap ? q("input", otherWrap) : null;
       if (input) input.value = "";
       if (otherWrap) otherWrap.classList.add("hidden");
+    });
+
+    qa(".rptEmailChk").forEach(chk => {
+      chk.checked = false;
     });
 
     ["rptPeopleList", "rptDamageList", "rptActionList", "rptEvidenceList", "rptCauseList", "rptPreventionList", "rptLearningList", "rptImageList"]
@@ -989,9 +1025,6 @@
     }
   }
 
-  /* =========================
-   * EXPOSE (optional)
-   * ========================= */
   window.Report500UI = {
     reloadOptions: loadReport500OptionsSafe,
     preview: previewReport500Summary,
