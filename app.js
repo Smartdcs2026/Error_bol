@@ -4575,7 +4575,7 @@ let itemLookupTimer = null;
 const $ = (id) => document.getElementById(id);
 
 /** ==========================
- *  URL Helper
+ *  URL / BASIC HELPERS
  *  ========================== */
 function apiUrl(path) {
   const base = String(API_BASE || "").replace(/\/+$/, "");
@@ -4583,27 +4583,21 @@ function apiUrl(path) {
   return `${base}/${p}`;
 }
 
+function norm(v) {
+  return String(v == null ? "" : v).trim();
+}
+
+function escapeHtml(value) {
+  return String(value == null ? "" : value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
 function getCurrentBuddhistYear() {
   return String(new Date().getFullYear() + 543);
-}
-
-function bindRefInputs() {
-  const runningEl = $("refRunning");
-  const yearEl = $("refYear");
-  if (!runningEl || !yearEl) return;
-
-  yearEl.value = getCurrentBuddhistYear();
-
-  runningEl.addEventListener("input", () => {
-    runningEl.value = String(runningEl.value || "").replace(/[^\d]/g, "");
-  });
-}
-
-function getRefNoValue() {
-  const running = String($("refRunning")?.value || "").replace(/[^\d]/g, "").trim();
-  const year = String($("refYear")?.value || "").trim() || getCurrentBuddhistYear();
-  if (!running) return "";
-  return `${running}-${year}`;
 }
 
 function driveImgUrl(id) {
@@ -4631,6 +4625,57 @@ function formatDateToDisplay(value) {
   return s;
 }
 
+function safeSetLoginMsg(msg) {
+  const el = $("loginMsg");
+  if (el) el.textContent = msg || "";
+}
+
+/** expose ให้ report500.js ใช้ */
+window.apiUrl = apiUrl;
+window.safeSetLoginMsg = safeSetLoginMsg;
+window.AUTH = AUTH;
+
+/** ==========================
+ *  REF HELPERS
+ *  ========================== */
+function bindRefInputs() {
+  bindRefPair_("refNo", "refYear");
+  bindRefPair_("rptRefNo", "rptRefYear");
+}
+
+function bindRefPair_(runningId, yearId) {
+  const runningEl = $(runningId);
+  const yearEl = $(yearId);
+  if (!runningEl || !yearEl) return;
+
+  yearEl.textContent = getCurrentBuddhistYear();
+
+  runningEl.addEventListener("input", () => {
+    runningEl.value = String(runningEl.value || "").replace(/[^\d]/g, "");
+  });
+}
+
+function getRefNoValue() {
+  return buildRefNo_("refNo", "refYear");
+}
+
+function getRptRefNoValue() {
+  return buildRefNo_("rptRefNo", "rptRefYear");
+}
+
+function buildRefNo_(runningId, yearId) {
+  const running = String($(runningId)?.value || "").replace(/[^\d]/g, "").trim();
+  const year =
+    String($(yearId)?.value || $(yearId)?.textContent || "").trim() ||
+    getCurrentBuddhistYear();
+
+  if (!running) return "";
+  return `${running}-${year}`;
+}
+
+/** ==========================
+ *  GALLERY
+ *  ========================== */
 function renderGalleryHtml(imageIds = []) {
   if (!Array.isArray(imageIds) || imageIds.length === 0) return "";
 
@@ -4685,6 +4730,9 @@ function bindGalleryClickInSwal() {
   });
 }
 
+/** ==========================
+ *  INIT
+ *  ========================== */
 init().catch((err) => {
   console.error(err);
   safeSetLoginMsg("เกิดข้อผิดพลาดระหว่างเริ่มระบบ: " + (err?.message || err));
@@ -4692,10 +4740,11 @@ init().catch((err) => {
 
 async function init() {
   bindTabs();
-  buildInitialUploadFields();
   bindEvents();
   bindRefInputs();
+  buildInitialUploadFields();
   buildWorkAgeOptions();
+  buildShiftOptions();
 
   try {
     await loadOptions();
@@ -4716,11 +4765,6 @@ async function init() {
   updateEmployeeConfirmPreview();
 }
 
-function safeSetLoginMsg(msg) {
-  const el = $("loginMsg");
-  if (el) el.textContent = msg || "";
-}
-
 /** ==========================
  *  Tabs
  *  ========================== */
@@ -4735,15 +4779,19 @@ function setActiveTab(which) {
 
   if (!AUTH.name) {
     $("loginCard")?.classList.remove("hidden");
+    $("modeTabs")?.classList.add("hidden");
     $("formCard")?.classList.add("hidden");
     $("under500Card")?.classList.add("hidden");
     return;
   }
 
   $("loginCard")?.classList.add("hidden");
+  $("modeTabs")?.classList.remove("hidden");
   $("formCard")?.classList.toggle("hidden", which !== "error");
   $("under500Card")?.classList.toggle("hidden", which !== "u500");
 }
+
+window.setActiveTab = setActiveTab;
 
 /** ==========================
  *  Events
@@ -4768,8 +4816,14 @@ function bindEvents() {
   $("item")?.addEventListener("blur", onItemBlurLookup);
 
   [
-    "employeeName", "employeeCode", "errorDate", "shift",
-    "errorReason", "errorReasonOther", "item", "errorCaseQty",
+    "employeeName",
+    "employeeCode",
+    "errorDate",
+    "shift",
+    "errorReason",
+    "errorReasonOther",
+    "item",
+    "errorCaseQty",
     "confirmCauseOther"
   ].forEach((id) => {
     $(id)?.addEventListener("input", updateEmployeeConfirmPreview);
@@ -4813,25 +4867,25 @@ function fillFormDropdowns() {
   if (er) {
     er.innerHTML =
       `<option value="">-- เลือก --</option>` +
-      (OPTIONS.errorList || []).map((n) => `<option>${escapeHtml(n)}</option>`).join("");
+      (OPTIONS.errorList || []).map((n) => `<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join("");
   }
 
   if (audit) {
     audit.innerHTML =
       `<option value="">-- เลือก --</option>` +
-      (OPTIONS.auditList || []).map((n) => `<option>${escapeHtml(n)}</option>`).join("");
+      (OPTIONS.auditList || []).map((n) => `<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join("");
   }
 
   if (osm) {
     osm.innerHTML =
       `<option value="">-- เลือก --</option>` +
-      (OPTIONS.osmList || []).map((n) => `<option>${escapeHtml(n)}</option>`).join("");
+      (OPTIONS.osmList || []).map((n) => `<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join("");
   }
 
   if (otm) {
     otm.innerHTML =
       `<option value="">-- เลือก --</option>` +
-      (OPTIONS.otmList || []).map((n) => `<option>${escapeHtml(n)}</option>`).join("");
+      (OPTIONS.otmList || []).map((n) => `<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join("");
   }
 }
 
@@ -4852,12 +4906,28 @@ function buildWorkAgeOptions() {
   }
 }
 
+function buildShiftOptions() {
+  const shift = $("shift");
+  if (!shift) return;
+
+  if (shift.options.length > 0) return;
+
+  shift.innerHTML = `
+    <option value="">-- เลือก --</option>
+    <option value="Day">Day</option>
+    <option value="Night">Night</option>
+    <option value="A">A</option>
+    <option value="B">B</option>
+    <option value="C">C</option>
+  `;
+}
+
 /** ==========================
  *  Confirm Cause
  *  ========================== */
 function onErrorReasonChange() {
   const v = $("errorReason")?.value || "";
-  $("wrapErrorOther")?.classList.toggle("hidden", v !== "อื่นๆ");
+  $("errorReasonOtherWrap")?.classList.toggle("hidden", v !== "อื่นๆ");
   renderConfirmCauseSelector();
   updateEmployeeConfirmPreview();
 }
@@ -4878,7 +4948,6 @@ function renderConfirmCauseSelector() {
 
   if (!filtered.length) {
     root.innerHTML = `<div class="confirmCauseEmpty">ไม่พบรายการสาเหตุประกอบในชีท Confirm_Cause</div>`;
-    updateConfirmCauseOtherState();
     return;
   }
 
@@ -4919,12 +4988,9 @@ function renderConfirmCauseSelector() {
 
   root.querySelectorAll(".confirmCauseChk").forEach((chk) => {
     chk.addEventListener("change", () => {
-      updateConfirmCauseOtherState();
       updateEmployeeConfirmPreview();
     });
   });
-
-  updateConfirmCauseOtherState();
 }
 
 function getSelectedConfirmCauses() {
@@ -4935,14 +5001,6 @@ function getSelectedConfirmCauses() {
 
 function getSelectedConfirmCausesForNarrative() {
   return getSelectedConfirmCauses().filter((v) => String(v || "").trim() !== "อื่นๆ");
-}
-
-function updateConfirmCauseOtherState() {
-  const wrap = $("wrapConfirmCauseOther");
-  const requiresText = Array.from(document.querySelectorAll(".confirmCauseChk:checked"))
-    .some(el => String(el.dataset.requiresText || "") === "1");
-
-  wrap?.classList.toggle("hidden", !requiresText);
 }
 
 function composeConfirmCauseSummary(selected, otherText) {
@@ -4967,7 +5025,6 @@ function renderEmailSelector() {
   const emails = Array.isArray(OPTIONS.emailList) ? OPTIONS.emailList : [];
   if (!emails.length) {
     root.innerHTML = `<div class="emailEmpty">ไม่พบรายการอีเมลในชีท Email</div>`;
-    updateEmailSelectedText();
     return;
   }
 
@@ -4978,12 +5035,6 @@ function renderEmailSelector() {
       <span class="emailText">${escapeHtml(email)}</span>
     </label>
   `).join("");
-
-  root.querySelectorAll(".emailChk").forEach(chk => {
-    chk.addEventListener("change", updateEmailSelectedText);
-  });
-
-  updateEmailSelectedText();
 }
 
 function getSelectedEmails() {
@@ -4996,16 +5047,6 @@ function setAllEmailChecks(flag) {
   document.querySelectorAll(".emailChk").forEach(chk => {
     chk.checked = !!flag;
   });
-  updateEmailSelectedText();
-}
-
-function updateEmailSelectedText() {
-  const el = $("emailSelectedText");
-  if (!el) return;
-  const selected = getSelectedEmails();
-  el.textContent = selected.length
-    ? `เลือกแล้ว ${selected.length} อีเมล`
-    : "ยังไม่ได้เลือกอีเมล (ถ้าไม่เลือก ระบบจะไม่ส่งอีเมล)";
 }
 
 /** ==========================
@@ -5013,7 +5054,7 @@ function updateEmailSelectedText() {
  *  ========================== */
 async function onLogin() {
   safeSetLoginMsg("");
-  const pass = ($("loginPass")?.value || "").trim();
+  const pass = norm($("loginPass")?.value);
 
   if (!pass) {
     safeSetLoginMsg("กรุณากรอกรหัสผ่าน");
@@ -5037,7 +5078,7 @@ async function onLogin() {
     }
 
     if (!res.ok || !json.ok) {
-      safeSetLoginMsg(json.error || "เข้าสู่ระบบไม่สำเร็จ");
+      safeSetLoginMsg(json?.error || "เข้าสู่ระบบไม่สำเร็จ");
       return;
     }
   } catch (err) {
@@ -5053,7 +5094,26 @@ async function onLogin() {
   }
 
   AUTH = { name: lpsName, pass };
+  window.AUTH = AUTH;
+
   setLpsFromLogin(lpsName);
+
+  if ($("rptReportedBy")) {
+    $("rptReportedBy").innerHTML = lpsName
+      ? `<option value="${escapeHtml(lpsName)}">${escapeHtml(lpsName)}</option>`
+      : `<option value="">-- เลือก --</option>`;
+    $("rptReportedBy").value = lpsName || "";
+  }
+
+  try {
+    if (window.Report500UI && typeof window.Report500UI.reloadOptions === "function") {
+      await window.Report500UI.reloadOptions();
+    }
+  } catch (err) {
+    console.warn("Report500UI.reloadOptions failed:", err);
+  }
+
+  safeSetLoginMsg("");
   setActiveTab("error");
 }
 
@@ -5216,10 +5276,9 @@ async function lookupItemRealtime(item, immediate = false) {
 }
 
 function renderItemLookupState(state) {
-  const row = $("itemLookupRow");
-  const box = $("itemLookupBox");
-  const txt = $("itemLookupText");
-  if (!row || !box || !txt) return;
+  const hint = $("itemLookupHint");
+  const display = $("itemDisplay");
+  if (!hint && !display) return;
 
   const item = String(state?.item || "").trim();
   const desc = String(state?.description || "").trim();
@@ -5228,59 +5287,58 @@ function renderItemLookupState(state) {
   const found = !!state?.found;
   const apiError = !!state?.apiError;
 
-  row.classList.add("hidden");
-  box.classList.remove("ok", "notfound", "loading");
-
   if (!item) {
-    txt.textContent = "-";
+    if (hint) hint.textContent = "";
+    if (display) display.value = "";
     return;
   }
 
-  row.classList.remove("hidden");
-
   if (loading) {
-    box.classList.add("loading");
-    txt.textContent = `กำลังค้นหา Item ${item} ...`;
+    if (hint) hint.textContent = `กำลังค้นหา Item ${item} ...`;
+    if (display) display.value = item;
     return;
   }
 
   if (found && desc && desc !== ITEM_NOT_FOUND_TEXT) {
-    box.classList.add("ok");
-    txt.textContent = displayText || `${item} | ${desc}`;
+    if (hint) hint.textContent = "พบข้อมูลสินค้า";
+    if (display) display.value = displayText || `${item} | ${desc}`;
     return;
   }
 
-  box.classList.add("notfound");
-  txt.textContent = apiError
-    ? `${item} | ${ITEM_NOT_FOUND_TEXT}`
-    : `${displayText || `${item} | ${ITEM_NOT_FOUND_TEXT}`}`;
+  if (hint) {
+    hint.textContent = apiError
+      ? "เชื่อมต่อค้นหาสินค้าไม่ได้ หรือไม่พบข้อมูล"
+      : "ไม่พบข้อมูลสินค้า";
+  }
+  if (display) {
+    display.value = displayText || `${item} | ${ITEM_NOT_FOUND_TEXT}`;
+  }
 }
 
 function getItemDisplayText() {
   if (ITEM_LOOKUP_STATE && ITEM_LOOKUP_STATE.displayText) {
     return ITEM_LOOKUP_STATE.displayText;
   }
-  const item = ($("item")?.value || "").trim();
-  return item;
+  return ($("itemDisplay")?.value || $("item")?.value || "").trim();
 }
 
 /** ==========================
  *  Upload fields
  *  ========================== */
 function buildInitialUploadFields() {
-  const grid = $("uploadGrid");
-  if (!grid) return;
+  const list = $("uploadList");
+  if (!list) return;
 
-  grid.innerHTML = "";
-  addUploadField("บัตรพนง.", { removable: false });
-  addUploadField("พนักงาน", { removable: false });
+  list.innerHTML = "";
+  addUploadField("บัตรพนักงาน", { removable: false });
+  addUploadField("รูปพนักงาน", { removable: false });
 }
 
 function addUploadField(label, opts = {}) {
   const { removable = true } = opts;
 
-  const grid = $("uploadGrid");
-  if (!grid) return;
+  const list = $("uploadList");
+  if (!list) return;
 
   const id = "file_" + Math.random().toString(16).slice(2);
   const box = document.createElement("div");
@@ -5292,11 +5350,11 @@ function addUploadField(label, opts = {}) {
       ${removable ? `<button type="button" class="btn ghost" style="padding:6px 10px;border-radius:999px" data-remove="${id}">ลบ</button>` : ``}
     </div>
     <input type="file" accept="image/*" id="${id}">
-    <img class="previewImg" id="${id}_img" alt="">
+    <img class="previewImg" id="${id}_img" alt="" style="display:block;max-width:100%;max-height:220px;border-radius:12px;border:1px solid #d9e4f1;padding:4px;margin-top:8px;">
     <div class="small" id="${id}_txt">ยังไม่เลือกรูป</div>
   `;
 
-  grid.appendChild(box);
+  list.appendChild(box);
 
   if (removable) {
     const btn = box.querySelector(`[data-remove="${id}"]`);
@@ -5359,25 +5417,25 @@ function addUploadField(label, opts = {}) {
 function collectPayloadBase() {
   return {
     refNo: getRefNoValue(),
-    labelCid: ($("labelCid")?.value || "").trim(),
-    errorReason: ($("errorReason")?.value || "").trim(),
-    errorReasonOther: ($("errorReasonOther")?.value || "").trim(),
-    errorDescription: ($("errorDescription")?.value || "").trim(),
-    errorDate: ($("errorDate")?.value || "").trim(),
-    item: ($("item")?.value || "").trim(),
+    labelCid: norm($("labelCid")?.value),
+    errorReason: norm($("errorReason")?.value),
+    errorReasonOther: norm($("errorReasonOther")?.value),
+    errorDescription: norm($("errorDescription")?.value), // ถ้ามี field นี้ใน index จะอ่านได้, ถ้าไม่มีจะเป็นค่าว่าง
+    errorDate: norm($("errorDate")?.value),
+    item: norm($("item")?.value),
     itemDescription: ITEM_LOOKUP_STATE.description || ITEM_NOT_FOUND_TEXT,
     itemDisplay: ITEM_LOOKUP_STATE.displayText || "",
-    errorCaseQty: ($("errorCaseQty")?.value || "").trim(),
-    employeeName: ($("employeeName")?.value || "").trim(),
-    employeeCode: ($("employeeCode")?.value || "").trim(),
-    workAgeYear: ($("workAgeYear")?.value || "").trim(),
-    workAgeMonth: ($("workAgeMonth")?.value || "").trim(),
-    nationality: ($("nationality")?.value || "").trim(),
-    shift: ($("shift")?.value || "").trim(),
-    osm: ($("osm")?.value || "").trim(),
-    otm: ($("otm")?.value || "").trim(),
-    interpreterName: ($("interpreterName")?.value || "").trim(),
-    auditName: ($("auditName")?.value || "").trim(),
+    errorCaseQty: norm($("errorCaseQty")?.value),
+    employeeName: norm($("employeeName")?.value),
+    employeeCode: norm($("employeeCode")?.value),
+    workAgeYear: norm($("workAgeYear")?.value),
+    workAgeMonth: norm($("workAgeMonth")?.value),
+    nationality: norm($("nationality")?.value),
+    shift: norm($("shift")?.value),
+    osm: norm($("osm")?.value),
+    otm: norm($("otm")?.value),
+    interpreterName: norm($("interpreterName")?.value),
+    auditName: norm($("auditName")?.value),
     emailRecipients: getSelectedEmails()
   };
 }
@@ -5427,12 +5485,12 @@ function buildEmployeeConfirmText(payload) {
 }
 
 function updateEmployeeConfirmPreview() {
-  const preview = $("employeeConfirmPreview");
+  const preview = $("employeeConfirmText");
   if (!preview) return;
 
   const p = collectPayloadBase();
   p.confirmCauseSelected = getSelectedConfirmCausesForNarrative();
-  p.confirmCauseOther = ($("confirmCauseOther")?.value || "").trim();
+  p.confirmCauseOther = norm($("confirmCauseOther")?.value);
   p.errorDate = formatDateToDisplay(p.errorDate);
   p.itemDisplay = ITEM_LOOKUP_STATE.displayText || getItemDisplayText() || "";
   p.employeeConfirmText = buildEmployeeConfirmText(p);
@@ -5444,7 +5502,7 @@ function collectPayload() {
   const p = collectPayloadBase();
   p.itemDisplay = ITEM_LOOKUP_STATE.displayText || getItemDisplayText() || "";
   p.confirmCauseSelected = getSelectedConfirmCauses();
-  p.confirmCauseOther = ($("confirmCauseOther")?.value || "").trim();
+  p.confirmCauseOther = norm($("confirmCauseOther")?.value);
   p.employeeConfirmText = buildEmployeeConfirmText({
     ...p,
     confirmCauseSelected: getSelectedConfirmCausesForNarrative(),
@@ -5459,7 +5517,6 @@ function validatePayload(p) {
     ["refNo", "Ref:No."],
     ["labelCid", "Label CID"],
     ["errorReason", "สาเหตุ Error"],
-    ["errorDescription", "รายละเอียด/คำอธิบายสาเหตุ"],
     ["item", "Item"],
     ["errorCaseQty", "จำนวน ErrorCase"],
     ["employeeName", "ชื่อ-สกุลพนักงาน"],
@@ -5482,14 +5539,7 @@ function validatePayload(p) {
     return "กรุณาเลือกข้อเท็จจริง/สาเหตุประกอบอย่างน้อย 1 รายการ";
   }
 
-  const mustOther = Array.from(document.querySelectorAll(".confirmCauseChk:checked"))
-    .some(el => String(el.dataset.requiresText || "") === "1");
-
-  if (mustOther && !String(p.confirmCauseOther || "").trim()) {
-    return "กรุณาระบุรายละเอียดเพิ่มเติมในสาเหตุอื่นๆ";
-  }
-
-  const refRunning = String($("refRunning")?.value || "").trim();
+  const refRunning = String($("refNo")?.value || "").trim();
   if (!/^\d+$/.test(refRunning)) return "กรุณากรอกเลข Ref เป็นตัวเลขเท่านั้น";
   if (!/^\d+-\d{4}$/.test(p.refNo)) return "Ref:No. ไม่ถูกต้อง";
 
@@ -5584,11 +5634,6 @@ async function previewSummary() {
               <div class="swalKvValue">${escapeHtml(p.errorCaseQty || "-")}</div>
             </div>
           </div>
-
-          <div class="swalDesc" style="margin-top:8px;">
-            <div class="swalDescLabel">รายละเอียดเหตุการณ์</div>
-            <div class="swalDescValue">${escapeHtml(p.errorDescription || "-").replaceAll("\n", "<br>")}</div>
-          </div>
         </div>
 
         <div class="swalSection">
@@ -5680,7 +5725,7 @@ async function previewSummary() {
 }
 
 function countSelectedFiles() {
-  const inputs = Array.from(document.querySelectorAll('#uploadGrid input[type="file"]'));
+  const inputs = Array.from(document.querySelectorAll('#uploadList input[type="file"]'));
   return inputs.reduce((acc, el) => acc + ((el.files && el.files[0]) ? 1 : 0), 0);
 }
 
@@ -5732,7 +5777,6 @@ async function submitForm() {
     `,
     allowOutsideClick: false,
     allowEscapeKey: false,
-    customClass: { popup: "swalLoadingPopup" },
     didOpen: () => Swal.showLoading()
   });
 
@@ -5860,11 +5904,6 @@ async function submitForm() {
               <div class="swalKvValue">${escapeHtml(p.errorCaseQty || "-")}</div>
             </div>
           </div>
-
-          <div class="swalDesc" style="margin-top:8px;">
-            <div class="swalDescLabel">รายละเอียดเหตุการณ์</div>
-            <div class="swalDescValue">${escapeHtml(p.errorDescription || "-").replaceAll("\n", "<br>")}</div>
-          </div>
         </div>
 
         <div class="swalSection">
@@ -5981,7 +6020,7 @@ async function submitForm() {
 }
 
 async function collectFilesAsBase64({ maxFiles = 6, maxMBEach = 4 } = {}) {
-  const inputs = Array.from(document.querySelectorAll('#uploadGrid input[type="file"]'));
+  const inputs = Array.from(document.querySelectorAll('#uploadList input[type="file"]'));
   const picked = [];
 
   for (const el of inputs) {
@@ -6029,7 +6068,11 @@ async function collectFilesAsBase64({ maxFiles = 6, maxMBEach = 4 } = {}) {
 function fileToBase64(file) {
   return new Promise((resolve, reject) => {
     const r = new FileReader();
-    r.onload = () => resolve(r.result);
+    r.onload = () => {
+      const result = String(r.result || "");
+      const base64 = result.includes(",") ? result.split(",")[1] : result;
+      resolve(base64);
+    };
     r.onerror = reject;
     r.readAsDataURL(file);
   });
@@ -6201,11 +6244,12 @@ function isCanvasBlank(canvas) {
  *  ========================== */
 function resetForm() {
   const ids = [
-    "refRunning",
+    "refNo",
     "labelCid",
     "errorReasonOther",
     "errorDescription",
     "item",
+    "itemDisplay",
     "errorCaseQty",
     "employeeName",
     "errorDate",
@@ -6222,13 +6266,12 @@ function resetForm() {
   const er = $("errorReason");
   const audit = $("auditName");
   const shift = $("shift");
-  const refYear = $("refYear");
   const osm = $("osm");
   const otm = $("otm");
   const nationality = $("nationality");
   const workAgeYear = $("workAgeYear");
   const workAgeMonth = $("workAgeMonth");
-  const preview = $("employeeConfirmPreview");
+  const preview = $("employeeConfirmText");
 
   if (er) er.value = "";
   if (audit) audit.value = "";
@@ -6238,17 +6281,12 @@ function resetForm() {
   if (nationality) nationality.value = "";
   if (workAgeYear) workAgeYear.value = "";
   if (workAgeMonth) workAgeMonth.value = "";
-  if (refYear) refYear.value = getCurrentBuddhistYear();
   if (preview) preview.value = "";
 
   document.querySelectorAll(".emailChk").forEach(chk => chk.checked = false);
-  updateEmailSelectedText();
-
   document.querySelectorAll(".confirmCauseChk").forEach(chk => chk.checked = false);
 
-  $("wrapErrorOther")?.classList.add("hidden");
-  $("wrapConfirmCauseOther")?.classList.add("hidden");
-  $("itemLookupRow")?.classList.add("hidden");
+  $("errorReasonOtherWrap")?.classList.add("hidden");
 
   document.querySelectorAll(".previewImg").forEach((img) => {
     if (img.dataset && img.dataset.objectUrl) {
@@ -6273,24 +6311,24 @@ function resetForm() {
   updateEmployeeConfirmPreview();
 }
 
-function escapeHtml(s) {
-  return String(s ?? "")
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;");
-}
-
 function setLpsFromLogin(loginName) {
   const lpsEl = $("lps");
   if (lpsEl) {
     lpsEl.value = loginName || "";
     lpsEl.readOnly = true;
   }
-
-  const pill = $("userPill");
-  if (pill) {
-    pill.textContent = "ผู้ใช้งาน: " + (loginName || "-");
-  }
 }
+
+/** ==========================
+ *  SHARED EXPORTS
+ *  ========================== */
+window.AppShared = {
+  $,
+  apiUrl,
+  escapeHtml,
+  norm,
+  driveImgUrl,
+  getCurrentBuddhistYear,
+  getRefNoValue,
+  getRptRefNoValue
+};
