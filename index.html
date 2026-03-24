@@ -483,6 +483,32 @@
       <div class="sectionTitle rptTitle">
         <span class="dot rptDot"></span>
         <div>
+          <div class="sectionMain">ผู้รับอีเมล</div>
+          <div class="sectionSub">เลือกจาก Google Sheet และกรอกอีเมลเพิ่มเติมได้</div>
+        </div>
+      </div>
+
+      <div class="panel rptPanel">
+        <div class="panelActions">
+          <button id="btnRptEmailCheckAll" class="btn ghost" type="button">เลือกทั้งหมด</button>
+          <button id="btnRptEmailClearAll" class="btn ghost" type="button">ล้างทั้งหมด</button>
+        </div>
+
+        <div id="rptEmailSelector" class="checkList"></div>
+
+        <div class="field" style="margin-top:12px;">
+          <label for="rptEmailOther">Email อื่นๆ</label>
+          <textarea
+            id="rptEmailOther"
+            rows="3"
+            placeholder="กรอกอีเมลเพิ่มเติมได้หลายรายการ เช่น&#10;test1@email.com, test2@email.com"
+          ></textarea>
+        </div>
+      </div>
+
+      <div class="sectionTitle rptTitle">
+        <span class="dot rptDot"></span>
+        <div>
           <div class="sectionMain">ผู้รายงาน</div>
           <div class="sectionSub">ข้อมูลลงท้ายเอกสาร</div>
         </div>
