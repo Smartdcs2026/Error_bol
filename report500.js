@@ -20,14 +20,15 @@
       emailList: []
     },
     state: {
-      ready: false
+      ready: false,
+      loading: false,
+      initializedRows: false
     }
   };
 
   document.addEventListener("DOMContentLoaded", () => {
     bindReport500Events();
     primeReport500Defaults();
-    loadReport500OptionsSafe();
   });
 
   function $(id) {
@@ -150,6 +151,12 @@
     $("btnRptSubmit")?.addEventListener("click", submitReport500Form);
 
     $("rptRefNo")?.addEventListener("input", updateRptRefYear);
+
+    $("tabUnder500")?.addEventListener("click", () => {
+      ensureReport500Ready().catch(err => {
+        console.error("ensureReport500Ready:", err);
+      });
+    });
   }
 
   function primeReport500Defaults() {
@@ -175,33 +182,42 @@
     if (el) el.textContent = "-" + currentThaiYear();
   }
 
-  async function loadReport500OptionsSafe() {
+  async function ensureReport500Ready() {
+    if (RPT.state.ready || RPT.state.loading) return;
+
+    RPT.state.loading = true;
     try {
-      const res = await fetch(api("/report500/options"), { method: "GET" });
-      const raw = await res.text();
-
-      let json = {};
-      try {
-        json = JSON.parse(raw);
-      } catch (_) {}
-
-      if (!res.ok || !json.ok) {
-        throw new Error(json?.error || `โหลด Report500 options ไม่สำเร็จ (HTTP ${res.status})`);
-      }
-
-      RPT.options = json.data || RPT.options;
+      await loadReport500OptionsSafe();
       RPT.state.ready = true;
-
-      fillReport500Dropdowns();
-      renderReport500OptionMatrices();
-      buildReport500InitialRows();
-      syncSingleOtherWraps();
-    } catch (err) {
-      console.error("loadReport500OptionsSafe:", err);
-      if (window.safeSetLoginMsg) {
-        window.safeSetLoginMsg("โหลดตัวเลือก Report500 ไม่สำเร็จ");
-      }
+    } finally {
+      RPT.state.loading = false;
     }
+  }
+
+  async function loadReport500OptionsSafe() {
+    const res = await fetch(api("/report500/options"), { method: "GET" });
+    const raw = await res.text();
+
+    let json = {};
+    try {
+      json = JSON.parse(raw);
+    } catch (_) {}
+
+    if (!res.ok || !json.ok) {
+      throw new Error(json?.error || `โหลด Report500 options ไม่สำเร็จ (HTTP ${res.status})`);
+    }
+
+    RPT.options = json.data || RPT.options;
+
+    fillReport500Dropdowns();
+    renderReport500OptionMatrices();
+
+    if (!RPT.state.initializedRows) {
+      buildReport500InitialRows();
+      RPT.state.initializedRows = true;
+    }
+
+    syncSingleOtherWraps();
   }
 
   function fillReport500Dropdowns() {
@@ -772,6 +788,7 @@
   }
 
   async function previewReport500Summary() {
+    await ensureReport500Ready();
     const payload = collectReport500Payload();
     const err = validateReport500(payload);
     if (err) {
@@ -836,13 +853,6 @@
             <div class="swalDescValue">${esc(payload.emailOther || "-")}</div>
           </div>
         </div>
-
-        <div class="swalNote" style="margin-top:12px;">
-          ผู้เกี่ยวข้อง ${payload.persons.length} รายการ • ความเสียหาย ${payload.damages.length} รายการ •
-          การดำเนินการ ${payload.actions.length} รายการ • หลักฐาน ${payload.evidences.length} รายการ •
-          สาเหตุ ${payload.causes.length} รายการ • การป้องกัน ${payload.preventions.length} รายการ •
-          สิ่งที่ได้จากการสอบสวน ${payload.investigationLearnings.length} รายการ
-        </div>
       </div>
     `;
 
@@ -873,6 +883,8 @@
   }
 
   async function submitReport500Form() {
+    await ensureReport500Ready();
+
     const payload = collectReport500Payload();
     const err = validateReport500(payload);
     if (err) {
@@ -908,7 +920,9 @@
       let json = {};
       try {
         json = JSON.parse(raw);
-      } catch (_) {}
+      } catch (_) {
+        throw new Error("Backend ไม่ได้ส่ง JSON กลับมา: " + raw.slice(0, 500));
+      }
 
       if (!res.ok || !json.ok) {
         throw new Error(json?.error || `HTTP ${res.status}`);
@@ -1016,7 +1030,10 @@
         if (el) el.innerHTML = "";
       });
 
+    RPT.state.initializedRows = false;
     buildReport500InitialRows();
+    RPT.state.initializedRows = true;
+
     syncSingleOtherWraps();
 
     if ($("rptReportedBy")) {
@@ -1026,7 +1043,11 @@
   }
 
   window.Report500UI = {
-    reloadOptions: loadReport500OptionsSafe,
+    ensureReady: ensureReport500Ready,
+    reloadOptions: async () => {
+      RPT.state.ready = false;
+      await ensureReport500Ready();
+    },
     preview: previewReport500Summary,
     submit: submitReport500Form,
     collectPayload: collectReport500Payload
