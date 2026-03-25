@@ -182,44 +182,50 @@
     if (el) el.textContent = "-" + currentThaiYear();
   }
 
-  async function ensureReport500Ready() {
-    if (RPT.state.ready || RPT.state.loading) return;
+ async function ensureReport500Ready() {
+  if (RPT.state.ready || RPT.state.loading) return;
 
-    RPT.state.loading = true;
-    try {
-      await loadReport500OptionsSafe();
-      RPT.state.ready = true;
-    } finally {
-      RPT.state.loading = false;
-    }
+  RPT.state.loading = true;
+  try {
+    await loadReport500OptionsSafe();
+    RPT.state.ready = true;
+  } catch (err) {
+    RPT.state.ready = false;
+    throw err;
+  } finally {
+    RPT.state.loading = false;
   }
+}
 
   async function loadReport500OptionsSafe() {
-    const res = await fetch(api("/report500/options"), { method: "GET" });
-    const raw = await res.text();
+  const res = await fetch(api("/report500/options"), { method: "GET" });
+  const raw = await res.text();
 
-    let json = {};
-    try {
-      json = JSON.parse(raw);
-    } catch (_) {}
-
-    if (!res.ok || !json.ok) {
-      throw new Error(json?.error || `โหลด Report500 options ไม่สำเร็จ (HTTP ${res.status})`);
-    }
-
-    RPT.options = json.data || RPT.options;
-
-    fillReport500Dropdowns();
-    renderReport500OptionMatrices();
-
-    if (!RPT.state.initializedRows) {
-      buildReport500InitialRows();
-      RPT.state.initializedRows = true;
-    }
-
-    syncSingleOtherWraps();
+  let json = {};
+  try {
+    json = JSON.parse(raw);
+  } catch (_) {
+    throw new Error("Backend /report500/options ไม่ได้ส่ง JSON กลับมา: " + raw.slice(0, 300));
   }
 
+  if (!res.ok || !json.ok) {
+    throw new Error(json?.error || `โหลด Report500 options ไม่สำเร็จ (HTTP ${res.status})`);
+  }
+
+  RPT.options = json.data || RPT.options;
+
+  fillReport500Dropdowns();
+  renderReport500OptionMatrices();
+
+  if (!RPT.state.initializedRows) {
+    buildReport500InitialRows();
+    RPT.state.initializedRows = true;
+  }
+
+  syncSingleOtherWraps();
+
+  console.log("Report500 options loaded:", RPT.options);
+}
   function fillReport500Dropdowns() {
     fillSelectFromOptionList($("rptBranch"), RPT.options.branchList, "-- เลือกสาขา --");
     fillSelectFromOptionList($("rptIncidentLocation"), RPT.options.locationTypeList, "-- เลือกสถานที่ --");
