@@ -4556,7 +4556,8 @@ let OPTIONS = {
   emailList: [],
   osmList: [],
   otmList: [],
-  confirmCauseList: []
+  confirmCauseList: [],
+  nationalityList: []
 };
 
 let AUTH = { name: "", pass: "" };
@@ -4761,6 +4762,7 @@ async function init() {
   numericOnly($("errorCaseQty"));
   alnumUpperOnly($("employeeCode"));
 
+  syncErrorReasonOtherVisibility();
   setActiveTab("error");
   updateEmployeeConfirmPreview();
 }
@@ -4824,7 +4826,8 @@ function bindEvents() {
     "errorReasonOther",
     "item",
     "errorCaseQty",
-    "confirmCauseOther"
+    "confirmCauseOther",
+    "nationality"
   ].forEach((id) => {
     $(id)?.addEventListener("input", updateEmployeeConfirmPreview);
     $(id)?.addEventListener("change", updateEmployeeConfirmPreview);
@@ -4854,7 +4857,8 @@ async function loadOptions() {
     emailList: [],
     osmList: [],
     otmList: [],
-    confirmCauseList: []
+    confirmCauseList: [],
+    nationalityList: []
   };
 }
 
@@ -4894,6 +4898,8 @@ function fillFormDropdowns() {
       `<option value="">-- เลือก --</option>` +
       (OPTIONS.nationalityList || []).map((n) => `<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join("");
   }
+
+  syncErrorReasonOtherVisibility();
 }
 
 function buildWorkAgeOptions() {
@@ -4930,11 +4936,25 @@ function buildShiftOptions() {
 }
 
 /** ==========================
- *  Confirm Cause
+ *  Confirm Cause / Error Reason
  *  ========================== */
-function onErrorReasonChange() {
+function syncErrorReasonOtherVisibility() {
   const v = $("errorReason")?.value || "";
-  $("errorReasonOtherWrap")?.classList.toggle("hidden", v !== "อื่นๆ");
+  const wrap = $("errorReasonOtherWrap");
+  const input = $("errorReasonOther");
+
+  if (!wrap) return;
+
+  const show = v === "อื่นๆ";
+  wrap.classList.toggle("hidden", !show);
+
+  if (!show && input) {
+    input.value = "";
+  }
+}
+
+function onErrorReasonChange() {
+  syncErrorReasonOtherVisibility();
   renderConfirmCauseSelector();
   updateEmployeeConfirmPreview();
 }
@@ -5419,7 +5439,7 @@ function collectPayloadBase() {
     labelCid: norm($("labelCid")?.value),
     errorReason: norm($("errorReason")?.value),
     errorReasonOther: norm($("errorReasonOther")?.value),
-    errorDescription: norm($("errorDescription")?.value), // ถ้ามี field นี้ใน index จะอ่านได้, ถ้าไม่มีจะเป็นค่าว่าง
+    errorDescription: norm($("errorDescription")?.value),
     errorDate: norm($("errorDate")?.value),
     item: norm($("item")?.value),
     itemDescription: ITEM_LOOKUP_STATE.description || ITEM_NOT_FOUND_TEXT,
@@ -6285,7 +6305,7 @@ function resetForm() {
   document.querySelectorAll(".emailChk").forEach(chk => chk.checked = false);
   document.querySelectorAll(".confirmCauseChk").forEach(chk => chk.checked = false);
 
-  $("errorReasonOtherWrap")?.classList.add("hidden");
+  syncErrorReasonOtherVisibility();
 
   document.querySelectorAll(".previewImg").forEach((img) => {
     if (img.dataset && img.dataset.objectUrl) {
