@@ -1535,3 +1535,366 @@ textarea[readonly]{
     font-size:11px;
   }
 }
+
+
+/* =========================================================
+ * Report500 ONLY
+ * วางต่อท้าย style.css เดิมของ Error_BOL
+ * ========================================================= */
+
+:root{
+  --rpt:#7c3aed;
+  --rpt-hover:#6d28d9;
+  --rpt-soft:#f3e8ff;
+  --rpt-line:#dcc7ff;
+  --rpt-deep:#5b21b6;
+}
+
+/* card / panel เฉพาะ Report500 */
+.report500Card{
+  border:1px solid rgba(220,199,255,.95);
+  background:
+    radial-gradient(circle at top right, rgba(243,232,255,.8) 0%, rgba(255,255,255,1) 28%),
+    linear-gradient(180deg,#ffffff 0%, #fdf9ff 100%);
+  box-shadow:
+    0 18px 38px rgba(124,58,237,.07),
+    0 8px 20px rgba(15,23,42,.04);
+}
+
+.rptPanel{
+  border:1px solid var(--rpt-line);
+  background:linear-gradient(180deg,#ffffff 0%, #fcf8ff 100%);
+}
+
+.rptTitle .sectionMain{
+  color:var(--rpt-deep);
+}
+
+.rptTitle .sectionSub{
+  color:#7c3aed;
+}
+
+.rptDot{
+  background:linear-gradient(135deg,var(--rpt),#a78bfa);
+  box-shadow:0 0 0 6px rgba(124,58,237,.10);
+}
+
+.rptPrimary{
+  background:linear-gradient(135deg,var(--rpt),var(--rpt-hover)) !important;
+  color:#fff !important;
+  box-shadow:0 14px 24px rgba(124,58,237,.18) !important;
+}
+
+.rptRepeaterList{
+  display:grid;
+  gap:12px;
+}
+
+.rptItemCard{
+  border:1px solid var(--rpt-line);
+  background:linear-gradient(180deg,#ffffff 0%, #fcf9ff 100%);
+  border-radius:22px;
+  padding:14px;
+  box-shadow:0 8px 22px rgba(124,58,237,.05);
+}
+
+.rptItemHead{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  margin-bottom:12px;
+}
+
+.rptItemTitle{
+  font-weight:800;
+  font-size:15px;
+  color:var(--rpt-deep);
+  line-height:1.2;
+}
+
+.rptInlineOtherWrap{
+  margin-top:8px;
+}
+
+/* checkbox / matrix */
+.optionMatrix{
+  display:grid;
+  grid-template-columns:repeat(2, minmax(0,1fr));
+  gap:10px;
+}
+
+.optionMatrix.compact{
+  gap:8px;
+}
+
+.optionMatrixEmpty{
+  padding:12px 14px;
+  border:1px dashed var(--rpt-line);
+  border-radius:14px;
+  color:#8b5cf6;
+  background:#faf5ff;
+  font-size:13px;
+}
+
+.optionChoice{
+  min-width:0;
+}
+
+.optionChoiceCard{
+  position:relative;
+  display:flex;
+  align-items:flex-start;
+  gap:10px;
+  padding:12px 13px;
+  border-radius:16px;
+  border:1.4px solid rgba(220,199,255,.95);
+  background:#fff;
+  cursor:pointer;
+  transition:.16s ease;
+  min-height:54px;
+}
+
+.optionChoiceCard.compact{
+  min-height:48px;
+  padding:10px 11px;
+  border-radius:14px;
+}
+
+.optionChoiceCard:hover{
+  border-color:var(--rpt);
+  box-shadow:0 10px 18px rgba(124,58,237,.06);
+}
+
+.optionChoiceCard input{
+  position:absolute;
+  opacity:0;
+  pointer-events:none;
+}
+
+.optionChoiceMark{
+  width:20px;
+  height:20px;
+  border-radius:8px;
+  border:1.5px solid #b9a5ea;
+  background:#fff;
+  flex:0 0 20px;
+  margin-top:1px;
+  position:relative;
+  transition:.16s ease;
+}
+
+.optionChoiceMark::after{
+  content:"";
+  position:absolute;
+  left:5px;
+  top:1px;
+  width:6px;
+  height:11px;
+  border-right:2px solid #fff;
+  border-bottom:2px solid #fff;
+  transform:rotate(42deg) scale(.7);
+  opacity:0;
+  transition:.16s ease;
+}
+
+.optionChoiceText{
+  font-size:13px;
+  line-height:1.45;
+  font-weight:600;
+  color:#312e81;
+}
+
+.optionChoiceCard input:checked + .optionChoiceMark{
+  background:var(--rpt);
+  border-color:var(--rpt);
+  box-shadow:0 10px 18px rgba(124,58,237,.16);
+}
+
+.optionChoiceCard input:checked + .optionChoiceMark::after{
+  opacity:1;
+  transform:rotate(42deg) scale(1);
+}
+
+.optionChoiceCard:has(input:checked){
+  border-color:rgba(124,58,237,.42);
+  background:linear-gradient(180deg,#ffffff 0%, #faf5ff 100%);
+}
+
+.optionChoiceOther{
+  margin-top:8px;
+}
+
+/* image preview */
+.rptImagePreviewEmpty{
+  width:100%;
+  min-height:190px;
+  border:1.4px dashed var(--rpt-line);
+  border-radius:16px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  color:#8b5cf6;
+  background:#faf5ff;
+  text-align:center;
+  padding:18px;
+  line-height:1.5;
+}
+
+.rptImagePreview{
+  width:100%;
+  max-height:340px;
+  object-fit:contain;
+  display:block;
+  border:1px solid var(--rpt-line);
+  border-radius:16px;
+  background:#fff;
+  padding:6px;
+}
+
+/* SweetAlert เฉพาะที่ report500 ใช้ */
+.swalSummary{
+  text-align:left;
+}
+
+.swalHero{
+  padding:14px 16px;
+  border-radius:18px;
+  background:linear-gradient(135deg,#f5f9ff,#eef5ff);
+  border:1px solid rgba(153,179,211,.35);
+}
+
+.swalHeroTitle{
+  font-size:20px;
+  font-weight:800;
+  color:#0f172a;
+}
+
+.swalHeroSub{
+  margin-top:4px;
+  font-size:13px;
+  color:#64748b;
+}
+
+.swalSection{
+  margin-top:14px;
+  border:1px solid #e2e8f0;
+  border-radius:18px;
+  padding:14px;
+  background:#fff;
+}
+
+.swalSectionTitle{
+  font-weight:800;
+  color:#0f172a;
+  margin-bottom:10px;
+  font-size:15px;
+}
+
+.swalKvGrid{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:10px;
+}
+
+.swalKv{
+  border:1px solid #e2e8f0;
+  border-radius:14px;
+  padding:10px 12px;
+  background:#f8fbff;
+}
+
+.swalKvLabel{
+  font-size:12px;
+  color:#64748b;
+  margin-bottom:2px;
+}
+
+.swalKvValue{
+  font-size:14px;
+  font-weight:700;
+  color:#0f172a;
+  word-break:break-word;
+}
+
+.swalDesc{
+  border:1px solid #e2e8f0;
+  border-radius:14px;
+  padding:10px 12px;
+  background:#f8fbff;
+}
+
+.swalDescLabel{
+  font-size:12px;
+  color:#64748b;
+  margin-bottom:4px;
+}
+
+.swalDescValue{
+  font-size:14px;
+  line-height:1.55;
+  color:#0f172a;
+  word-break:break-word;
+}
+
+.swalNote{
+  font-size:13px;
+  color:#475569;
+  line-height:1.55;
+}
+
+.swalActionLink{
+  margin-top:14px;
+  text-align:center;
+}
+
+.swalActionLink a{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-height:44px;
+  padding:10px 16px;
+  border-radius:14px;
+  text-decoration:none;
+  font-weight:800;
+  background:linear-gradient(135deg,var(--rpt),var(--rpt-hover));
+  color:#fff;
+  box-shadow:0 14px 24px rgba(124,58,237,.18);
+}
+
+@media (max-width:900px){
+  .optionMatrix,
+  .swalKvGrid{
+    grid-template-columns:1fr;
+  }
+}
+
+@media (max-width:640px){
+  .rptItemCard{
+    padding:12px;
+    border-radius:18px;
+  }
+
+  .rptItemHead{
+    align-items:flex-start;
+    flex-direction:column;
+  }
+
+  .rptImagePreviewEmpty{
+    min-height:160px;
+  }
+
+  .swalHero{
+    padding:12px;
+    border-radius:16px;
+  }
+
+  .swalHeroTitle{
+    font-size:18px;
+  }
+
+  .swalSection{
+    padding:12px;
+    border-radius:16px;
+  }
+}
