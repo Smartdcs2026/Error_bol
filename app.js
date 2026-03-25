@@ -4771,11 +4771,15 @@ async function init() {
  *  Tabs
  *  ========================== */
 function bindTabs() {
-  $("tabErrorBol")?.addEventListener("click", () => setActiveTab("error"));
-  $("tabUnder500")?.addEventListener("click", () => setActiveTab("u500"));
-}
+  $("tabErrorBol")?.addEventListener("click", async () => {
+    await setActiveTab("error");
+  });
 
-function setActiveTab(which) {
+  $("tabUnder500")?.addEventListener("click", async () => {
+    await setActiveTab("u500");
+  });
+}
+async function setActiveTab(which) {
   $("tabErrorBol")?.classList.toggle("active", which === "error");
   $("tabUnder500")?.classList.toggle("active", which === "u500");
 
@@ -4791,6 +4795,21 @@ function setActiveTab(which) {
   $("modeTabs")?.classList.remove("hidden");
   $("formCard")?.classList.toggle("hidden", which !== "error");
   $("under500Card")?.classList.toggle("hidden", which !== "u500");
+
+  if (which === "u500") {
+    try {
+      if (window.Report500UI && typeof window.Report500UI.ensureReady === "function") {
+        await window.Report500UI.ensureReady();
+      }
+    } catch (err) {
+      console.error("Report500 ensureReady error:", err);
+      Swal.fire({
+        icon: "error",
+        title: "โหลด Report500 ไม่สำเร็จ",
+        text: err?.message || "ไม่สามารถโหลดตัวเลือกของ Report500 ได้"
+      });
+    }
+  }
 }
 
 window.setActiveTab = setActiveTab;
