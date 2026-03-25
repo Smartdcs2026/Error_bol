@@ -4818,17 +4818,18 @@ function bindEvents() {
   $("item")?.addEventListener("blur", onItemBlurLookup);
 
   [
-    "employeeName",
-    "employeeCode",
-    "errorDate",
-    "shift",
-    "errorReason",
-    "errorReasonOther",
-    "item",
-    "errorCaseQty",
-    "confirmCauseOther",
-    "nationality"
-  ].forEach((id) => {
+  "employeeName",
+  "employeeCode",
+  "errorDate",
+  "shift",
+  "errorReason",
+  "errorReasonOther",
+  "errorDescription",
+  "item",
+  "errorCaseQty",
+  "confirmCauseOther",
+  "nationality"
+].forEach((id) => {
     $(id)?.addEventListener("input", updateEmployeeConfirmPreview);
     $(id)?.addEventListener("change", updateEmployeeConfirmPreview);
   });
