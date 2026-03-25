@@ -69,33 +69,39 @@
             </div>
           </div>
 
-          <div class="field">
-            <label for="lps">LPS</label>
-            <input id="lps" placeholder="ผู้เข้าสู่ระบบ" readonly>
-          </div>
+          <div class="panel">
+  <div class="gridCompact">
+    <div class="field">
+      <label for="labelCid">Label CID</label>
+      <input id="labelCid" placeholder="กรอก Label CID">
+    </div>
 
-          <div class="field">
-            <label for="labelCid">Label CID</label>
-            <input id="labelCid" placeholder="กรอก Label CID">
-          </div>
+    <div class="field">
+      <label for="item">Item</label>
+      <input id="item" placeholder="กรอกหรือสแกน Item">
+      <div id="itemLookupHint" class="fieldHint"></div>
+    </div>
 
-          <div class="field">
-            <label for="item">Item</label>
-            <input id="item" placeholder="กรอกหรือสแกน Item">
-            <div id="itemLookupHint" class="fieldHint"></div>
-          </div>
+    <div class="field fieldSpan2">
+      <label for="itemDisplay">รายการสินค้า</label>
+      <input id="itemDisplay" placeholder="ระบบเติมอัตโนมัติ" readonly>
+    </div>
 
-          <div class="field fieldSpan2">
-            <label for="itemDisplay">รายการสินค้า</label>
-            <input id="itemDisplay" placeholder="ระบบเติมอัตโนมัติ" readonly>
-          </div>
+    <div class="field">
+      <label for="errorCaseQty">จำนวนเคส</label>
+      <input id="errorCaseQty" placeholder="จำนวนเคส">
+    </div>
 
-          <div class="field">
-            <label for="errorCaseQty">จำนวนเคส</label>
-            <input id="errorCaseQty" placeholder="จำนวนเคส">
-          </div>
-        </div>
-      </div>
+    <div class="field fieldSpan2">
+      <label for="errorDescription">รายละเอียดสาเหตุ</label>
+      <textarea
+        id="errorDescription"
+        rows="4"
+        placeholder="กรอกรายละเอียดเพิ่มเติมของสาเหตุ / เหตุการณ์"
+      ></textarea>
+    </div>
+  </div>
+</div>
 
       <div class="sectionTitle">
         <span class="dot"></span>
