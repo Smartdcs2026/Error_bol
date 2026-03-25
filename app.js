@@ -4863,6 +4863,7 @@ function fillFormDropdowns() {
   const audit = $("auditName");
   const osm = $("osm");
   const otm = $("otm");
+  const nationality = $("nationality");
 
   if (er) {
     er.innerHTML =
@@ -4886,6 +4887,12 @@ function fillFormDropdowns() {
     otm.innerHTML =
       `<option value="">-- เลือก --</option>` +
       (OPTIONS.otmList || []).map((n) => `<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join("");
+  }
+
+  if (nationality) {
+    nationality.innerHTML =
+      `<option value="">-- เลือก --</option>` +
+      (OPTIONS.nationalityList || []).map((n) => `<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join("");
   }
 }
 
@@ -5103,14 +5110,6 @@ async function onLogin() {
       ? `<option value="${escapeHtml(lpsName)}">${escapeHtml(lpsName)}</option>`
       : `<option value="">-- เลือก --</option>`;
     $("rptReportedBy").value = lpsName || "";
-  }
-
-  try {
-    if (window.Report500UI && typeof window.Report500UI.reloadOptions === "function") {
-      await window.Report500UI.reloadOptions();
-    }
-  } catch (err) {
-    console.warn("Report500UI.reloadOptions failed:", err);
   }
 
   safeSetLoginMsg("");
