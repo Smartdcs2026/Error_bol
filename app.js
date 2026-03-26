@@ -5153,9 +5153,19 @@ async function onLogin() {
   }
 
   safeSetLoginMsg("");
-  setActiveTab("error");
-}
 
+  try {
+    setActiveTab("error");
+  } catch (err) {
+    console.error("setActiveTab error:", err);
+  }
+
+  if (window.Report500UI && typeof window.Report500UI.ensureReady === "function") {
+    window.Report500UI.ensureReady().catch(err => {
+      console.error("Report500 preload failed:", err);
+    });
+  }
+}
 /** ==========================
  *  Basic sanitizers
  *  ========================== */
