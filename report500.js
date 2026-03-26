@@ -183,21 +183,27 @@
   }
 
  async function ensureReport500Ready() {
-  if (RPT.state.ready || RPT.state.loading) return;
+  if (RPT.state.ready) return;
+  if (RPT.state.promise) return RPT.state.promise;
 
   RPT.state.loading = true;
-  try {
-    await loadReport500OptionsSafe();
-    RPT.state.ready = true;
-  } catch (err) {
-    RPT.state.ready = false;
-    throw err;
-  } finally {
-    RPT.state.loading = false;
-  }
+  RPT.state.promise = (async () => {
+    try {
+      await loadReport500OptionsSafe();
+      RPT.state.ready = true;
+    } catch (err) {
+      RPT.state.ready = false;
+      throw err;
+    } finally {
+      RPT.state.loading = false;
+      RPT.state.promise = null;
+    }
+  })();
+
+  return RPT.state.promise;
 }
 
-  async function loadReport500OptionsSafe() {
+async function loadReport500OptionsSafe() {
   const res = await fetch(api("/report500/options"), { method: "GET" });
   const raw = await res.text();
 
@@ -223,7 +229,6 @@
   }
 
   syncSingleOtherWraps();
-
   console.log("Report500 options loaded:", RPT.options);
 }
   function fillReport500Dropdowns() {
