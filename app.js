@@ -5253,3 +5253,260 @@ function alnumUpperOnly(el) {
   el.addEventListener("input", sanitize);
   el.addEventListener("blur", sanitize);
 }
+/** ==========================
+ *  Error_BOL Preview / Submit / Shared restore
+ *  แก้ error: previewSummary is not defined
+ *  ========================== */
+
+async function previewSummary() {
+  const p = collectPayload();
+  const err = validatePayload(p);
+
+  if (err) {
+    return Swal.fire({
+      icon: "warning",
+      title: "ข้อมูลไม่ครบ",
+      text: err,
+      confirmButtonText: "ตกลง"
+    });
+  }
+
+  const fileCount = countSelectedFiles();
+  const emails = Array.isArray(p.emailRecipients) ? p.emailRecipients : [];
+  const causeSummary = composeConfirmCauseSummary(
+    Array.isArray(p.confirmCauseSelected) ? p.confirmCauseSelected : [],
+    p.confirmCauseOther || ""
+  );
+
+  await Swal.fire({
+    title: "ตรวจสอบก่อนบันทึก",
+    html: `
+      <div class="swalSummary">
+        <div class="swalHero">
+          <div class="swalHeroTitle">สรุปข้อมูลก่อนบันทึก</div>
+          <div class="swalHeroSub">กรุณาตรวจสอบข้อมูลสำคัญให้ครบถ้วนก่อนดำเนินการ</div>
+        </div>
+
+        <div class="swalSection">
+          <div class="swalSectionTitle">ข้อมูลหลัก</div>
+          <div class="swalKvGrid">
+            <div class="swalKv">
+              <div class="swalKvLabel">ผู้บันทึก (LPS)</div>
+              <div class="swalKvValue">${escapeHtml(AUTH.name || "-")}</div>
+            </div>
+            <div class="swalKv">
+              <div class="swalKvLabel">Ref No.</div>
+              <div class="swalKvValue">${escapeHtml(p.refNo || "-")}</div>
+            </div>
+            <div class="swalKv">
+              <div class="swalKvLabel">Label CID</div>
+              <div class="swalKvValue">${escapeHtml(p.labelCid || "-")}</div>
+            </div>
+            <div class="swalKv">
+              <div class="swalKvLabel">Item</div>
+              <div class="swalKvValue">${escapeHtml(p.item || "-")}</div>
+            </div>
+            <div class="swalKv">
+              <div class="swalKvLabel">รายการสินค้า</div>
+              <div class="swalKvValue">${escapeHtml(p.itemDisplay || "-")}</div>
+            </div>
+            <div class="swalKv">
+              <div class="swalKvLabel">จำนวนเคส</div>
+              <div class="swalKvValue">${escapeHtml(p.errorCaseQty || "-")}</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="swalSection">
+          <div class="swalSectionTitle">ข้อมูลพนักงาน</div>
+          <div class="swalKvGrid">
+            <div class="swalKv">
+              <div class="swalKvLabel">ชื่อพนักงาน</div>
+              <div class="swalKvValue">${escapeHtml(p.employeeName || "-")}</div>
+            </div>
+            <div class="swalKv">
+              <div class="swalKvLabel">รหัสพนักงาน</div>
+              <div class="swalKvValue">${escapeHtml(p.employeeCode || "-")}</div>
+            </div>
+            <div class="swalKv">
+              <div class="swalKvLabel">วันที่เกิดเหตุ</div>
+              <div class="swalKvValue">${escapeHtml(p.errorDate || "-")}</div>
+            </div>
+            <div class="swalKv">
+              <div class="swalKvLabel">กะ</div>
+              <div class="swalKvValue">${escapeHtml(p.shift || "-")}</div>
+            </div>
+            <div class="swalKv">
+              <div class="swalKvLabel">สัญชาติ</div>
+              <div class="swalKvValue">${escapeHtml(p.nationality || "-")}</div>
+            </div>
+            <div class="swalKv">
+              <div class="swalKvLabel">อายุงาน</div>
+              <div class="swalKvValue">${escapeHtml(`${p.workAgeYear || "0"} ปี ${p.workAgeMonth || "0"} เดือน`)}</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="swalSection">
+          <div class="swalSectionTitle">สาเหตุ</div>
+          <div class="swalTextBlock">${escapeHtml(p.errorReason || "-")}</div>
+          ${
+            p.errorReasonOther
+              ? `<div class="swalNote">อื่นๆ: ${escapeHtml(p.errorReasonOther)}</div>`
+              : ""
+          }
+          <div class="swalTextBlock" style="margin-top:10px">${escapeHtml(p.errorDescription || "-")}</div>
+          <div class="swalNote" style="margin-top:10px">
+            สาเหตุประกอบ: ${escapeHtml(causeSummary || "-")}
+          </div>
+        </div>
+
+        <div class="swalSection">
+          <div class="swalSectionTitle">ผู้รับอีเมล</div>
+          ${
+            emails.length
+              ? `
+                <div class="swalEmailList">
+                  ${emails.map(e => `<div class="swalEmailChip">${escapeHtml(e)}</div>`).join("")}
+                </div>
+              `
+              : `<div class="swalNote">ยังไม่ได้เลือกอีเมล ระบบจะบันทึกข้อมูลและสร้าง PDF อย่างเดียว</div>`
+          }
+        </div>
+
+        <div class="swalSection">
+          <div class="swalSectionTitle">ไฟล์แนบ</div>
+          <div class="swalKvGrid">
+            <div class="swalKv">
+              <div class="swalKvLabel">จำนวนรูปที่เลือก</div>
+              <div class="swalKvValue">${fileCount} รูป</div>
+            </div>
+            <div class="swalKv">
+              <div class="swalKvLabel">สถานะเอกสาร</div>
+              <div class="swalKvValue">ระบบจะสร้าง PDF หลังบันทึกสำเร็จ</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    `,
+    confirmButtonText: "ตกลง",
+    confirmButtonColor: "#2563eb",
+    width: 920
+  });
+}
+
+function countSelectedFiles() {
+  const inputs = Array.from(document.querySelectorAll('#uploadList input[type="file"]'));
+  return inputs.reduce((acc, el) => acc + ((el.files && el.files[0]) ? 1 : 0), 0);
+}
+
+async function submitForm() {
+  const p = collectPayload();
+  const err = validatePayload(p);
+
+  if (err) {
+    return Swal.fire({
+      icon: "warning",
+      title: "ข้อมูลไม่ครบ",
+      text: err,
+      confirmButtonText: "ตกลง"
+    });
+  }
+
+  let files = [];
+  try {
+    files = await collectFilesAsBase64({ maxFiles: 6, maxMBEach: 4 });
+  } catch (e) {
+    return;
+  }
+
+  const signRes = await openSignatureFlow(p.otm, p.employeeName, p.interpreterName);
+  if (!signRes || !signRes.ok) return;
+
+  const body = {
+    pass: AUTH.pass,
+    payload: p,
+    files,
+    signatures: {
+      supervisorBase64: signRes.supervisorBase64 || "",
+      employeeBase64: signRes.employeeBase64 || "",
+      interpreterBase64: signRes.interpreterBase64 || ""
+    }
+  };
+
+  Swal.fire({
+    title: "กำลังบันทึกข้อมูล",
+    html: "กรุณารอสักครู่ ระบบกำลังบันทึกข้อมูล สร้าง PDF และส่งอีเมล",
+    allowOutsideClick: false,
+    didOpen: () => Swal.showLoading()
+  });
+
+  try {
+    const res = await fetch(apiUrl("/submit"), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body)
+    });
+
+    const text = await res.text();
+
+    let json = {};
+    try {
+      json = JSON.parse(text);
+    } catch (_) {
+      throw new Error("Backend ตอบกลับไม่ใช่ JSON");
+    }
+
+    if (!res.ok || !json.ok) {
+      throw new Error(json?.error || `บันทึกข้อมูลไม่สำเร็จ (HTTP ${res.status})`);
+    }
+
+    const pdfUrl = json.refNo
+      ? apiUrl(`/pdf/${encodeURIComponent(json.refNo)}`)
+      : "";
+
+    await Swal.fire({
+      icon: "success",
+      title: "บันทึกข้อมูลสำเร็จ",
+      html: `
+        <div style="text-align:left">
+          <div><b>Ref No.:</b> ${escapeHtml(json.refNo || p.refNo || "-")}</div>
+          <div><b>ผู้บันทึก:</b> ${escapeHtml(json.lpsName || AUTH.name || "-")}</div>
+          <div><b>จำนวนรูป:</b> ${escapeHtml(String(json.imageCount || 0))}</div>
+          <div><b>PDF:</b> ${json.pdfUrl ? "สำเร็จ" : "ไม่สำเร็จ"}</div>
+          <div><b>Email:</b> ${
+            json.emailResult?.skipped
+              ? "ไม่ได้ส่ง (ไม่มีผู้รับ)"
+              : (json.emailResult?.ok ? "ส่งสำเร็จ" : `ไม่สำเร็จ${json.emailResult?.error ? " : " + escapeHtml(json.emailResult.error) : ""}`)
+          }</div>
+        </div>
+      `,
+      showCancelButton: !!pdfUrl,
+      confirmButtonText: "ปิด",
+      cancelButtonText: "เปิด PDF",
+      reverseButtons: true
+    }).then((r) => {
+      if (r.dismiss === Swal.DismissReason.cancel && pdfUrl) {
+        window.open(pdfUrl, "_blank", "noopener,noreferrer");
+      }
+    });
+
+    if (typeof resetForm === "function") {
+      resetForm();
+    }
+  } catch (err) {
+    await Swal.fire({
+      icon: "error",
+      title: "บันทึกข้อมูลไม่สำเร็จ",
+      text: err?.message || String(err)
+    });
+  }
+}
+
+function setLpsFromLogin(loginName) {
+  const lpsEl = $("lps");
+  if (lpsEl) {
+    lpsEl.value = loginName || "";
+    lpsEl.readOnly = true;
+  }
+}
