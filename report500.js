@@ -22,7 +22,9 @@
     state: {
       ready: false,
       loading: false,
-      initializedRows: false
+      initializedRows: false,
+      promise: null,
+      submitting: false
     }
   };
 
@@ -70,6 +72,10 @@
     return text(v) === "อื่นๆ";
   }
 
+  function toArray(v) {
+    return Array.isArray(v) ? v : [];
+  }
+
   function normalizeDateToDisplay(value) {
     const s = text(value);
     if (!s) return "";
@@ -108,8 +114,21 @@
     return `<option value="${esc(value)}">${esc(label)}</option>`;
   }
 
-  function toArray(v) {
-    return Array.isArray(v) ? v : [];
+  function joinOptionTexts(list) {
+    return toArray(list).map(x => {
+      const value = text(x?.value);
+      const other = text(x?.textValue);
+      return value === "อื่นๆ" ? (other || "อื่นๆ") : (other || value);
+    }).filter(Boolean).join(" | ");
+  }
+
+  function swalKv(label, value) {
+    return `
+      <div class="swalKv">
+        <div class="swalKvLabel">${esc(label)}</div>
+        <div class="swalKvValue">${esc(value || "-")}</div>
+      </div>
+    `;
   }
 
   function fileToBase64(file) {
@@ -182,55 +201,56 @@
     if (el) el.textContent = "-" + currentThaiYear();
   }
 
- async function ensureReport500Ready() {
-  if (RPT.state.ready) return;
-  if (RPT.state.promise) return RPT.state.promise;
+  async function ensureReport500Ready() {
+    if (RPT.state.ready) return;
+    if (RPT.state.promise) return RPT.state.promise;
 
-  RPT.state.loading = true;
-  RPT.state.promise = (async () => {
+    RPT.state.loading = true;
+    RPT.state.promise = (async () => {
+      try {
+        await loadReport500OptionsSafe();
+        RPT.state.ready = true;
+      } catch (err) {
+        RPT.state.ready = false;
+        throw err;
+      } finally {
+        RPT.state.loading = false;
+        RPT.state.promise = null;
+      }
+    })();
+
+    return RPT.state.promise;
+  }
+
+  async function loadReport500OptionsSafe() {
+    const res = await fetch(api("/report500/options"), { method: "GET" });
+    const raw = await res.text();
+
+    let json = {};
     try {
-      await loadReport500OptionsSafe();
-      RPT.state.ready = true;
-    } catch (err) {
-      RPT.state.ready = false;
-      throw err;
-    } finally {
-      RPT.state.loading = false;
-      RPT.state.promise = null;
+      json = JSON.parse(raw);
+    } catch (_) {
+      throw new Error("Backend /report500/options ไม่ได้ส่ง JSON กลับมา: " + raw.slice(0, 300));
     }
-  })();
 
-  return RPT.state.promise;
-}
+    if (!res.ok || !json.ok) {
+      throw new Error(json?.error || `โหลด Report500 options ไม่สำเร็จ (HTTP ${res.status})`);
+    }
 
-async function loadReport500OptionsSafe() {
-  const res = await fetch(api("/report500/options"), { method: "GET" });
-  const raw = await res.text();
+    RPT.options = json.data || RPT.options;
 
-  let json = {};
-  try {
-    json = JSON.parse(raw);
-  } catch (_) {
-    throw new Error("Backend /report500/options ไม่ได้ส่ง JSON กลับมา: " + raw.slice(0, 300));
+    fillReport500Dropdowns();
+    renderReport500OptionMatrices();
+
+    if (!RPT.state.initializedRows) {
+      buildReport500InitialRows();
+      RPT.state.initializedRows = true;
+    }
+
+    syncSingleOtherWraps();
+    console.log("Report500 options loaded:", RPT.options);
   }
 
-  if (!res.ok || !json.ok) {
-    throw new Error(json?.error || `โหลด Report500 options ไม่สำเร็จ (HTTP ${res.status})`);
-  }
-
-  RPT.options = json.data || RPT.options;
-
-  fillReport500Dropdowns();
-  renderReport500OptionMatrices();
-
-  if (!RPT.state.initializedRows) {
-    buildReport500InitialRows();
-    RPT.state.initializedRows = true;
-  }
-
-  syncSingleOtherWraps();
-  console.log("Report500 options loaded:", RPT.options);
-}
   function fillReport500Dropdowns() {
     fillSelectFromOptionList($("rptBranch"), RPT.options.branchList, "-- เลือกสาขา --");
     fillSelectFromOptionList($("rptIncidentLocation"), RPT.options.locationTypeList, "-- เลือกสถานที่ --");
@@ -296,8 +316,7 @@ async function loadReport500OptionsSafe() {
             <span class="optionChoiceText">${esc(label)}</span>
           </label>
           <div id="${esc(otherId)}" class="optionChoiceOther hidden">
-            <input type="text" class="input"
-              placeholder="${esc(placeholder)}">
+            <input type="text" class="input" placeholder="${esc(placeholder)}">
           </div>
         </div>
       `;
@@ -345,6 +364,48 @@ async function loadReport500OptionsSafe() {
     return qa(".rptEmailChk:checked")
       .map(el => text(el.value))
       .filter(Boolean);
+  }
+
+  function getCheckedRptEmails() {
+    return qa(".rptEmailChk:checked")
+      .map(el => text(el.value))
+      .filter(Boolean);
+  }
+
+  function splitEmails(raw) {
+    return text(raw)
+      .split(/[\n,;]+/)
+      .map(s => text(s))
+      .filter(Boolean);
+  }
+
+  function uniqueEmails(list) {
+    const seen = new Set();
+    const out = [];
+    toArray(list).forEach(v => {
+      const s = text(v).toLowerCase();
+      if (!s) return;
+      if (seen.has(s)) return;
+      seen.add(s);
+      out.push(s);
+    });
+    return out;
+  }
+
+  function isValidEmailFormat(email) {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email || "").trim());
+  }
+
+  function collectReport500Recipients() {
+    const selected = getCheckedRptEmails();
+    const extra = splitEmails($("rptEmailOther")?.value);
+    const all = uniqueEmails([].concat(selected, extra));
+    const invalid = all.filter(v => !isValidEmailFormat(v));
+
+    return {
+      all,
+      invalid
+    };
   }
 
   function syncSingleOtherWraps() {
@@ -515,6 +576,7 @@ async function loadReport500OptionsSafe() {
   function renderMatrixCheckboxesInRoot(root, list, groupName) {
     if (!root) return;
     const rows = toArray(list);
+
     root.innerHTML = rows.map((item, idx) => {
       const value = text(item?.value || item?.label || "");
       const label = text(item?.label || item?.value || "");
@@ -606,6 +668,7 @@ async function loadReport500OptionsSafe() {
       const img = q(".rptImagePreview", wrap);
 
       if (!file || !img || !empty) return;
+
       const url = URL.createObjectURL(file);
       img.src = url;
       img.classList.remove("hidden");
@@ -636,11 +699,13 @@ async function loadReport500OptionsSafe() {
   function collectMatrixValues(rootId) {
     const root = $(rootId);
     if (!root) return [];
+
     return qa(".rptMatrixChk:checked", root).map(chk => {
       const value = text(chk.getAttribute("data-value"));
       const otherId = chk.getAttribute("data-other-id");
       const otherWrap = otherId ? $(otherId) : null;
       const otherInput = otherWrap ? q("input", otherWrap) : null;
+
       return {
         value,
         textValue: text(otherInput?.value || "")
@@ -675,6 +740,7 @@ async function loadReport500OptionsSafe() {
         const otherId = chk.getAttribute("data-other-id");
         const otherWrap = otherId ? $(otherId) : null;
         const otherInput = otherWrap ? q("input", otherWrap) : null;
+
         return {
           value,
           textValue: text(otherInput?.value || "")
@@ -715,8 +781,14 @@ async function loadReport500OptionsSafe() {
     return out;
   }
 
+  async function collectReport500ImagesSafe() {
+    const files = await collectImagesAsFiles();
+    return toArray(files).filter(f => text(f?.base64));
+  }
+
   function collectReport500Payload() {
     const authName = getAuthName();
+
     return {
       refNo: readRefNoWithYear($("rptRefNo")?.value),
       branch: text($("rptBranch")?.value),
@@ -786,24 +858,34 @@ async function loadReport500OptionsSafe() {
 
     const badActions = payload.actions.find(a => {
       if (isOtherValue(a.actionType) && !a.actionTypeOther) return true;
+
       const badLoc = toArray(a.targetLocations).find(x => isOtherValue(x.value) && !x.textValue);
       if (badLoc) return true;
 
-      const meta = toArray(RPT.options.actionTypeList).find(x => text(x?.value || x?.label) === a.actionType);
+      const meta = toArray(RPT.options.actionTypeList)
+        .find(x => text(x?.value || x?.label) === a.actionType);
+
       if (meta?.supportsTestResult && !a.testResult) return true;
       if (meta?.supportsTestResult && meta?.supportsAmount && a.testResult === "พบ" && !a.testAmount) return true;
+
       return false;
     });
+
     if (badActions) return "การดำเนินการบางรายการกรอกไม่ครบ";
     return "";
   }
 
   async function previewReport500Summary() {
     await ensureReport500Ready();
+
     const payload = collectReport500Payload();
     const err = validateReport500(payload);
     if (err) {
-      return Swal.fire({ icon: "warning", title: "ข้อมูลยังไม่ครบ", text: err });
+      return Swal.fire({
+        icon: "warning",
+        title: "ข้อมูลยังไม่ครบ",
+        text: err
+      });
     }
 
     const summaryHtml = `
@@ -876,43 +958,119 @@ async function loadReport500OptionsSafe() {
     });
   }
 
-  function swalKv(label, value) {
+  function setReport500SubmitDisabled(disabled) {
+    const btn = $("btnRptSubmit");
+    if (!btn) return;
+
+    btn.disabled = !!disabled;
+    btn.classList.toggle("isLoading", !!disabled);
+
+    if (disabled) {
+      btn.dataset.originalText = btn.dataset.originalText || btn.textContent || "บันทึกและสร้าง PDF";
+      btn.textContent = "กำลังบันทึก...";
+    } else {
+      btn.textContent = btn.dataset.originalText || "บันทึกและสร้าง PDF";
+    }
+  }
+
+  function buildReport500PdfLink(refNo) {
+    return refNo ? api(`/report500/pdf/${encodeURIComponent(refNo)}`) : "";
+  }
+
+  function buildReport500SuccessHtml(json, pdfLink) {
+    const emailResult = json?.emailResult || {};
+    const recipients = toArray(emailResult?.recipients).join(", ");
+    const partial = !!json?.partial;
+    const pdfError = text(json?.pdfError);
+
     return `
-      <div class="swalKv">
-        <div class="swalKvLabel">${esc(label)}</div>
-        <div class="swalKvValue">${esc(value || "-")}</div>
+      <div class="swalSection" style="text-align:left">
+        <div class="swalSectionTitle">${partial ? "บันทึกสำเร็จบางส่วน" : "บันทึกสำเร็จ"}</div>
+
+        <div class="swalKvGrid">
+          ${swalKv("Ref No.", text(json?.refNo) || "-")}
+          ${swalKv("ผู้บันทึก", text(json?.lpsName) || "-")}
+          ${swalKv("จำนวนรูป", String(json?.imageCount ?? 0))}
+          ${swalKv("ขนาด PDF", text(json?.pdfSizeText) || "-")}
+          ${swalKv("PDF", text(json?.pdfUrl) ? "สร้างสำเร็จ" : (pdfError || "ยังไม่สำเร็จ"))}
+          ${swalKv("อีเมล", emailResult?.skipped ? "ไม่ได้ส่ง" : (emailResult?.ok ? "ส่งสำเร็จ" : (text(emailResult?.error) || "ส่งไม่สำเร็จ")))}
+        </div>
+
+        ${recipients ? `
+          <div class="swalDesc" style="margin-top:12px;">
+            <div class="swalDescLabel">ส่งถึง</div>
+            <div class="swalDescValue">${esc(recipients)}</div>
+          </div>
+        ` : ""}
+
+        ${pdfError ? `
+          <div class="swalDesc" style="margin-top:12px;">
+            <div class="swalDescLabel">รายละเอียด PDF</div>
+            <div class="swalDescValue">${esc(pdfError)}</div>
+          </div>
+        ` : ""}
+
+        ${pdfLink ? `
+          <div class="swalActionLink" style="margin-top:14px;">
+            <a href="${esc(pdfLink)}" target="_blank" rel="noopener">เปิดไฟล์ PDF</a>
+          </div>
+        ` : ""}
       </div>
     `;
   }
 
-  function joinOptionTexts(list) {
-    return toArray(list).map(x => {
-      const value = text(x?.value);
-      const other = text(x?.textValue);
-      return value === "อื่นๆ" ? (other || "อื่นๆ") : (other || value);
-    }).filter(Boolean).join(" | ");
-  }
-
   async function submitReport500Form() {
+    if (RPT.state.submitting) return;
+
     await ensureReport500Ready();
 
     const payload = collectReport500Payload();
     const err = validateReport500(payload);
     if (err) {
-      return Swal.fire({ icon: "warning", title: "ข้อมูลยังไม่ครบ", text: err });
+      return Swal.fire({
+        icon: "warning",
+        title: "ข้อมูลยังไม่ครบ",
+        text: err
+      });
     }
 
     const pass = text($("loginPass")?.value);
     if (!pass) {
-      return Swal.fire({ icon: "warning", title: "ยังไม่มีรหัสผ่าน", text: "กรุณาเข้าสู่ระบบใหม่อีกครั้ง" });
+      return Swal.fire({
+        icon: "warning",
+        title: "ยังไม่มีรหัสผ่าน",
+        text: "กรุณาเข้าสู่ระบบใหม่อีกครั้ง"
+      });
     }
 
-    const files = await collectImagesAsFiles();
+    const recipients = collectReport500Recipients();
+    if (recipients.invalid.length) {
+      return Swal.fire({
+        icon: "warning",
+        title: "รูปแบบอีเมลไม่ถูกต้อง",
+        html: `
+          <div class="swalSection" style="text-align:left">
+            <div class="swalSectionTitle">อีเมลที่ต้องตรวจสอบ</div>
+            <div class="swalDescValue">${esc(recipients.invalid.join(", "))}</div>
+          </div>
+        `
+      });
+    }
+
+    payload.emailRecipients = getCheckedRptEmails();
+    payload.emailOther = text($("rptEmailOther")?.value);
+
+    const files = await collectReport500ImagesSafe();
+
+    RPT.state.submitting = true;
+    setReport500SubmitDisabled(true);
 
     await Swal.fire({
       title: "กำลังบันทึก Report500",
       text: "ระบบกำลังอัปโหลดข้อมูล สร้าง PDF และตรวจสอบการส่งอีเมล",
       allowOutsideClick: false,
+      allowEscapeKey: false,
+      showConfirmButton: false,
       didOpen: () => Swal.showLoading()
     });
 
@@ -939,55 +1097,20 @@ async function loadReport500OptionsSafe() {
         throw new Error(json?.error || `HTTP ${res.status}`);
       }
 
-      const pdfLink = json.refNo
-        ? `${api("/report500/pdf/" + encodeURIComponent(json.refNo))}`
-        : "";
+      const reportedBy = text(payload.reportedBy || getAuthName());
+      const pdfLink = buildReport500PdfLink(text(json?.refNo));
 
       await Swal.fire({
-        icon: "success",
-        title: "บันทึกสำเร็จ",
+        icon: json?.partial ? "warning" : "success",
+        title: json?.partial ? "บันทึกสำเร็จบางส่วน" : "บันทึกสำเร็จ",
+        html: buildReport500SuccessHtml(json, pdfLink),
         width: 920,
         confirmButtonText: "ปิด",
-        confirmButtonColor: "#2563eb",
-        html: `
-          <div class="swalSummary" style="text-align:left">
-            <div class="swalHero">
-              <div class="swalHeroTitle">บันทึก Report500 สำเร็จ</div>
-              <div class="swalHeroSub">ระบบได้บันทึกข้อมูลและสร้างไฟล์ PDF แล้ว</div>
-            </div>
-
-            <div class="swalSection">
-              <div class="swalSectionTitle">ผลการบันทึก</div>
-              <div class="swalKvGrid">
-                ${swalKv("Ref No.", json.refNo || "-")}
-                ${swalKv("ผู้บันทึก", json.lpsName || "-")}
-                ${swalKv("จำนวนรูปภาพ", String(json.imageCount || 0))}
-                ${swalKv("ขนาด PDF", json.pdfSizeText || "-")}
-              </div>
-            </div>
-
-            ${
-              pdfLink
-                ? `
-                  <div class="swalActionLink">
-                    <a href="${esc(pdfLink)}" target="_blank" rel="noopener">เปิดไฟล์ PDF</a>
-                  </div>
-                `
-                : ``
-            }
-
-            ${
-              json.emailResult?.skipped
-                ? `<div class="swalNote" style="margin-top:10px;">ไม่ได้ส่งอีเมล เพราะยังไม่ได้เลือกผู้รับ</div>`
-                : json.emailResult?.ok
-                  ? `<div class="swalNote" style="margin-top:10px;color:#16a34a;font-weight:800;">ส่งอีเมลสำเร็จ ${json.emailResult.recipients?.length || 0} รายการ</div>`
-                  : `<div class="swalNote" style="margin-top:10px;color:#dc2626;font-weight:800;">ส่งอีเมลไม่สำเร็จ: ${esc(json.emailResult?.error || "-")}</div>`
-            }
-          </div>
-        `
+        confirmButtonColor: "#2563eb"
       });
 
-      resetReport500FormAfterSubmit(payload.reportedBy);
+      resetReport500FormAfterSubmit(reportedBy);
+
     } catch (err2) {
       console.error("submitReport500Form:", err2);
       await Swal.fire({
@@ -1002,25 +1125,28 @@ async function loadReport500OptionsSafe() {
           </div>
         `
       });
+    } finally {
+      RPT.state.submitting = false;
+      setReport500SubmitDisabled(false);
     }
   }
 
   function resetReport500FormAfterSubmit(reportedBy) {
-    $("rptRefNo").value = "";
-    $("rptSubject").value = "";
-    $("rptBranch").value = "";
-    $("rptBranchOther").value = "";
-    $("rptIncidentDate").value = "";
-    $("rptIncidentTime").value = "";
-    $("rptIncidentLocation").value = "";
-    $("rptIncidentLocationOther").value = "";
-    $("rptIncidentArea").value = "";
-    $("rptWhatHappen").value = "";
-    $("rptOffenderStatement").value = "";
-    $("rptSummaryText").value = "";
-    $("rptReporterPosition").value = "";
-    $("rptReportDate").value = todayInputValue();
-    $("rptEmailOther").value = "";
+    if ($("rptRefNo")) $("rptRefNo").value = "";
+    if ($("rptSubject")) $("rptSubject").value = "";
+    if ($("rptBranch")) $("rptBranch").value = "";
+    if ($("rptBranchOther")) $("rptBranchOther").value = "";
+    if ($("rptIncidentDate")) $("rptIncidentDate").value = "";
+    if ($("rptIncidentTime")) $("rptIncidentTime").value = "";
+    if ($("rptIncidentLocation")) $("rptIncidentLocation").value = "";
+    if ($("rptIncidentLocationOther")) $("rptIncidentLocationOther").value = "";
+    if ($("rptIncidentArea")) $("rptIncidentArea").value = "";
+    if ($("rptWhatHappen")) $("rptWhatHappen").value = "";
+    if ($("rptOffenderStatement")) $("rptOffenderStatement").value = "";
+    if ($("rptSummaryText")) $("rptSummaryText").value = "";
+    if ($("rptReporterPosition")) $("rptReporterPosition").value = "";
+    if ($("rptReportDate")) $("rptReportDate").value = todayInputValue();
+    if ($("rptEmailOther")) $("rptEmailOther").value = "";
 
     qa(".rptMatrixChk").forEach(chk => {
       chk.checked = false;
@@ -1035,11 +1161,19 @@ async function loadReport500OptionsSafe() {
       chk.checked = false;
     });
 
-    ["rptPeopleList", "rptDamageList", "rptActionList", "rptEvidenceList", "rptCauseList", "rptPreventionList", "rptLearningList", "rptImageList"]
-      .forEach(id => {
-        const el = $(id);
-        if (el) el.innerHTML = "";
-      });
+    [
+      "rptPeopleList",
+      "rptDamageList",
+      "rptActionList",
+      "rptEvidenceList",
+      "rptCauseList",
+      "rptPreventionList",
+      "rptLearningList",
+      "rptImageList"
+    ].forEach(id => {
+      const el = $(id);
+      if (el) el.innerHTML = "";
+    });
 
     RPT.state.initializedRows = false;
     buildReport500InitialRows();
@@ -1048,7 +1182,9 @@ async function loadReport500OptionsSafe() {
     syncSingleOtherWraps();
 
     if ($("rptReportedBy")) {
-      $("rptReportedBy").innerHTML = reportedBy ? makeOptionTag(reportedBy, reportedBy) : makeOptionTag("", "-- เลือก --");
+      $("rptReportedBy").innerHTML = reportedBy
+        ? makeOptionTag(reportedBy, reportedBy)
+        : makeOptionTag("", "-- เลือก --");
       $("rptReportedBy").value = reportedBy || "";
     }
   }
@@ -1057,6 +1193,8 @@ async function loadReport500OptionsSafe() {
     ensureReady: ensureReport500Ready,
     reloadOptions: async () => {
       RPT.state.ready = false;
+      RPT.state.loading = false;
+      RPT.state.promise = null;
       await ensureReport500Ready();
     },
     preview: previewReport500Summary,
