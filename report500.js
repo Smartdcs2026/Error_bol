@@ -1,11 +1,13 @@
 (function () {
   const $ = (id) => document.getElementById(id);
 
-  const state = {
-    ready: false,
-    loading: false,
-    options: null
-  };
+ const state = {
+  ready: false,
+  loading: false,
+  options: null,
+  repeatBound: false,
+  topBound: false
+};
 
   const OTHER_LABELS = ["อื่นๆ", "other", "others", "อื่น"];
   const MAX_IMAGE_SIZE_MB = 15;
@@ -474,56 +476,55 @@
   }
 
   async function collectImageFiles() {
-    const out = [];
-    const rows = Array.from(document.querySelectorAll("#rptImageList .rptRepeatCard"));
+  const out = [];
+  const rows = Array.from(document.querySelectorAll("#rptImageList .rptRepeatCard"));
 
-    for (let i = 0; i < rows.length; i++) {
-      const row = rows[i];
-      const fileInput = row.querySelector(".rptImageFile");
-      const caption = norm(row.querySelector(".rptImageCaption")?.value);
-      const file = fileInput?.files && fileInput.files[0] ? fileInput.files[0] : null;
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i];
+    const fileInput = row.querySelector(".rptImageFile");
+    const caption = norm(row.querySelector(".rptImageCaption")?.value);
+    const file = fileInput?.files && fileInput.files[0] ? fileInput.files[0] : null;
 
-      if (!file && !caption) continue;
-      if (!file) {
-        throw new Error(`รูปภาพรายการที่ ${i + 1} ยังไม่ได้เลือกไฟล์`);
-      }
-      if (!/^image\//i.test(file.type || "")) {
-        throw new Error(`ไฟล์รูปภาพรายการที่ ${i + 1} ไม่ถูกต้อง`);
-      }
-      const sizeMb = file.size / (1024 * 1024);
-      if (sizeMb > MAX_IMAGE_SIZE_MB) {
-        throw new Error(`ไฟล์รูปภาพรายการที่ ${i + 1} มีขนาดเกิน ${MAX_IMAGE_SIZE_MB} MB`);
-      }
+    if (!file && !caption) continue;
+    if (!file) throw new Error(`รูปภาพรายการที่ ${i + 1} ยังไม่ได้เลือกไฟล์`);
+    if (!/^image\//i.test(file.type || "")) throw new Error(`ไฟล์รูปภาพรายการที่ ${i + 1} ไม่ถูกต้อง`);
 
-      const base64 = await fileToBase64(file);
-      out.push({
-        name: file.name,
-        mimeType: file.type || "application/octet-stream",
-        base64: base64,
-        caption: caption
-      });
+    const sizeMb = file.size / (1024 * 1024);
+    if (sizeMb > MAX_IMAGE_SIZE_MB) {
+      throw new Error(`ไฟล์รูปภาพรายการที่ ${i + 1} มีขนาดเกิน ${MAX_IMAGE_SIZE_MB} MB`);
     }
 
-    return out;
+    const base64 = await fileToBase64(file);
+    out.push({
+      filename: file.name,
+      mimeType: file.type || "application/octet-stream",
+      base64: base64,
+      caption: caption
+    });
   }
+
+  return out;
+}
 
   function fillDefaultsAfterLogin() {
-    const auth = safeAuth();
-    if ($("rptReportedBy")) {
-      const name = norm(auth.name);
-      $("rptReportedBy").innerHTML = name
-        ? `<option value="${escapeHtml(name)}">${escapeHtml(name)}</option>`
-        : `<option value="">-- เลือก --</option>`;
-      $("rptReportedBy").value = name;
-    }
+  const auth = safeAuth();
+  const name = norm(auth.name);
 
-    if ($("rptReportDate") && !$("rptReportDate").value) {
-      $("rptReportDate").value = todayIsoLocal();
-    }
-    if ($("rptIncidentDate") && !$("rptIncidentDate").value) {
-      $("rptIncidentDate").value = todayIsoLocal();
-    }
+  if ($("rptReportedBy")) {
+    $("rptReportedBy").innerHTML = name
+      ? `<option value="${escapeHtml(name)}">${escapeHtml(name)}</option>`
+      : `<option value="">-- เลือก --</option>`;
+    $("rptReportedBy").value = name;
   }
+
+  if ($("rptReportDate") && !$("rptReportDate").value) {
+    $("rptReportDate").value = todayIsoLocal();
+  }
+
+  if ($("rptIncidentDate") && !$("rptIncidentDate").value) {
+    $("rptIncidentDate").value = todayIsoLocal();
+  }
+}
 
   function validatePayload(payload) {
     if (!norm(payload.refNo)) throw new Error("กรุณากรอก Ref No.");
@@ -845,140 +846,158 @@
   }
 
   function bindRepeatButtons() {
-    $("btnRptAddPerson")?.addEventListener("click", () => {
-      appendRow("rptPersonList", createPersonRow());
-    });
+  if (state.repeatBound) return;
+  state.repeatBound = true;
 
-    document.querySelectorAll(".rptAddDetailBtn").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        const target = btn.dataset.target;
-        if (target === "damage") {
-          appendRow("rptDamageList", createTextRow({}, {
-            label1: "รายการความเสียหาย",
-            label2: "รายละเอียด",
-            ph1: "เช่น สินค้าเสียหาย / ทรัพย์สินเสียหาย",
-            ph2: "อธิบายเพิ่มเติม"
-          }));
-        } else if (target === "action") {
-          appendRow("rptActionList", createActionRow());
-        } else if (target === "evidence") {
-          appendRow("rptEvidenceList", createTextRow({}, {
-            label1: "หลักฐาน / พยาน",
-            label2: "รายละเอียด",
-            ph1: "เช่น CCTV / พยานบุคคล / เอกสาร",
-            ph2: "รายละเอียดเพิ่มเติม"
-          }));
-        } else if (target === "cause") {
-          appendRow("rptCauseList", createTextRow({}, {
-            label1: "สาเหตุ",
-            label2: "รายละเอียด",
-            ph1: "ระบุสาเหตุ",
-            ph2: "รายละเอียดเพิ่มเติม"
-          }));
-        } else if (target === "prevention") {
-          appendRow("rptPreventionList", createTextRow({}, {
-            label1: "แนวทางป้องกัน",
-            label2: "รายละเอียด",
-            ph1: "ระบุแนวทาง",
-            ph2: "รายละเอียดเพิ่มเติม"
-          }));
-        } else if (target === "learning") {
-          appendRow("rptLearningList", createTextRow({}, {
-            label1: "ข้อสรุป / สิ่งที่ได้",
-            label2: "รายละเอียด",
-            ph1: "ระบุข้อสรุป",
-            ph2: "รายละเอียดเพิ่มเติม"
-          }));
-        }
-      });
-    });
+  $("btnRptAddPerson")?.addEventListener("click", () => {
+    appendRow("rptPersonList", createPersonRow());
+  });
 
-    $("btnRptAddImage")?.addEventListener("click", () => {
-      appendRow("rptImageList", createImageRow());
-    });
-  }
+  $("btnRptAddDamage")?.addEventListener("click", () => {
+    appendRow("rptDamageList", createTextRow({}, {
+      label1: "รายการความเสียหาย",
+      label2: "รายละเอียด",
+      ph1: "เช่น รถยกชนสินค้า",
+      ph2: "รายละเอียดเพิ่มเติม"
+    }));
+  });
 
-  function bindTopButtons() {
-    $("btnRptPreview")?.addEventListener("click", preview);
-    $("btnRptSubmit")?.addEventListener("click", submit);
+  $("btnRptAddAction")?.addEventListener("click", () => {
+    appendRow("rptActionList", createActionRow());
+  });
 
-    $("btnRptEmailCheckAll")?.addEventListener("click", () => {
-      setAllCheckboxBySelector(".rptEmailChk", true);
-    });
-    $("btnRptEmailClearAll")?.addEventListener("click", () => {
-      setAllCheckboxBySelector(".rptEmailChk", false);
-    });
-  }
+  $("btnRptAddEvidence")?.addEventListener("click", () => {
+    appendRow("rptEvidenceList", createTextRow({}, {
+      label1: "พยาน/หลักฐาน",
+      label2: "รายละเอียด",
+      ph1: "เช่น CCTV / พยานบุคคล",
+      ph2: "รายละเอียดเพิ่มเติม"
+    }));
+  });
+
+  $("btnRptAddCause")?.addEventListener("click", () => {
+    appendRow("rptCauseList", createTextRow({}, {
+      label1: "สาเหตุ",
+      label2: "รายละเอียด",
+      ph1: "เช่น ไม่ปฏิบัติตามขั้นตอน",
+      ph2: "รายละเอียดเพิ่มเติม"
+    }));
+  });
+
+  $("btnRptAddPrevention")?.addEventListener("click", () => {
+    appendRow("rptPreventionList", createTextRow({}, {
+      label1: "แนวทางป้องกัน",
+      label2: "รายละเอียด",
+      ph1: "เช่น อบรมซ้ำ / ทบทวน SOP",
+      ph2: "รายละเอียดเพิ่มเติม"
+    }));
+  });
+
+  $("btnRptAddLearning")?.addEventListener("click", () => {
+    appendRow("rptLearningList", createTextRow({}, {
+      label1: "สิ่งที่ได้จากการสอบสวน",
+      label2: "รายละเอียด",
+      ph1: "เช่น จุดอ่อนของกระบวนการ",
+      ph2: "รายละเอียดเพิ่มเติม"
+    }));
+  });
+
+  $("btnRptAddImage")?.addEventListener("click", () => {
+    appendRow("rptImageList", createImageRow());
+  });
+}
+
+ function bindTopButtons() {
+  if (state.topBound) return;
+  state.topBound = true;
+
+  $("btnRptPreview")?.addEventListener("click", preview);
+  $("btnRptSubmit")?.addEventListener("click", submit);
+
+  $("btnRptEmailCheckAll")?.addEventListener("click", () => {
+    setAllCheckboxBySelector(".rptEmailChk", true);
+  });
+
+  $("btnRptEmailClearAll")?.addEventListener("click", () => {
+    setAllCheckboxBySelector(".rptEmailChk", false);
+  });
+}}
 
   function normalizeOptionsResponse(data) {
-    if (!data || typeof data !== "object") return {};
+  if (!data || typeof data !== "object") return {};
 
-    const d = data.data && typeof data.data === "object" ? data.data : data;
-    return {
-      branchList: Array.isArray(d.branchList) ? d.branchList : [],
-      reportTypeList: Array.isArray(d.reportTypeList) ? d.reportTypeList : [],
-      urgencyList: Array.isArray(d.urgencyList) ? d.urgencyList : [],
-      notifyToList: Array.isArray(d.notifyToList) ? d.notifyToList : [],
-      incidentLocationList: Array.isArray(d.incidentLocationList) ? d.incidentLocationList : [],
-      emailList: Array.isArray(d.emailList) ? d.emailList : []
-    };
-  }
+  const d = data.data && typeof data.data === "object" ? data.data : data;
+  const incidentList = Array.isArray(d.incidentLocationList)
+    ? d.incidentLocationList
+    : (Array.isArray(d.locationTypeList) ? d.locationTypeList : []);
 
-  function applyOptionsToUi() {
-    renderSelect("rptBranch", state.options.branchList, true);
-    renderSelect("rptIncidentLocation", state.options.incidentLocationList, true);
+  return {
+    branchList: Array.isArray(d.branchList) ? d.branchList : [],
+    reportTypeList: Array.isArray(d.reportTypeList) ? d.reportTypeList : [],
+    urgencyList: Array.isArray(d.urgencyList) ? d.urgencyList : [],
+    notifyToList: Array.isArray(d.notifyToList) ? d.notifyToList : [],
+    incidentLocationList: incidentList,
+    emailList: Array.isArray(d.emailList) ? d.emailList : []
+  };
+}
 
-    renderOptionMatrix("rptReportTypes", "rptReportTypes", state.options.reportTypeList, []);
-    renderOptionMatrix("rptUrgencyTypes", "rptUrgencyTypes", state.options.urgencyList, []);
-    renderOptionMatrix("rptNotifyTo", "rptNotifyTo", state.options.notifyToList, []);
+ function applyOptionsToUi() {
+  renderSelect("rptBranch", state.options.branchList, true);
+  renderSelect("rptIncidentLocation", state.options.incidentLocationList, true);
 
-    renderEmailSelector();
+  renderOptionMatrix("rptReportTypes", "rptReportTypes", state.options.reportTypeList, []);
+  renderOptionMatrix("rptUrgencyTypes", "rptUrgencyTypes", state.options.urgencyList, []);
+  renderOptionMatrix("rptNotifyTo", "rptNotifyTo", state.options.notifyToList, []);
 
-    bindOtherSelect("rptBranch", "rptBranchOtherWrap", "rptBranchOther");
-    bindOtherSelect("rptIncidentLocation", "rptIncidentLocationOtherWrap", "rptIncidentLocationOther");
+  renderEmailSelector();
 
-    fillDefaultsAfterLogin();
-  }
+  bindOtherSelect("rptBranch", "rptBranchOtherWrap", "rptBranchOther");
+  bindOtherSelect("rptIncidentLocation", "rptIncidentLocationOtherWrap", "rptIncidentLocationOther");
+
+  fillDefaultsAfterLogin();
+}
 
   async function ensureReady() {
-    if (state.ready) return true;
-    if (state.loading) return false;
+  if (state.ready) return true;
+  if (state.loading) return false;
 
-    state.loading = true;
+  state.loading = true;
+  try {
+    setRefYear();
+
+    const res = await fetch(apiUrl("/report500/options"), {
+      method: "GET"
+    });
+    const text = await res.text();
+
+    let json = {};
     try {
-      setRefYear();
+      json = JSON.parse(text);
+    } catch (_) {}
 
-      const res = await fetch(apiUrl("/report500/options"), {
-        method: "GET",
-        cache: "no-store"
-      });
-      const text = await res.text();
-
-      let json = {};
-      try {
-        json = JSON.parse(text);
-      } catch (_) {}
-
-      if (!res.ok || !json.ok) {
-        throw new Error(json?.error || `โหลดตัวเลือก Report500 ไม่สำเร็จ (HTTP ${res.status})`);
-      }
-
-      state.options = normalizeOptionsResponse(json);
-      applyOptionsToUi();
-
-      if (!$("rptPersonList")?.children.length) {
-        appendRow("rptPersonList", createPersonRow());
-      }
-
-      bindRepeatButtons();
-      bindTopButtons();
-
-      state.ready = true;
-      return true;
-    } finally {
-      state.loading = false;
+    if (!res.ok || !json.ok) {
+      throw new Error(json?.error || `โหลดตัวเลือก Report500 ไม่สำเร็จ (HTTP ${res.status})`);
     }
+
+    state.options = normalizeOptionsResponse(json);
+    applyOptionsToUi();
+
+    if (!$("rptPersonList")?.children.length) {
+      appendRow("rptPersonList", createPersonRow());
+    }
+    if (!$("rptImageList")?.children.length) {
+      appendRow("rptImageList", createImageRow());
+    }
+
+    bindRepeatButtons();
+    bindTopButtons();
+
+    state.ready = true;
+    return true;
+  } finally {
+    state.loading = false;
   }
+}
 
   window.Report500UI = {
     ensureReady,
