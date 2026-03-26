@@ -10,22 +10,30 @@
   <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-  <link rel="stylesheet" href="./style.css">
+  <link rel="stylesheet" href="./style.css?v=report500fix3">
 </head>
 <body>
   <header class="topbar">
-    <div class="brand">
-      <div class="brandLogo">xx</div>
-      <div class="brandText">
-        <div class="brandTitle">S&LP Smart Form</div>
-        <div class="brandSub">Error_BOL และ Report500</div>
+    <div class="topbarLeft">
+      <div class="brandInline">
+        <img
+          class="logo"
+          src="https://lh5.googleusercontent.com/d/1758AOZ5E3JbnzwrFA4u2kH8nZUPrr8iP"
+          alt="S&LP Logo"
+          loading="eager"
+          referrerpolicy="no-referrer"
+        />
+        <div class="brandTextInline">
+          <div class="title">S&LP Smart Form</div>
+          <div class="subtitle">Error_BOL และ Report500</div>
+        </div>
       </div>
     </div>
 
     <div id="modeTabs" class="tabsInline hidden">
-  <button id="tabErrorBol" class="tab active" type="button">Error_BOL</button>
-  <button id="tabUnder500" class="tab" type="button">Report500</button>
-</div>
+      <button id="tabErrorBol" class="tab active" type="button">Error_BOL</button>
+      <button id="tabUnder500" class="tab" type="button">Report500</button>
+    </div>
   </header>
 
   <main class="pageWrap">
@@ -33,6 +41,16 @@
     <!-- LOGIN -->
     <section id="loginCard" class="card loginCard">
       <div class="loginHero">
+        <div class="loginHeroLogoWrap">
+          <img
+            class="loginHeroLogo"
+            src="https://lh5.googleusercontent.com/d/1758AOZ5E3JbnzwrFA4u2kH8nZUPrr8iP"
+            alt="S&LP Logo"
+            loading="eager"
+            referrerpolicy="no-referrer"
+          />
+        </div>
+
         <div class="loginBadge">SMART DC</div>
         <h1>เข้าสู่ระบบ</h1>
         <p>ใช้รหัสผ่านชุดเดียวกันสำหรับ Error_BOL และ Report500</p>
@@ -69,38 +87,37 @@
             </div>
           </div>
 
-     
-    <div class="field">
-      <label for="labelCid">Label CID</label>
-      <input id="labelCid" placeholder="กรอก Label CID">
-    </div>
+          <div class="field">
+            <label for="labelCid">Label CID</label>
+            <input id="labelCid" placeholder="กรอก Label CID">
+          </div>
 
-    <div class="field">
-      <label for="item">Item</label>
-      <input id="item" placeholder="กรอกหรือสแกน Item">
-      <div id="itemLookupHint" class="fieldHint"></div>
-    </div>
+          <div class="field">
+            <label for="item">Item</label>
+            <input id="item" placeholder="กรอกหรือสแกน Item">
+            <div id="itemLookupHint" class="fieldHint"></div>
+          </div>
 
-    <div class="field fieldSpan2">
-      <label for="itemDisplay">รายการสินค้า</label>
-      <input id="itemDisplay" placeholder="ระบบเติมอัตโนมัติ" readonly>
-    </div>
+          <div class="field fieldSpan2">
+            <label for="itemDisplay">รายการสินค้า</label>
+            <input id="itemDisplay" placeholder="ระบบเติมอัตโนมัติ" readonly>
+          </div>
 
-    <div class="field">
-      <label for="errorCaseQty">จำนวนเคส</label>
-      <input id="errorCaseQty" placeholder="จำนวนเคส">
-    </div>
+          <div class="field">
+            <label for="errorCaseQty">จำนวนเคส</label>
+            <input id="errorCaseQty" placeholder="จำนวนเคส">
+          </div>
 
-    <div class="field fieldSpan2">
-      <label for="errorDescription">รายละเอียดสาเหตุ</label>
-      <textarea
-        id="errorDescription"
-        rows="4"
-        placeholder="กรอกรายละเอียดเพิ่มเติมของสาเหตุ / เหตุการณ์"
-      ></textarea>
-    </div>
-  </div>
-</div>
+          <div class="field fieldSpan2">
+            <label for="errorDescription">รายละเอียดสาเหตุ</label>
+            <textarea
+              id="errorDescription"
+              rows="4"
+              placeholder="กรอกรายละเอียดเพิ่มเติมของสาเหตุ / เหตุการณ์"
+            ></textarea>
+          </div>
+        </div>
+      </div>
 
       <div class="sectionTitle">
         <span class="dot"></span>
@@ -132,10 +149,11 @@
             <select id="workAgeMonth"></select>
           </div>
 
-         <div class="field">
-  <label for="nationality">สัญชาติ</label>
-  <select id="nationality"></select>
-</div>
+          <div class="field">
+            <label for="nationality">สัญชาติ</label>
+            <select id="nationality"></select>
+          </div>
+
           <div class="field">
             <label for="shift">กะ</label>
             <select id="shift"></select>
@@ -349,41 +367,41 @@
 
       <div class="panel rptPanel">
         <div class="field">
-          <label for="rptWhatHappen">เหตุที่เกิด (What happen?)</label>
-          <textarea id="rptWhatHappen" rows="6" placeholder="อธิบายเหตุการณ์ที่เกิดขึ้น"></textarea>
+          <label for="rptWhatHappen">What happened</label>
+          <textarea id="rptWhatHappen" rows="5" placeholder="อธิบายเหตุการณ์ที่เกิดขึ้น"></textarea>
         </div>
 
         <div class="field">
-          <label for="rptOffenderStatement">คำให้การของผู้กระทำผิด</label>
-          <textarea id="rptOffenderStatement" rows="5" placeholder="กรอกรายละเอียดคำให้การ"></textarea>
+          <label for="rptOffenderStatement">คำชี้แจงของผู้กระทำ / ผู้เกี่ยวข้อง</label>
+          <textarea id="rptOffenderStatement" rows="5" placeholder="ระบุคำชี้แจง"></textarea>
         </div>
 
         <div class="field">
-          <label for="rptSummaryText">สรุปจากคำให้การและพยานหลักฐาน</label>
-          <textarea id="rptSummaryText" rows="5" placeholder="สรุปเหตุการณ์"></textarea>
+          <label for="rptSummaryText">สรุปเหตุการณ์</label>
+          <textarea id="rptSummaryText" rows="5" placeholder="สรุปเหตุการณ์โดยย่อ"></textarea>
         </div>
       </div>
 
       <div class="sectionTitle rptTitle">
         <span class="dot rptDot"></span>
         <div>
-          <div class="sectionMain">ผู้เกี่ยวข้อง</div>
-          <div class="sectionSub">เพิ่ม / ลบ แถวได้</div>
+          <div class="sectionMain">ผู้เกี่ยวข้อง / ผู้ได้รับผลกระทบ</div>
+          <div class="sectionSub">เพิ่มหลายรายการได้</div>
         </div>
       </div>
 
       <div class="panel rptPanel">
         <div class="panelActions">
-          <button id="btnRptAddPerson" class="btn secondary" type="button">+ เพิ่มผู้เกี่ยวข้อง</button>
+          <button id="btnRptAddPerson" class="btn secondary" type="button">+ เพิ่มรายการ</button>
         </div>
-        <div id="rptPeopleList" class="rptRepeaterList"></div>
+        <div id="rptPersonList" class="rptRepeaterList"></div>
       </div>
 
       <div class="sectionTitle rptTitle">
         <span class="dot rptDot"></span>
         <div>
           <div class="sectionMain">ความเสียหาย</div>
-          <div class="sectionSub">บันทึกเป็นรายการหลายข้อ</div>
+          <div class="sectionSub">เพิ่มหลายข้อได้</div>
         </div>
       </div>
 
@@ -397,8 +415,8 @@
       <div class="sectionTitle rptTitle">
         <span class="dot rptDot"></span>
         <div>
-          <div class="sectionMain">การดำเนินการ</div>
-          <div class="sectionSub">รองรับผลตรวจ พบ / ไม่พบ / ปริมาณ</div>
+          <div class="sectionMain">การแก้ไขเฉพาะหน้า / Corrective Action</div>
+          <div class="sectionSub">เพิ่มหลายข้อได้</div>
         </div>
       </div>
 
@@ -412,7 +430,7 @@
       <div class="sectionTitle rptTitle">
         <span class="dot rptDot"></span>
         <div>
-          <div class="sectionMain">หลักฐานที่พบ / ประกอบ</div>
+          <div class="sectionMain">หลักฐาน / พยาน / เอกสารอ้างอิง</div>
           <div class="sectionSub">เพิ่มหลายข้อได้</div>
         </div>
       </div>
@@ -427,7 +445,7 @@
       <div class="sectionTitle rptTitle">
         <span class="dot rptDot"></span>
         <div>
-          <div class="sectionMain">สาเหตุของเหตุการณ์</div>
+          <div class="sectionMain">สาเหตุ</div>
           <div class="sectionSub">เพิ่มหลายข้อได้</div>
         </div>
       </div>
@@ -442,7 +460,7 @@
       <div class="sectionTitle rptTitle">
         <span class="dot rptDot"></span>
         <div>
-          <div class="sectionMain">การป้องกันเกิดเหตุซ้ำ / เสนอแนะ</div>
+          <div class="sectionMain">แนวทางป้องกัน</div>
           <div class="sectionSub">เพิ่มหลายข้อได้</div>
         </div>
       </div>
@@ -544,9 +562,7 @@
     </section>
   </main>
 
-  <link rel="stylesheet" href="./style.css?v=report500fix2">
-
-<script src="./report500.js?v=report500fix2"></script>
-<script src="./app.js?v=report500fix2"></script>
+  <script src="./report500.js?v=report500fix3"></script>
+  <script src="./app.js?v=report500fix3"></script>
 </body>
 </html>
