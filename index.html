@@ -20,18 +20,15 @@
   <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-  <link rel="stylesheet" href="./style.css?v=restore-errorbol-layout-rpt500-v1">
+  <link rel="stylesheet" href="./style.css?v=errorbol-layout-restore-rpt500-v2">
 </head>
+
 <body>
 
 <header class="topbar">
   <div class="topbarLeft">
     <div class="brand brandInline">
-      <img
-        class="logo"
-        src="https://lh5.googleusercontent.com/d/1758AOZ5E3JbnzwrFA4u2kH8nZUPrr8iP"
-        alt="logo"
-      >
+      <img class="logo" src="https://lh5.googleusercontent.com/d/1758AOZ5E3JbnzwrFA4u2kH8nZUPrr8iP" alt="logo">
       <div class="brandText brandTextInline">
         <div class="title">ระบบบันทึกข้อมูล S&amp;LP</div>
         <div class="subtitle">ฟอร์ม Error_BOL / Report500</div>
@@ -39,7 +36,7 @@
     </div>
   </div>
 
-  <nav id="modeTabs" class="tabs tabsInline hidden">
+  <nav class="tabs tabsInline">
     <button id="tabErrorBol" class="tab active" type="button">Error</button>
     <button id="tabUnder500" class="tab" type="button">Report500</button>
   </nav>
@@ -51,7 +48,7 @@
   <section id="loginCard" class="card loginCardPro">
     <div class="loginHero">
       <div class="loginHeroText">
-        <div style="display:flex;justify-content:center;margin-bottom:10px;">
+        <div style="display:flex;justify-content:center;margin-bottom:12px;">
           <img
             src="https://lh5.googleusercontent.com/d/1758AOZ5E3JbnzwrFA4u2kH8nZUPrr8iP"
             alt="S&LP Logo"
@@ -59,7 +56,7 @@
           >
         </div>
         <h1 class="loginTitle">ระบบบันทึกข้อมูล S&amp;LP</h1>
-        <div class="loginSubtitle">เข้าสู่ระบบเพื่อใช้งานแบบฟอร์ม Error_BOL และ Report500</div>
+        <div class="loginSubtitle">เข้าสู่ระบบเพื่อใช้งานแบบฟอร์ม</div>
       </div>
     </div>
 
@@ -167,7 +164,7 @@
           <input id="errorReasonOther" placeholder="พิมพ์สาเหตุเพิ่มเติม" autocomplete="off">
         </div>
 
-        <div class="field fieldItemFull">
+        <div class="field">
           <label for="item">Item</label>
           <input id="item" inputmode="numeric" placeholder="กรอกตัวเลข" autocomplete="off">
           <div id="itemLookupHint" class="hint tiny">เมื่อกรอก Item ระบบจะค้นหาชื่อสินค้าให้อัตโนมัติ</div>
@@ -373,7 +370,7 @@
           <h2>ฟอร์ม Report500</h2>
           <div class="pill primary userPillInline">ผู้ใช้งาน: <span id="rptUserName">-</span></div>
         </div>
-        <div class="hint">แบบฟอร์มรายงานเหตุการณ์ แยกส่วนจาก Error_BOL อย่างชัดเจน</div>
+        <div class="hint">แบบฟอร์มรายงานเหตุการณ์ แยกจาก Error_BOL ชัดเจน</div>
       </div>
     </div>
 
@@ -392,7 +389,7 @@
           <div class="refRow">
             <input id="rptRefNo" inputmode="numeric" placeholder="เลข Ref" autocomplete="off">
             <div class="refDash">-</div>
-            <input id="rptRefYear" type="text" readonly tabindex="-1">
+            <input id="rptRefYear" type="text" readonly tabindex="-1" aria-label="ปี พ.ศ.">
           </div>
         </div>
 
@@ -692,7 +689,7 @@
 
 </main>
 
-<script src="./report500.js?v=restore-errorbol-layout-rpt500-v1"></script>
-<script src="./app.js?v=restore-errorbol-layout-rpt500-v1"></script>
+<script src="./report500.js?v=errorbol-layout-restore-rpt500-v2"></script>
+<script src="./app.js?v=errorbol-layout-restore-rpt500-v2"></script>
 </body>
 </html>
