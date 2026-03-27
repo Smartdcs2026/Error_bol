@@ -3,43 +3,28 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>ฟอร์มบันทึก Error_BOL / Report500 - S&amp;LP</title>
-
-  <link rel="manifest" href="./manifest.webmanifest.json">
-
-  <link rel="icon" type="image/png" sizes="16x16" href="./assets/favicon-16.png">
-  <link rel="icon" type="image/png" sizes="32x32" href="./assets/favicon-32.png">
-  <link rel="icon" type="image/png" sizes="192x192" href="./assets/icon-192.png">
-  <link rel="icon" type="image/png" sizes="512x512" href="./assets/icon-512.png">
-  <link rel="apple-touch-icon" href="./assets/icon-192.png">
-
-  <meta name="theme-color" content="#0f172a">
+  <title>ฟอร์มบันทึก Error_BOL / Report500 - S&LP</title>
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-  <link rel="stylesheet" href="./style.css?v=layout-only-restore-v3">
+  <link rel="stylesheet" href="./style.css?v=report500fix3">
 </head>
 <body>
-
   <header class="topbar">
-    <div class="topbarLeft">
-      <div class="brand brandInline">
-        <div class="brandLogo">
-          <img
-            src="https://lh5.googleusercontent.com/d/1758AOZ5E3JbnzwrFA4u2kH8nZUPrr8iP"
-            alt="S&LP Logo"
-            loading="eager"
-            referrerpolicy="no-referrer"
-            style="width:100%;height:100%;object-fit:contain;border-radius:inherit;"
-          />
-        </div>
-        <div class="brandText brandTextInline">
-          <div class="brandTitle title">S&amp;LP Smart Form</div>
-          <div class="brandSub subtitle">Error_BOL และ Report500</div>
-        </div>
+    <div class="brand">
+      <img
+        class="brandLogoImg"
+        src="https://lh5.googleusercontent.com/d/1758AOZ5E3JbnzwrFA4u2kH8nZUPrr8iP"
+        alt="S&LP Logo"
+        loading="eager"
+        referrerpolicy="no-referrer"
+      />
+      <div class="brandText">
+        <div class="brandTitle">S&LP Smart Form</div>
+        <div class="brandSub">Error_BOL และ Report500</div>
       </div>
     </div>
 
@@ -49,313 +34,222 @@
     </div>
   </header>
 
-  <main class="pageWrap container">
+  <main class="pageWrap">
 
     <!-- LOGIN -->
-    <section id="loginCard" class="card loginCard loginCardPro">
+    <section id="loginCard" class="card loginCard">
       <div class="loginHero">
-        <div style="display:flex;justify-content:center;margin-bottom:12px;">
-          <img
-            src="https://lh5.googleusercontent.com/d/1758AOZ5E3JbnzwrFA4u2kH8nZUPrr8iP"
-            alt="S&LP Logo"
-            loading="eager"
-            referrerpolicy="no-referrer"
-            style="width:min(76px,22vw);height:auto;object-fit:contain;border-radius:14px;background:#fff;padding:4px;border:1px solid #d9e4f1;box-shadow:0 4px 12px rgba(15,23,42,.06);"
-          />
-        </div>
+        <img
+          class="loginHeroLogo"
+          src="https://lh5.googleusercontent.com/d/1758AOZ5E3JbnzwrFA4u2kH8nZUPrr8iP"
+          alt="S&LP Logo"
+          loading="eager"
+          referrerpolicy="no-referrer"
+        />
         <div class="loginBadge">SMART DC</div>
-        <h1 class="loginTitle">เข้าสู่ระบบ</h1>
-        <p class="loginSubtitle">ใช้รหัสผ่านชุดเดียวกันสำหรับ Error_BOL และ Report500</p>
+        <h1>เข้าสู่ระบบ</h1>
+        <p>ใช้รหัสผ่านชุดเดียวกันสำหรับ Error_BOL และ Report500</p>
       </div>
 
-      <div class="loginForm loginShell">
-        <div class="field loginField">
+      <div class="loginForm">
+        <div class="field">
           <label for="loginPass">รหัสผ่าน</label>
-          <input id="loginPass" type="password" placeholder="กรอกรหัสผ่านเข้าสู่ระบบ" autocomplete="current-password">
+          <input id="loginPass" type="password" placeholder="กรอกรหัสผ่านเข้าสู่ระบบ">
         </div>
 
-        <div class="loginAction">
-          <button id="btnLogin" class="btn primary wide loginBtn" type="button">เข้าสู่ระบบ</button>
-        </div>
-
-        <div id="loginMsg" class="loginMsg msg loginMsgBox"></div>
+        <button id="btnLogin" class="btn primary wide" type="button">เข้าสู่ระบบ</button>
+        <div id="loginMsg" class="loginMsg"></div>
       </div>
     </section>
 
     <!-- ERROR_BOL -->
     <section id="formCard" class="card hidden">
-      <div class="cardHead cardHeadInline">
-        <div class="cardHeadMain">
-          <div class="cardHeadTitleRow">
-            <h2>ฟอร์ม Error_BOL</h2>
-            <div class="pill primary userPillInline" id="userPill">ผู้ใช้งาน: -</div>
-          </div>
-          <div class="hint">กรอกข้อมูลให้ครบถ้วน ก่อนกด “บันทึก”</div>
-        </div>
-      </div>
-
-      <!-- ข้อมูลหลัก -->
       <div class="sectionTitle">
         <span class="dot"></span>
         <div>
-          <div class="sectionMain">ข้อมูลหลัก</div>
-          <div class="sectionSub">Ref:No. / ผู้บันทึก</div>
-        </div>
-      </div>
-
-      <div class="panel">
-        <div class="gridMain">
-          <div class="field fieldSpan2">
-            <label for="refRunning">หมายเลขหนังสือออก (Ref:No.)</label>
-            <div class="refRow refInputWrap">
-              <input
-                id="refRunning"
-                inputmode="numeric"
-                placeholder="เลข Ref"
-                autocomplete="off"
-                maxlength="10"
-              >
-              <div class="refDash">-</div>
-              <input
-                id="refYear"
-                type="text"
-                readonly
-                tabindex="-1"
-                aria-label="ปี พ.ศ."
-                class="refSuffix"
-              >
-            </div>
-            <div class="hint tiny">กรอกเฉพาะเลข Ref ระบบจะเติมปี พ.ศ. ให้อัตโนมัติ</div>
-          </div>
-
-          <div class="field fieldSpan2">
-            <label for="lps">ชื่อ LPS</label>
-            <input id="lps" readonly>
-            <div class="hint tiny">ระบบไม่อนุญาตให้แก้ไข</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- รายละเอียดความผิดพลาด -->
-      <div class="sectionTitle">
-        <span class="dot"></span>
-        <div>
-          <div class="sectionMain">รายละเอียดความผิดพลาด</div>
-          <div class="sectionSub">Label / สาเหตุ / Item / จำนวน / รายละเอียดเหตุการณ์</div>
+          <div class="sectionMain">Error_BOL</div>
+          <div class="sectionSub">แบบฟอร์มบันทึกข้อมูลสินค้าผิดพลาด</div>
         </div>
       </div>
 
       <div class="panel">
         <div class="gridCompact">
           <div class="field">
-            <label for="labelCid">Label CID</label>
-            <input id="labelCid" inputmode="numeric" placeholder="กรอกตัวเลข" autocomplete="off">
+            <label for="refNo">Ref No.</label>
+            <div class="refInputWrap">
+              <input id="refNo" placeholder="เลขรัน เช่น 001">
+              <span id="refYear" class="refSuffix">-</span>
+            </div>
           </div>
 
           <div class="field">
-            <label for="errorReason">สาเหตุ Error</label>
-            <select id="errorReason"></select>
-          </div>
-
-          <div class="field hidden" id="wrapErrorOther">
-            <label for="errorReasonOther">ระบุสาเหตุ (อื่นๆ)</label>
-            <input id="errorReasonOther" placeholder="พิมพ์สาเหตุเพิ่มเติม" autocomplete="off">
+            <label for="labelCid">Label CID</label>
+            <input id="labelCid" placeholder="กรอก Label CID">
           </div>
 
           <div class="field">
             <label for="item">Item</label>
-            <input id="item" inputmode="numeric" placeholder="กรอกตัวเลข" autocomplete="off">
-            <div id="itemLookupHint" class="hint tiny fieldHint"></div>
+            <input id="item" placeholder="กรอกหรือสแกน Item">
+            <div id="itemLookupHint" class="fieldHint"></div>
+          </div>
+
+          <div class="field fieldSpan2">
+            <label for="itemDisplay">รายการสินค้า</label>
+            <input id="itemDisplay" placeholder="ระบบเติมอัตโนมัติ" readonly>
           </div>
 
           <div class="field">
-            <label for="errorCaseQty">จำนวน ErrorCase</label>
-            <input id="errorCaseQty" inputmode="numeric" placeholder="กรอกตัวเลข" autocomplete="off">
+            <label for="errorCaseQty">จำนวนเคส</label>
+            <input id="errorCaseQty" placeholder="จำนวนเคส">
           </div>
-        </div>
 
-        <div id="itemLookupRow" class="itemLookupRow hidden">
-          <div id="itemLookupBox" class="itemLookupBox">
-            <div class="itemLookupLabel">รายละเอียดสินค้า</div>
-            <div id="itemLookupText" class="itemLookupText">-</div>
+          <div class="field fieldSpan2">
+            <label for="errorDescription">รายละเอียดสาเหตุ</label>
+            <textarea
+              id="errorDescription"
+              rows="4"
+              placeholder="กรอกรายละเอียดเพิ่มเติมของสาเหตุ / เหตุการณ์"
+            ></textarea>
           </div>
-        </div>
-
-        <div class="field fieldBlock fieldSpan2">
-          <label for="errorDescription">รายละเอียด / คำอธิบายสาเหตุ</label>
-          <textarea id="errorDescription" rows="4" placeholder="อธิบายสาเหตุการเบิกสินค้า Error / เหตุการณ์ที่เกิดขึ้น / การแก้ไขเบื้องต้น"></textarea>
-          <div class="hint tiny">ข้อมูลนี้จะถูกบันทึกลงชีท และแสดงใน PDF</div>
         </div>
       </div>
 
-      <!-- ข้อมูลพนักงาน -->
       <div class="sectionTitle">
         <span class="dot"></span>
         <div>
           <div class="sectionMain">ข้อมูลพนักงาน</div>
-          <div class="sectionSub">ชื่อ / รหัส / อายุงาน / สัญชาติ / วันที่ / กะ</div>
+          <div class="sectionSub">ข้อมูลผู้เกี่ยวข้องกับเหตุการณ์</div>
         </div>
       </div>
 
       <div class="panel">
-        <div class="gridEmployee">
+        <div class="gridCompact">
           <div class="field">
-            <label for="employeeName">ชื่อ-สกุลพนักงาน</label>
-            <input id="employeeName" placeholder="ชื่อ-สกุล" autocomplete="off">
+            <label for="employeeName">ชื่อพนักงาน</label>
+            <input id="employeeName" placeholder="ชื่อ-นามสกุล">
           </div>
 
           <div class="field">
             <label for="employeeCode">รหัสพนักงาน</label>
-            <input id="employeeCode" placeholder="เช่น 123456" autocomplete="off">
+            <input id="employeeCode" placeholder="รหัสพนักงาน">
           </div>
 
           <div class="field">
-            <label for="workAgeYear">อายุงาน (ปี)</label>
+            <label for="workAgeYear">อายุงาน(ปี)</label>
             <select id="workAgeYear"></select>
           </div>
 
           <div class="field">
-            <label for="workAgeMonth">อายุงาน (เดือน)</label>
+            <label for="workAgeMonth">อายุงาน(เดือน)</label>
             <select id="workAgeMonth"></select>
           </div>
 
           <div class="field">
             <label for="nationality">สัญชาติ</label>
-            <select id="nationality">
-              <option value="">-- เลือก --</option>
-            </select>
-          </div>
-
-          <div class="field">
-            <label for="errorDate">วันที่เบิกสินค้า Error</label>
-            <input id="errorDate" type="date">
+            <select id="nationality"></select>
           </div>
 
           <div class="field">
             <label for="shift">กะ</label>
-            <select id="shift">
-              <option value="">-- เลือก --</option>
-              <option>A</option>
-              <option>B</option>
-              <option>C</option>
-              <option>DH</option>
-              <option>NH</option>
-            </select>
+            <select id="shift"></select>
           </div>
-        </div>
-      </div>
 
-      <!-- ผู้เกี่ยวข้อง -->
-      <div class="sectionTitle">
-        <span class="dot"></span>
-        <div>
-          <div class="sectionMain">ผู้เกี่ยวข้อง</div>
-          <div class="sectionSub">OSM / OTM / ล่าม / AUDIT</div>
-        </div>
-      </div>
+          <div class="field">
+            <label for="errorDate">วันที่เกิดเหตุ</label>
+            <input id="errorDate" type="date">
+          </div>
 
-      <div class="panel">
-        <div class="gridCompact">
+          <div class="field">
+            <label for="errorReason">ประเภทความผิดพลาด</label>
+            <select id="errorReason"></select>
+          </div>
+
+          <div id="errorReasonOtherWrap" class="field hidden">
+            <label for="errorReasonOther">ระบุอื่นๆ</label>
+            <input id="errorReasonOther" placeholder="กรอกประเภทความผิดพลาดเพิ่มเติม">
+          </div>
+
           <div class="field">
             <label for="osm">OSM</label>
             <select id="osm"></select>
           </div>
 
           <div class="field">
-            <label for="otm">OTM (หัวหน้างาน)</label>
+            <label for="otm">OTM</label>
             <select id="otm"></select>
           </div>
 
           <div class="field">
-            <label for="interpreterName">ชื่อ-สกุลล่ามแปลภาษา</label>
-            <input id="interpreterName" placeholder="ชื่อ-สกุลล่าม" autocomplete="off">
-            <div class="hint tiny">กรณีมีการสื่อสารผ่านล่าม</div>
+            <label for="auditName">AUDIT</label>
+            <select id="auditName"></select>
           </div>
 
           <div class="field">
-            <label for="auditName">พนง. AUDIT</label>
-            <select id="auditName"></select>
+            <label for="interpreterName">ชื่อล่าม</label>
+            <input id="interpreterName" placeholder="ถ้ามี">
           </div>
         </div>
       </div>
 
-      <!-- ข้อเท็จจริงที่พนักงานยืนยัน -->
       <div class="sectionTitle">
         <span class="dot"></span>
         <div>
-          <div class="sectionMain">ข้อเท็จจริงที่พนักงานยืนยัน</div>
-          <div class="sectionSub">เลือกได้หลายข้อ และนำไปใช้สร้างคำยืนยันในเอกสาร</div>
+          <div class="sectionMain">สาเหตุและคำยืนยัน</div>
+          <div class="sectionSub">รายละเอียดสาเหตุเพิ่มเติม</div>
         </div>
       </div>
 
       <div class="panel">
-        <div id="confirmCauseSelector"></div>
+        <div class="field">
+          <label for="confirmCauseSelector">สาเหตุของความผิดพลาด</label>
+          <div id="confirmCauseSelector" class="chipGroup"></div>
+        </div>
 
-        <div class="field fieldBlock hidden" id="wrapConfirmCauseOther">
-          <label for="confirmCauseOther">ระบุรายละเอียดเพิ่มเติม</label>
-          <textarea id="confirmCauseOther" rows="3" placeholder="กรอกข้อความเพิ่มเติมสำหรับสาเหตุอื่นๆ"></textarea>
+        <div class="field">
+          <label for="confirmCauseOther">สาเหตุเพิ่มเติมอื่นๆ</label>
+          <textarea id="confirmCauseOther" rows="3" placeholder="กรอกสาเหตุเพิ่มเติม"></textarea>
+        </div>
+
+        <div class="field">
+          <label for="employeeConfirmText">คำยืนยันพนักงาน</label>
+          <textarea id="employeeConfirmText" rows="5" readonly></textarea>
         </div>
       </div>
 
-      <!-- คำยืนยันพนักงาน -->
       <div class="sectionTitle">
         <span class="dot"></span>
         <div>
-          <div class="sectionMain">คำยืนยันของพนักงาน</div>
-          <div class="sectionSub">ระบบจะสร้างข้อความอัตโนมัติตามข้อมูลที่กรอก</div>
+          <div class="sectionMain">รูปภาพแนบ</div>
+          <div class="sectionSub">แนบรูปเพิ่มเติมได้หลายรายการ</div>
         </div>
       </div>
 
       <div class="panel">
-        <div class="field fieldSpan2">
-          <label for="employeeConfirmPreview">ตัวอย่างคำยืนยันพนักงาน</label>
-          <textarea id="employeeConfirmPreview" rows="7" readonly></textarea>
-          <div class="hint tiny">ข้อความนี้จะถูกนำไปใช้ใน PDF และใช้ประกอบการยืนยันข้อมูล</div>
+        <div id="uploadList" class="uploadList"></div>
+        <div class="panelActions">
+          <button id="btnAddImage" class="btn secondary" type="button">+ เพิ่มรูปภาพ</button>
         </div>
       </div>
 
-      <!-- อัปโหลดภาพ -->
-      <div class="sectionTitle">
-        <span class="dot"></span>
-        <div>
-          <div class="sectionMain">อัปโหลดภาพ</div>
-          <div class="sectionSub">เริ่มต้น 2 ช่อง และสามารถเพิ่มภาพได้</div>
-        </div>
-      </div>
-
-      <div class="panel">
-        <div class="uploadTitle">
-          <div class="hint">เริ่มต้น 2 ช่อง (บัตรพนง., พนักงาน) และสามารถกด “เพิ่มภาพ” เพื่อเพิ่มได้</div>
-          <button id="btnAddImage" class="btn ghost btnSmall" type="button">+ เพิ่มภาพ</button>
-        </div>
-
-        <div id="uploadGrid" class="uploadGrid"></div>
-      </div>
-
-      <!-- ผู้รับอีเมล -->
       <div class="sectionTitle">
         <span class="dot"></span>
         <div>
           <div class="sectionMain">ผู้รับอีเมล</div>
-          <div class="sectionSub">เลือกได้หลายอีเมล ระบบจะส่งไฟล์ PDF หลังบันทึกสำเร็จ</div>
+          <div class="sectionSub">เลือกผู้รับไฟล์รายงาน</div>
         </div>
       </div>
 
-      <div class="emailPanel">
-        <div class="emailToolbar">
-          <div id="emailSelectedText" class="emailSelectedText">ยังไม่ได้เลือกอีเมล</div>
-          <div class="emailToolbarBtns">
-            <button id="btnEmailCheckAll" class="btn ghost btnMini" type="button">เลือกทั้งหมด</button>
-            <button id="btnEmailClearAll" class="btn ghost btnMini" type="button">ล้างการเลือก</button>
-          </div>
+      <div class="panel">
+        <div class="panelActions">
+          <button id="btnEmailCheckAll" class="btn ghost" type="button">เลือกทั้งหมด</button>
+          <button id="btnEmailClearAll" class="btn ghost" type="button">ล้างทั้งหมด</button>
         </div>
-
-        <div id="emailSelector" class="emailSelector"></div>
+        <div id="emailSelector" class="checkList"></div>
       </div>
 
       <div class="actions">
         <button id="btnPreview" class="btn secondary" type="button">ดูสรุป</button>
-        <button id="btnSubmit" class="btn primary" type="button">บันทึก</button>
+        <button id="btnSubmit" class="btn primary" type="button">บันทึกและสร้าง PDF</button>
       </div>
     </section>
 
@@ -410,12 +304,12 @@
           <div id="rptReportTypes" class="optionMatrix"></div>
         </div>
 
-        <div class="field fieldBlock">
+        <div class="field">
           <label>ระดับความเร่งด่วน</label>
           <div id="rptUrgencyTypes" class="optionMatrix"></div>
         </div>
 
-        <div class="field fieldBlock">
+        <div class="field">
           <label>ผู้รับทราบ</label>
           <div id="rptNotifyTo" class="optionMatrix"></div>
         </div>
@@ -425,7 +319,7 @@
         <span class="dot rptDot"></span>
         <div>
           <div class="sectionMain">วันเวลาและสถานที่เกิดเหตุ</div>
-          <div class="sectionSub">จัดวางง่าย อ่านง่ายบนมือถือ</div>
+          <div class="sectionSub">จัดวางแบบใช้งานง่ายบนมือถือ</div>
         </div>
       </div>
 
@@ -453,7 +347,7 @@
 
           <div class="field fieldSpan2">
             <label for="rptIncidentArea">บริเวณ/จุดเกิดเหตุ</label>
-            <input id="rptIncidentArea" placeholder="เช่น จุดแพ็คสินค้า / ลานโหลด / สำนักงาน">
+            <input id="rptIncidentArea" placeholder="เช่น จุดแพ็คสินค้า, ลานโหลด, สำนักงาน">
           </div>
         </div>
       </div>
@@ -462,7 +356,7 @@
         <span class="dot rptDot"></span>
         <div>
           <div class="sectionMain">รายละเอียดเหตุการณ์</div>
-          <div class="sectionSub">ข้อเท็จจริง คำให้การ และสรุปผล</div>
+          <div class="sectionSub">ช่องข้อความหลักของรายงาน</div>
         </div>
       </div>
 
@@ -472,12 +366,12 @@
           <textarea id="rptWhatHappen" rows="6" placeholder="อธิบายเหตุการณ์ที่เกิดขึ้น"></textarea>
         </div>
 
-        <div class="field fieldBlock">
+        <div class="field">
           <label for="rptOffenderStatement">คำให้การของผู้กระทำผิด</label>
           <textarea id="rptOffenderStatement" rows="5" placeholder="กรอกรายละเอียดคำให้การ"></textarea>
         </div>
 
-        <div class="field fieldBlock">
+        <div class="field">
           <label for="rptSummaryText">สรุปจากคำให้การและพยานหลักฐาน</label>
           <textarea id="rptSummaryText" rows="5" placeholder="สรุปเหตุการณ์"></textarea>
         </div>
@@ -492,9 +386,8 @@
       </div>
 
       <div class="panel rptPanel">
-        <div class="panelActions uploadTitle">
-          <div class="hint">เพิ่มรายชื่อผู้เกี่ยวข้องได้หลายรายการ</div>
-          <button id="btnRptAddPerson" class="btn ghost btnSmall" type="button">+ เพิ่มผู้เกี่ยวข้อง</button>
+        <div class="panelActions">
+          <button id="btnRptAddPerson" class="btn secondary" type="button">+ เพิ่มผู้เกี่ยวข้อง</button>
         </div>
         <div id="rptPersonList" class="rptRepeaterList"></div>
       </div>
@@ -508,9 +401,8 @@
       </div>
 
       <div class="panel rptPanel">
-        <div class="panelActions uploadTitle">
-          <div class="hint">ระบุความเสียหายที่เกิดขึ้น</div>
-          <button class="btn ghost btnSmall rptAddDetailBtn" data-target="damage" type="button">+ เพิ่มรายการ</button>
+        <div class="panelActions">
+          <button class="btn secondary rptAddDetailBtn" data-target="damage" type="button">+ เพิ่มรายการ</button>
         </div>
         <div id="rptDamageList" class="rptRepeaterList"></div>
       </div>
@@ -524,9 +416,8 @@
       </div>
 
       <div class="panel rptPanel">
-        <div class="panelActions uploadTitle">
-          <div class="hint">ระบุการดำเนินการที่เกี่ยวข้อง</div>
-          <button class="btn ghost btnSmall rptAddDetailBtn" data-target="action" type="button">+ เพิ่มรายการ</button>
+        <div class="panelActions">
+          <button class="btn secondary rptAddDetailBtn" data-target="action" type="button">+ เพิ่มรายการ</button>
         </div>
         <div id="rptActionList" class="rptRepeaterList"></div>
       </div>
@@ -540,9 +431,8 @@
       </div>
 
       <div class="panel rptPanel">
-        <div class="panelActions uploadTitle">
-          <div class="hint">ระบุหลักฐานที่พบหรือใช้ประกอบรายงาน</div>
-          <button class="btn ghost btnSmall rptAddDetailBtn" data-target="evidence" type="button">+ เพิ่มรายการ</button>
+        <div class="panelActions">
+          <button class="btn secondary rptAddDetailBtn" data-target="evidence" type="button">+ เพิ่มรายการ</button>
         </div>
         <div id="rptEvidenceList" class="rptRepeaterList"></div>
       </div>
@@ -556,9 +446,8 @@
       </div>
 
       <div class="panel rptPanel">
-        <div class="panelActions uploadTitle">
-          <div class="hint">บันทึกสาเหตุของเหตุการณ์เป็นข้อ ๆ</div>
-          <button class="btn ghost btnSmall rptAddDetailBtn" data-target="cause" type="button">+ เพิ่มรายการ</button>
+        <div class="panelActions">
+          <button class="btn secondary rptAddDetailBtn" data-target="cause" type="button">+ เพิ่มรายการ</button>
         </div>
         <div id="rptCauseList" class="rptRepeaterList"></div>
       </div>
@@ -572,9 +461,8 @@
       </div>
 
       <div class="panel rptPanel">
-        <div class="panelActions uploadTitle">
-          <div class="hint">ระบุแนวทางป้องกันและข้อเสนอแนะ</div>
-          <button class="btn ghost btnSmall rptAddDetailBtn" data-target="prevention" type="button">+ เพิ่มรายการ</button>
+        <div class="panelActions">
+          <button class="btn secondary rptAddDetailBtn" data-target="prevention" type="button">+ เพิ่มรายการ</button>
         </div>
         <div id="rptPreventionList" class="rptRepeaterList"></div>
       </div>
@@ -588,9 +476,8 @@
       </div>
 
       <div class="panel rptPanel">
-        <div class="panelActions uploadTitle">
-          <div class="hint">บันทึกผลที่ได้จากการสอบสวน</div>
-          <button class="btn ghost btnSmall rptAddDetailBtn" data-target="learning" type="button">+ เพิ่มรายการ</button>
+        <div class="panelActions">
+          <button class="btn secondary rptAddDetailBtn" data-target="learning" type="button">+ เพิ่มรายการ</button>
         </div>
         <div id="rptLearningList" class="rptRepeaterList"></div>
       </div>
@@ -604,9 +491,8 @@
       </div>
 
       <div class="panel rptPanel">
-        <div class="panelActions uploadTitle">
-          <div class="hint">เพิ่มรูปประกอบได้หลายรายการ</div>
-          <button id="btnRptAddImage" class="btn ghost btnSmall" type="button">+ เพิ่มรูปภาพ</button>
+        <div class="panelActions">
+          <button id="btnRptAddImage" class="btn secondary" type="button">+ เพิ่มรูปภาพ</button>
         </div>
         <div id="rptImageList" class="rptRepeaterList"></div>
       </div>
@@ -615,7 +501,7 @@
         <span class="dot rptDot"></span>
         <div>
           <div class="sectionMain">ผู้รับอีเมล</div>
-          <div class="sectionSub">เลือกจากระบบและกรอกเพิ่มเติมได้</div>
+          <div class="sectionSub">เลือกจาก Google Sheet และกรอกอีเมลเพิ่มเติมได้</div>
         </div>
       </div>
 
@@ -625,11 +511,15 @@
           <button id="btnRptEmailClearAll" class="btn ghost" type="button">ล้างทั้งหมด</button>
         </div>
 
-        <div id="rptEmailSelector" class="emailSelector"></div>
+        <div id="rptEmailSelector" class="checkList"></div>
 
-        <div class="field fieldBlock" style="margin-top:12px;">
+        <div class="field" style="margin-top:12px;">
           <label for="rptEmailOther">Email อื่นๆ</label>
-          <textarea id="rptEmailOther" rows="3" placeholder="กรอกอีเมลเพิ่มเติมได้หลายรายการ เช่น&#10;test1@email.com, test2@email.com"></textarea>
+          <textarea
+            id="rptEmailOther"
+            rows="3"
+            placeholder="กรอกอีเมลเพิ่มเติมได้หลายรายการ เช่น&#10;test1@email.com, test2@email.com"
+          ></textarea>
         </div>
       </div>
 
@@ -665,10 +555,9 @@
         <button id="btnRptSubmit" class="btn primary rptPrimary" type="button">บันทึกและสร้าง PDF</button>
       </div>
     </section>
-
   </main>
 
-  <script src="./report500.js?v=layout-only-restore-v3"></script>
-  <script src="./app.js?v=layout-only-restore-v3"></script>
+  <script src="./report500.js?v=report500fix3"></script>
+  <script src="./app.js?v=report500fix3"></script>
 </body>
 </html>
