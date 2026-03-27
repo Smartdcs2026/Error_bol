@@ -2216,51 +2216,69 @@
   }
 
   function renderWhereTypeSelections() {
-    const root = $("rptWhereTypeSelections");
-    if (!root) return;
+  const root = $("rptWhereTypeSelections");
+  if (!root) return;
 
-    const list = Array.isArray(state.options?.whereTypeList) ? state.options.whereTypeList : [];
-    if (!list.length) {
-      root.innerHTML = `<div class="emailEmpty">ไม่พบรายการประเภทสถานที่</div>`;
-      return;
-    }
+  const list = Array.isArray(state.options?.whereTypeList) ? state.options.whereTypeList : [];
+  if (!list.length) {
+    root.innerHTML = `<div class="emailEmpty">ไม่พบรายการประเภทสถานที่</div>`;
+    return;
+  }
 
-    root.innerHTML = list.map((item, idx) => {
-      const value = norm(item && item.value);
-      const needSuffix = !!(item && item.needSuffixInput);
+  root.innerHTML = list.map((item, idx) => {
+    const value = norm(item && item.value);
+    const needSuffix = !!(item && item.needSuffixInput);
+    const rowId = `rptWhereType_${idx}_${value.replace(/[^\wก-๙]+/g, "_")}`;
 
-      return `
-        <div class="optionChoice rptWhereTypeRow" data-value="${escapeHtml(value)}" data-need-suffix="${needSuffix ? "1" : "0"}">
+    return `
+      <div class="rptWhereTypeRow" data-value="${escapeHtml(value)}" data-need-suffix="${needSuffix ? "1" : "0"}">
+        <label class="optionChoice" for="${escapeHtml(rowId)}">
           <div class="optionChoiceCard">
-            <input type="checkbox" class="rptWhereTypeChk" value="${escapeHtml(value)}">
+            <input
+              id="${escapeHtml(rowId)}"
+              type="checkbox"
+              class="rptWhereTypeChk"
+              value="${escapeHtml(value)}"
+            >
             <span class="optionChoiceMark"></span>
             <span class="optionChoiceText">${escapeHtml(value)}</span>
           </div>
-          <div class="optionChoiceOther hidden">
-            <input
-              type="text"
-              class="input rptWhereTypeSuffix"
-              placeholder="กรอกข้อมูลต่อท้าย ${escapeHtml(value)}"
-            >
-          </div>
+        </label>
+
+        <div class="optionChoiceOther hidden">
+          <input
+            type="text"
+            class="input rptWhereTypeSuffix"
+            placeholder="กรอกข้อมูลต่อท้าย ${escapeHtml(value)}"
+          >
         </div>
-      `;
-    }).join("");
+      </div>
+    `;
+  }).join("");
 
-    root.querySelectorAll(".rptWhereTypeChk").forEach((chk) => {
-      chk.addEventListener("change", () => {
-        const row = chk.closest(".rptWhereTypeRow");
-        if (!row) return;
-        const needSuffix = row.getAttribute("data-need-suffix") === "1";
-        const wrap = row.querySelector(".optionChoiceOther");
-        const input = row.querySelector(".rptWhereTypeSuffix");
+  root.querySelectorAll(".rptWhereTypeRow").forEach((row) => {
+    const chk = row.querySelector(".rptWhereTypeChk");
+    const card = row.querySelector(".optionChoiceCard");
+    const wrap = row.querySelector(".optionChoiceOther");
+    const input = row.querySelector(".rptWhereTypeSuffix");
+    const needSuffix = row.getAttribute("data-need-suffix") === "1";
 
-        const show = chk.checked && needSuffix;
-        if (wrap) wrap.classList.toggle("hidden", !show);
-        if (!show && input) input.value = "";
-      });
+    const sync = () => {
+      const show = !!chk?.checked && needSuffix;
+      wrap?.classList.toggle("hidden", !show);
+      if (!show && input) input.value = "";
+    };
+
+    chk?.addEventListener("change", sync);
+
+    card?.addEventListener("click", (ev) => {
+      if (ev.target && (ev.target.tagName === "INPUT" || ev.target.tagName === "TEXTAREA")) return;
+      setTimeout(sync, 0);
     });
-  }
+
+    sync();
+  });
+}
 
   function renderEmailSelector() {
     const root = $("rptEmailSelector");
@@ -2705,19 +2723,20 @@
   }
 
   function collectWhereTypes() {
-    const root = $("rptWhereTypeSelections");
-    if (!root) return [];
+  const root = $("rptWhereTypeSelections");
+  if (!root) return [];
 
-    return Array.from(root.querySelectorAll(".rptWhereTypeRow")).map((row) => {
-      const chk = row.querySelector(".rptWhereTypeChk");
-      const suffix = row.querySelector(".rptWhereTypeSuffix");
-      return {
-        value: norm(chk?.value),
-        checked: !!chk?.checked,
-        suffixText: norm(suffix?.value)
-      };
-    }).filter((x) => x.value);
-  }
+  return Array.from(root.querySelectorAll(".rptWhereTypeRow")).map((row) => {
+    const chk = row.querySelector(".rptWhereTypeChk");
+    const suffix = row.querySelector(".rptWhereTypeSuffix");
+
+    return {
+      value: norm(chk?.value),
+      checked: !!chk?.checked,
+      suffixText: !!chk?.checked ? norm(suffix?.value) : ""
+    };
+  }).filter((x) => x.value);
+}
 
   function collectPersons() {
     return Array.from(document.querySelectorAll("#rptPersonList .rptRepeatCard")).map((card, idx) => ({
