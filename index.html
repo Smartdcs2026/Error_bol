@@ -3,28 +3,39 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>ฟอร์มบันทึก Error_BOL / Report500 - S&LP</title>
+  <title>ฟอร์มบันทึก Error_BOL / Report500 - S&amp;LP</title>
+
+  <link rel="icon" type="image/png" sizes="16x16" href="./assets/favicon-16.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="./assets/favicon-32.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="./assets/icon-192.png">
+  <link rel="icon" type="image/png" sizes="512x512" href="./assets/icon-512.png">
+  <link rel="apple-touch-icon" href="./assets/icon-192.png">
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-  <link rel="stylesheet" href="./style.css?v=report500fix3">
+  <link rel="stylesheet" href="./style.css?v=final-index-split-1">
 </head>
 <body>
   <header class="topbar">
-    <div class="brand">
-      <img
-        class="brandLogoImg"
-        src="https://lh5.googleusercontent.com/d/1758AOZ5E3JbnzwrFA4u2kH8nZUPrr8iP"
-        alt="S&LP Logo"
-        loading="eager"
-        referrerpolicy="no-referrer"
-      />
-      <div class="brandText">
-        <div class="brandTitle">S&LP Smart Form</div>
-        <div class="brandSub">Error_BOL และ Report500</div>
+    <div class="topbarLeft">
+      <div class="brandInline">
+        <img
+          class="logo brandLogoImg"
+          src="./assets/icon-192.png"
+          alt="S&amp;LP Logo"
+          loading="eager"
+        >
+        <div class="brandTextInline">
+          <div class="title">S&amp;LP Smart Form</div>
+          <div class="subtitle">Error_BOL และ Report500</div>
+          <div id="topLoginUserWrap" class="topLoginUserWrap hidden">
+            <span class="topLoginUserLabel">ผู้ใช้งาน:</span>
+            <span id="topLoginUserName">-</span>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -34,18 +45,17 @@
     </div>
   </header>
 
-  <main class="pageWrap">
+  <main class="container">
 
     <!-- LOGIN -->
     <section id="loginCard" class="card loginCard">
       <div class="loginHero">
         <img
           class="loginHeroLogo"
-          src="https://lh5.googleusercontent.com/d/1758AOZ5E3JbnzwrFA4u2kH8nZUPrr8iP"
-          alt="S&LP Logo"
+          src="./assets/icon-192.png"
+          alt="S&amp;LP Logo"
           loading="eager"
-          referrerpolicy="no-referrer"
-        />
+        >
         <div class="loginBadge">SMART DC</div>
         <h1>เข้าสู่ระบบ</h1>
         <p>ใช้รหัสผ่านชุดเดียวกันสำหรับ Error_BOL และ Report500</p>
@@ -72,14 +82,21 @@
         </div>
       </div>
 
+      <!-- ส่วนหัวข้อมูลหลัก -->
       <div class="panel">
         <div class="gridCompact">
           <div class="field">
             <label for="refNo">Ref No.</label>
-            <div class="refInputWrap">
-              <input id="refNo" placeholder="เลขรัน เช่น 001">
-              <span id="refYear" class="refSuffix">-</span>
+            <div class="refRow">
+              <input id="refNo" placeholder="เลขรัน เช่น 001" inputmode="numeric">
+              <span class="refDash">/</span>
+              <input id="refYear" readonly>
             </div>
+          </div>
+
+          <div class="field">
+            <label for="lps">ชื่อผู้เข้าใช้งาน</label>
+            <input id="lps" placeholder="ระบบแสดงอัตโนมัติหลังเข้าสู่ระบบ" readonly>
           </div>
 
           <div class="field">
@@ -97,33 +114,19 @@
             <label for="itemDisplay">รายการสินค้า</label>
             <input id="itemDisplay" placeholder="ระบบเติมอัตโนมัติ" readonly>
           </div>
-
-          <div class="field">
-            <label for="errorCaseQty">จำนวนเคส</label>
-            <input id="errorCaseQty" placeholder="จำนวนเคส">
-          </div>
-
-          <div class="field fieldSpan2">
-            <label for="errorDescription">รายละเอียดสาเหตุ</label>
-            <textarea
-              id="errorDescription"
-              rows="4"
-              placeholder="กรอกรายละเอียดเพิ่มเติมของสาเหตุ / เหตุการณ์"
-            ></textarea>
-          </div>
         </div>
       </div>
 
       <div class="sectionTitle">
         <span class="dot"></span>
         <div>
-          <div class="sectionMain">ข้อมูลพนักงาน</div>
+          <div class="sectionMain">ข้อมูลพนักงานและรายละเอียดเหตุ</div>
           <div class="sectionSub">ข้อมูลผู้เกี่ยวข้องกับเหตุการณ์</div>
         </div>
       </div>
 
       <div class="panel">
-        <div class="gridCompact">
+        <div class="gridEmployee">
           <div class="field">
             <label for="employeeName">ชื่อพนักงาน</label>
             <input id="employeeName" placeholder="ชื่อ-นามสกุล">
@@ -135,12 +138,12 @@
           </div>
 
           <div class="field">
-            <label for="workAgeYear">อายุงาน(ปี)</label>
+            <label for="workAgeYear">อายุงาน (ปี)</label>
             <select id="workAgeYear"></select>
           </div>
 
           <div class="field">
-            <label for="workAgeMonth">อายุงาน(เดือน)</label>
+            <label for="workAgeMonth">อายุงาน (เดือน)</label>
             <select id="workAgeMonth"></select>
           </div>
 
@@ -157,6 +160,11 @@
           <div class="field">
             <label for="errorDate">วันที่เกิดเหตุ</label>
             <input id="errorDate" type="date">
+          </div>
+
+          <div class="field">
+            <label for="errorCaseQty">จำนวนเคส</label>
+            <input id="errorCaseQty" placeholder="จำนวนเคส" inputmode="numeric">
           </div>
 
           <div class="field">
@@ -188,14 +196,23 @@
             <label for="interpreterName">ชื่อล่าม</label>
             <input id="interpreterName" placeholder="ถ้ามี">
           </div>
+
+          <div class="field fieldSpan2">
+            <label for="errorDescription">รายละเอียดสาเหตุ</label>
+            <textarea
+              id="errorDescription"
+              rows="4"
+              placeholder="กรอกรายละเอียดเพิ่มเติมของสาเหตุ / เหตุการณ์"
+            ></textarea>
+          </div>
         </div>
       </div>
 
       <div class="sectionTitle">
         <span class="dot"></span>
         <div>
-          <div class="sectionMain">สาเหตุและคำยืนยัน</div>
-          <div class="sectionSub">รายละเอียดสาเหตุเพิ่มเติม</div>
+          <div class="sectionMain">ข้อเท็จจริงที่พนักงานยืนยัน</div>
+          <div class="sectionSub">หัวข้ออื่นๆ ต้องไม่แสดงช่องกรอกจนกว่าจะเลือกใช้งาน</div>
         </div>
       </div>
 
@@ -205,7 +222,7 @@
           <div id="confirmCauseSelector" class="chipGroup"></div>
         </div>
 
-        <div class="field">
+        <div id="confirmCauseOtherWrap" class="field hidden">
           <label for="confirmCauseOther">สาเหตุเพิ่มเติมอื่นๆ</label>
           <textarea id="confirmCauseOther" rows="3" placeholder="กรอกสาเหตุเพิ่มเติม"></textarea>
         </div>
@@ -225,26 +242,26 @@
       </div>
 
       <div class="panel">
-        <div id="uploadList" class="uploadList"></div>
+        <div id="uploadList" class="uploadGrid"></div>
         <div class="panelActions">
-          <button id="btnAddImage" class="btn secondary" type="button">+ เพิ่มรูปภาพ</button>
+          <button id="btnAddImage" class="btn secondary" type="button">+ เพิ่มภาพ</button>
         </div>
       </div>
 
       <div class="sectionTitle">
         <span class="dot"></span>
         <div>
-          <div class="sectionMain">ผู้รับอีเมล</div>
-          <div class="sectionSub">เลือกผู้รับไฟล์รายงาน</div>
+          <div class="sectionMain">อีเมลปลายทาง</div>
+          <div class="sectionSub">เลือกอีเมลที่ต้องการส่งรายงาน</div>
         </div>
       </div>
 
-      <div class="panel">
+      <div class="emailPanel">
         <div class="panelActions">
           <button id="btnEmailCheckAll" class="btn ghost" type="button">เลือกทั้งหมด</button>
           <button id="btnEmailClearAll" class="btn ghost" type="button">ล้างทั้งหมด</button>
         </div>
-        <div id="emailSelector" class="checkList"></div>
+        <div id="emailSelector" class="emailSelector"></div>
       </div>
 
       <div class="actions">
@@ -254,38 +271,66 @@
     </section>
 
     <!-- REPORT500 -->
-    <section id="under500Card" class="card hidden report500Card">
+    <section id="under500Card" class="card hidden">
       <div class="sectionTitle rptTitle">
         <span class="dot rptDot"></span>
         <div>
           <div class="sectionMain">Report500</div>
-          <div class="sectionSub">ฟอร์มรายงานเหตุการณ์แบบเลือกได้หลายหัวข้อ</div>
+          <div class="sectionSub">แบบฟอร์มรายงานเหตุการณ์</div>
         </div>
       </div>
 
       <div class="panel rptPanel">
-        <div class="gridCompact rptGridTop">
+        <div class="gridCompact">
           <div class="field">
             <label for="rptRefNo">Ref No.</label>
-            <div class="refInputWrap">
-              <input id="rptRefNo" placeholder="เลขรัน เช่น 001">
-              <span id="rptRefYear" class="refSuffix">-</span>
+            <div class="refRow">
+              <input id="rptRefNo" placeholder="เลขรัน เช่น 001" inputmode="numeric">
+              <span class="refDash">/</span>
+              <input id="rptRefYear" readonly>
             </div>
           </div>
 
           <div class="field">
-            <label for="rptBranch">สาขา (Branch)</label>
+            <label for="rptReportedBy">ชื่อผู้เข้าใช้งาน / ผู้รายงาน</label>
+            <select id="rptReportedBy"></select>
+          </div>
+        </div>
+      </div>
+
+      <div class="sectionTitle rptTitle">
+        <span class="dot rptDot"></span>
+        <div>
+          <div class="sectionMain">ข้อมูลเริ่มต้นของรายงาน</div>
+          <div class="sectionSub">ส่วนหัวของ Report500</div>
+        </div>
+      </div>
+
+      <div class="panel rptPanel">
+        <div class="gridCompact">
+          <div class="field">
+            <label for="rptReporterPosition">ตำแหน่งผู้รายงาน</label>
+            <input id="rptReporterPosition" placeholder="เช่น Supervisor / Officer">
+          </div>
+
+          <div class="field">
+            <label for="rptReportDate">วันที่รายงาน</label>
+            <input id="rptReportDate" type="date">
+          </div>
+
+          <div class="field">
+            <label for="rptBranch">สาขา</label>
             <select id="rptBranch"></select>
           </div>
 
           <div id="rptBranchOtherWrap" class="field hidden">
             <label for="rptBranchOther">ระบุสาขาอื่นๆ</label>
-            <input id="rptBranchOther" placeholder="กรอกชื่อสาขา">
+            <input id="rptBranchOther" placeholder="กรอกชื่อสาขาเพิ่มเติม">
           </div>
 
           <div class="field fieldSpan2">
-            <label for="rptSubject">เรื่อง (Subject)</label>
-            <input id="rptSubject" placeholder="ระบุหัวข้อรายงาน">
+            <label for="rptSubject">เรื่อง</label>
+            <input id="rptSubject" placeholder="กรอกหัวข้อเรื่องของรายงาน">
           </div>
         </div>
       </div>
@@ -293,8 +338,8 @@
       <div class="sectionTitle rptTitle">
         <span class="dot rptDot"></span>
         <div>
-          <div class="sectionMain">ประเภทของรายงาน</div>
-          <div class="sectionSub">เลือกได้หลายข้อ และรองรับอื่นๆ</div>
+          <div class="sectionMain">ประเภทและระดับความเร่งด่วน</div>
+          <div class="sectionSub">สามารถเลือกได้หลายรายการ</div>
         </div>
       </div>
 
@@ -304,12 +349,12 @@
           <div id="rptReportTypes" class="optionMatrix"></div>
         </div>
 
-        <div class="field">
+        <div class="field fieldBlock">
           <label>ระดับความเร่งด่วน</label>
           <div id="rptUrgencyTypes" class="optionMatrix"></div>
         </div>
 
-        <div class="field">
+        <div class="field fieldBlock">
           <label>ผู้รับทราบ</label>
           <div id="rptNotifyTo" class="optionMatrix"></div>
         </div>
@@ -319,7 +364,7 @@
         <span class="dot rptDot"></span>
         <div>
           <div class="sectionMain">วันเวลาและสถานที่เกิดเหตุ</div>
-          <div class="sectionSub">จัดวางแบบใช้งานง่ายบนมือถือ</div>
+          <div class="sectionSub">ระบุรายละเอียดจุดเกิดเหตุ</div>
         </div>
       </div>
 
@@ -332,11 +377,11 @@
 
           <div class="field">
             <label for="rptIncidentTime">เวลาเกิดเหตุ</label>
-            <input id="rptIncidentTime" type="time" step="1">
+            <input id="rptIncidentTime" type="time">
           </div>
 
           <div class="field">
-            <label for="rptIncidentLocation">สถานที่เกิดเหตุ</label>
+            <label for="rptIncidentLocation">ประเภทสถานที่เกิดเหตุ</label>
             <select id="rptIncidentLocation"></select>
           </div>
 
@@ -411,7 +456,7 @@
         <span class="dot rptDot"></span>
         <div>
           <div class="sectionMain">การดำเนินการ</div>
-          <div class="sectionSub">รองรับผลตรวจ พบ / ไม่พบ / ปริมาณ</div>
+          <div class="sectionSub">รองรับผลตรวจ / ผู้รับผิดชอบ / กำหนดเสร็จ</div>
         </div>
       </div>
 
@@ -513,40 +558,13 @@
 
         <div id="rptEmailSelector" class="checkList"></div>
 
-        <div class="field" style="margin-top:12px;">
-          <label for="rptEmailOther">Email อื่นๆ</label>
+        <div class="field fieldBlock">
+          <label for="rptEmailOther">อีเมลเพิ่มเติม</label>
           <textarea
             id="rptEmailOther"
             rows="3"
-            placeholder="กรอกอีเมลเพิ่มเติมได้หลายรายการ เช่น&#10;test1@email.com, test2@email.com"
+            placeholder="เช่น test1@email.com, test2@email.com"
           ></textarea>
-        </div>
-      </div>
-
-      <div class="sectionTitle rptTitle">
-        <span class="dot rptDot"></span>
-        <div>
-          <div class="sectionMain">ผู้รายงาน</div>
-          <div class="sectionSub">ข้อมูลลงท้ายเอกสาร</div>
-        </div>
-      </div>
-
-      <div class="panel rptPanel">
-        <div class="gridCompact">
-          <div class="field">
-            <label for="rptReportedBy">รายงานโดย</label>
-            <select id="rptReportedBy"></select>
-          </div>
-
-          <div class="field">
-            <label for="rptReporterPosition">ตำแหน่งผู้รายงาน</label>
-            <input id="rptReporterPosition" placeholder="ระบุตำแหน่ง">
-          </div>
-
-          <div class="field">
-            <label for="rptReportDate">วันที่รายงาน</label>
-            <input id="rptReportDate" type="date">
-          </div>
         </div>
       </div>
 
@@ -557,7 +575,7 @@
     </section>
   </main>
 
-  <script src="./report500.js?v=report500fix3"></script>
-  <script src="./app.js?v=report500fix3"></script>
+  <script src="./report500.js?v=final-index-split-1"></script>
+  <script src="./app.js?v=final-index-split-1"></script>
 </body>
 </html>
