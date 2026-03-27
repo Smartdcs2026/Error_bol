@@ -8263,9 +8263,14 @@ window.safeSetLoginMsg = safeSetLoginMsg;
 window.AUTH = AUTH;
 window.API_BASE = API_BASE;
 
+
 /** ==========================
  *  REF HELPERS
  *  ========================== */
+function getCurrentThaiBuddhistYearNumber() {
+  return new Date().getFullYear() + 543;
+}
+
 function buildYearOptionsForSelect(selectEl) {
   if (!selectEl) return;
 
@@ -8306,7 +8311,7 @@ function getRptRefNoValue() {
 
 function buildRefNo_(runningId, yearId) {
   const running = String($(runningId)?.value || "").replace(/[^\d]/g, "").trim();
-  const year = String($(yearId)?.value || "").trim() || getCurrentBuddhistYear();
+  const year = String($(yearId)?.value || "").trim() || String(getCurrentThaiBuddhistYearNumber());
 
   if (!running) return "";
   return `${running}-${year}`;
@@ -8396,7 +8401,7 @@ async function init() {
     safeSetLoginMsg("โหลดตัวเลือกไม่สำเร็จ กรุณาตรวจสอบ API_BASE, Worker, และ CORS");
   }
 
-  numericOnly($("labelCid"));
+   numericOnly($("labelCid"));
   numericOnly($("item"));
   numericOnly($("errorCaseQty"));
   alnumUpperOnly($("employeeCode"));
@@ -8620,9 +8625,13 @@ function syncConfirmCauseOtherVisibility() {
   if (!wrap) return;
 
   const checkedList = Array.from(document.querySelectorAll(".confirmCauseChk:checked"));
+
   const show = checkedList.some((el) => {
     const value = String(el.value || "").trim();
-    const requiresText = String(el.dataset.requiresText || "") === "1";
+    const requiresText =
+      String(el.dataset.requiresText || "").trim() === "1" ||
+      String(el.dataset.requirestext || "").trim() === "1";
+
     return value === "อื่นๆ" || requiresText;
   });
 
