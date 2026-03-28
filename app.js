@@ -8147,6 +8147,151 @@
 
 
 const API_BASE = "https://bol.somchaibutphon.workers.dev";
+
+/** ==========================
+ *  SHARED PROGRESS UI
+ *  ใช้ร่วมกันทั้ง Error_BOL และ Report500
+ *  ========================== */
+const ProgressUI = (() => {
+  const stageIds = ["validate", "upload", "save", "pdf", "email"];
+
+  const el = {
+    overlay: () => $("progressOverlay"),
+    card: () => $("progressCard"),
+    title: () => $("progressTitle"),
+    subtitle: () => $("progressSubtitle"),
+    percent: () => $("progressPercentText"),
+    step: () => $("progressStepText"),
+    bar: () => $("progressBarFill"),
+    hint: () => $("progressHint")
+  };
+
+  function safeRow(stageKey) {
+    return document.getElementById(`stage-${stageKey}`);
+  }
+
+  function reset() {
+    el.card()?.classList.remove("success", "error");
+    setProgress(0, "เริ่มต้น...");
+    stageIds.forEach((id) => {
+      const row = safeRow(id);
+      if (!row) return;
+      row.classList.remove("active", "done", "error");
+      const st = row.querySelector(".stage-status");
+      if (st) st.textContent = "รอ";
+    });
+    setHint("กรุณาอย่าปิดหน้าจอหรือรีเฟรชระหว่างการบันทึก");
+  }
+
+  function show(title = "กำลังบันทึกข้อมูล", subtitle = "โปรดรอสักครู่ ระบบกำลังประมวลผล") {
+    reset();
+    if (el.title()) el.title().textContent = title;
+    if (el.subtitle()) el.subtitle().textContent = subtitle;
+    el.overlay()?.classList.remove("hidden");
+    document.body.classList.add("progress-lock");
+  }
+
+  function hide(delay = 0) {
+    setTimeout(() => {
+      el.overlay()?.classList.add("hidden");
+      document.body.classList.remove("progress-lock");
+    }, delay);
+  }
+
+  function setProgress(percent, stepText) {
+    const safe = Math.max(0, Math.min(100, Number(percent) || 0));
+    if (el.percent()) el.percent().textContent = `${safe}%`;
+    if (el.bar()) el.bar().style.width = `${safe}%`;
+    if (stepText && el.step()) el.step().textContent = stepText;
+  }
+
+  function setHint(text) {
+    if (el.hint()) el.hint().textContent = text || "";
+  }
+
+  function setStageState(stageKey, state, text) {
+    const row = safeRow(stageKey);
+    if (!row) return;
+    row.classList.remove("active", "done", "error");
+    if (state) row.classList.add(state);
+
+    const st = row.querySelector(".stage-status");
+    if (!st) return;
+
+    st.textContent = text || (
+      state === "done" ? "เสร็จแล้ว" :
+      state === "active" ? "กำลังดำเนินการ" :
+      state === "error" ? "เกิดข้อผิดพลาด" :
+      "รอ"
+    );
+  }
+
+  function activateOnly(stageKey, percent, stepText) {
+    stageIds.forEach((id) => {
+      const row = safeRow(id);
+      if (!row) return;
+      if (!row.classList.contains("done")) {
+        row.classList.remove("active");
+        const st = row.querySelector(".stage-status");
+        if (st && !row.classList.contains("error")) st.textContent = "รอ";
+      }
+    });
+    setStageState(stageKey, "active");
+    if (percent != null) setProgress(percent, stepText || "");
+  }
+
+  function markDone(stageKey, percent, stepText, customText) {
+    setStageState(stageKey, "done", customText || "เสร็จแล้ว");
+    if (percent != null) setProgress(percent, stepText || "");
+  }
+
+  function markError(stageKey, message, percent = null) {
+    setStageState(stageKey, "error", message || "เกิดข้อผิดพลาด");
+    if (percent != null) setProgress(percent);
+    el.card()?.classList.remove("success");
+    el.card()?.classList.add("error");
+  }
+
+  function success(title = "บันทึกสำเร็จ", subtitle = "ข้อมูลถูกบันทึกเรียบร้อยแล้ว") {
+    el.card()?.classList.remove("error");
+    el.card()?.classList.add("success");
+    if (el.title()) el.title().textContent = title;
+    if (el.subtitle()) el.subtitle().textContent = subtitle;
+    setProgress(100, "เสร็จสมบูรณ์");
+  }
+
+  return {
+    show,
+    hide,
+    reset,
+    setProgress,
+    setHint,
+    setStageState,
+    activateOnly,
+    markDone,
+    markError,
+    success
+  };
+})();
+
+window.ProgressUI = ProgressUI;
+
+function sleepMs(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function estimateUploadProgressByFiles(fileCount, baseStart = 16, baseEnd = 42) {
+  const count = Math.max(1, Number(fileCount) || 1);
+  return {
+    start: baseStart,
+    next: (currentIndex) => {
+      const ratio = Math.max(0, Math.min(1, currentIndex / count));
+      return Math.round(baseStart + ((baseEnd - baseStart) * ratio));
+    },
+    end: baseEnd
+  };
+}
+
 const ITEM_NOT_FOUND_TEXT = "-ไม่พบรายการสินค้า-";
 const ITEM_LOOKUP_MIN_LEN = 3;
 const ITEM_LOOKUP_DEBOUNCE_MS = 420;
@@ -8202,10 +8347,6 @@ function escapeHtml(value) {
     .replace(/'/g, "&#039;");
 }
 
-function getCurrentBuddhistYear() {
-  return String(new Date().getFullYear() + 543);
-}
-
 function getCurrentThaiBuddhistYearNumber() {
   return new Date().getFullYear() + 543;
 }
@@ -8257,30 +8398,19 @@ function applyStaticLogos() {
   });
 }
 
-/** expose ให้ report500.js ใช้ */
 window.apiUrl = apiUrl;
 window.safeSetLoginMsg = safeSetLoginMsg;
 window.AUTH = AUTH;
 window.API_BASE = API_BASE;
 
-
 /** ==========================
  *  REF HELPERS
  *  ========================== */
-function getCurrentThaiBuddhistYearNumber() {
-  return new Date().getFullYear() + 543;
-}
-
 function buildYearOptionsForSelect(selectEl) {
   if (!selectEl) return;
-
   const currentYear = getCurrentThaiBuddhistYearNumber();
   const years = [currentYear - 1, currentYear, currentYear + 1];
-
-  selectEl.innerHTML = years
-    .map((y) => `<option value="${y}">${y}</option>`)
-    .join("");
-
+  selectEl.innerHTML = years.map((y) => `<option value="${y}">${y}</option>`).join("");
   selectEl.value = String(currentYear);
 }
 
@@ -8293,12 +8423,17 @@ function bindRefPair_(runningId, yearId) {
   const runningEl = $(runningId);
   const yearEl = $(yearId);
   if (!runningEl || !yearEl) return;
-
   buildYearOptionsForSelect(yearEl);
-
   runningEl.addEventListener("input", () => {
     runningEl.value = String(runningEl.value || "").replace(/[^\d]/g, "");
   });
+}
+
+function buildRefNo_(runningId, yearId) {
+  const running = String($(runningId)?.value || "").replace(/[^\d]/g, "").trim();
+  const year = String($(yearId)?.value || "").trim() || String(getCurrentThaiBuddhistYearNumber());
+  if (!running) return "";
+  return `${running}-${year}`;
 }
 
 function getRefNoValue() {
@@ -8307,14 +8442,6 @@ function getRefNoValue() {
 
 function getRptRefNoValue() {
   return buildRefNo_("rptRefNo", "rptRefYear");
-}
-
-function buildRefNo_(runningId, yearId) {
-  const running = String($(runningId)?.value || "").replace(/[^\d]/g, "").trim();
-  const year = String($(yearId)?.value || "").trim() || String(getCurrentThaiBuddhistYearNumber());
-
-  if (!running) return "";
-  return `${running}-${year}`;
 }
 
 /** ==========================
@@ -8348,13 +8475,11 @@ function renderGalleryHtml(imageIds = []) {
 function bindGalleryClickInSwal() {
   const root = Swal.getHtmlContainer();
   if (!root) return;
-
   const items = root.querySelectorAll(".galItem");
   items.forEach((btn) => {
     btn.addEventListener("click", () => {
       const url = btn.getAttribute("data-url");
       if (!url) return;
-
       Swal.fire({
         title: "ดูรูปภาพแนบ",
         html: `
@@ -8401,7 +8526,7 @@ async function init() {
     safeSetLoginMsg("โหลดตัวเลือกไม่สำเร็จ กรุณาตรวจสอบ API_BASE, Worker, และ CORS");
   }
 
-   numericOnly($("labelCid"));
+  numericOnly($("labelCid"));
   numericOnly($("item"));
   numericOnly($("errorCaseQty"));
   alnumUpperOnly($("employeeCode"));
@@ -8465,13 +8590,10 @@ window.setActiveTab = setActiveTab;
  *  ========================== */
 function bindEvents() {
   $("btnLogin")?.addEventListener("click", onLogin);
-
   $("errorReason")?.addEventListener("change", onErrorReasonChange);
   $("btnAddImage")?.addEventListener("click", () => addUploadField("ภาพอื่นๆ"));
-
   $("btnPreview")?.addEventListener("click", previewSummary);
   $("btnSubmit")?.addEventListener("click", submitForm);
-
   $("btnEmailCheckAll")?.addEventListener("click", () => setAllEmailChecks(true));
   $("btnEmailClearAll")?.addEventListener("click", () => setAllEmailChecks(false));
 
@@ -8536,61 +8658,45 @@ function fillFormDropdowns() {
   const nationality = $("nationality");
 
   if (er) {
-    er.innerHTML =
-      `<option value="">-- เลือก --</option>` +
+    er.innerHTML = `<option value="">-- เลือก --</option>` +
       (OPTIONS.errorList || []).map((n) => `<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join("");
   }
-
   if (audit) {
-    audit.innerHTML =
-      `<option value="">-- เลือก --</option>` +
+    audit.innerHTML = `<option value="">-- เลือก --</option>` +
       (OPTIONS.auditList || []).map((n) => `<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join("");
   }
-
   if (osm) {
-    osm.innerHTML =
-      `<option value="">-- เลือก --</option>` +
+    osm.innerHTML = `<option value="">-- เลือก --</option>` +
       (OPTIONS.osmList || []).map((n) => `<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join("");
   }
-
   if (otm) {
-    otm.innerHTML =
-      `<option value="">-- เลือก --</option>` +
+    otm.innerHTML = `<option value="">-- เลือก --</option>` +
       (OPTIONS.otmList || []).map((n) => `<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join("");
   }
-
   if (nationality) {
-    nationality.innerHTML =
-      `<option value="">-- เลือก --</option>` +
+    nationality.innerHTML = `<option value="">-- เลือก --</option>` +
       (OPTIONS.nationalityList || []).map((n) => `<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join("");
   }
 
   syncErrorReasonOtherVisibility();
 }
-
 function buildWorkAgeOptions() {
   const yearEl = $("workAgeYear");
   const monthEl = $("workAgeMonth");
 
   if (yearEl) {
-    yearEl.innerHTML =
-      `<option value="">-- ปี --</option>` +
+    yearEl.innerHTML = `<option value="">-- ปี --</option>` +
       Array.from({ length: 41 }, (_, i) => `<option value="${i}">${i}</option>`).join("");
   }
-
   if (monthEl) {
-    monthEl.innerHTML =
-      `<option value="">-- เดือน --</option>` +
+    monthEl.innerHTML = `<option value="">-- เดือน --</option>` +
       Array.from({ length: 12 }, (_, i) => `<option value="${i}">${i}</option>`).join("");
   }
 }
 
 function buildShiftOptions() {
   const shift = $("shift");
-  if (!shift) return;
-
-  if (shift.options.length > 0) return;
-
+  if (!shift || shift.options.length > 0) return;
   shift.innerHTML = `
     <option value="">-- เลือก --</option>
     <option value="Day">Day</option>
@@ -8608,15 +8714,10 @@ function syncErrorReasonOtherVisibility() {
   const v = $("errorReason")?.value || "";
   const wrap = $("errorReasonOtherWrap");
   const input = $("errorReasonOther");
-
   if (!wrap) return;
-
   const show = v === "อื่นๆ";
   wrap.classList.toggle("hidden", !show);
-
-  if (!show && input) {
-    input.value = "";
-  }
+  if (!show && input) input.value = "";
 }
 
 function syncConfirmCauseOtherVisibility() {
@@ -8625,21 +8726,15 @@ function syncConfirmCauseOtherVisibility() {
   if (!wrap) return;
 
   const checkedList = Array.from(document.querySelectorAll(".confirmCauseChk:checked"));
-
   const show = checkedList.some((el) => {
     const value = String(el.value || "").trim();
-    const requiresText =
-      String(el.dataset.requiresText || "").trim() === "1" ||
+    const requiresText = String(el.dataset.requiresText || "").trim() === "1" ||
       String(el.dataset.requirestext || "").trim() === "1";
-
     return value === "อื่นๆ" || requiresText;
   });
 
   wrap.classList.toggle("hidden", !show);
-
-  if (!show && input) {
-    input.value = "";
-  }
+  if (!show && input) input.value = "";
 }
 
 function onErrorReasonChange() {
@@ -8655,7 +8750,6 @@ function renderConfirmCauseSelector() {
 
   const selectedBefore = getSelectedConfirmCauses();
   const currentReason = String($("errorReason")?.value || "").trim();
-
   const allItems = Array.isArray(OPTIONS.confirmCauseList) ? OPTIONS.confirmCauseList : [];
   const filtered = allItems.filter((item) => {
     const targets = Array.isArray(item.mainReasons) ? item.mainReasons : ["*"];
@@ -8680,16 +8774,9 @@ function renderConfirmCauseSelector() {
     const cards = groups[group].map((item) => {
       const checked = selectedBefore.includes(item.text) ? "checked" : "";
       const requiresText = item.requiresText ? "1" : "0";
-
       return `
         <label class="confirmCauseCard">
-          <input
-            type="checkbox"
-            class="confirmCauseChk"
-            value="${escapeHtml(item.text)}"
-            data-requires-text="${requiresText}"
-            ${checked}
-          >
+          <input type="checkbox" class="confirmCauseChk" value="${escapeHtml(item.text)}" data-requires-text="${requiresText}" ${checked}>
           <span class="confirmCauseMark"></span>
           <span class="confirmCauseText">${escapeHtml(item.text)}</span>
         </label>
@@ -8716,7 +8803,7 @@ function renderConfirmCauseSelector() {
 
 function getSelectedConfirmCauses() {
   return Array.from(document.querySelectorAll(".confirmCauseChk:checked"))
-    .map(el => String(el.value || "").trim())
+    .map((el) => String(el.value || "").trim())
     .filter(Boolean);
 }
 
@@ -8727,9 +8814,8 @@ function getSelectedConfirmCausesForNarrative() {
 function composeConfirmCauseSummary(selected, otherText) {
   const list = (Array.isArray(selected) ? selected : [])
     .filter(Boolean)
-    .map(v => String(v).trim())
-    .filter(v => v && v !== "อื่นๆ");
-
+    .map((v) => String(v).trim())
+    .filter((v) => v && v !== "อื่นๆ");
   const other = String(otherText || "").trim();
   const out = list.slice();
   if (other) out.push("อื่นๆ: " + other);
@@ -8742,7 +8828,6 @@ function composeConfirmCauseSummary(selected, otherText) {
 function renderEmailSelector() {
   const root = $("emailSelector");
   if (!root) return;
-
   const emails = Array.isArray(OPTIONS.emailList) ? OPTIONS.emailList : [];
   if (!emails.length) {
     root.innerHTML = `<div class="emailEmpty">ไม่พบรายการอีเมลในชีท Email</div>`;
@@ -8760,12 +8845,12 @@ function renderEmailSelector() {
 
 function getSelectedEmails() {
   return Array.from(document.querySelectorAll(".emailChk:checked"))
-    .map(el => String(el.value || "").trim())
+    .map((el) => String(el.value || "").trim())
     .filter(Boolean);
 }
 
 function setAllEmailChecks(flag) {
-  document.querySelectorAll(".emailChk").forEach(chk => {
+  document.querySelectorAll(".emailChk").forEach((chk) => {
     chk.checked = !!flag;
   });
 }
@@ -8776,7 +8861,6 @@ function setAllEmailChecks(flag) {
 async function onLogin() {
   safeSetLoginMsg("");
   const pass = norm($("loginPass")?.value);
-
   if (!pass) {
     safeSetLoginMsg("กรุณากรอกรหัสผ่าน");
     return;
@@ -8816,18 +8900,9 @@ async function onLogin() {
 
   AUTH = { name: lpsName, pass };
   window.AUTH = AUTH;
-
   setLpsFromLogin(lpsName);
 
-  if ($("rptReportedBy")) {
-    $("rptReportedBy").innerHTML = lpsName
-      ? `<option value="${escapeHtml(lpsName)}">${escapeHtml(lpsName)}</option>`
-      : `<option value="">-- เลือก --</option>`;
-    $("rptReportedBy").value = lpsName || "";
-  }
-
   safeSetLoginMsg("");
-
   try {
     setActiveTab("error");
   } catch (err) {
@@ -8835,10 +8910,16 @@ async function onLogin() {
   }
 
   if (window.Report500UI && typeof window.Report500UI.ensureReady === "function") {
-    window.Report500UI.ensureReady().catch(err => {
+    window.Report500UI.ensureReady().catch((err) => {
       console.error("Report500 preload failed:", err);
     });
   }
+}
+
+function setLpsFromLogin(lpsName) {
+  if ($("lps")) $("lps").value = lpsName || "";
+  if ($("topLoginUserName")) $("topLoginUserName").textContent = lpsName || "-";
+  $("topLoginUserWrap")?.classList.toggle("hidden", !lpsName);
 }
 
 /** ==========================
@@ -9045,14 +9126,12 @@ function getItemDisplayText() {
   }
   return ($("itemDisplay")?.value || $("item")?.value || "").trim();
 }
-
 /** ==========================
  *  Upload fields
  *  ========================== */
 function buildInitialUploadFields() {
   const list = $("uploadList");
   if (!list) return;
-
   list.innerHTML = "";
   addUploadField("บัตรพนักงาน", { removable: false });
   addUploadField("รูปพนักงาน", { removable: false });
@@ -9060,7 +9139,6 @@ function buildInitialUploadFields() {
 
 function addUploadField(label, opts = {}) {
   const { removable = true } = opts;
-
   const list = $("uploadList");
   if (!list) return;
 
@@ -9184,9 +9262,9 @@ function buildEmployeeConfirmText(payload) {
 
   const selected = Array.isArray(payload.confirmCauseSelected)
     ? payload.confirmCauseSelected
-        .filter(Boolean)
-        .map(v => String(v).trim())
-        .filter(v => v && v !== "อื่นๆ")
+      .filter(Boolean)
+      .map((v) => String(v).trim())
+      .filter((v) => v && v !== "อื่นๆ")
     : [];
 
   const other = String(payload.confirmCauseOther || "").trim();
@@ -9424,7 +9502,7 @@ async function previewSummary() {
                   มีการเลือกผู้รับอีเมล ${emails.length} รายการ
                 </div>
                 <div class="swalEmailList">
-                  ${emails.map(e => `<div class="swalEmailChip">${escapeHtml(e)}</div>`).join("")}
+                  ${emails.map((e) => `<div class="swalEmailChip">${escapeHtml(e)}</div>`).join("")}
                 </div>
               `
               : `<div class="swalNote">ยังไม่ได้เลือกอีเมล ระบบจะบันทึกข้อมูลและสร้าง PDF อย่างเดียว</div>`
@@ -9456,7 +9534,6 @@ function countSelectedFiles() {
   const inputs = Array.from(document.querySelectorAll('#uploadList input[type="file"]'));
   return inputs.reduce((acc, el) => acc + ((el.files && el.files[0]) ? 1 : 0), 0);
 }
-
 /** ==========================
  *  Submit
  *  ========================== */
@@ -9472,44 +9549,54 @@ async function submitForm() {
     });
   }
 
-  let files = [];
+  ProgressUI.show(
+    "กำลังบันทึก Error_BOL",
+    "ระบบกำลังตรวจสอบข้อมูล อัปโหลดรูป สร้าง PDF และส่งอีเมล"
+  );
+
   try {
-    files = await collectFilesAsBase64({ maxFiles: 6, maxMBEach: 4 });
-  } catch (_) {
-    return;
-  }
+    ProgressUI.activateOnly("validate", 8, "กำลังตรวจสอบข้อมูลที่กรอก");
+    await sleepMs(180);
+    ProgressUI.markDone("validate", 14, "ตรวจสอบข้อมูลเรียบร้อย");
 
-  const signRes = await openSignatureFlow(p.otm, p.employeeName, p.interpreterName);
-  if (!signRes.ok) return;
+    ProgressUI.activateOnly("upload", 18, "กำลังเตรียมรูปภาพและลายเซ็น");
 
-  const body = {
-    pass: AUTH.pass,
-    payload: p,
-    files,
-    signatures: {
-      supervisorBase64: signRes.supervisorBase64 || "",
-      employeeBase64: signRes.employeeBase64 || "",
-      interpreterBase64: signRes.interpreterBase64 || ""
+    let files = [];
+    try {
+      files = await collectFilesAsBase64({ maxFiles: 6, maxMBEach: 4 });
+    } catch (fileErr) {
+      ProgressUI.markError("upload", "เตรียมรูปภาพไม่สำเร็จ", 18);
+      ProgressUI.setHint("กรุณาตรวจสอบขนาดไฟล์หรือชนิดไฟล์รูปภาพ");
+      throw fileErr;
     }
-  };
 
-  Swal.fire({
-    title: "กำลังบันทึกข้อมูล",
-    html: `
-      <div class="swalSummary">
-        <div class="swalHero">
-          <div class="swalHeroTitle">ระบบกำลังประมวลผล</div>
-          <div class="swalHeroSub">กำลังอัปโหลดรูปภาพ สร้าง PDF และตรวจสอบการส่งอีเมล</div>
-        </div>
-      </div>
-    `,
-    allowOutsideClick: false,
-    allowEscapeKey: false,
-    didOpen: () => Swal.showLoading()
-  });
+    const uploadProg = estimateUploadProgressByFiles(Math.max(files.length, 1), 18, 40);
+    files.forEach((_, idx) => {
+      ProgressUI.setProgress(uploadProg.next(idx + 1), `เตรียมรูปภาพ ${idx + 1}/${files.length || 1}`);
+    });
 
-  let json;
-  try {
+    const signRes = await openSignatureFlow(p.otm, p.employeeName, p.interpreterName);
+    if (!signRes.ok) {
+      ProgressUI.markError("upload", "ผู้ใช้ยกเลิกลายเซ็น", 26);
+      ProgressUI.hide(250);
+      return;
+    }
+
+    ProgressUI.markDone("upload", 42, `เตรียมรูปภาพและลายเซ็นเรียบร้อย (${files.length} รูป)`);
+
+    const body = {
+      pass: AUTH.pass,
+      payload: p,
+      files,
+      signatures: {
+        supervisorBase64: signRes.supervisorBase64 || "",
+        employeeBase64: signRes.employeeBase64 || "",
+        interpreterBase64: signRes.interpreterBase64 || ""
+      }
+    };
+
+    ProgressUI.activateOnly("save", 52, "กำลังบันทึกข้อมูลลงระบบ");
+
     const res = await fetch(apiUrl("/submit"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -9517,279 +9604,188 @@ async function submitForm() {
     });
 
     const text = await res.text();
-
+    let json = {};
     try {
       json = JSON.parse(text);
     } catch (_) {
-      return Swal.fire({
-        icon: "error",
-        title: "บันทึกไม่สำเร็จ",
-        html: `
-          <div class="swalSection">
-            <div class="swalSectionTitle">รายละเอียดข้อผิดพลาด</div>
-            <div class="swalDesc">
-              <div class="swalDescLabel">ข้อความจากระบบ</div>
-              <div class="swalDescValue">
-                <pre style="white-space:pre-wrap;background:#0b1220;color:#e2e8f0;padding:10px;border-radius:10px;max-height:220px;overflow:auto;margin:0;">${escapeHtml(text).slice(0, 2000)}</pre>
-              </div>
-            </div>
-          </div>
-        `
-      });
+      throw new Error("Backend ตอบกลับไม่ใช่ JSON");
     }
 
     if (!res.ok || !json.ok) {
-      return Swal.fire({
-        icon: "error",
-        title: "บันทึกไม่สำเร็จ",
-        text: json.error || `HTTP ${res.status}`
-      });
+      throw new Error(json?.error || `บันทึกข้อมูลไม่สำเร็จ (HTTP ${res.status})`);
     }
-  } catch (err2) {
-    console.error(err2);
-    return Swal.fire({
-      icon: "error",
-      title: "บันทึกไม่สำเร็จ",
-      text: "เชื่อมต่อระบบไม่ได้ (ตรวจสอบอินเทอร์เน็ต / Worker / API)"
-    });
-  }
 
-  const galleryHtml = renderGalleryHtml(json.imageIds || []);
-  const emailResult = json.emailResult || {};
-  const emailOk = !!emailResult.ok && !emailResult.skipped;
-  const pdfSizeText = String(json.pdfSizeText || "-");
+    ProgressUI.markDone("save", 68, "บันทึกข้อมูลลงระบบเรียบร้อย");
 
-  const supSignThumb = signRes.supervisorBase64
-    ? `<img class="sigThumb" src="${signRes.supervisorBase64}" alt="sign supervisor">`
-    : `<div class="swalNote">ไม่มีลายเซ็น</div>`;
+    ProgressUI.activateOnly("pdf", 82, "กำลังสร้างไฟล์ PDF");
+    await sleepMs(180);
+    ProgressUI.markDone("pdf", 92, json.pdfFileId ? "สร้างไฟล์ PDF เรียบร้อย" : "ระบบไม่แจ้งเลขไฟล์ PDF");
 
-  const empSignThumb = signRes.employeeBase64
-    ? `<img class="sigThumb" src="${signRes.employeeBase64}" alt="sign employee">`
-    : `<div class="swalNote">ไม่มีลายเซ็น</div>`;
+    ProgressUI.activateOnly("email", 96, "กำลังสรุปผลการส่งอีเมล");
+    await sleepMs(160);
 
-  const intSignThumb = signRes.interpreterBase64
-    ? `<img class="sigThumb" src="${signRes.interpreterBase64}" alt="sign interpreter">`
-    : `<div class="swalNote">ไม่มีลายเซ็น</div>`;
+    const emailResult = json.emailResult || {};
+    const emailStatus = String(emailResult.error || json.emailSendStatus || "").trim();
+    const emailOk = !!(emailResult.ok || /SENT/i.test(emailStatus));
+    const emailSkipped = !!(emailResult.skipped || /SKIPPED/i.test(emailStatus));
+    const attachmentMode = String(emailResult.attachmentMode || "").trim();
 
-  await Swal.fire({
-    icon: "success",
-    title: "บันทึกสำเร็จ",
-    confirmButtonText: "ปิดหน้าต่าง",
-    confirmButtonColor: "#2563eb",
-    width: 920,
-    html: `
-      <div class="swalSummary">
-        <div class="swalHero">
-          <div class="swalHeroTitle">บันทึกรายการเรียบร้อยแล้ว</div>
-          <div class="swalHeroSub">ระบบจัดเก็บข้อมูล รูปภาพ และเอกสาร PDF เรียบร้อย</div>
-          <div class="swalPillRow">
-            <div class="swalPill primary">LPS: ${escapeHtml(AUTH.name || json.lpsName || "-")}</div>
-            <div class="swalPill">Ref: ${escapeHtml(p.refNo || "-")}</div>
-            <div class="swalPill">รูป ${Number((json.imageIds || []).length)}</div>
-            <div class="swalPill">วินัย ${Number(json.disciplineMatchCount || 0)}</div>
-          </div>
-        </div>
+    if (emailOk) {
+      const modeText = attachmentMode === "LINK_ONLY"
+        ? "ส่งอีเมลแบบลิงก์ PDF"
+        : "ส่งอีเมลพร้อมไฟล์ PDF";
+      ProgressUI.markDone("email", 100, modeText, modeText);
+      ProgressUI.success("บันทึกสำเร็จ", "ข้อมูล Error_BOL ถูกบันทึกเรียบร้อยแล้ว");
+    } else if (emailSkipped) {
+      ProgressUI.markDone("email", 100, "ไม่ได้เลือกส่งอีเมล", "ข้าม");
+      ProgressUI.success("บันทึกสำเร็จ", "บันทึกข้อมูลและสร้าง PDF เรียบร้อยแล้ว");
+    } else {
+      ProgressUI.markError("email", "ส่งอีเมลไม่สำเร็จ", 100);
+      ProgressUI.success("บันทึกสำเร็จ", "ข้อมูลและ PDF สำเร็จแล้ว แต่การส่งอีเมลไม่สำเร็จ");
+      ProgressUI.setHint(emailStatus || "กรุณาตรวจสอบสิทธิ์ส่งอีเมลหรือขนาดไฟล์แนบ");
+    }
 
-        <div class="swalSection">
-          <div class="swalSectionTitle">ข้อมูลเอกสาร</div>
-          <div class="swalKvGrid">
-            <div class="swalKv">
-              <div class="swalKvLabel">วันที่เวลา</div>
-              <div class="swalKvValue">${escapeHtml(json.timestamp || "-")}</div>
-            </div>
-            <div class="swalKv">
-              <div class="swalKvLabel">Ref:No.</div>
-              <div class="swalKvValue">${escapeHtml(p.refNo || "-")}</div>
-            </div>
-            <div class="swalKv">
-              <div class="swalKvLabel">Label CID</div>
-              <div class="swalKvValue">${escapeHtml(p.labelCid || "-")}</div>
-            </div>
-            <div class="swalKv">
-              <div class="swalKvLabel">ขนาด PDF</div>
-              <div class="swalKvValue">${escapeHtml(pdfSizeText)}</div>
-            </div>
-          </div>
-        </div>
+    const galleryHtml = renderGalleryHtml(json.imageIds || []);
+    const pdfSizeText = String(json.pdfSizeText || "-");
 
-        <div class="swalSection">
-          <div class="swalSectionTitle">ข้อมูลเหตุการณ์</div>
-          <div class="swalKvGrid">
-            <div class="swalKv">
-              <div class="swalKvLabel">สาเหตุ</div>
-              <div class="swalKvValue">${escapeHtml(p.errorReason === "อื่นๆ" ? ("อื่นๆ: " + p.errorReasonOther) : p.errorReason)}</div>
-            </div>
-            <div class="swalKv">
-              <div class="swalKvLabel">วันที่เบิกสินค้า Error</div>
-              <div class="swalKvValue">${escapeHtml(formatDateToDisplay(p.errorDate) || "-")}</div>
-            </div>
-            <div class="swalKv">
-              <div class="swalKvLabel">Item</div>
-              <div class="swalKvValue">${escapeHtml((json.itemDisplay || getItemDisplayText() || "-"))}</div>
-            </div>
-            <div class="swalKv">
-              <div class="swalKvLabel">จำนวน ErrorCase</div>
-              <div class="swalKvValue">${escapeHtml(p.errorCaseQty || "-")}</div>
+    const supSignThumb = signRes.supervisorBase64
+      ? `<img class="sigThumb" src="${signRes.supervisorBase64}" alt="sign supervisor">`
+      : `<div class="swalNote">ไม่มีลายเซ็น</div>`;
+
+    const empSignThumb = signRes.employeeBase64
+      ? `<img class="sigThumb" src="${signRes.employeeBase64}" alt="sign employee">`
+      : `<div class="swalNote">ไม่มีลายเซ็น</div>`;
+
+    const intSignThumb = signRes.interpreterBase64
+      ? `<img class="sigThumb" src="${signRes.interpreterBase64}" alt="sign interpreter">`
+      : `<div class="swalNote">ไม่มีลายเซ็น</div>`;
+
+    await Swal.fire({
+      icon: emailOk || emailSkipped ? "success" : "warning",
+      title: emailOk || emailSkipped ? "บันทึกสำเร็จ" : "บันทึกสำเร็จบางส่วน",
+      confirmButtonText: "ปิดหน้าต่าง",
+      confirmButtonColor: "#2563eb",
+      width: 920,
+      html: `
+        <div class="swalSummary">
+          <div class="swalHero">
+            <div class="swalHeroTitle">บันทึกรายการเรียบร้อยแล้ว</div>
+            <div class="swalHeroSub">ระบบจัดเก็บข้อมูล รูปภาพ และเอกสาร PDF เรียบร้อย</div>
+            <div class="swalPillRow">
+              <div class="swalPill primary">LPS: ${escapeHtml(AUTH.name || json.lpsName || "-")}</div>
+              <div class="swalPill">Ref: ${escapeHtml(p.refNo || "-")}</div>
+              <div class="swalPill">รูป ${Number((json.imageIds || []).length)}</div>
+              <div class="swalPill">วินัย ${Number(json.disciplineMatchCount || 0)}</div>
             </div>
           </div>
-        </div>
 
-        <div class="swalSection">
-          <div class="swalSectionTitle">พนักงาน / ผู้เกี่ยวข้อง</div>
-          <div class="swalKvGrid">
-            <div class="swalKv">
-              <div class="swalKvLabel">ชื่อพนักงาน</div>
-              <div class="swalKvValue">${escapeHtml(p.employeeName || "-")}</div>
-            </div>
-            <div class="swalKv">
-              <div class="swalKvLabel">รหัสพนักงาน</div>
-              <div class="swalKvValue">${escapeHtml(p.employeeCode || "-")}</div>
-            </div>
-            <div class="swalKv">
-              <div class="swalKvLabel">อายุงาน</div>
-              <div class="swalKvValue">${escapeHtml(`${p.workAgeYear} ปี ${p.workAgeMonth} เดือน`)}</div>
-            </div>
-            <div class="swalKv">
-              <div class="swalKvLabel">สัญชาติ</div>
-              <div class="swalKvValue">${escapeHtml(p.nationality || "-")}</div>
-            </div>
-            <div class="swalKv">
-              <div class="swalKvLabel">OSM</div>
-              <div class="swalKvValue">${escapeHtml(p.osm || "-")}</div>
-            </div>
-            <div class="swalKv">
-              <div class="swalKvLabel">OTM</div>
-              <div class="swalKvValue">${escapeHtml(p.otm || "-")}</div>
-            </div>
-            <div class="swalKv">
-              <div class="swalKvLabel">ล่าม</div>
-              <div class="swalKvValue">${escapeHtml(p.interpreterName || "-")}</div>
-            </div>
-            <div class="swalKv">
-              <div class="swalKvLabel">AUDIT</div>
-              <div class="swalKvValue">${escapeHtml(p.auditName || "-")}</div>
+          <div class="swalSection">
+            <div class="swalSectionTitle">ข้อมูลเอกสาร</div>
+            <div class="swalKvGrid">
+              <div class="swalKv"><div class="swalKvLabel">วันที่เวลา</div><div class="swalKvValue">${escapeHtml(json.timestamp || "-")}</div></div>
+              <div class="swalKv"><div class="swalKvLabel">Ref:No.</div><div class="swalKvValue">${escapeHtml(p.refNo || "-")}</div></div>
+              <div class="swalKv"><div class="swalKvLabel">Label CID</div><div class="swalKvValue">${escapeHtml(p.labelCid || "-")}</div></div>
+              <div class="swalKv"><div class="swalKvLabel">ขนาด PDF</div><div class="swalKvValue">${escapeHtml(pdfSizeText)}</div></div>
             </div>
           </div>
-        </div>
 
-        <div class="swalSection">
-          <div class="swalSectionTitle">ข้อเท็จจริงที่พนักงานยืนยัน</div>
-          <div class="swalDesc">
-            <div class="swalDescLabel">รายการที่เลือก</div>
-            <div class="swalDescValue">${escapeHtml(composeConfirmCauseSummary(p.confirmCauseSelected, p.confirmCauseOther) || "-").replaceAll("|", "<br>")}</div>
+          <div class="swalSection">
+            <div class="swalSectionTitle">ข้อมูลเหตุการณ์</div>
+            <div class="swalKvGrid">
+              <div class="swalKv"><div class="swalKvLabel">สาเหตุ</div><div class="swalKvValue">${escapeHtml(p.errorReason === "อื่นๆ" ? ("อื่นๆ: " + p.errorReasonOther) : p.errorReason)}</div></div>
+              <div class="swalKv"><div class="swalKvLabel">วันที่เบิกสินค้า Error</div><div class="swalKvValue">${escapeHtml(formatDateToDisplay(p.errorDate) || "-")}</div></div>
+              <div class="swalKv"><div class="swalKvLabel">Item</div><div class="swalKvValue">${escapeHtml((json.itemDisplay || getItemDisplayText() || "-"))}</div></div>
+              <div class="swalKv"><div class="swalKvLabel">จำนวน ErrorCase</div><div class="swalKvValue">${escapeHtml(p.errorCaseQty || "-")}</div></div>
+            </div>
           </div>
 
-          <div class="swalDesc" style="margin-top:8px;">
-            <div class="swalDescLabel">คำยืนยันของพนักงาน</div>
-            <div class="swalDescValue">${escapeHtml(p.employeeConfirmText || "-").replaceAll("\n", "<br>")}</div>
+          <div class="swalSection">
+            <div class="swalSectionTitle">พนักงาน / ผู้เกี่ยวข้อง</div>
+            <div class="swalKvGrid">
+              <div class="swalKv"><div class="swalKvLabel">ชื่อพนักงาน</div><div class="swalKvValue">${escapeHtml(p.employeeName || "-")}</div></div>
+              <div class="swalKv"><div class="swalKvLabel">รหัสพนักงาน</div><div class="swalKvValue">${escapeHtml(p.employeeCode || "-")}</div></div>
+              <div class="swalKv"><div class="swalKvLabel">อายุงาน</div><div class="swalKvValue">${escapeHtml(`${p.workAgeYear} ปี ${p.workAgeMonth} เดือน`)}</div></div>
+              <div class="swalKv"><div class="swalKvLabel">สัญชาติ</div><div class="swalKvValue">${escapeHtml(p.nationality || "-")}</div></div>
+              <div class="swalKv"><div class="swalKvLabel">OSM</div><div class="swalKvValue">${escapeHtml(p.osm || "-")}</div></div>
+              <div class="swalKv"><div class="swalKvLabel">OTM</div><div class="swalKvValue">${escapeHtml(p.otm || "-")}</div></div>
+              <div class="swalKv"><div class="swalKvLabel">ล่าม</div><div class="swalKvValue">${escapeHtml(p.interpreterName || "-")}</div></div>
+              <div class="swalKv"><div class="swalKvLabel">AUDIT</div><div class="swalKvValue">${escapeHtml(p.auditName || "-")}</div></div>
+            </div>
           </div>
-        </div>
 
-        <div class="swalSection">
-          <div class="swalSectionTitle">สถานะอีเมล</div>
-          ${
-            emailResult.skipped
+          <div class="swalSection">
+            <div class="swalSectionTitle">ข้อเท็จจริงที่พนักงานยืนยัน</div>
+            <div class="swalDesc"><div class="swalDescLabel">รายการที่เลือก</div><div class="swalDescValue">${escapeHtml(composeConfirmCauseSummary(p.confirmCauseSelected, p.confirmCauseOther) || "-").replaceAll("|", "<br>")}</div></div>
+            <div class="swalDesc" style="margin-top:8px;"><div class="swalDescLabel">คำยืนยันของพนักงาน</div><div class="swalDescValue">${escapeHtml(p.employeeConfirmText || "-").replaceAll("\n", "<br>")}</div></div>
+          </div>
+
+          <div class="swalSection">
+            <div class="swalSectionTitle">สถานะอีเมล</div>
+            ${emailSkipped
               ? `<div class="swalNote">ไม่ได้ส่งอีเมล เพราะยังไม่ได้เลือกผู้รับ</div>`
               : emailOk
-                ? `
-                  <div class="swalEmailOk">
-                    ส่งอีเมลสำเร็จ ${Number(emailResult.count || 0)} รายการ
-                    ${emailResult.attachmentMode ? `• ${escapeHtml(emailResult.attachmentMode)}` : ""}
-                  </div>
-                  <div class="swalEmailList">
-                    ${(emailResult.recipients || []).map(e => `<div class="swalEmailChip">${escapeHtml(e)}</div>`).join("")}
-                  </div>
-                `
-                : `<div class="swalEmailFail">บันทึกข้อมูลสำเร็จ แต่ส่งอีเมลไม่สำเร็จ: ${escapeHtml(emailResult.error || "-")}</div>`
-          }
-        </div>
+                ? `<div class="swalEmailOk">ส่งอีเมลสำเร็จ ${Number(emailResult.count || 0)} รายการ ${emailResult.attachmentMode ? `• ${escapeHtml(emailResult.attachmentMode)}` : ""}</div><div class="swalEmailList">${(emailResult.recipients || []).map((e) => `<div class="swalEmailChip">${escapeHtml(e)}</div>`).join("")}</div>`
+                : `<div class="swalEmailFail">บันทึกข้อมูลสำเร็จ แต่ส่งอีเมลไม่สำเร็จ: ${escapeHtml(emailResult.error || "-")}</div>`}
+          </div>
 
-        <div class="swalSection">
-          <div class="swalSectionTitle">ลายเซ็น</div>
-          <div class="sigGrid">
-            <div>
-              <div class="sigBoxTitle">หัวหน้างาน</div>
-              ${supSignThumb}
-              <div class="sigName">${escapeHtml(p.otm || "-")}</div>
-            </div>
-            <div>
-              <div class="sigBoxTitle">พนักงาน</div>
-              ${empSignThumb}
-              <div class="sigName">${escapeHtml(p.employeeName || "-")}</div>
-            </div>
-            <div>
-              <div class="sigBoxTitle">ล่ามแปลภาษา</div>
-              ${intSignThumb}
-              <div class="sigName">${escapeHtml(p.interpreterName || "-")}</div>
+          <div class="swalSection">
+            <div class="swalSectionTitle">ลายเซ็น</div>
+            <div class="sigGrid">
+              <div><div class="sigBoxTitle">หัวหน้างาน</div>${supSignThumb}<div class="sigName">${escapeHtml(p.otm || "-")}</div></div>
+              <div><div class="sigBoxTitle">พนักงาน</div>${empSignThumb}<div class="sigName">${escapeHtml(p.employeeName || "-")}</div></div>
+              <div><div class="sigBoxTitle">ล่ามแปลภาษา</div>${intSignThumb}<div class="sigName">${escapeHtml(p.interpreterName || "-")}</div></div>
             </div>
           </div>
+
+          <div class="swalSection">
+            <div class="swalSectionTitle">รูปภาพแนบ</div>
+            ${galleryHtml || `<div class="swalNote">ไม่มีรูปภาพแนบ</div>`}
+          </div>
+
+          ${json.pdfUrl ? `<div class="swalActionLink"><a href="${json.pdfUrl}" target="_blank" rel="noopener noreferrer">เปิดไฟล์ PDF รายงาน</a></div>` : `<div class="swalNote" style="color:#dc2626;font-weight:900">ไม่พบลิงก์ PDF</div>`}
         </div>
+      `,
+      didOpen: () => bindGalleryClickInSwal()
+    });
 
-        <div class="swalSection">
-          <div class="swalSectionTitle">รูปภาพแนบ</div>
-          ${galleryHtml || `<div class="swalNote">ไม่มีรูปภาพแนบ</div>`}
-        </div>
-
-        ${
-          json.pdfUrl
-            ? `
-              <div class="swalActionLink">
-                <a href="${json.pdfUrl}" target="_blank" rel="noopener noreferrer">เปิดไฟล์ PDF รายงาน</a>
-              </div>
-            `
-            : `<div class="swalNote" style="color:#dc2626;font-weight:900">ไม่พบลิงก์ PDF</div>`
-        }
-      </div>
-    `,
-    didOpen: () => bindGalleryClickInSwal()
-  });
-
-  resetForm();
+    resetForm();
+    ProgressUI.hide(180);
+  } catch (err2) {
+    console.error(err2);
+    ProgressUI.markError("save", err2?.message || "เกิดข้อผิดพลาด", 56);
+    ProgressUI.setHint("กรุณาตรวจสอบข้อมูล เครือข่าย หรือ backend แล้วลองใหม่อีกครั้ง");
+    await Swal.fire({ icon: "error", title: "บันทึกไม่สำเร็จ", text: err2?.message || String(err2), confirmButtonText: "ตกลง" });
+    ProgressUI.hide(150);
+  }
 }
 
 async function collectFilesAsBase64({ maxFiles = 6, maxMBEach = 4 } = {}) {
   const inputs = Array.from(document.querySelectorAll('#uploadList input[type="file"]'));
   const picked = [];
-
   for (const el of inputs) {
     const f = el.files && el.files[0];
     if (f) picked.push(f);
   }
 
   if (picked.length > maxFiles) {
-    await Swal.fire({
-      icon: "warning",
-      title: "รูปเยอะเกินไป",
-      text: `เลือกได้สูงสุด ${maxFiles} รูป (ตอนนี้เลือก ${picked.length})`
-    });
+    await Swal.fire({ icon: "warning", title: "รูปเยอะเกินไป", text: `เลือกได้สูงสุด ${maxFiles} รูป (ตอนนี้เลือก ${picked.length})` });
     throw new Error("Too many files");
   }
 
   const out = [];
   for (const f of picked) {
     if (!/^image\//.test(f.type)) {
-      await Swal.fire({
-        icon: "warning",
-        title: "ไฟล์ไม่ถูกต้อง",
-        text: `ไฟล์ "${f.name}" ต้องเป็นรูปภาพเท่านั้น`
-      });
+      await Swal.fire({ icon: "warning", title: "ไฟล์ไม่ถูกต้อง", text: `ไฟล์ "${f.name}" ต้องเป็นรูปภาพเท่านั้น` });
       throw new Error("Invalid file type");
     }
-
     const mb = f.size / (1024 * 1024);
     if (mb > maxMBEach) {
-      await Swal.fire({
-        icon: "warning",
-        title: "ไฟล์ใหญ่เกินไป",
-        text: `ไฟล์ "${f.name}" มีขนาด ${mb.toFixed(1)} MB (กำหนดไว้ไม่เกิน ${maxMBEach} MB)`
-      });
+      await Swal.fire({ icon: "warning", title: "ไฟล์ใหญ่เกินไป", text: `ไฟล์ "${f.name}" มีขนาด ${mb.toFixed(1)} MB (กำหนดไว้ไม่เกิน ${maxMBEach} MB)` });
       throw new Error("File too large");
     }
-
     const base64 = await fileToBase64(f);
     out.push({ filename: f.name, base64 });
   }
-
   return out;
 }
 
@@ -9818,23 +9814,13 @@ async function openSignatureFlow(supervisorName, employeeName, interpreterName) 
 
   const hasInterpreter = String(interpreterName || "").trim().length > 0;
   if (!hasInterpreter) {
-    return {
-      ok: true,
-      supervisorBase64: sup.base64,
-      employeeBase64: emp.base64,
-      interpreterBase64: ""
-    };
+    return { ok: true, supervisorBase64: sup.base64, employeeBase64: emp.base64, interpreterBase64: "" };
   }
 
   const intr = await signatureModal("ลายเซ็นล่ามแปลภาษา", `ผู้เซ็น: ${interpreterName || "-"}`);
   if (!intr.ok) return { ok: false };
 
-  return {
-    ok: true,
-    supervisorBase64: sup.base64,
-    employeeBase64: emp.base64,
-    interpreterBase64: intr.base64
-  };
+  return { ok: true, supervisorBase64: sup.base64, employeeBase64: emp.base64, interpreterBase64: intr.base64 };
 }
 
 async function signatureModal(title, subtitle) {
@@ -9862,9 +9848,7 @@ async function signatureModal(title, subtitle) {
     didOpen: () => {
       const canvas = document.getElementById(canvasId);
       const btnClear = document.getElementById(clearId);
-
       enableSignature(canvas);
-
       btnClear?.addEventListener("click", () => {
         const ctx = canvas.getContext("2d");
         ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -9873,12 +9857,10 @@ async function signatureModal(title, subtitle) {
     preConfirm: () => {
       const canvas = document.getElementById(canvasId);
       const isEmpty = isCanvasBlank(canvas);
-
       if (isEmpty) {
         Swal.showValidationMessage("กรุณาเซ็นชื่อก่อนกดยืนยัน");
         return false;
       }
-
       return canvas.toDataURL("image/png");
     }
   });
@@ -9890,7 +9872,6 @@ async function signatureModal(title, subtitle) {
 function enableSignature(canvas) {
   if (!canvas) return;
   const ctx = canvas.getContext("2d");
-
   ctx.lineWidth = 2.8;
   ctx.lineCap = "round";
   ctx.lineJoin = "round";
@@ -9913,7 +9894,6 @@ function enableSignature(canvas) {
     last = getPos(e);
     e.preventDefault();
   };
-
   const move = (e) => {
     if (!drawing) return;
     const p = getPos(e);
@@ -9924,7 +9904,6 @@ function enableSignature(canvas) {
     last = p;
     e.preventDefault();
   };
-
   const up = (e) => {
     drawing = false;
     last = null;
@@ -9934,7 +9913,6 @@ function enableSignature(canvas) {
   canvas.addEventListener("mousedown", down);
   canvas.addEventListener("mousemove", move);
   window.addEventListener("mouseup", up);
-
   canvas.addEventListener("touchstart", down, { passive: false });
   canvas.addEventListener("touchmove", move, { passive: false });
   canvas.addEventListener("touchend", up, { passive: false });
@@ -9945,7 +9923,6 @@ function isCanvasBlank(canvas) {
   const ctx = canvas.getContext("2d");
   const { width, height } = canvas;
   const data = ctx.getImageData(0, 0, width, height).data;
-
   for (let i = 3; i < data.length; i += 4) {
     if (data[i] !== 0) return false;
   }
@@ -9956,7 +9933,7 @@ function isCanvasBlank(canvas) {
  *  Reset / helpers
  *  ========================== */
 function resetForm() {
-  const ids = [
+  [
     "refNo",
     "labelCid",
     "errorReasonOther",
@@ -9969,86 +9946,25 @@ function resetForm() {
     "employeeCode",
     "interpreterName",
     "confirmCauseOther"
-  ];
-
-  ids.forEach((id) => {
+  ].forEach((id) => {
     const el = $(id);
     if (el) el.value = "";
   });
 
-  const er = $("errorReason");
-  const audit = $("auditName");
-  const shift = $("shift");
-  const osm = $("osm");
-  const otm = $("otm");
-  const nationality = $("nationality");
-  const workAgeYear = $("workAgeYear");
-  const workAgeMonth = $("workAgeMonth");
-  const preview = $("employeeConfirmText");
-  const refYear = $("refYear");
-  const rptRefYear = $("rptRefYear");
-
-  if (er) er.value = "";
-  if (audit) audit.value = "";
-  if (shift) shift.value = "";
-  if (osm) osm.value = "";
-  if (otm) otm.value = "";
-  if (nationality) nationality.value = "";
-  if (workAgeYear) workAgeYear.value = "";
-  if (workAgeMonth) workAgeMonth.value = "";
-  if (preview) preview.value = "";
-
-  if (refYear) buildYearOptionsForSelect(refYear);
-  if (rptRefYear) buildYearOptionsForSelect(rptRefYear);
-
-  document.querySelectorAll(".emailChk").forEach(chk => chk.checked = false);
-  document.querySelectorAll(".confirmCauseChk").forEach(chk => chk.checked = false);
-
-  syncErrorReasonOtherVisibility();
-  syncConfirmCauseOtherVisibility();
-
-  document.querySelectorAll(".previewImg").forEach((img) => {
-    if (img.dataset && img.dataset.objectUrl) {
-      try { URL.revokeObjectURL(img.dataset.objectUrl); } catch (_) {}
-      img.dataset.objectUrl = "";
-    }
-    img.removeAttribute("src");
+  ["errorReason", "auditName", "shift", "osm", "otm", "workAgeYear", "workAgeMonth", "nationality"].forEach((id) => {
+    const el = $(id);
+    if (el) el.value = "";
   });
 
-  ITEM_LOOKUP_STATE = {
-    item: "",
-    description: "",
-    displayText: "",
-    found: false,
-    loading: false
-  };
+  document.querySelectorAll(".confirmCauseChk, .emailChk").forEach((el) => {
+    el.checked = false;
+  });
+
+  ITEM_LOOKUP_STATE = { item: "", description: "", displayText: "", found: false, loading: false };
   renderItemLookupState(ITEM_LOOKUP_STATE);
-
   buildInitialUploadFields();
-  renderConfirmCauseSelector();
-  setLpsFromLogin(AUTH.name || "");
+  syncErrorReasonOtherVisibility();
+  syncConfirmCauseOtherVisibility();
   updateEmployeeConfirmPreview();
+  if ($("lps")) $("lps").value = AUTH.name || "";
 }
-
-function setLpsFromLogin(loginName) {
-  const lpsEl = $("lps");
-  if (lpsEl) {
-    lpsEl.value = loginName || "";
-    lpsEl.readOnly = true;
-  }
-}
-
-/** ==========================
- *  SHARED EXPORTS
- *  ========================== */
-window.AppShared = {
-  $,
-  apiUrl,
-  escapeHtml,
-  norm,
-  driveImgUrl,
-  getCurrentBuddhistYear,
-  getRefNoValue,
-  getRptRefNoValue,
-  todayIsoLocal
-};
