@@ -8347,7 +8347,129 @@ let ITEM_LOOKUP_STATE = {
 
 const ITEM_LOCAL_CACHE = new Map();
 let itemLookupTimer = null;
+const EDITED_UPLOAD_STORE = new WeakMap();
 
+function buildEditedImageBadgeHtml(file) {
+  const sizeKb = file?.size ? Math.round(file.size / 1024) : 0;
+  return `ไฟล์แก้ไขแล้ว: ${file?.name || "edited-image.jpg"} (${sizeKb} KB)`;
+}
+
+function ensureEditButtonForUploadBox(box, inputId) {
+  if (!box) return null;
+
+  let btn = box.querySelector(".btnEditImage");
+  if (btn) return btn;
+
+  const topRow = box.firstElementChild;
+  if (!topRow) return null;
+
+  btn = document.createElement("button");
+  btn.type = "button";
+  btn.className = "btn ghost btnEditImage";
+  btn.style.padding = "6px 10px";
+  btn.style.borderRadius = "999px";
+  btn.textContent = "แก้ไขภาพ";
+
+  topRow.appendChild(btn);
+
+  btn.addEventListener("click", async () => {
+    const input = $(inputId);
+    if (!input) return;
+
+    const edited = EDITED_UPLOAD_STORE.get(input)?.file || null;
+    const raw = input.files && input.files[0] ? input.files[0] : null;
+    const file = edited || raw;
+
+    if (!file) {
+      await Swal.fire({
+        icon: "info",
+        title: "ยังไม่มีรูปภาพ",
+        text: "กรุณาเลือกรูปภาพก่อนแล้วจึงกดแก้ไข"
+      });
+      return;
+    }
+
+    await openEditorForUploadInput(input, box);
+  });
+
+  return btn;
+}
+
+function updateUploadPreviewFromFile(input, box, file, messageText) {
+  if (!input || !box || !file) return;
+
+  const img = box.querySelector(".previewImg");
+  const txt = box.querySelector(".small");
+
+  if (txt) {
+    txt.textContent = messageText || buildEditedImageBadgeHtml(file);
+  }
+
+  if (img) {
+    if (img.dataset.objectUrl) {
+      try { URL.revokeObjectURL(img.dataset.objectUrl); } catch (_) {}
+    }
+    const url = URL.createObjectURL(file);
+    img.src = url;
+    img.dataset.objectUrl = url;
+  }
+}
+
+async function openEditorForUploadInput(input, box) {
+  if (!window.ImageEditorX || typeof window.ImageEditorX.open !== "function") {
+    await Swal.fire({
+      icon: "error",
+      title: "ยังไม่พร้อมใช้งาน",
+      text: "ไม่พบ image-editor.js หรือยังไม่ได้โหลด modal ของ image editor"
+    });
+    return;
+  }
+
+  const edited = EDITED_UPLOAD_STORE.get(input)?.file || null;
+  const raw = input.files && input.files[0] ? input.files[0] : null;
+  const sourceFile = edited || raw;
+
+  if (!sourceFile) return;
+
+  const result = await window.ImageEditorX.open(sourceFile, {
+    strokeColor: "#dc2626",
+    strokeWidth: 3
+  });
+
+  if (!result?.ok || !result.file) return;
+
+  EDITED_UPLOAD_STORE.set(input, {
+    edited: true,
+    file: result.file,
+    filename: result.filename || result.file.name,
+    dataUrl: result.dataUrl || ""
+  });
+
+  updateUploadPreviewFromFile(
+    input,
+    box,
+    result.file,
+    buildEditedImageBadgeHtml(result.file)
+  );
+}
+
+async function handlePickedImageForUpload(input, box) {
+  const f = input?.files && input.files[0] ? input.files[0] : null;
+  if (!f) return;
+
+  if (!/^image\//i.test(f.type || "")) {
+    input.value = "";
+    await Swal.fire({
+      icon: "warning",
+      title: "ไฟล์ไม่ถูกต้อง",
+      text: "กรุณาเลือกไฟล์รูปภาพเท่านั้น"
+    });
+    return;
+  }
+
+  ensureEditButtonForUploadBox(box, input.id);
+  await openEditorForUploadInput(input, box);
+}
 const $ = (id) => document.getElementById(id);
 
 /** ==========================
@@ -9224,7 +9346,10 @@ function addUploadField(label, opts = {}) {
   box.innerHTML = `
     <div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
       <div class="cap">${escapeHtml(label)}</div>
-      ${removable ? `<button type="button" class="btn ghost" style="padding:6px 10px;border-radius:999px" data-remove="${id}">ลบ</button>` : ``}
+      <div style="display:flex;gap:8px;align-items:center">
+        <button type="button" class="btn ghost btnEditImage" style="padding:6px 10px;border-radius:999px">แก้ไขภาพ</button>
+        ${removable ? `<button type="button" class="btn ghost" style="padding:6px 10px;border-radius:999px" data-remove="${id}">ลบ</button>` : ``}
+      </div>
     </div>
     <input type="file" accept="image/*" id="${id}">
     <img class="previewImg" id="${id}_img" alt="" style="display:block;max-width:100%;max-height:220px;border-radius:12px;border:1px solid #d9e4f1;padding:4px;margin-top:8px;">
@@ -9236,10 +9361,17 @@ function addUploadField(label, opts = {}) {
   if (removable) {
     const btn = box.querySelector(`[data-remove="${id}"]`);
     btn?.addEventListener("click", () => {
+      const input = $(id);
       const img = $(`${id}_img`);
+
       if (img && img.dataset.objectUrl) {
         try { URL.revokeObjectURL(img.dataset.objectUrl); } catch (_) {}
       }
+
+      if (input) {
+        EDITED_UPLOAD_STORE.delete(input);
+      }
+
       box.remove();
     });
   }
@@ -9247,9 +9379,31 @@ function addUploadField(label, opts = {}) {
   const fileInput = $(id);
   const img = $(`${id}_img`);
   const txt = $(`${id}_txt`);
+  const btnEdit = box.querySelector(".btnEditImage");
 
-  fileInput?.addEventListener("change", () => {
+  btnEdit?.addEventListener("click", async () => {
+    if (!fileInput) return;
+
+    const edited = EDITED_UPLOAD_STORE.get(fileInput)?.file || null;
+    const raw = fileInput.files && fileInput.files[0] ? fileInput.files[0] : null;
+    const sourceFile = edited || raw;
+
+    if (!sourceFile) {
+      await Swal.fire({
+        icon: "info",
+        title: "ยังไม่มีรูปภาพ",
+        text: "กรุณาเลือกรูปภาพก่อนแล้วจึงกดแก้ไข"
+      });
+      return;
+    }
+
+    await openEditorForUploadInput(fileInput, box);
+  });
+
+  fileInput?.addEventListener("change", async () => {
     const f = fileInput.files && fileInput.files[0];
+
+    EDITED_UPLOAD_STORE.delete(fileInput);
 
     if (!f) {
       if (txt) txt.textContent = "ยังไม่เลือกรูป";
@@ -9267,7 +9421,7 @@ function addUploadField(label, opts = {}) {
       fileInput.value = "";
       if (txt) txt.textContent = "ไฟล์ไม่ถูกต้อง (ต้องเป็นรูปภาพเท่านั้น)";
       if (img) img.removeAttribute("src");
-      Swal.fire({
+      await Swal.fire({
         icon: "warning",
         title: "ไฟล์ไม่ถูกต้อง",
         text: "กรุณาเลือกไฟล์รูปภาพเท่านั้น"
@@ -9285,6 +9439,8 @@ function addUploadField(label, opts = {}) {
       img.src = url;
       img.dataset.objectUrl = url;
     }
+
+    await handlePickedImageForUpload(fileInput, box);
   });
 }
 
@@ -9607,9 +9763,12 @@ async function previewSummary() {
 
 function countSelectedFiles() {
   const inputs = Array.from(document.querySelectorAll('#uploadList input[type="file"]'));
-  return inputs.reduce((acc, el) => acc + ((el.files && el.files[0]) ? 1 : 0), 0);
+  return inputs.reduce((acc, el) => {
+    const edited = EDITED_UPLOAD_STORE.get(el)?.file || null;
+    const raw = el.files && el.files[0] ? el.files[0] : null;
+    return acc + ((edited || raw) ? 1 : 0);
+  }, 0);
 }
-
 /** ==========================
  *  Submit
  *  ========================== */
@@ -9851,7 +10010,9 @@ async function collectFilesAsBase64({ maxFiles = 6, maxMBEach = 4 } = {}) {
   const picked = [];
 
   for (const el of inputs) {
-    const f = el.files && el.files[0];
+    const edited = EDITED_UPLOAD_STORE.get(el)?.file || null;
+    const raw = el.files && el.files[0] ? el.files[0] : null;
+    const f = edited || raw;
     if (f) picked.push(f);
   }
 
