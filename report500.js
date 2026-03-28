@@ -3020,7 +3020,7 @@
 
       const ok = await Swal.fire({
         icon: "question",
-        title: "ยืนยันการบันทึก Report500",
+        title: "ยืนยันการบันทึก Report",
         html: payloadSummaryHtml(payload, images),
         width: 920,
         showCancelButton: true,
@@ -3119,41 +3119,86 @@
         Progress?.setHint(emailErr || "กรุณาตรวจสอบสิทธิ์เมลหรือขนาดไฟล์ PDF");
       }
 
-      await Swal.fire({
-        icon: (emailOk || emailSkipped) ? "success" : "warning",
-        title: (emailOk || emailSkipped) ? "บันทึก Report สำเร็จ" : "บันทึก Report สำเร็จบางส่วน",
-        html: `
-          <div style="text-align:left">
-            <div><b>Ref No.:</b> ${escapeHtml(json.refNo || payload.refNo || "-")}</div>
-            <div><b>รูปภาพ:</b> ${Number(json.imageCount || images.length || 0)} รูป</div>
-            <div><b>PDF:</b> ${json.pdfUrl ? `<a href="${json.pdfUrl}" target="_blank" rel="noopener noreferrer">เปิดเอกสาร</a>` : "สร้างแล้ว"}</div>
-            <div><b>การส่งอีเมล:</b> ${
+      Progress?.hide(120);
+
+await Swal.fire({
+  icon: (emailOk || emailSkipped) ? "success" : "warning",
+  title: (emailOk || emailSkipped) ? "บันทึก Report สำเร็จ" : "บันทึก Report สำเร็จบางส่วน",
+  showConfirmButton: false,
+  width: 820,
+  html: `
+    <div class="swalSummary">
+      <div class="swalHero">
+        <div class="swalHeroTitle">บันทึกรายงานเรียบร้อยแล้ว</div>
+        <div class="swalHeroSub">ระบบจัดเก็บข้อมูล รูปภาพ และไฟล์ PDF เรียบร้อย</div>
+        <div class="swalPillRow">
+          <div class="swalPill primary">Ref: ${escapeHtml(json.refNo || payload.refNo || "-")}</div>
+          <div class="swalPill">รูป ${Number(json.imageCount || images.length || 0)}</div>
+          <div class="swalPill">${emailOk ? "ส่งอีเมลสำเร็จ" : emailSkipped ? "ไม่ได้ส่งอีเมล" : "อีเมลไม่สำเร็จ"}</div>
+        </div>
+      </div>
+
+      <div class="swalSection">
+        <div class="swalSectionTitle">สรุปผลการบันทึก</div>
+        <div class="swalKvGrid">
+          <div class="swalKv">
+            <div class="swalKvLabel">Ref No.</div>
+            <div class="swalKvValue">${escapeHtml(json.refNo || payload.refNo || "-")}</div>
+          </div>
+          <div class="swalKv">
+            <div class="swalKvLabel">เรื่อง</div>
+            <div class="swalKvValue">${escapeHtml(payload.subject || "-")}</div>
+          </div>
+          <div class="swalKv">
+            <div class="swalKvLabel">รูปภาพ</div>
+            <div class="swalKvValue">${Number(json.imageCount || images.length || 0)} รูป</div>
+          </div>
+          <div class="swalKv">
+            <div class="swalKvLabel">PDF</div>
+            <div class="swalKvValue">${json.pdfUrl ? "สร้างแล้ว" : "ไม่พบลิงก์ PDF"}</div>
+          </div>
+          <div class="swalKv">
+            <div class="swalKvLabel">การส่งอีเมล</div>
+            <div class="swalKvValue">${
               emailOk ? emailText :
               emailSkipped ? "ไม่ได้เลือกผู้รับอีเมล" :
               `ไม่สำเร็จ${emailErr ? ` - ${escapeHtml(emailErr)}` : ""}`
             }</div>
           </div>
-        `,
-        width: 760,
-        confirmButtonText: "ตกลง"
+        </div>
+      </div>
+
+      <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:18px">
+        ${
+          json.pdfUrl
+            ? `<button type="button" id="btnRptOpenPdfAfterSave" class="swal2-confirm swal2-styled" style="background:#2563eb">เปิด PDF</button>`
+            : ``
+        }
+        <button type="button" id="btnRptCloseAfterSave" class="swal2-cancel swal2-styled" style="display:inline-block;background:#64748b">ปิดหน้าต่าง</button>
+      </div>
+    </div>
+  `,
+  didOpen: () => {
+    const btnOpen = document.getElementById("btnRptOpenPdfAfterSave");
+    const btnClose = document.getElementById("btnRptCloseAfterSave");
+
+    if (btnOpen && json.pdfUrl) {
+      btnOpen.addEventListener("click", () => {
+        window.open(json.pdfUrl, "_blank", "noopener,noreferrer");
+Swal.close();
       });
-
-      resetForm();
-      Progress?.hide(180);
-    } catch (err) {
-      console.error(err);
-      window.ProgressUI?.markError("save", err?.message || "เกิดข้อผิดพลาด", 56);
-      window.ProgressUI?.setHint("กรุณาตรวจสอบข้อมูล เครือข่าย หรือ backend แล้วลองใหม่อีกครั้ง");
-
-      await Swal.fire({
-        icon: "error",
-        title: "บันทึก Report500 ไม่สำเร็จ",
-        text: err?.message || String(err)
-      });
-
-      window.ProgressUI?.hide(180);
     }
+
+    if (btnClose) {
+      btnClose.addEventListener("click", () => {
+        Swal.close();
+      });
+    }
+  },
+  willClose: () => {
+    resetForm();
   }
+});
 
   function resetForm() {
     [
