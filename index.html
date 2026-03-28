@@ -678,7 +678,6 @@
   </div>
 
   <!-- IMAGE EDITOR MODAL -->
-    <!-- IMAGE EDITOR MODAL -->
   <div id="imgEditorModal" class="imgEditorModal hidden" aria-hidden="true">
     <div class="imgEditorBackdrop"></div>
 
@@ -686,73 +685,49 @@
       <div class="imgEditorHeader">
         <div class="imgEditorHeaderText">
           <div id="imgEditorTitle" class="imgEditorTitle">แก้ไขภาพก่อนบันทึก</div>
-          <div class="imgEditorSub">ซูม หมุน ปรับแสง วาด shape พิมพ์ข้อความ และปิดบังข้อมูลได้ก่อนนำภาพเข้าระบบ</div>
+          <div class="imgEditorSub">ซูม หมุน ปรับแสง วาด shape และพิมพ์ข้อความได้ก่อนนำภาพเข้าระบบ</div>
         </div>
 
         <button type="button" id="imgEditorCloseBtn" class="btn ghost imgEditorCloseBtn">ปิด</button>
       </div>
 
       <div class="imgEditorToolbarWrap">
-        <div class="imgEditorToolbarGrid">
+        <div class="imgEditorToolbar">
+          <button type="button" class="btn ghost ie-tool" data-tool="select">เลือก</button>
+          <button type="button" class="btn ghost ie-tool" data-tool="pan">เลื่อนภาพ</button>
+          <button type="button" class="btn ghost ie-tool" data-tool="line">เส้นตรง</button>
+          <button type="button" class="btn ghost ie-tool" data-tool="arrow">ลูกศร</button>
+          <button type="button" class="btn ghost ie-tool" data-tool="rect">สี่เหลี่ยม</button>
+          <button type="button" class="btn ghost ie-tool" data-tool="circle">วงกลม</button>
+          <button type="button" class="btn ghost ie-tool" data-tool="text">ข้อความ</button>
 
-          <div class="ieToolbarSection">
-            <div class="ieToolbarTitle">เครื่องมือ</div>
-            <div class="ieButtonGrid ieButtonGridTools">
-              <button type="button" class="btn ghost ie-tool" data-tool="select">เลือก</button>
-              <button type="button" class="btn ghost ie-tool" data-tool="pan">เลื่อน</button>
-              <button type="button" class="btn ghost ie-tool" data-tool="line">เส้น</button>
-              <button type="button" class="btn ghost ie-tool" data-tool="arrow">ลูกศร</button>
-              <button type="button" class="btn ghost ie-tool" data-tool="rect">สี่เหลี่ยม</button>
-              <button type="button" class="btn ghost ie-tool" data-tool="circle">วงกลม</button>
-              <button type="button" class="btn ghost ie-tool" data-tool="text">ข้อความ</button>
-              <button type="button" class="btn ghost ie-tool" id="ieCropToolBtn" data-tool="crop">ครอป</button>
-            </div>
-          </div>
+          <div class="ieDivider"></div>
 
-          <div class="ieToolbarSection">
-            <div class="ieToolbarTitle">การปิดบังข้อมูล</div>
-            <div class="ieButtonGrid ieButtonGridEffects">
-              <button type="button" class="btn ghost ie-tool" id="ieBlurRectBtn" data-tool="blurRect">เบลอสี่เหลี่ยม</button>
-              <button type="button" class="btn ghost ie-tool" id="ieBlurCircleBtn" data-tool="blurCircle">เบลอวงกลม</button>
-              <button type="button" class="btn ghost ie-tool" id="ieMosaicRectBtn" data-tool="mosaicRect">โมเสกสี่เหลี่ยม</button>
-              <button type="button" class="btn ghost ie-tool" id="ieMosaicCircleBtn" data-tool="mosaicCircle">โมเสกวงกลม</button>
-            </div>
-          </div>
+          <button type="button" id="ieZoomOutBtn" class="btn ghost">ซูมออก</button>
+          <button type="button" id="ieZoomInBtn" class="btn ghost">ซูมเข้า</button>
+          <button type="button" id="ieZoomResetBtn" class="btn ghost">100%</button>
 
-          <div class="ieToolbarSection">
-            <div class="ieToolbarTitle">มุมมอง / ปรับภาพ</div>
-            <div class="ieButtonGrid ieButtonGridView">
-              <button type="button" id="ieZoomOutBtn" class="btn ghost">ซูมออก</button>
-              <button type="button" id="ieZoomInBtn" class="btn ghost">ซูมเข้า</button>
-              <button type="button" id="ieZoomResetBtn" class="btn ghost">100%</button>
-              <button type="button" id="ieFitBtn" class="btn ghost">พอดีจอ</button>
-              <button type="button" id="ieRotateLeftBtn" class="btn ghost">หมุนซ้าย</button>
-              <button type="button" id="ieRotateRightBtn" class="btn ghost">หมุนขวา</button>
-              <button type="button" id="ieUndoBtn" class="btn ghost">ย้อนกลับ</button>
-              <button type="button" id="ieRedoBtn" class="btn ghost">ทำซ้ำ</button>
-            </div>
-          </div>
+          <div class="ieDivider"></div>
 
-          <div class="ieToolbarSection">
-            <div class="ieToolbarTitle">ตั้งค่า</div>
-            <div class="ieControlGrid">
-              <label class="ieField">
-                <span>สี</span>
-                <input type="color" id="ieColorPicker" value="#dc2626">
-              </label>
+          <button type="button" id="ieRotateLeftBtn" class="btn ghost">หมุนซ้าย</button>
+          <button type="button" id="ieRotateRightBtn" class="btn ghost">หมุนขวา</button>
 
-              <label class="ieField ieFieldRange">
-                <span>ขนาดเส้น</span>
-                <input type="range" id="ieStrokeWidth" min="1" max="16" step="1" value="3">
-              </label>
+          <div class="ieDivider"></div>
 
-              <label class="ieField ieFieldRange">
-                <span>แสง</span>
-                <input type="range" id="ieBrightness" min="-1" max="1" step="0.05" value="0">
-              </label>
-            </div>
-          </div>
+          <label class="ieField">
+            <span>สี</span>
+            <input type="color" id="ieColorPicker" value="#dc2626">
+          </label>
 
+          <label class="ieField ieFieldSmall">
+            <span>ขนาดเส้น</span>
+            <input type="range" id="ieStrokeWidth" min="1" max="16" step="1" value="3">
+          </label>
+
+          <label class="ieField ieFieldSmall">
+            <span>แสง</span>
+            <input type="range" id="ieBrightness" min="-1" max="1" step="0.05" value="0">
+          </label>
         </div>
       </div>
 
