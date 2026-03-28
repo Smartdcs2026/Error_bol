@@ -16,7 +16,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-  <link rel="stylesheet" href="./style.css?v=final-index-latest-2">
+  <link rel="stylesheet" href="./style.css?v=progress-ui-1">
 </head>
 <body>
   <header class="topbar">
@@ -56,7 +56,6 @@
           alt="S&amp;LP Logo"
           loading="eager"
         >
-        <!-- <div class="loginBadge">SMART DC</div> -->
         <h1>เข้าสู่ระบบ</h1>
         <p>ฟอร์มError_BOL และ Report</p>
       </div>
@@ -82,7 +81,6 @@
         </div>
       </div>
 
-      <!-- ข้อมูลผู้บันทึก -->
       <div class="sectionTitle">
         <span class="dot"></span>
         <div>
@@ -109,7 +107,6 @@
         </div>
       </div>
 
-      <!-- ข้อมูลการเบิกสินค้าผิดพลาด -->
       <div class="sectionTitle">
         <span class="dot"></span>
         <div>
@@ -167,7 +164,6 @@
         </div>
       </div>
 
-      <!-- ข้อมูลพนักงาน -->
       <div class="sectionTitle">
         <span class="dot"></span>
         <div>
@@ -230,7 +226,6 @@
         </div>
       </div>
 
-      <!-- ข้อเท็จจริงที่พนักงานยืนยัน -->
       <div class="sectionTitle">
         <span class="dot"></span>
         <div>
@@ -256,7 +251,6 @@
         </div>
       </div>
 
-      <!-- รูปภาพแนบ -->
       <div class="sectionTitle">
         <span class="dot"></span>
         <div>
@@ -272,7 +266,6 @@
         </div>
       </div>
 
-      <!-- อีเมล -->
       <div class="sectionTitle">
         <span class="dot"></span>
         <div>
@@ -296,349 +289,395 @@
     </section>
 
     <!-- REPORT500 -->
-<section id="under500Card" class="card hidden">
-  <div class="sectionTitle rptTitle">
-    <span class="dot rptDot"></span>
-    <div>
-      <div class="sectionMain">Report</div>
-      <div class="sectionSub">แบบฟอร์มรายงานเหตุการณ์ตามรูปแบบเอกสารจริง</div>
-    </div>
-  </div>
-
-  <!-- ส่วนหัวเอกสาร -->
-  <div class="sectionTitle rptTitle">
-    <span class="dot rptDot"></span>
-    <div>
-      <div class="sectionMain">ข้อมูลเอกสาร</div>
-      <div class="sectionSub">เลขอ้างอิง สาขา และเรื่องของรายงาน</div>
-    </div>
-  </div>
-
-  <div class="panel rptPanel">
-    <div class="gridCompact">
-      <div class="field">
-        <label for="rptRefNo">Ref No.</label>
-        <div class="refRow">
-          <input id="rptRefNo" placeholder="เลขรัน เช่น 001" inputmode="numeric">
-          <span class="refDash">/</span>
-          <select id="rptRefYear"></select>
+    <section id="under500Card" class="card hidden">
+      <div class="sectionTitle rptTitle">
+        <span class="dot rptDot"></span>
+        <div>
+          <div class="sectionMain">Report</div>
+          <div class="sectionSub">แบบฟอร์มรายงานเหตุการณ์ตามรูปแบบเอกสารจริง</div>
         </div>
       </div>
 
-      <div class="field">
-        <label for="rptBranch">สาขา</label>
-        <select id="rptBranch"></select>
+      <div class="sectionTitle rptTitle">
+        <span class="dot rptDot"></span>
+        <div>
+          <div class="sectionMain">ข้อมูลเอกสาร</div>
+          <div class="sectionSub">เลขอ้างอิง สาขา และเรื่องของรายงาน</div>
+        </div>
       </div>
 
-      <div id="rptBranchOtherWrap" class="field hidden">
-        <label for="rptBranchOther">ระบุสาขาอื่นๆ</label>
-        <input id="rptBranchOther" placeholder="กรอกชื่อสาขาเพิ่มเติม">
+      <div class="panel rptPanel">
+        <div class="gridCompact">
+          <div class="field">
+            <label for="rptRefNo">Ref No.</label>
+            <div class="refRow">
+              <input id="rptRefNo" placeholder="เลขรัน เช่น 001" inputmode="numeric">
+              <span class="refDash">/</span>
+              <select id="rptRefYear"></select>
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="rptBranch">สาขา</label>
+            <select id="rptBranch"></select>
+          </div>
+
+          <div id="rptBranchOtherWrap" class="field hidden">
+            <label for="rptBranchOther">ระบุสาขาอื่นๆ</label>
+            <input id="rptBranchOther" placeholder="กรอกชื่อสาขาเพิ่มเติม">
+          </div>
+
+          <div class="field fieldSpan2">
+            <label for="rptSubject">เรื่อง</label>
+            <input id="rptSubject" placeholder="กรอกหัวข้อเรื่องของรายงาน">
+          </div>
+        </div>
       </div>
 
-      <div class="field fieldSpan2">
-        <label for="rptSubject">เรื่อง</label>
-        <input id="rptSubject" placeholder="กรอกหัวข้อเรื่องของรายงาน">
-      </div>
-    </div>
-  </div>
-
-  <!-- checkbox ส่วนหัว -->
-  <div class="sectionTitle rptTitle">
-    <span class="dot rptDot"></span>
-    <div>
-      <div class="sectionMain">ประเภทและการแจ้งรายงาน</div>
-      <div class="sectionSub">ค่าตัวเลือกทั้งหมดจะดึงจาก Google Sheet</div>
-    </div>
-  </div>
-
-  <div class="panel rptPanel">
-    <div class="field">
-      <label>ประเภทรายงาน</label>
-      <div id="rptReportTypes" class="optionMatrix"></div>
-    </div>
-
-    <div class="field fieldBlock">
-      <label>ระดับความเร่งด่วน</label>
-      <div id="rptUrgencyTypes" class="optionMatrix"></div>
-    </div>
-
-    <div class="field fieldBlock">
-      <label>ผู้รับทราบ</label>
-      <div id="rptNotifyTo" class="optionMatrix"></div>
-    </div>
-  </div>
-
-  <!-- ข้อมูลเหตุการณ์ -->
-  <div class="sectionTitle rptTitle">
-    <span class="dot rptDot"></span>
-    <div>
-      <div class="sectionMain">ข้อมูลเหตุการณ์</div>
-      <div class="sectionSub">วันเวลา สถานที่ และรายละเอียดเหตุการณ์</div>
-    </div>
-  </div>
-
-  <div class="panel rptPanel">
-    <div class="gridCompact">
-      <div class="field">
-        <label for="rptIncidentDate">วันที่เกิดเหตุ</label>
-        <input id="rptIncidentDate" type="date">
+      <div class="sectionTitle rptTitle">
+        <span class="dot rptDot"></span>
+        <div>
+          <div class="sectionMain">ประเภทและการแจ้งรายงาน</div>
+          <div class="sectionSub">ค่าตัวเลือกทั้งหมดจะดึงจาก Google Sheet</div>
+        </div>
       </div>
 
-      <div class="field">
-        <label for="rptIncidentTime">เวลาเกิดเหตุ</label>
-        <input id="rptIncidentTime" type="time">
+      <div class="panel rptPanel">
+        <div class="field">
+          <label>ประเภทรายงาน</label>
+          <div id="rptReportTypes" class="optionMatrix"></div>
+        </div>
+
+        <div class="field fieldBlock">
+          <label>ระดับความเร่งด่วน</label>
+          <div id="rptUrgencyTypes" class="optionMatrix"></div>
+        </div>
+
+        <div class="field fieldBlock">
+          <label>ผู้รับทราบ</label>
+          <div id="rptNotifyTo" class="optionMatrix"></div>
+        </div>
       </div>
 
-      <div class="field fieldSpan2">
-        <label for="rptWhatHappen">เหตุที่เกิด (What happen?)</label>
-        <textarea id="rptWhatHappen" rows="5" placeholder="อธิบายเหตุการณ์ที่เกิดขึ้น"></textarea>
+      <div class="sectionTitle rptTitle">
+        <span class="dot rptDot"></span>
+        <div>
+          <div class="sectionMain">ข้อมูลเหตุการณ์</div>
+          <div class="sectionSub">วันเวลา สถานที่ และรายละเอียดเหตุการณ์</div>
+        </div>
       </div>
 
-      <div class="field fieldSpan2">
-        <label for="rptWhereDidItHappen">สถานที่เกิดเหตุ (Where did it happen?)</label>
-        <select id="rptWhereDidItHappen"></select>
+      <div class="panel rptPanel">
+        <div class="gridCompact">
+          <div class="field">
+            <label for="rptIncidentDate">วันที่เกิดเหตุ</label>
+            <input id="rptIncidentDate" type="date">
+          </div>
+
+          <div class="field">
+            <label for="rptIncidentTime">เวลาเกิดเหตุ</label>
+            <input id="rptIncidentTime" type="time">
+          </div>
+
+          <div class="field fieldSpan2">
+            <label for="rptWhatHappen">เหตุที่เกิด (What happen?)</label>
+            <textarea id="rptWhatHappen" rows="5" placeholder="อธิบายเหตุการณ์ที่เกิดขึ้น"></textarea>
+          </div>
+
+          <div class="field fieldSpan2">
+            <label for="rptWhereDidItHappen">สถานที่เกิดเหตุ (Where did it happen?)</label>
+            <select id="rptWhereDidItHappen"></select>
+          </div>
+
+          <div class="field fieldSpan2">
+            <label>ประเภทสถานที่เกิดเหตุ</label>
+            <div id="rptWhereTypeSelections" class="optionMatrix"></div>
+          </div>
+
+          <div class="field fieldSpan2">
+            <label for="rptArea">Area / บริเวณ</label>
+            <textarea id="rptArea" rows="3" placeholder="กรอกบริเวณหรือพื้นที่ที่เกิดเหตุ"></textarea>
+          </div>
+        </div>
       </div>
 
-      <div class="field fieldSpan2">
-        <label>ประเภทสถานที่เกิดเหตุ</label>
-        <div id="rptWhereTypeSelections" class="optionMatrix"></div>
+      <div class="sectionTitle rptTitle">
+        <span class="dot rptDot"></span>
+        <div>
+          <div class="sectionMain">ผู้เกี่ยวข้อง</div>
+          <div class="sectionSub">เพิ่ม/ลบแถวได้ โดย Position / Department / Remark ดึงจาก Google Sheet</div>
+        </div>
       </div>
 
-      <div class="field fieldSpan2">
-        <label for="rptArea">Area / บริเวณ</label>
-        <textarea id="rptArea" rows="3" placeholder="กรอกบริเวณหรือพื้นที่ที่เกิดเหตุ"></textarea>
-      </div>
-    </div>
-  </div>
-
-  <!-- ผู้เกี่ยวข้อง -->
-  <div class="sectionTitle rptTitle">
-    <span class="dot rptDot"></span>
-    <div>
-      <div class="sectionMain">ผู้เกี่ยวข้อง</div>
-      <div class="sectionSub">เพิ่ม/ลบแถวได้ โดย Position / Department / Remark ดึงจาก Google Sheet</div>
-    </div>
-  </div>
-
-  <div class="panel rptPanel">
-    <div class="panelActions">
-      <button id="btnRptAddPerson" class="btn secondary" type="button">+ เพิ่มแถวผู้เกี่ยวข้อง</button>
-    </div>
-    <div id="rptPersonList" class="rptRepeaterList"></div>
-  </div>
-
-  <!-- ความเสียหาย -->
-  <div class="sectionTitle rptTitle">
-    <span class="dot rptDot"></span>
-    <div>
-      <div class="sectionMain">ความเสียหาย</div>
-      <div class="sectionSub">เพิ่มแถว/ลบแถวได้ พร้อมลำดับเลขกำกับ</div>
-    </div>
-  </div>
-
-  <div class="panel rptPanel">
-    <div class="panelActions">
-      <button id="btnRptAddDamage" class="btn secondary" type="button">+ เพิ่มแถวความเสียหาย</button>
-    </div>
-    <div id="rptDamageList" class="rptRepeaterList"></div>
-  </div>
-
-  <!-- การดำเนินการ -->
-  <div class="sectionTitle rptTitle">
-    <span class="dot rptDot"></span>
-    <div>
-      <div class="sectionMain">การดำเนินการ</div>
-      <div class="sectionSub">รองรับ Alcohol / Methamphetamine / อื่นๆ และเพิ่มแถวได้</div>
-    </div>
-  </div>
-
-  <div class="panel rptPanel">
-    <div class="panelActions">
-      <button id="btnRptAddStepTaken" class="btn secondary" type="button">+ เพิ่มแถวการดำเนินการ</button>
-    </div>
-    <div id="rptStepTakenList" class="rptRepeaterList"></div>
-  </div>
-
-  <!-- คำให้การ -->
-  <div class="sectionTitle rptTitle">
-    <span class="dot rptDot"></span>
-    <div>
-      <div class="sectionMain">คำให้การของผู้กระทำผิด</div>
-      <div class="sectionSub">ข้อความอธิบายโดยตรงจากผู้เกี่ยวข้อง</div>
-    </div>
-  </div>
-
-  <div class="panel rptPanel">
-    <div class="field">
-      <label for="rptOffenderStatement">คำให้การของผู้กระทำผิด</label>
-      <textarea id="rptOffenderStatement" rows="5" placeholder="กรอกรายละเอียดคำให้การ"></textarea>
-    </div>
-  </div>
-
-  <!-- หลักฐาน -->
-  <div class="sectionTitle rptTitle">
-    <span class="dot rptDot"></span>
-    <div>
-      <div class="sectionMain">หลักฐานที่พบ</div>
-      <div class="sectionSub">เพิ่มแถว/ลบแถวได้ พร้อมลำดับเลขกำกับ</div>
-    </div>
-  </div>
-
-  <div class="panel rptPanel">
-    <div class="panelActions">
-      <button id="btnRptAddEvidence" class="btn secondary" type="button">+ เพิ่มแถวหลักฐาน</button>
-    </div>
-    <div id="rptEvidenceList" class="rptRepeaterList"></div>
-  </div>
-
-  <!-- สรุป -->
-  <div class="sectionTitle rptTitle">
-    <span class="dot rptDot"></span>
-    <div>
-      <div class="sectionMain">สรุป</div>
-      <div class="sectionSub">สรุปเหตุการณ์และผลการตรวจสอบ</div>
-    </div>
-  </div>
-
-  <div class="panel rptPanel">
-    <div class="field">
-      <label for="rptSummaryText">สรุป</label>
-      <textarea id="rptSummaryText" rows="5" placeholder="สรุปเหตุการณ์"></textarea>
-    </div>
-  </div>
-
-  <!-- สาเหตุ -->
-  <div class="sectionTitle rptTitle">
-    <span class="dot rptDot"></span>
-    <div>
-      <div class="sectionMain">สาเหตุของเหตุการณ์ในครั้งนี้</div>
-      <div class="sectionSub">เพิ่มแถว/ลบแถวได้ พร้อมลำดับเลขกำกับ</div>
-    </div>
-  </div>
-
-  <div class="panel rptPanel">
-    <div class="panelActions">
-      <button id="btnRptAddCause" class="btn secondary" type="button">+ เพิ่มแถวสาเหตุ</button>
-    </div>
-    <div id="rptCauseList" class="rptRepeaterList"></div>
-  </div>
-
-  <!-- การป้องกัน -->
-  <div class="sectionTitle rptTitle">
-    <span class="dot rptDot"></span>
-    <div>
-      <div class="sectionMain">การป้องกันเกิดเหตุซ้ำ / เสนอแนะ</div>
-      <div class="sectionSub">เพิ่มแถว/ลบแถวได้ พร้อมลำดับเลขกำกับ</div>
-    </div>
-  </div>
-
-  <div class="panel rptPanel">
-    <div class="panelActions">
-      <button id="btnRptAddPrevention" class="btn secondary" type="button">+ เพิ่มแถวการป้องกัน</button>
-    </div>
-    <div id="rptPreventionList" class="rptRepeaterList"></div>
-  </div>
-
-  <!-- ได้อะไรจากการสอบสวน -->
-  <div class="sectionTitle rptTitle">
-    <span class="dot rptDot"></span>
-    <div>
-      <div class="sectionMain">ได้อะไรจากการสอบสวนครั้งนี้ / หรือมีข้อขัดข้อง</div>
-      <div class="sectionSub">เพิ่มแถว/ลบแถวได้ พร้อมลำดับเลขกำกับ</div>
-    </div>
-  </div>
-
-  <div class="panel rptPanel">
-    <div class="panelActions">
-      <button id="btnRptAddLearning" class="btn secondary" type="button">+ เพิ่มแถวข้อสรุป/บทเรียน</button>
-    </div>
-    <div id="rptLearningList" class="rptRepeaterList"></div>
-  </div>
-
-  <!-- ผู้รายงาน -->
-  <div class="sectionTitle rptTitle">
-    <span class="dot rptDot"></span>
-    <div>
-      <div class="sectionMain">ผู้รายงาน</div>
-      <div class="sectionSub">ระบบจะใส่ชื่อผู้เข้าใช้งานให้อัตโนมัติ</div>
-    </div>
-  </div>
-
-  <div class="panel rptPanel">
-    <div class="gridCompact">
-      <div class="field">
-        <label for="rptReportedBy">Reported by</label>
-        <input id="rptReportedBy" readonly>
+      <div class="panel rptPanel">
+        <div class="panelActions">
+          <button id="btnRptAddPerson" class="btn secondary" type="button">+ เพิ่มแถวผู้เกี่ยวข้อง</button>
+        </div>
+        <div id="rptPersonList" class="rptRepeaterList"></div>
       </div>
 
-      <div class="field">
-        <label for="rptReporterPosition">Position</label>
-        <select id="rptReporterPosition"></select>
+      <div class="sectionTitle rptTitle">
+        <span class="dot rptDot"></span>
+        <div>
+          <div class="sectionMain">ความเสียหาย</div>
+          <div class="sectionSub">เพิ่มแถว/ลบแถวได้ พร้อมลำดับเลขกำกับ</div>
+        </div>
       </div>
 
-      <div id="rptReporterPositionOtherWrap" class="field hidden">
-        <label for="rptReporterPositionOther">ระบุตำแหน่งอื่นๆ</label>
-        <input id="rptReporterPositionOther" placeholder="กรอกตำแหน่งเพิ่มเติม">
+      <div class="panel rptPanel">
+        <div class="panelActions">
+          <button id="btnRptAddDamage" class="btn secondary" type="button">+ เพิ่มแถวความเสียหาย</button>
+        </div>
+        <div id="rptDamageList" class="rptRepeaterList"></div>
       </div>
 
-      <div class="field">
-        <label for="rptReportDate">Date</label>
-        <input id="rptReportDate" type="date">
+      <div class="sectionTitle rptTitle">
+        <span class="dot rptDot"></span>
+        <div>
+          <div class="sectionMain">การดำเนินการ</div>
+          <div class="sectionSub">รองรับ Alcohol / Methamphetamine / อื่นๆ และเพิ่มแถวได้</div>
+        </div>
       </div>
-    </div>
-  </div>
 
-  <!-- รูปภาพ -->
-  <div class="sectionTitle rptTitle">
-    <span class="dot rptDot"></span>
-    <div>
-      <div class="sectionMain">รูปภาพและคำบรรยาย</div>
-      <div class="sectionSub">แนบหลายรูปได้ โดย 1 แถว = 1 รูป + 1 คำบรรยาย</div>
-    </div>
-  </div>
+      <div class="panel rptPanel">
+        <div class="panelActions">
+          <button id="btnRptAddStepTaken" class="btn secondary" type="button">+ เพิ่มแถวการดำเนินการ</button>
+        </div>
+        <div id="rptStepTakenList" class="rptRepeaterList"></div>
+      </div>
 
-  <div class="panel rptPanel">
-    <div class="panelActions">
-      <button id="btnRptAddImage" class="btn secondary" type="button">+ เพิ่มรูปภาพ</button>
-    </div>
-    <div id="rptImageList" class="rptRepeaterList"></div>
-  </div>
+      <div class="sectionTitle rptTitle">
+        <span class="dot rptDot"></span>
+        <div>
+          <div class="sectionMain">คำให้การของผู้กระทำผิด</div>
+          <div class="sectionSub">ข้อความอธิบายโดยตรงจากผู้เกี่ยวข้อง</div>
+        </div>
+      </div>
 
-  <!-- อีเมล -->
-  <div class="sectionTitle rptTitle">
-    <span class="dot rptDot"></span>
-    <div>
-      <div class="sectionMain">ผู้รับอีเมล</div>
-      <div class="sectionSub">เลือกจาก Google Sheet และเพิ่มเองได้</div>
-    </div>
-  </div>
+      <div class="panel rptPanel">
+        <div class="field">
+          <label for="rptOffenderStatement">คำให้การของผู้กระทำผิด</label>
+          <textarea id="rptOffenderStatement" rows="5" placeholder="กรอกรายละเอียดคำให้การ"></textarea>
+        </div>
+      </div>
 
-  <div class="panel rptPanel">
-    <div class="panelActions">
-      <button id="btnRptEmailCheckAll" class="btn ghost" type="button">เลือกทั้งหมด</button>
-      <button id="btnRptEmailClearAll" class="btn ghost" type="button">ล้างทั้งหมด</button>
-    </div>
+      <div class="sectionTitle rptTitle">
+        <span class="dot rptDot"></span>
+        <div>
+          <div class="sectionMain">หลักฐานที่พบ</div>
+          <div class="sectionSub">เพิ่มแถว/ลบแถวได้ พร้อมลำดับเลขกำกับ</div>
+        </div>
+      </div>
 
-    <div id="rptEmailSelector" class="checkList"></div>
+      <div class="panel rptPanel">
+        <div class="panelActions">
+          <button id="btnRptAddEvidence" class="btn secondary" type="button">+ เพิ่มแถวหลักฐาน</button>
+        </div>
+        <div id="rptEvidenceList" class="rptRepeaterList"></div>
+      </div>
 
-    <div class="field fieldBlock">
-      <label for="rptEmailOther">อีเมลเพิ่มเติม</label>
-      <textarea
-        id="rptEmailOther"
-        rows="3"
-        placeholder="กรอกอีเมลเพิ่มเติม คั่นด้วย comma หรือขึ้นบรรทัดใหม่"
-      ></textarea>
-    </div>
-  </div>
+      <div class="sectionTitle rptTitle">
+        <span class="dot rptDot"></span>
+        <div>
+          <div class="sectionMain">สรุป</div>
+          <div class="sectionSub">สรุปเหตุการณ์และผลการตรวจสอบ</div>
+        </div>
+      </div>
 
-  <div class="actions">
-    <button id="btnRptPreview" class="btn secondary" type="button">ดูสรุปก่อนบันทึก</button>
-    <button id="btnRptSubmit" class="btn primary rptPrimary" type="button">บันทึกและสร้าง PDF</button>
-  </div>
-</section>
+      <div class="panel rptPanel">
+        <div class="field">
+          <label for="rptSummaryText">สรุป</label>
+          <textarea id="rptSummaryText" rows="5" placeholder="สรุปเหตุการณ์"></textarea>
+        </div>
+      </div>
+
+      <div class="sectionTitle rptTitle">
+        <span class="dot rptDot"></span>
+        <div>
+          <div class="sectionMain">สาเหตุของเหตุการณ์ในครั้งนี้</div>
+          <div class="sectionSub">เพิ่มแถว/ลบแถวได้ พร้อมลำดับเลขกำกับ</div>
+        </div>
+      </div>
+
+      <div class="panel rptPanel">
+        <div class="panelActions">
+          <button id="btnRptAddCause" class="btn secondary" type="button">+ เพิ่มแถวสาเหตุ</button>
+        </div>
+        <div id="rptCauseList" class="rptRepeaterList"></div>
+      </div>
+
+      <div class="sectionTitle rptTitle">
+        <span class="dot rptDot"></span>
+        <div>
+          <div class="sectionMain">การป้องกันเกิดเหตุซ้ำ / เสนอแนะ</div>
+          <div class="sectionSub">เพิ่มแถว/ลบแถวได้ พร้อมลำดับเลขกำกับ</div>
+        </div>
+      </div>
+
+      <div class="panel rptPanel">
+        <div class="panelActions">
+          <button id="btnRptAddPrevention" class="btn secondary" type="button">+ เพิ่มแถวการป้องกัน</button>
+        </div>
+        <div id="rptPreventionList" class="rptRepeaterList"></div>
+      </div>
+
+      <div class="sectionTitle rptTitle">
+        <span class="dot rptDot"></span>
+        <div>
+          <div class="sectionMain">ได้อะไรจากการสอบสวนครั้งนี้ / หรือมีข้อขัดข้อง</div>
+          <div class="sectionSub">เพิ่มแถว/ลบแถวได้ พร้อมลำดับเลขกำกับ</div>
+        </div>
+      </div>
+
+      <div class="panel rptPanel">
+        <div class="panelActions">
+          <button id="btnRptAddLearning" class="btn secondary" type="button">+ เพิ่มแถวข้อสรุป/บทเรียน</button>
+        </div>
+        <div id="rptLearningList" class="rptRepeaterList"></div>
+      </div>
+
+      <div class="sectionTitle rptTitle">
+        <span class="dot rptDot"></span>
+        <div>
+          <div class="sectionMain">ผู้รายงาน</div>
+          <div class="sectionSub">ระบบจะใส่ชื่อผู้เข้าใช้งานให้อัตโนมัติ</div>
+        </div>
+      </div>
+
+      <div class="panel rptPanel">
+        <div class="gridCompact">
+          <div class="field">
+            <label for="rptReportedBy">Reported by</label>
+            <input id="rptReportedBy" readonly>
+          </div>
+
+          <div class="field">
+            <label for="rptReporterPosition">Position</label>
+            <select id="rptReporterPosition"></select>
+          </div>
+
+          <div id="rptReporterPositionOtherWrap" class="field hidden">
+            <label for="rptReporterPositionOther">ระบุตำแหน่งอื่นๆ</label>
+            <input id="rptReporterPositionOther" placeholder="กรอกตำแหน่งเพิ่มเติม">
+          </div>
+
+          <div class="field">
+            <label for="rptReportDate">Date</label>
+            <input id="rptReportDate" type="date">
+          </div>
+        </div>
+      </div>
+
+      <div class="sectionTitle rptTitle">
+        <span class="dot rptDot"></span>
+        <div>
+          <div class="sectionMain">รูปภาพและคำบรรยาย</div>
+          <div class="sectionSub">แนบหลายรูปได้ โดย 1 แถว = 1 รูป + 1 คำบรรยาย</div>
+        </div>
+      </div>
+
+      <div class="panel rptPanel">
+        <div class="panelActions">
+          <button id="btnRptAddImage" class="btn secondary" type="button">+ เพิ่มรูปภาพ</button>
+        </div>
+        <div id="rptImageList" class="rptRepeaterList"></div>
+      </div>
+
+      <div class="sectionTitle rptTitle">
+        <span class="dot rptDot"></span>
+        <div>
+          <div class="sectionMain">ผู้รับอีเมล</div>
+          <div class="sectionSub">เลือกจาก Google Sheet และเพิ่มเองได้</div>
+        </div>
+      </div>
+
+      <div class="panel rptPanel">
+        <div class="panelActions">
+          <button id="btnRptEmailCheckAll" class="btn ghost" type="button">เลือกทั้งหมด</button>
+          <button id="btnRptEmailClearAll" class="btn ghost" type="button">ล้างทั้งหมด</button>
+        </div>
+
+        <div id="rptEmailSelector" class="checkList"></div>
+
+        <div class="field fieldBlock">
+          <label for="rptEmailOther">อีเมลเพิ่มเติม</label>
+          <textarea
+            id="rptEmailOther"
+            rows="3"
+            placeholder="กรอกอีเมลเพิ่มเติม คั่นด้วย comma หรือขึ้นบรรทัดใหม่"
+          ></textarea>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button id="btnRptPreview" class="btn secondary" type="button">ดูสรุปก่อนบันทึก</button>
+        <button id="btnRptSubmit" class="btn primary rptPrimary" type="button">บันทึกและสร้าง PDF</button>
+      </div>
+    </section>
   </main>
 
-  <script src="./report500.js?v=final-index-latest-2"></script>
-  <script src="./app.js?v=final-index-latest-2"></script>
+  <!-- Progress Overlay -->
+  <div id="progressOverlay" class="progress-overlay hidden" aria-hidden="true">
+    <div id="progressCard" class="progress-card" role="dialog" aria-modal="true" aria-labelledby="progressTitle">
+      <div class="progress-head">
+        <div class="progress-icon-wrap">
+          <div class="progress-spinner"></div>
+        </div>
+        <div class="progress-head-text">
+          <h3 id="progressTitle">กำลังบันทึกข้อมูล</h3>
+          <p id="progressSubtitle">โปรดรอสักครู่ ระบบกำลังประมวลผล</p>
+        </div>
+      </div>
+
+      <div class="progress-percent-row">
+        <span id="progressPercentText">0%</span>
+        <span id="progressStepText">เริ่มต้น...</span>
+      </div>
+
+      <div class="progress-bar-shell">
+        <div id="progressBarFill" class="progress-bar-fill" style="width:0%"></div>
+        <div class="progress-bar-glow"></div>
+      </div>
+
+      <div class="progress-stage-list">
+        <div class="progress-stage" id="stage-validate">
+          <span class="stage-dot"></span>
+          <span class="stage-label">ตรวจสอบข้อมูล</span>
+          <span class="stage-status">รอ</span>
+        </div>
+
+        <div class="progress-stage" id="stage-upload">
+          <span class="stage-dot"></span>
+          <span class="stage-label">เตรียมและอัปโหลดรูปภาพ</span>
+          <span class="stage-status">รอ</span>
+        </div>
+
+        <div class="progress-stage" id="stage-save">
+          <span class="stage-dot"></span>
+          <span class="stage-label">บันทึกข้อมูลลงระบบ</span>
+          <span class="stage-status">รอ</span>
+        </div>
+
+        <div class="progress-stage" id="stage-pdf">
+          <span class="stage-dot"></span>
+          <span class="stage-label">สร้างไฟล์ PDF</span>
+          <span class="stage-status">รอ</span>
+        </div>
+
+        <div class="progress-stage" id="stage-email">
+          <span class="stage-dot"></span>
+          <span class="stage-label">ส่งอีเมล / แนบไฟล์ / ส่งลิงก์</span>
+          <span class="stage-status">รอ</span>
+        </div>
+      </div>
+
+      <div id="progressHint" class="progress-hint">
+        กรุณาอย่าปิดหน้าจอหรือรีเฟรชระหว่างการบันทึก
+      </div>
+    </div>
+  </div>
+
+  <script src="./report500.js?v=progress-ui-1"></script>
+  <script src="./app.js?v=progress-ui-1"></script>
 </body>
 </html>
