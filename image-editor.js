@@ -19,7 +19,6 @@
 
     cropRect: null,
     tempDraft: null,
-    tempArrowHead: null,
     history: [],
     historyIndex: -1,
     restoringHistory: false
@@ -72,7 +71,6 @@
     editorState.baseImage = null;
     editorState.cropRect = null;
     editorState.tempDraft = null;
-    editorState.tempArrowHead = null;
   }
 
   function closeEditor(result = { ok: false }) {
@@ -134,11 +132,13 @@
 
     canvas.forEachObject((obj) => {
       if (obj === editorState.baseImage) return;
+
       if (obj === editorState.cropRect) {
         obj.selectable = tool === "crop";
         obj.evented = tool === "crop";
         return;
       }
+
       obj.selectable = (tool === "select");
       obj.evented = true;
     });
@@ -302,6 +302,9 @@
       lockRotation: true,
       objectCaching: false
     });
+
+    editorState.cropRect.scaleX = 1;
+    editorState.cropRect.scaleY = 1;
 
     canvas.add(editorState.cropRect);
     canvas.setActiveObject(editorState.cropRect);
@@ -467,7 +470,9 @@
 
     overlay.set({
       effectType,
-      toolType: shapeType === "circle" ? (effectType === "blur" ? "blurCircle" : "mosaicCircle") : (effectType === "blur" ? "blurRect" : "mosaicRect")
+      toolType: shapeType === "circle"
+        ? (effectType === "blur" ? "blurCircle" : "mosaicCircle")
+        : (effectType === "blur" ? "blurRect" : "mosaicRect")
     });
 
     if (shapeType === "circle") {
@@ -520,6 +525,11 @@
       await loadImageToCanvas(croppedFile);
 
       resetViewport();
+      if (editorState.canvas) {
+        editorState.canvas.calcOffset();
+        editorState.canvas.requestRenderAll();
+      }
+
       setActiveTool("select");
       pushHistorySnapshot(true);
     } catch (err) {
@@ -567,7 +577,6 @@
       canvas.add(overlay);
       canvas.setActiveObject(overlay);
       canvas.requestRenderAll();
-      setActiveTool("select");
       pushHistorySnapshot();
     } catch (err) {
       console.error(err);
@@ -665,6 +674,11 @@
         setZoomLabel();
       }
 
+      if (editorState.canvas) {
+        editorState.canvas.calcOffset();
+        editorState.canvas.requestRenderAll();
+      }
+
       setActiveTool("select");
       updateUndoRedoState();
     } finally {
@@ -697,17 +711,6 @@
     canvas.on("object:modified", () => {
       if (editorState.restoringHistory) return;
       pushHistorySnapshot();
-    });
-
-    canvas.on("object:added", (e) => {
-      if (editorState.restoringHistory) return;
-      if (e.target === editorState.baseImage) return;
-      if (e.target === editorState.cropRect) return;
-    });
-
-    canvas.on("object:removed", (e) => {
-      if (editorState.restoringHistory) return;
-      if (e.target === editorState.cropRect) return;
     });
   }
 
@@ -921,12 +924,20 @@
     editorState.originalUrl = url;
 
     const wrap = editorState.canvasEl.parentElement;
-    const maxW = Math.max(640, wrap.clientWidth - 20);
-    const maxH = Math.max(420, wrap.clientHeight - 20);
+    if (!wrap) throw new Error("ไม่พบพื้นที่แสดง canvas");
+
+    const maxW = Math.max(640, Math.floor(wrap.clientWidth - 20));
+    const maxH = Math.max(420, Math.floor(wrap.clientHeight - 20));
+
+    if (editorState.canvas) {
+      try { editorState.canvas.dispose(); } catch (_) {}
+      editorState.canvas = null;
+    }
 
     const canvas = new fabric.Canvas(editorState.canvasEl, {
       preserveObjectStacking: true,
-      selection: true
+      selection: true,
+      renderOnAddRemove: true
     });
 
     editorState.canvas = canvas;
@@ -934,34 +945,73 @@
     const imgEl = await new Promise((resolve, reject) => {
       const img = new Image();
       img.onload = () => resolve(img);
-      img.onerror = reject;
+      img.onerror = () => reject(new Error("โหลดรูปภาพไม่สำเร็จ"));
+      img.decoding = "async";
       img.src = url;
     });
 
-    const scale = Math.min(maxW / imgEl.width, maxH / imgEl.height, 1);
+    const imgW = imgEl.naturalWidth || imgEl.width;
+    const imgH = imgEl.naturalHeight || imgEl.height;
 
-    canvas.setWidth(Math.max(320, Math.round(imgEl.width * scale)));
-    canvas.setHeight(Math.max(240, Math.round(imgEl.height * scale)));
+    if (!imgW || !imgH) {
+      throw new Error("ไม่สามารถอ่านขนาดรูปภาพได้");
+    }
+
+    const scale = Math.min(maxW / imgW, maxH / imgH, 1);
+    const canvasW = Math.max(320, Math.round(imgW * scale));
+    const canvasH = Math.max(240, Math.round(imgH * scale));
+
+    canvas.setWidth(canvasW);
+    canvas.setHeight(canvasH);
+
+    if (canvas.lowerCanvasEl) {
+      canvas.lowerCanvasEl.style.width = canvasW + "px";
+      canvas.lowerCanvasEl.style.height = canvasH + "px";
+      canvas.lowerCanvasEl.width = canvasW;
+      canvas.lowerCanvasEl.height = canvasH;
+    }
+
+    if (canvas.upperCanvasEl) {
+      canvas.upperCanvasEl.style.width = canvasW + "px";
+      canvas.upperCanvasEl.style.height = canvasH + "px";
+      canvas.upperCanvasEl.width = canvasW;
+      canvas.upperCanvasEl.height = canvasH;
+    }
+
+    if (canvas.wrapperEl) {
+      canvas.wrapperEl.style.width = canvasW + "px";
+      canvas.wrapperEl.style.height = canvasH + "px";
+    }
 
     const baseImage = new fabric.Image(imgEl, {
-      left: 0,
-      top: 0,
+      left: canvasW / 2,
+      top: canvasH / 2,
+      originX: "center",
+      originY: "center",
       selectable: false,
       evented: false,
       objectCaching: false
     });
 
-    baseImage.scaleToWidth(canvas.getWidth());
-    baseImage.scaleToHeight(canvas.getHeight());
+    baseImage.scaleX = scale;
+    baseImage.scaleY = scale;
 
     editorState.baseImage = baseImage;
+
+    canvas.clear();
     canvas.add(baseImage);
-    canvas.sendObjectToBack(baseImage);
+
+    if (typeof baseImage.moveTo === "function") {
+      baseImage.moveTo(0);
+    } else if (typeof canvas.sendObjectToBack === "function") {
+      canvas.sendObjectToBack(baseImage);
+    }
 
     bindObjectEvents();
     bindPointerDrawing();
 
     resetViewport();
+    canvas.calcOffset();
     canvas.requestRenderAll();
   }
 
@@ -1115,7 +1165,7 @@
         await loadImageToCanvas(editorState.originalFile);
         editorState.zoom = 1;
         editorState.brightness = 0;
-        $("ieBrightness").value = "0";
+        if ($("ieBrightness")) $("ieBrightness").value = "0";
         setActiveTool("select");
         pushHistorySnapshot(true);
       } catch (err) {
@@ -1166,7 +1216,20 @@
     destroyCanvas();
     revokeOriginalUrl();
 
-    await loadImageToCanvas(file);
+    try {
+      await loadImageToCanvas(file);
+    } catch (err) {
+      console.error("loadImageToCanvas error:", err);
+      closeEditor({ ok: false });
+      await showMessage("error", "เปิดภาพไม่สำเร็จ", err?.message || String(err));
+      return Promise.resolve({ ok: false });
+    }
+
+    if (editorState.canvas) {
+      editorState.canvas.calcOffset();
+      editorState.canvas.requestRenderAll();
+    }
+
     setActiveTool("select");
     setZoomLabel();
     setToolLabel();
