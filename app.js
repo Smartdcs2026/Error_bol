@@ -8146,7 +8146,7 @@
 // };
 
 
-const API_BASE = "https://bol.somchaibutphon.workers.dev";
+ const API_BASE = "https://bol.somchaibutphon.workers.dev";
 
 /** ==========================
  *  SHARED PROGRESS UI
@@ -8280,6 +8280,10 @@ function sleepMs(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+function safeDelay(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms || 0));
+}
+
 function estimateUploadProgressByFiles(fileCount, baseStart = 16, baseEnd = 42) {
   const count = Math.max(1, Number(fileCount) || 1);
   return {
@@ -8289,6 +8293,27 @@ function estimateUploadProgressByFiles(fileCount, baseStart = 16, baseEnd = 42) 
       return Math.round(baseStart + ((baseEnd - baseStart) * ratio));
     },
     end: baseEnd
+  };
+}
+
+function buildEmailStatusSummary_(json) {
+  const emailResult = json?.emailResult || {};
+  const emailStatus = String(emailResult.error || json?.emailSendStatus || "").trim();
+  const emailOk = !!(emailResult.ok || /SENT/i.test(emailStatus));
+  const emailSkipped = !!(emailResult.skipped || /SKIPPED/i.test(emailStatus));
+  const attachmentMode = String(emailResult.attachmentMode || "").trim();
+
+  let emailModeText = "ส่งอีเมลเรียบร้อย";
+  if (attachmentMode === "LINK_ONLY") emailModeText = "ส่งอีเมลแบบลิงก์ PDF";
+  if (attachmentMode === "ATTACHED") emailModeText = "ส่งอีเมลพร้อมไฟล์ PDF";
+
+  return {
+    emailResult,
+    emailStatus,
+    emailOk,
+    emailSkipped,
+    attachmentMode,
+    emailModeText
   };
 }
 
@@ -8535,8 +8560,7 @@ async function init() {
   syncConfirmCauseOtherVisibility();
   setActiveTab("error");
   updateEmployeeConfirmPreview();
-}
-
+} 
 /** ==========================
  *  Tabs
  *  ========================== */
@@ -8590,10 +8614,13 @@ window.setActiveTab = setActiveTab;
  *  ========================== */
 function bindEvents() {
   $("btnLogin")?.addEventListener("click", onLogin);
+
   $("errorReason")?.addEventListener("change", onErrorReasonChange);
   $("btnAddImage")?.addEventListener("click", () => addUploadField("ภาพอื่นๆ"));
+
   $("btnPreview")?.addEventListener("click", previewSummary);
   $("btnSubmit")?.addEventListener("click", submitForm);
+
   $("btnEmailCheckAll")?.addEventListener("click", () => setAllEmailChecks(true));
   $("btnEmailClearAll")?.addEventListener("click", () => setAllEmailChecks(false));
 
@@ -8658,45 +8685,61 @@ function fillFormDropdowns() {
   const nationality = $("nationality");
 
   if (er) {
-    er.innerHTML = `<option value="">-- เลือก --</option>` +
+    er.innerHTML =
+      `<option value="">-- เลือก --</option>` +
       (OPTIONS.errorList || []).map((n) => `<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join("");
   }
+
   if (audit) {
-    audit.innerHTML = `<option value="">-- เลือก --</option>` +
+    audit.innerHTML =
+      `<option value="">-- เลือก --</option>` +
       (OPTIONS.auditList || []).map((n) => `<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join("");
   }
+
   if (osm) {
-    osm.innerHTML = `<option value="">-- เลือก --</option>` +
+    osm.innerHTML =
+      `<option value="">-- เลือก --</option>` +
       (OPTIONS.osmList || []).map((n) => `<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join("");
   }
+
   if (otm) {
-    otm.innerHTML = `<option value="">-- เลือก --</option>` +
+    otm.innerHTML =
+      `<option value="">-- เลือก --</option>` +
       (OPTIONS.otmList || []).map((n) => `<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join("");
   }
+
   if (nationality) {
-    nationality.innerHTML = `<option value="">-- เลือก --</option>` +
+    nationality.innerHTML =
+      `<option value="">-- เลือก --</option>` +
       (OPTIONS.nationalityList || []).map((n) => `<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join("");
   }
 
   syncErrorReasonOtherVisibility();
 }
+
 function buildWorkAgeOptions() {
   const yearEl = $("workAgeYear");
   const monthEl = $("workAgeMonth");
 
   if (yearEl) {
-    yearEl.innerHTML = `<option value="">-- ปี --</option>` +
+    yearEl.innerHTML =
+      `<option value="">-- ปี --</option>` +
       Array.from({ length: 41 }, (_, i) => `<option value="${i}">${i}</option>`).join("");
   }
+
   if (monthEl) {
-    monthEl.innerHTML = `<option value="">-- เดือน --</option>` +
+    monthEl.innerHTML =
+      `<option value="">-- เดือน --</option>` +
       Array.from({ length: 12 }, (_, i) => `<option value="${i}">${i}</option>`).join("");
   }
 }
 
 function buildShiftOptions() {
   const shift = $("shift");
-  if (!shift || shift.options.length > 0) return;
+  if (!shift) return;
+
+  if (shift.options.length > 0) return;
+
   shift.innerHTML = `
     <option value="">-- เลือก --</option>
     <option value="Day">Day</option>
@@ -8714,10 +8757,15 @@ function syncErrorReasonOtherVisibility() {
   const v = $("errorReason")?.value || "";
   const wrap = $("errorReasonOtherWrap");
   const input = $("errorReasonOther");
+
   if (!wrap) return;
+
   const show = v === "อื่นๆ";
   wrap.classList.toggle("hidden", !show);
-  if (!show && input) input.value = "";
+
+  if (!show && input) {
+    input.value = "";
+  }
 }
 
 function syncConfirmCauseOtherVisibility() {
@@ -8726,15 +8774,21 @@ function syncConfirmCauseOtherVisibility() {
   if (!wrap) return;
 
   const checkedList = Array.from(document.querySelectorAll(".confirmCauseChk:checked"));
+
   const show = checkedList.some((el) => {
     const value = String(el.value || "").trim();
-    const requiresText = String(el.dataset.requiresText || "").trim() === "1" ||
+    const requiresText =
+      String(el.dataset.requiresText || "").trim() === "1" ||
       String(el.dataset.requirestext || "").trim() === "1";
+
     return value === "อื่นๆ" || requiresText;
   });
 
   wrap.classList.toggle("hidden", !show);
-  if (!show && input) input.value = "";
+
+  if (!show && input) {
+    input.value = "";
+  }
 }
 
 function onErrorReasonChange() {
@@ -8750,6 +8804,7 @@ function renderConfirmCauseSelector() {
 
   const selectedBefore = getSelectedConfirmCauses();
   const currentReason = String($("errorReason")?.value || "").trim();
+
   const allItems = Array.isArray(OPTIONS.confirmCauseList) ? OPTIONS.confirmCauseList : [];
   const filtered = allItems.filter((item) => {
     const targets = Array.isArray(item.mainReasons) ? item.mainReasons : ["*"];
@@ -8774,9 +8829,16 @@ function renderConfirmCauseSelector() {
     const cards = groups[group].map((item) => {
       const checked = selectedBefore.includes(item.text) ? "checked" : "";
       const requiresText = item.requiresText ? "1" : "0";
+
       return `
         <label class="confirmCauseCard">
-          <input type="checkbox" class="confirmCauseChk" value="${escapeHtml(item.text)}" data-requires-text="${requiresText}" ${checked}>
+          <input
+            type="checkbox"
+            class="confirmCauseChk"
+            value="${escapeHtml(item.text)}"
+            data-requires-text="${requiresText}"
+            ${checked}
+          >
           <span class="confirmCauseMark"></span>
           <span class="confirmCauseText">${escapeHtml(item.text)}</span>
         </label>
@@ -8803,7 +8865,7 @@ function renderConfirmCauseSelector() {
 
 function getSelectedConfirmCauses() {
   return Array.from(document.querySelectorAll(".confirmCauseChk:checked"))
-    .map((el) => String(el.value || "").trim())
+    .map(el => String(el.value || "").trim())
     .filter(Boolean);
 }
 
@@ -8814,8 +8876,9 @@ function getSelectedConfirmCausesForNarrative() {
 function composeConfirmCauseSummary(selected, otherText) {
   const list = (Array.isArray(selected) ? selected : [])
     .filter(Boolean)
-    .map((v) => String(v).trim())
-    .filter((v) => v && v !== "อื่นๆ");
+    .map(v => String(v).trim())
+    .filter(v => v && v !== "อื่นๆ");
+
   const other = String(otherText || "").trim();
   const out = list.slice();
   if (other) out.push("อื่นๆ: " + other);
@@ -8828,6 +8891,7 @@ function composeConfirmCauseSummary(selected, otherText) {
 function renderEmailSelector() {
   const root = $("emailSelector");
   if (!root) return;
+
   const emails = Array.isArray(OPTIONS.emailList) ? OPTIONS.emailList : [];
   if (!emails.length) {
     root.innerHTML = `<div class="emailEmpty">ไม่พบรายการอีเมลในชีท Email</div>`;
@@ -8845,12 +8909,12 @@ function renderEmailSelector() {
 
 function getSelectedEmails() {
   return Array.from(document.querySelectorAll(".emailChk:checked"))
-    .map((el) => String(el.value || "").trim())
+    .map(el => String(el.value || "").trim())
     .filter(Boolean);
 }
 
 function setAllEmailChecks(flag) {
-  document.querySelectorAll(".emailChk").forEach((chk) => {
+  document.querySelectorAll(".emailChk").forEach(chk => {
     chk.checked = !!flag;
   });
 }
@@ -8861,6 +8925,7 @@ function setAllEmailChecks(flag) {
 async function onLogin() {
   safeSetLoginMsg("");
   const pass = norm($("loginPass")?.value);
+
   if (!pass) {
     safeSetLoginMsg("กรุณากรอกรหัสผ่าน");
     return;
@@ -8900,9 +8965,15 @@ async function onLogin() {
 
   AUTH = { name: lpsName, pass };
   window.AUTH = AUTH;
+
   setLpsFromLogin(lpsName);
 
+  if ($("rptReportedBy")) {
+    $("rptReportedBy").value = lpsName || "";
+  }
+
   safeSetLoginMsg("");
+
   try {
     setActiveTab("error");
   } catch (err) {
@@ -8910,7 +8981,7 @@ async function onLogin() {
   }
 
   if (window.Report500UI && typeof window.Report500UI.ensureReady === "function") {
-    window.Report500UI.ensureReady().catch((err) => {
+    window.Report500UI.ensureReady().catch(err => {
       console.error("Report500 preload failed:", err);
     });
   }
@@ -9126,12 +9197,14 @@ function getItemDisplayText() {
   }
   return ($("itemDisplay")?.value || $("item")?.value || "").trim();
 }
+
 /** ==========================
  *  Upload fields
  *  ========================== */
 function buildInitialUploadFields() {
   const list = $("uploadList");
   if (!list) return;
+
   list.innerHTML = "";
   addUploadField("บัตรพนักงาน", { removable: false });
   addUploadField("รูปพนักงาน", { removable: false });
@@ -9139,6 +9212,7 @@ function buildInitialUploadFields() {
 
 function addUploadField(label, opts = {}) {
   const { removable = true } = opts;
+
   const list = $("uploadList");
   if (!list) return;
 
@@ -9212,7 +9286,6 @@ function addUploadField(label, opts = {}) {
     }
   });
 }
-
 /** ==========================
  *  Payload
  *  ========================== */
@@ -9262,9 +9335,9 @@ function buildEmployeeConfirmText(payload) {
 
   const selected = Array.isArray(payload.confirmCauseSelected)
     ? payload.confirmCauseSelected
-      .filter(Boolean)
-      .map((v) => String(v).trim())
-      .filter((v) => v && v !== "อื่นๆ")
+        .filter(Boolean)
+        .map(v => String(v).trim())
+        .filter(v => v && v !== "อื่นๆ")
     : [];
 
   const other = String(payload.confirmCauseOther || "").trim();
@@ -9502,7 +9575,7 @@ async function previewSummary() {
                   มีการเลือกผู้รับอีเมล ${emails.length} รายการ
                 </div>
                 <div class="swalEmailList">
-                  ${emails.map((e) => `<div class="swalEmailChip">${escapeHtml(e)}</div>`).join("")}
+                  ${emails.map(e => `<div class="swalEmailChip">${escapeHtml(e)}</div>`).join("")}
                 </div>
               `
               : `<div class="swalNote">ยังไม่ได้เลือกอีเมล ระบบจะบันทึกข้อมูลและสร้าง PDF อย่างเดียว</div>`
@@ -9534,12 +9607,14 @@ function countSelectedFiles() {
   const inputs = Array.from(document.querySelectorAll('#uploadList input[type="file"]'));
   return inputs.reduce((acc, el) => acc + ((el.files && el.files[0]) ? 1 : 0), 0);
 }
+
 /** ==========================
  *  Submit
  *  ========================== */
 async function submitForm() {
   const p = collectPayload();
   const err = validatePayload(p);
+
   if (err) {
     return Swal.fire({
       icon: "warning",
@@ -9549,53 +9624,45 @@ async function submitForm() {
     });
   }
 
+  let files = [];
+  try {
+    files = await collectFilesAsBase64({ maxFiles: 6, maxMBEach: 4 });
+  } catch (fileErr) {
+    console.error(fileErr);
+    return;
+  }
+
+  const signRes = await openSignatureFlow(p.otm, p.employeeName, p.interpreterName);
+  if (!signRes.ok) {
+    return;
+  }
+
+  const body = {
+    pass: AUTH.pass,
+    payload: p,
+    files,
+    signatures: {
+      supervisorBase64: signRes.supervisorBase64 || "",
+      employeeBase64: signRes.employeeBase64 || "",
+      interpreterBase64: signRes.interpreterBase64 || ""
+    }
+  };
+
   ProgressUI.show(
     "กำลังบันทึก Error_BOL",
-    "ระบบกำลังตรวจสอบข้อมูล อัปโหลดรูป สร้าง PDF และส่งอีเมล"
+    "ระบบกำลังอัปโหลดข้อมูล สร้าง PDF และส่งอีเมล"
   );
 
   try {
-    ProgressUI.activateOnly("validate", 8, "กำลังตรวจสอบข้อมูลที่กรอก");
-    await sleepMs(180);
-    ProgressUI.markDone("validate", 14, "ตรวจสอบข้อมูลเรียบร้อย");
+    ProgressUI.activateOnly("validate", 10, "ตรวจสอบข้อมูลเรียบร้อย");
+    await safeDelay(140);
+    ProgressUI.markDone("validate", 18, "พร้อมส่งข้อมูล");
 
-    ProgressUI.activateOnly("upload", 18, "กำลังเตรียมรูปภาพและลายเซ็น");
+    ProgressUI.activateOnly("upload", 28, "กำลังเตรียมรูปภาพและลายเซ็น");
+    await safeDelay(180);
+    ProgressUI.markDone("upload", 42, `เตรียมไฟล์เรียบร้อย (${files.length} รูป + ลายเซ็น)`);
 
-    let files = [];
-    try {
-      files = await collectFilesAsBase64({ maxFiles: 6, maxMBEach: 4 });
-    } catch (fileErr) {
-      ProgressUI.markError("upload", "เตรียมรูปภาพไม่สำเร็จ", 18);
-      ProgressUI.setHint("กรุณาตรวจสอบขนาดไฟล์หรือชนิดไฟล์รูปภาพ");
-      throw fileErr;
-    }
-
-    const uploadProg = estimateUploadProgressByFiles(Math.max(files.length, 1), 18, 40);
-    files.forEach((_, idx) => {
-      ProgressUI.setProgress(uploadProg.next(idx + 1), `เตรียมรูปภาพ ${idx + 1}/${files.length || 1}`);
-    });
-
-    const signRes = await openSignatureFlow(p.otm, p.employeeName, p.interpreterName);
-    if (!signRes.ok) {
-      ProgressUI.markError("upload", "ผู้ใช้ยกเลิกลายเซ็น", 26);
-      ProgressUI.hide(250);
-      return;
-    }
-
-    ProgressUI.markDone("upload", 42, `เตรียมรูปภาพและลายเซ็นเรียบร้อย (${files.length} รูป)`);
-
-    const body = {
-      pass: AUTH.pass,
-      payload: p,
-      files,
-      signatures: {
-        supervisorBase64: signRes.supervisorBase64 || "",
-        employeeBase64: signRes.employeeBase64 || "",
-        interpreterBase64: signRes.interpreterBase64 || ""
-      }
-    };
-
-    ProgressUI.activateOnly("save", 52, "กำลังบันทึกข้อมูลลงระบบ");
+    ProgressUI.activateOnly("save", 56, "กำลังบันทึกข้อมูลลงระบบ");
 
     const res = await fetch(apiUrl("/submit"), {
       method: "POST",
@@ -9605,6 +9672,7 @@ async function submitForm() {
 
     const text = await res.text();
     let json = {};
+
     try {
       json = JSON.parse(text);
     } catch (_) {
@@ -9615,34 +9683,34 @@ async function submitForm() {
       throw new Error(json?.error || `บันทึกข้อมูลไม่สำเร็จ (HTTP ${res.status})`);
     }
 
-    ProgressUI.markDone("save", 68, "บันทึกข้อมูลลงระบบเรียบร้อย");
+    ProgressUI.markDone("save", 72, "บันทึกข้อมูลลงระบบเรียบร้อย");
 
-    ProgressUI.activateOnly("pdf", 82, "กำลังสร้างไฟล์ PDF");
-    await sleepMs(180);
-    ProgressUI.markDone("pdf", 92, json.pdfFileId ? "สร้างไฟล์ PDF เรียบร้อย" : "ระบบไม่แจ้งเลขไฟล์ PDF");
+    ProgressUI.activateOnly("pdf", 84, "กำลังสร้างไฟล์ PDF");
+    await safeDelay(180);
 
-    ProgressUI.activateOnly("email", 96, "กำลังสรุปผลการส่งอีเมล");
-    await sleepMs(160);
+    const pdfOk = !!(json.pdfFileId || json.pdfUrl);
+    if (pdfOk) {
+      const sizeText = json.pdfSizeText ? ` (${json.pdfSizeText})` : "";
+      ProgressUI.markDone("pdf", 94, `สร้างไฟล์ PDF เรียบร้อย${sizeText}`);
+    } else {
+      ProgressUI.markError("pdf", "ไม่สามารถสร้าง PDF ได้", 94);
+    }
 
-    const emailResult = json.emailResult || {};
-    const emailStatus = String(emailResult.error || json.emailSendStatus || "").trim();
-    const emailOk = !!(emailResult.ok || /SENT/i.test(emailStatus));
-    const emailSkipped = !!(emailResult.skipped || /SKIPPED/i.test(emailStatus));
-    const attachmentMode = String(emailResult.attachmentMode || "").trim();
+    ProgressUI.activateOnly("email", 98, "กำลังตรวจสอบผลการส่งอีเมล");
+    await safeDelay(140);
 
-    if (emailOk) {
-      const modeText = attachmentMode === "LINK_ONLY"
-        ? "ส่งอีเมลแบบลิงก์ PDF"
-        : "ส่งอีเมลพร้อมไฟล์ PDF";
-      ProgressUI.markDone("email", 100, modeText, modeText);
+    const emailInfo = buildEmailStatusSummary_(json);
+
+    if (emailInfo.emailOk) {
+      ProgressUI.markDone("email", 100, emailInfo.emailModeText, emailInfo.emailModeText);
       ProgressUI.success("บันทึกสำเร็จ", "ข้อมูล Error_BOL ถูกบันทึกเรียบร้อยแล้ว");
-    } else if (emailSkipped) {
+    } else if (emailInfo.emailSkipped) {
       ProgressUI.markDone("email", 100, "ไม่ได้เลือกส่งอีเมล", "ข้าม");
       ProgressUI.success("บันทึกสำเร็จ", "บันทึกข้อมูลและสร้าง PDF เรียบร้อยแล้ว");
     } else {
       ProgressUI.markError("email", "ส่งอีเมลไม่สำเร็จ", 100);
       ProgressUI.success("บันทึกสำเร็จ", "ข้อมูลและ PDF สำเร็จแล้ว แต่การส่งอีเมลไม่สำเร็จ");
-      ProgressUI.setHint(emailStatus || "กรุณาตรวจสอบสิทธิ์ส่งอีเมลหรือขนาดไฟล์แนบ");
+      ProgressUI.setHint(emailInfo.emailStatus || "กรุณาตรวจสอบสิทธิ์อีเมลหรือขนาดไฟล์แนบ");
     }
 
     const galleryHtml = renderGalleryHtml(json.imageIds || []);
@@ -9661,8 +9729,8 @@ async function submitForm() {
       : `<div class="swalNote">ไม่มีลายเซ็น</div>`;
 
     await Swal.fire({
-      icon: emailOk || emailSkipped ? "success" : "warning",
-      title: emailOk || emailSkipped ? "บันทึกสำเร็จ" : "บันทึกสำเร็จบางส่วน",
+      icon: (emailInfo.emailOk || emailInfo.emailSkipped) ? "success" : "warning",
+      title: (emailInfo.emailOk || emailInfo.emailSkipped) ? "บันทึกสำเร็จ" : "บันทึกสำเร็จบางส่วน",
       confirmButtonText: "ปิดหน้าต่าง",
       confirmButtonColor: "#2563eb",
       width: 920,
@@ -9670,12 +9738,11 @@ async function submitForm() {
         <div class="swalSummary">
           <div class="swalHero">
             <div class="swalHeroTitle">บันทึกรายการเรียบร้อยแล้ว</div>
-            <div class="swalHeroSub">ระบบจัดเก็บข้อมูล รูปภาพ และเอกสาร PDF เรียบร้อย</div>
+            <div class="swalHeroSub">ระบบจัดเก็บข้อมูล รูปภาพ ลายเซ็น และเอกสาร PDF เรียบร้อย</div>
             <div class="swalPillRow">
               <div class="swalPill primary">LPS: ${escapeHtml(AUTH.name || json.lpsName || "-")}</div>
               <div class="swalPill">Ref: ${escapeHtml(p.refNo || "-")}</div>
               <div class="swalPill">รูป ${Number((json.imageIds || []).length)}</div>
-              <div class="swalPill">วินัย ${Number(json.disciplineMatchCount || 0)}</div>
             </div>
           </div>
 
@@ -9690,50 +9757,34 @@ async function submitForm() {
           </div>
 
           <div class="swalSection">
-            <div class="swalSectionTitle">ข้อมูลเหตุการณ์</div>
-            <div class="swalKvGrid">
-              <div class="swalKv"><div class="swalKvLabel">สาเหตุ</div><div class="swalKvValue">${escapeHtml(p.errorReason === "อื่นๆ" ? ("อื่นๆ: " + p.errorReasonOther) : p.errorReason)}</div></div>
-              <div class="swalKv"><div class="swalKvLabel">วันที่เบิกสินค้า Error</div><div class="swalKvValue">${escapeHtml(formatDateToDisplay(p.errorDate) || "-")}</div></div>
-              <div class="swalKv"><div class="swalKvLabel">Item</div><div class="swalKvValue">${escapeHtml((json.itemDisplay || getItemDisplayText() || "-"))}</div></div>
-              <div class="swalKv"><div class="swalKvLabel">จำนวน ErrorCase</div><div class="swalKvValue">${escapeHtml(p.errorCaseQty || "-")}</div></div>
-            </div>
-          </div>
-
-          <div class="swalSection">
-            <div class="swalSectionTitle">พนักงาน / ผู้เกี่ยวข้อง</div>
-            <div class="swalKvGrid">
-              <div class="swalKv"><div class="swalKvLabel">ชื่อพนักงาน</div><div class="swalKvValue">${escapeHtml(p.employeeName || "-")}</div></div>
-              <div class="swalKv"><div class="swalKvLabel">รหัสพนักงาน</div><div class="swalKvValue">${escapeHtml(p.employeeCode || "-")}</div></div>
-              <div class="swalKv"><div class="swalKvLabel">อายุงาน</div><div class="swalKvValue">${escapeHtml(`${p.workAgeYear} ปี ${p.workAgeMonth} เดือน`)}</div></div>
-              <div class="swalKv"><div class="swalKvLabel">สัญชาติ</div><div class="swalKvValue">${escapeHtml(p.nationality || "-")}</div></div>
-              <div class="swalKv"><div class="swalKvLabel">OSM</div><div class="swalKvValue">${escapeHtml(p.osm || "-")}</div></div>
-              <div class="swalKv"><div class="swalKvLabel">OTM</div><div class="swalKvValue">${escapeHtml(p.otm || "-")}</div></div>
-              <div class="swalKv"><div class="swalKvLabel">ล่าม</div><div class="swalKvValue">${escapeHtml(p.interpreterName || "-")}</div></div>
-              <div class="swalKv"><div class="swalKvLabel">AUDIT</div><div class="swalKvValue">${escapeHtml(p.auditName || "-")}</div></div>
-            </div>
-          </div>
-
-          <div class="swalSection">
-            <div class="swalSectionTitle">ข้อเท็จจริงที่พนักงานยืนยัน</div>
-            <div class="swalDesc"><div class="swalDescLabel">รายการที่เลือก</div><div class="swalDescValue">${escapeHtml(composeConfirmCauseSummary(p.confirmCauseSelected, p.confirmCauseOther) || "-").replaceAll("|", "<br>")}</div></div>
-            <div class="swalDesc" style="margin-top:8px;"><div class="swalDescLabel">คำยืนยันของพนักงาน</div><div class="swalDescValue">${escapeHtml(p.employeeConfirmText || "-").replaceAll("\n", "<br>")}</div></div>
-          </div>
-
-          <div class="swalSection">
             <div class="swalSectionTitle">สถานะอีเมล</div>
-            ${emailSkipped
-              ? `<div class="swalNote">ไม่ได้ส่งอีเมล เพราะยังไม่ได้เลือกผู้รับ</div>`
-              : emailOk
-                ? `<div class="swalEmailOk">ส่งอีเมลสำเร็จ ${Number(emailResult.count || 0)} รายการ ${emailResult.attachmentMode ? `• ${escapeHtml(emailResult.attachmentMode)}` : ""}</div><div class="swalEmailList">${(emailResult.recipients || []).map((e) => `<div class="swalEmailChip">${escapeHtml(e)}</div>`).join("")}</div>`
-                : `<div class="swalEmailFail">บันทึกข้อมูลสำเร็จ แต่ส่งอีเมลไม่สำเร็จ: ${escapeHtml(emailResult.error || "-")}</div>`}
+            ${
+              emailInfo.emailSkipped
+                ? `<div class="swalNote">ไม่ได้ส่งอีเมล เพราะยังไม่ได้เลือกผู้รับ</div>`
+                : emailInfo.emailOk
+                  ? `<div class="swalEmailOk">ส่งอีเมลสำเร็จ ${Number(emailInfo.emailResult.count || 0)} รายการ ${emailInfo.emailResult.attachmentMode ? `• ${escapeHtml(emailInfo.emailResult.attachmentMode)}` : ""}</div>`
+                  : `<div class="swalEmailFail">บันทึกข้อมูลสำเร็จ แต่ส่งอีเมลไม่สำเร็จ: ${escapeHtml(emailInfo.emailResult.error || "-")}</div>`
+            }
           </div>
 
           <div class="swalSection">
             <div class="swalSectionTitle">ลายเซ็น</div>
             <div class="sigGrid">
-              <div><div class="sigBoxTitle">หัวหน้างาน</div>${supSignThumb}<div class="sigName">${escapeHtml(p.otm || "-")}</div></div>
-              <div><div class="sigBoxTitle">พนักงาน</div>${empSignThumb}<div class="sigName">${escapeHtml(p.employeeName || "-")}</div></div>
-              <div><div class="sigBoxTitle">ล่ามแปลภาษา</div>${intSignThumb}<div class="sigName">${escapeHtml(p.interpreterName || "-")}</div></div>
+              <div>
+                <div class="sigBoxTitle">หัวหน้างาน</div>
+                ${supSignThumb}
+                <div class="sigName">${escapeHtml(p.otm || "-")}</div>
+              </div>
+              <div>
+                <div class="sigBoxTitle">พนักงาน</div>
+                ${empSignThumb}
+                <div class="sigName">${escapeHtml(p.employeeName || "-")}</div>
+              </div>
+              <div>
+                <div class="sigBoxTitle">ล่ามแปลภาษา</div>
+                ${intSignThumb}
+                <div class="sigName">${escapeHtml(p.interpreterName || "-")}</div>
+              </div>
             </div>
           </div>
 
@@ -9742,7 +9793,9 @@ async function submitForm() {
             ${galleryHtml || `<div class="swalNote">ไม่มีรูปภาพแนบ</div>`}
           </div>
 
-          ${json.pdfUrl ? `<div class="swalActionLink"><a href="${json.pdfUrl}" target="_blank" rel="noopener noreferrer">เปิดไฟล์ PDF รายงาน</a></div>` : `<div class="swalNote" style="color:#dc2626;font-weight:900">ไม่พบลิงก์ PDF</div>`}
+          ${json.pdfUrl
+            ? `<div class="swalActionLink"><a href="${json.pdfUrl}" target="_blank" rel="noopener noreferrer">เปิดไฟล์ PDF รายงาน</a></div>`
+            : `<div class="swalNote" style="color:#dc2626;font-weight:900">ไม่พบลิงก์ PDF</div>`}
         </div>
       `,
       didOpen: () => bindGalleryClickInSwal()
@@ -9750,42 +9803,66 @@ async function submitForm() {
 
     resetForm();
     ProgressUI.hide(180);
+
   } catch (err2) {
     console.error(err2);
-    ProgressUI.markError("save", err2?.message || "เกิดข้อผิดพลาด", 56);
+    ProgressUI.markError("save", err2?.message || "เกิดข้อผิดพลาด", 58);
     ProgressUI.setHint("กรุณาตรวจสอบข้อมูล เครือข่าย หรือ backend แล้วลองใหม่อีกครั้ง");
-    await Swal.fire({ icon: "error", title: "บันทึกไม่สำเร็จ", text: err2?.message || String(err2), confirmButtonText: "ตกลง" });
-    ProgressUI.hide(150);
+
+    await Swal.fire({
+      icon: "error",
+      title: "บันทึกไม่สำเร็จ",
+      text: err2?.message || String(err2),
+      confirmButtonText: "ตกลง"
+    });
+
+    ProgressUI.hide(180);
   }
 }
 
 async function collectFilesAsBase64({ maxFiles = 6, maxMBEach = 4 } = {}) {
   const inputs = Array.from(document.querySelectorAll('#uploadList input[type="file"]'));
   const picked = [];
+
   for (const el of inputs) {
     const f = el.files && el.files[0];
     if (f) picked.push(f);
   }
 
   if (picked.length > maxFiles) {
-    await Swal.fire({ icon: "warning", title: "รูปเยอะเกินไป", text: `เลือกได้สูงสุด ${maxFiles} รูป (ตอนนี้เลือก ${picked.length})` });
+    await Swal.fire({
+      icon: "warning",
+      title: "รูปเยอะเกินไป",
+      text: `เลือกได้สูงสุด ${maxFiles} รูป (ตอนนี้เลือก ${picked.length})`
+    });
     throw new Error("Too many files");
   }
 
   const out = [];
   for (const f of picked) {
     if (!/^image\//.test(f.type)) {
-      await Swal.fire({ icon: "warning", title: "ไฟล์ไม่ถูกต้อง", text: `ไฟล์ "${f.name}" ต้องเป็นรูปภาพเท่านั้น` });
+      await Swal.fire({
+        icon: "warning",
+        title: "ไฟล์ไม่ถูกต้อง",
+        text: `ไฟล์ "${f.name}" ต้องเป็นรูปภาพเท่านั้น`
+      });
       throw new Error("Invalid file type");
     }
+
     const mb = f.size / (1024 * 1024);
     if (mb > maxMBEach) {
-      await Swal.fire({ icon: "warning", title: "ไฟล์ใหญ่เกินไป", text: `ไฟล์ "${f.name}" มีขนาด ${mb.toFixed(1)} MB (กำหนดไว้ไม่เกิน ${maxMBEach} MB)` });
+      await Swal.fire({
+        icon: "warning",
+        title: "ไฟล์ใหญ่เกินไป",
+        text: `ไฟล์ "${f.name}" มีขนาด ${mb.toFixed(1)} MB (กำหนดไว้ไม่เกิน ${maxMBEach} MB)`
+      });
       throw new Error("File too large");
     }
+
     const base64 = await fileToBase64(f);
     out.push({ filename: f.name, base64 });
   }
+
   return out;
 }
 
@@ -9814,13 +9891,23 @@ async function openSignatureFlow(supervisorName, employeeName, interpreterName) 
 
   const hasInterpreter = String(interpreterName || "").trim().length > 0;
   if (!hasInterpreter) {
-    return { ok: true, supervisorBase64: sup.base64, employeeBase64: emp.base64, interpreterBase64: "" };
+    return {
+      ok: true,
+      supervisorBase64: sup.base64,
+      employeeBase64: emp.base64,
+      interpreterBase64: ""
+    };
   }
 
   const intr = await signatureModal("ลายเซ็นล่ามแปลภาษา", `ผู้เซ็น: ${interpreterName || "-"}`);
   if (!intr.ok) return { ok: false };
 
-  return { ok: true, supervisorBase64: sup.base64, employeeBase64: emp.base64, interpreterBase64: intr.base64 };
+  return {
+    ok: true,
+    supervisorBase64: sup.base64,
+    employeeBase64: emp.base64,
+    interpreterBase64: intr.base64
+  };
 }
 
 async function signatureModal(title, subtitle) {
@@ -9848,7 +9935,9 @@ async function signatureModal(title, subtitle) {
     didOpen: () => {
       const canvas = document.getElementById(canvasId);
       const btnClear = document.getElementById(clearId);
+
       enableSignature(canvas);
+
       btnClear?.addEventListener("click", () => {
         const ctx = canvas.getContext("2d");
         ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -9857,10 +9946,12 @@ async function signatureModal(title, subtitle) {
     preConfirm: () => {
       const canvas = document.getElementById(canvasId);
       const isEmpty = isCanvasBlank(canvas);
+
       if (isEmpty) {
         Swal.showValidationMessage("กรุณาเซ็นชื่อก่อนกดยืนยัน");
         return false;
       }
+
       return canvas.toDataURL("image/png");
     }
   });
@@ -9872,6 +9963,7 @@ async function signatureModal(title, subtitle) {
 function enableSignature(canvas) {
   if (!canvas) return;
   const ctx = canvas.getContext("2d");
+
   ctx.lineWidth = 2.8;
   ctx.lineCap = "round";
   ctx.lineJoin = "round";
@@ -9894,6 +9986,7 @@ function enableSignature(canvas) {
     last = getPos(e);
     e.preventDefault();
   };
+
   const move = (e) => {
     if (!drawing) return;
     const p = getPos(e);
@@ -9904,6 +9997,7 @@ function enableSignature(canvas) {
     last = p;
     e.preventDefault();
   };
+
   const up = (e) => {
     drawing = false;
     last = null;
@@ -9913,6 +10007,7 @@ function enableSignature(canvas) {
   canvas.addEventListener("mousedown", down);
   canvas.addEventListener("mousemove", move);
   window.addEventListener("mouseup", up);
+
   canvas.addEventListener("touchstart", down, { passive: false });
   canvas.addEventListener("touchmove", move, { passive: false });
   canvas.addEventListener("touchend", up, { passive: false });
@@ -9923,6 +10018,7 @@ function isCanvasBlank(canvas) {
   const ctx = canvas.getContext("2d");
   const { width, height } = canvas;
   const data = ctx.getImageData(0, 0, width, height).data;
+
   for (let i = 3; i < data.length; i += 4) {
     if (data[i] !== 0) return false;
   }
@@ -9933,7 +10029,7 @@ function isCanvasBlank(canvas) {
  *  Reset / helpers
  *  ========================== */
 function resetForm() {
-  [
+  const ids = [
     "refNo",
     "labelCid",
     "errorReasonOther",
@@ -9946,7 +10042,9 @@ function resetForm() {
     "employeeCode",
     "interpreterName",
     "confirmCauseOther"
-  ].forEach((id) => {
+  ];
+
+  ids.forEach((id) => {
     const el = $(id);
     if (el) el.value = "";
   });
@@ -9960,11 +10058,19 @@ function resetForm() {
     el.checked = false;
   });
 
-  ITEM_LOOKUP_STATE = { item: "", description: "", displayText: "", found: false, loading: false };
+  ITEM_LOOKUP_STATE = {
+    item: "",
+    description: "",
+    displayText: "",
+    found: false,
+    loading: false
+  };
+
   renderItemLookupState(ITEM_LOOKUP_STATE);
   buildInitialUploadFields();
   syncErrorReasonOtherVisibility();
   syncConfirmCauseOtherVisibility();
   updateEmployeeConfirmPreview();
+
   if ($("lps")) $("lps").value = AUTH.name || "";
 }
