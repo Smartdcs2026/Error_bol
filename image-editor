@@ -1,1 +1,476 @@
+(function () {
+  const editorState = {
+    modal: null,
+    canvasEl: null,
+    canvas: null,
+    baseImage: null,
+    originalFile: null,
+    originalUrl: "",
+    resultResolve: null,
+    activeTool: "select",
+    strokeColor: "#dc2626",
+    strokeWidth: 3,
+    zoom: 1,
+    brightness: 0,
+    isPanning: false,
+    drawCtx: null
+  };
 
+  const $ = (id) => document.getElementById(id);
+
+  function ensureFabricReady() {
+    if (!window.fabric) {
+      throw new Error("ยังไม่พบ Fabric.js");
+    }
+  }
+
+  function ensureModal() {
+    editorState.modal = $("imgEditorModal");
+    editorState.canvasEl = $("imgEditorCanvas");
+    if (!editorState.modal || !editorState.canvasEl) {
+      throw new Error("ยังไม่พบโครง modal ของ image editor");
+    }
+  }
+
+  function revokeOriginalUrl() {
+    if (editorState.originalUrl) {
+      try { URL.revokeObjectURL(editorState.originalUrl); } catch (_) {}
+      editorState.originalUrl = "";
+    }
+  }
+
+  function closeEditor(result = { ok: false }) {
+    editorState.modal?.classList.add("hidden");
+    document.body.classList.remove("progress-lock");
+
+    if (editorState.canvas) {
+      editorState.canvas.dispose();
+      editorState.canvas = null;
+    }
+
+    revokeOriginalUrl();
+
+    const resolve = editorState.resultResolve;
+    editorState.resultResolve = null;
+    if (resolve) resolve(result);
+  }
+
+  function setZoomLabel() {
+    const el = $("ieZoomLabel");
+    if (el) el.textContent = `${Math.round(editorState.zoom * 100)}%`;
+  }
+
+  function setToolLabel() {
+    const map = {
+      select: "เลือก",
+      pan: "เลื่อนภาพ",
+      line: "เส้นตรง",
+      arrow: "ลูกศร",
+      rect: "สี่เหลี่ยม",
+      circle: "วงกลม",
+      text: "ข้อความ"
+    };
+    const el = $("ieToolLabel");
+    if (el) el.textContent = map[editorState.activeTool] || editorState.activeTool;
+  }
+
+  function setActiveTool(tool) {
+    editorState.activeTool = tool || "select";
+    document.querySelectorAll(".ie-tool").forEach((btn) => {
+      btn.classList.toggle("active", btn.getAttribute("data-tool") === editorState.activeTool);
+    });
+    setToolLabel();
+
+    if (!editorState.canvas) return;
+
+    editorState.canvas.isDrawingMode = false;
+    editorState.canvas.selection = tool === "select";
+    editorState.canvas.defaultCursor = tool === "pan" ? "grab" : "default";
+  }
+
+  function resetViewport() {
+    if (!editorState.canvas) return;
+    editorState.zoom = 1;
+    editorState.canvas.setViewportTransform([1, 0, 0, 1, 0, 0]);
+    editorState.canvas.requestRenderAll();
+    setZoomLabel();
+  }
+
+  function setZoom(nextZoom) {
+    if (!editorState.canvas) return;
+    editorState.zoom = Math.max(0.2, Math.min(5, nextZoom));
+    const center = editorState.canvas.getCenter();
+    editorState.canvas.zoomToPoint(
+      new fabric.Point(center.left, center.top),
+      editorState.zoom
+    );
+    editorState.canvas.requestRenderAll();
+    setZoomLabel();
+  }
+
+  function rotateBaseImage(delta) {
+    if (!editorState.baseImage) return;
+    editorState.baseImage.rotate((editorState.baseImage.angle || 0) + delta);
+    editorState.canvas.requestRenderAll();
+  }
+
+  function applyBrightness(value) {
+    if (!editorState.baseImage || !fabric.filters || !fabric.filters.Brightness) return;
+
+    editorState.brightness = Number(value || 0);
+    editorState.baseImage.filters = [
+      new fabric.filters.Brightness({ brightness: editorState.brightness })
+    ];
+    editorState.baseImage.applyFilters();
+    editorState.canvas.requestRenderAll();
+  }
+
+  function addTextbox() {
+    if (!editorState.canvas) return;
+
+    const text = new fabric.IText("ข้อความ", {
+      left: 80,
+      top: 80,
+      fill: editorState.strokeColor,
+      fontSize: 28,
+      fontFamily: "Kanit, Arial, sans-serif",
+      editable: true
+    });
+
+    editorState.canvas.add(text);
+    editorState.canvas.setActiveObject(text);
+    editorState.canvas.requestRenderAll();
+  }
+
+  function makeArrowHead(line) {
+    const xDiff = line.x2 - line.x1;
+    const yDiff = line.y2 - line.y1;
+    const angle = Math.atan2(yDiff, xDiff);
+
+    return new fabric.Triangle({
+      left: line.x2,
+      top: line.y2,
+      originX: "center",
+      originY: "center",
+      pointType: "arrow_head",
+      angle: (angle * 180 / Math.PI) + 90,
+      width: 18 + editorState.strokeWidth,
+      height: 24 + editorState.strokeWidth,
+      fill: editorState.strokeColor,
+      selectable: true
+    });
+  }
+
+  function bindDrawingByTool() {
+    if (!editorState.canvas) return;
+    const canvas = editorState.canvas;
+
+    let startX = 0;
+    let startY = 0;
+    let draft = null;
+    let arrowHead = null;
+
+    canvas.on("mouse:down", function (opt) {
+      const evt = opt.e;
+
+      if (editorState.activeTool === "pan") {
+        editorState.isPanning = true;
+        canvas.defaultCursor = "grabbing";
+        this.selection = false;
+        this.lastPosX = evt.clientX;
+        this.lastPosY = evt.clientY;
+        return;
+      }
+
+      if (editorState.activeTool === "text") {
+        addTextbox();
+        return;
+      }
+
+      if (!["line", "arrow", "rect", "circle"].includes(editorState.activeTool)) return;
+
+      const pointer = canvas.getPointer(evt);
+      startX = pointer.x;
+      startY = pointer.y;
+
+      if (editorState.activeTool === "line" || editorState.activeTool === "arrow") {
+        draft = new fabric.Line([startX, startY, startX, startY], {
+          stroke: editorState.strokeColor,
+          strokeWidth: editorState.strokeWidth,
+          selectable: true
+        });
+        canvas.add(draft);
+      }
+
+      if (editorState.activeTool === "rect") {
+        draft = new fabric.Rect({
+          left: startX,
+          top: startY,
+          width: 1,
+          height: 1,
+          fill: "transparent",
+          stroke: editorState.strokeColor,
+          strokeWidth: editorState.strokeWidth,
+          selectable: true
+        });
+        canvas.add(draft);
+      }
+
+      if (editorState.activeTool === "circle") {
+        draft = new fabric.Ellipse({
+          left: startX,
+          top: startY,
+          rx: 1,
+          ry: 1,
+          fill: "transparent",
+          stroke: editorState.strokeColor,
+          strokeWidth: editorState.strokeWidth,
+          selectable: true,
+          originX: "left",
+          originY: "top"
+        });
+        canvas.add(draft);
+      }
+    });
+
+    canvas.on("mouse:move", function (opt) {
+      const evt = opt.e;
+
+      if (editorState.activeTool === "pan" && editorState.isPanning) {
+        const vpt = this.viewportTransform;
+        vpt[4] += evt.clientX - this.lastPosX;
+        vpt[5] += evt.clientY - this.lastPosY;
+        this.requestRenderAll();
+        this.lastPosX = evt.clientX;
+        this.lastPosY = evt.clientY;
+        return;
+      }
+
+      if (!draft) return;
+      const pointer = canvas.getPointer(evt);
+
+      if (editorState.activeTool === "line" || editorState.activeTool === "arrow") {
+        draft.set({ x2: pointer.x, y2: pointer.y });
+      }
+
+      if (editorState.activeTool === "rect") {
+        draft.set({
+          left: Math.min(startX, pointer.x),
+          top: Math.min(startY, pointer.y),
+          width: Math.abs(pointer.x - startX),
+          height: Math.abs(pointer.y - startY)
+        });
+      }
+
+      if (editorState.activeTool === "circle") {
+        draft.set({
+          left: Math.min(startX, pointer.x),
+          top: Math.min(startY, pointer.y),
+          rx: Math.abs(pointer.x - startX) / 2,
+          ry: Math.abs(pointer.y - startY) / 2
+        });
+      }
+
+      canvas.requestRenderAll();
+    });
+
+    canvas.on("mouse:up", function () {
+      if (editorState.activeTool === "pan") {
+        editorState.isPanning = false;
+        canvas.defaultCursor = "grab";
+        return;
+      }
+
+      if (draft && editorState.activeTool === "arrow") {
+        arrowHead = makeArrowHead(draft);
+        const group = new fabric.Group([draft, arrowHead], {
+          selectable: true
+        });
+        canvas.remove(draft);
+        canvas.add(group);
+      }
+
+      draft = null;
+      arrowHead = null;
+    });
+
+    canvas.on("mouse:wheel", function (opt) {
+      opt.e.preventDefault();
+      opt.e.stopPropagation();
+
+      const delta = opt.e.deltaY;
+      let zoom = canvas.getZoom();
+      zoom *= 0.999 ** delta;
+      zoom = Math.max(0.2, Math.min(5, zoom));
+      editorState.zoom = zoom;
+      canvas.zoomToPoint({ x: opt.e.offsetX, y: opt.e.offsetY }, zoom);
+      setZoomLabel();
+    });
+  }
+
+  async function loadImageToCanvas(file) {
+    const url = URL.createObjectURL(file);
+    editorState.originalUrl = url;
+
+    const wrap = editorState.canvasEl.parentElement;
+    const maxW = Math.max(640, wrap.clientWidth - 20);
+    const maxH = Math.max(420, wrap.clientHeight - 20);
+
+    const canvas = new fabric.Canvas(editorState.canvasEl, {
+      preserveObjectStacking: true,
+      selection: true
+    });
+
+    editorState.canvas = canvas;
+
+    const imgEl = await new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = reject;
+      img.src = url;
+    });
+
+    const scale = Math.min(maxW / imgEl.width, maxH / imgEl.height, 1);
+
+    canvas.setWidth(Math.max(320, Math.round(imgEl.width * scale)));
+    canvas.setHeight(Math.max(240, Math.round(imgEl.height * scale)));
+
+    const baseImage = new fabric.Image(imgEl, {
+      left: 0,
+      top: 0,
+      selectable: false,
+      evented: false
+    });
+
+    baseImage.scaleToWidth(canvas.getWidth());
+    baseImage.scaleToHeight(canvas.getHeight());
+
+    editorState.baseImage = baseImage;
+    canvas.add(baseImage);
+    canvas.sendObjectToBack(baseImage);
+    canvas.requestRenderAll();
+
+    resetViewport();
+    bindDrawingByTool();
+  }
+
+  async function exportEditedFile() {
+    if (!editorState.canvas) {
+      throw new Error("ยังไม่มี canvas สำหรับ export");
+    }
+
+    const dataUrl = editorState.canvas.toDataURL({
+      format: "jpeg",
+      quality: 0.92,
+      multiplier: 1
+    });
+
+    const blob = await (await fetch(dataUrl)).blob();
+    const ext = "jpg";
+    const filenameBase = (editorState.originalFile?.name || "edited-image").replace(/\.[^.]+$/, "");
+    const outFile = new File([blob], `${filenameBase}_edited.${ext}`, {
+      type: "image/jpeg",
+      lastModified: Date.now()
+    });
+
+    return {
+      ok: true,
+      file: outFile,
+      blob,
+      dataUrl,
+      filename: outFile.name,
+      mimeType: outFile.type
+    };
+  }
+
+  function bindUiOnce() {
+    if (window.__imgEditorBoundOnce) return;
+    window.__imgEditorBoundOnce = true;
+
+    $("imgEditorCloseBtn")?.addEventListener("click", () => closeEditor({ ok: false }));
+    $("ieCancelBtn")?.addEventListener("click", () => closeEditor({ ok: false }));
+
+    $("ieSaveBtn")?.addEventListener("click", async () => {
+      try {
+        const result = await exportEditedFile();
+        closeEditor(result);
+      } catch (err) {
+        console.error(err);
+        alert("บันทึกภาพไม่สำเร็จ: " + (err?.message || err));
+      }
+    });
+
+    $("ieZoomInBtn")?.addEventListener("click", () => setZoom(editorState.zoom + 0.1));
+    $("ieZoomOutBtn")?.addEventListener("click", () => setZoom(editorState.zoom - 0.1));
+    $("ieZoomResetBtn")?.addEventListener("click", () => resetViewport());
+
+    $("ieRotateLeftBtn")?.addEventListener("click", () => rotateBaseImage(-90));
+    $("ieRotateRightBtn")?.addEventListener("click", () => rotateBaseImage(90));
+
+    $("ieColorPicker")?.addEventListener("input", (e) => {
+      editorState.strokeColor = e.target.value || "#dc2626";
+    });
+
+    $("ieStrokeWidth")?.addEventListener("input", (e) => {
+      editorState.strokeWidth = Number(e.target.value || 3);
+    });
+
+    $("ieBrightness")?.addEventListener("input", (e) => {
+      applyBrightness(e.target.value);
+    });
+
+    $("ieResetBtn")?.addEventListener("click", async () => {
+      if (!editorState.originalFile) return;
+      if (editorState.canvas) {
+        editorState.canvas.dispose();
+        editorState.canvas = null;
+      }
+      revokeOriginalUrl();
+      await loadImageToCanvas(editorState.originalFile);
+      setActiveTool("select");
+      $("ieBrightness").value = "0";
+    });
+
+    document.querySelectorAll(".ie-tool").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        setActiveTool(btn.getAttribute("data-tool") || "select");
+      });
+    });
+  }
+
+  async function openImageEditor(file, options = {}) {
+    ensureFabricReady();
+    ensureModal();
+    bindUiOnce();
+
+    if (!file || !/^image\//i.test(file.type || "")) {
+      throw new Error("ไฟล์ที่ส่งเข้า editor ต้องเป็นรูปภาพ");
+    }
+
+    editorState.originalFile = file;
+    editorState.zoom = 1;
+    editorState.strokeColor = options.strokeColor || "#dc2626";
+    editorState.strokeWidth = Number(options.strokeWidth || 3);
+    editorState.brightness = 0;
+
+    $("ieColorPicker").value = editorState.strokeColor;
+    $("ieStrokeWidth").value = String(editorState.strokeWidth);
+    $("ieBrightness").value = "0";
+
+    editorState.modal.classList.remove("hidden");
+    document.body.classList.add("progress-lock");
+
+    await loadImageToCanvas(file);
+    setActiveTool("select");
+    setZoomLabel();
+    setToolLabel();
+
+    return new Promise((resolve) => {
+      editorState.resultResolve = resolve;
+    });
+  }
+
+  window.ImageEditorX = {
+    open: openImageEditor
+  };
+})();
