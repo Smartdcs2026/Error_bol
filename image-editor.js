@@ -122,6 +122,16 @@
     });
   }
 
+  function setObjectEditableState(obj, editable) {
+    if (!obj || obj === editorState.baseImage) return;
+
+    obj.selectable = !!editable;
+    obj.evented = true;
+    obj.hasControls = true;
+    obj.hasBorders = true;
+    obj.lockRotation = false;
+  }
+
   function setCanvasInteractivityForTool(tool) {
     const canvas = editorState.canvas;
     if (!canvas) return;
@@ -136,11 +146,13 @@
       if (obj === editorState.cropRect) {
         obj.selectable = tool === "crop";
         obj.evented = tool === "crop";
+        obj.hasControls = true;
+        obj.hasBorders = true;
+        obj.lockRotation = true;
         return;
       }
 
-      obj.selectable = (tool === "select");
-      obj.evented = true;
+      setObjectEditableState(obj, tool === "select");
     });
 
     if (tool !== "crop") {
@@ -174,7 +186,17 @@
     if (!canvas) return;
 
     editorState.zoom = Math.max(0.2, Math.min(5, Number(nextZoom) || 1));
-    const center = canvas.getCenter();
+
+    let center;
+    if (typeof canvas.getCenter === "function") {
+      center = canvas.getCenter();
+    } else {
+      center = {
+        left: canvas.getWidth() / 2,
+        top: canvas.getHeight() / 2
+      };
+    }
+
     canvas.zoomToPoint(
       new fabric.Point(center.left, center.top),
       editorState.zoom
@@ -220,13 +242,20 @@
       fontSize: 28,
       fontFamily: "Kanit, Arial, sans-serif",
       editable: true,
-      selectable: true
+      selectable: true,
+      evented: true,
+      hasControls: true,
+      hasBorders: true,
+      lockRotation: false
     });
 
     canvas.add(text);
     canvas.setActiveObject(text);
     canvas.requestRenderAll();
     pushHistorySnapshot();
+
+    // one-time tool usage
+    setActiveTool("select");
   }
 
   function deleteSelectedObject() {
@@ -273,7 +302,10 @@
     return new fabric.Group([line, head], {
       selectable: true,
       evented: true,
-      objectCaching: false
+      objectCaching: false,
+      hasControls: true,
+      hasBorders: true,
+      lockRotation: false
     });
   }
 
@@ -472,7 +504,10 @@
       effectType,
       toolType: shapeType === "circle"
         ? (effectType === "blur" ? "blurCircle" : "mosaicCircle")
-        : (effectType === "blur" ? "blurRect" : "mosaicRect")
+        : (effectType === "blur" ? "blurRect" : "mosaicRect"),
+      hasControls: true,
+      hasBorders: true,
+      lockRotation: false
     });
 
     if (shapeType === "circle") {
@@ -569,15 +604,16 @@
 
     try {
       const overlay = await buildEffectOverlayFromRegion(shapeType, effectType, x, y, w, h);
-      if (!overlay) {
-        throw new Error("สร้างเอฟเฟกต์ไม่สำเร็จ");
-      }
+      if (!overlay) throw new Error("สร้างเอฟเฟกต์ไม่สำเร็จ");
 
       canvas.remove(active);
       canvas.add(overlay);
       canvas.setActiveObject(overlay);
       canvas.requestRenderAll();
       pushHistorySnapshot();
+
+      // one-time tool usage
+      setActiveTool("select");
     } catch (err) {
       console.error(err);
       await showMessage("error", "ใช้เอฟเฟกต์ไม่สำเร็จ", err?.message || String(err));
@@ -594,10 +630,7 @@
       canvas.requestRenderAll();
     }
 
-    const json = canvas.toDatalessJSON([
-      "toolType",
-      "effectType"
-    ]);
+    const json = canvas.toDatalessJSON(["toolType", "effectType"]);
 
     if (editorState.cropRect) {
       editorState.cropRect.visible = cropWasVisible;
@@ -714,6 +747,17 @@
     });
   }
 
+  function getPointerFromEvent(canvas, evt) {
+    if (typeof canvas.getPointer === "function") {
+      return canvas.getPointer(evt);
+    }
+    const rect = canvas.upperCanvasEl.getBoundingClientRect();
+    return {
+      x: evt.clientX - rect.left,
+      y: evt.clientY - rect.top
+    };
+  }
+
   function bindPointerDrawing() {
     const canvas = editorState.canvas;
     if (!canvas) return;
@@ -744,7 +788,7 @@
         return;
       }
 
-      const pointer = canvas.getPointer(evt);
+      const pointer = getPointerFromEvent(canvas, evt);
       startX = pointer.x;
       startY = pointer.y;
 
@@ -756,7 +800,10 @@
           strokeWidth: editorState.strokeWidth,
           selectable: false,
           evented: false,
-          objectCaching: false
+          objectCaching: false,
+          hasControls: true,
+          hasBorders: true,
+          lockRotation: false
         });
         editorState.tempDraft = drawingObject;
         canvas.add(drawingObject);
@@ -773,7 +820,10 @@
           strokeWidth: editorState.strokeWidth,
           selectable: false,
           evented: false,
-          objectCaching: false
+          objectCaching: false,
+          hasControls: true,
+          hasBorders: true,
+          lockRotation: false
         });
         editorState.tempDraft = drawingObject;
         canvas.add(drawingObject);
@@ -792,7 +842,10 @@
           evented: false,
           originX: "left",
           originY: "top",
-          objectCaching: false
+          objectCaching: false,
+          hasControls: true,
+          hasBorders: true,
+          lockRotation: false
         });
         editorState.tempDraft = drawingObject;
         canvas.add(drawingObject);
@@ -816,7 +869,7 @@
       const draft = editorState.tempDraft;
       if (!draft) return;
 
-      const pointer = canvas.getPointer(evt);
+      const pointer = getPointerFromEvent(canvas, evt);
       const tool = editorState.activeTool;
 
       if (tool === "line" || tool === "arrow") {
@@ -865,17 +918,26 @@
         canvas.setActiveObject(arrow);
         canvas.requestRenderAll();
         pushHistorySnapshot();
+
+        // one-time tool usage
+        setActiveTool("select");
         return;
       }
 
       if (tool === "line" || tool === "rect" || tool === "circle") {
         draft.set({
           selectable: true,
-          evented: true
+          evented: true,
+          hasControls: true,
+          hasBorders: true,
+          lockRotation: false
         });
         canvas.setActiveObject(draft);
         canvas.requestRenderAll();
         pushHistorySnapshot();
+
+        // one-time tool usage
+        setActiveTool("select");
         return;
       }
 
@@ -920,113 +982,108 @@
   }
 
   async function loadImageToCanvas(file) {
-  const url = URL.createObjectURL(file);
-  editorState.originalUrl = url;
+    const url = URL.createObjectURL(file);
+    editorState.originalUrl = url;
 
-  const wrap = editorState.canvasEl.parentElement;
-  if (!wrap) throw new Error("ไม่พบพื้นที่แสดง canvas");
+    const wrap = editorState.canvasEl.parentElement;
+    if (!wrap) throw new Error("ไม่พบพื้นที่แสดง canvas");
 
-  const maxW = Math.max(640, Math.floor(wrap.clientWidth - 20));
-  const maxH = Math.max(420, Math.floor(wrap.clientHeight - 20));
+    const maxW = Math.max(640, Math.floor(wrap.clientWidth - 20));
+    const maxH = Math.max(420, Math.floor(wrap.clientHeight - 20));
 
-  if (editorState.canvas) {
-    try { editorState.canvas.dispose(); } catch (_) {}
-    editorState.canvas = null;
-  }
+    if (editorState.canvas) {
+      try { editorState.canvas.dispose(); } catch (_) {}
+      editorState.canvas = null;
+    }
 
-  const canvas = new fabric.Canvas(editorState.canvasEl, {
-    preserveObjectStacking: true,
-    selection: true,
-    renderOnAddRemove: true
-  });
+    const canvas = new fabric.Canvas(editorState.canvasEl, {
+      preserveObjectStacking: true,
+      selection: true,
+      renderOnAddRemove: true
+    });
 
-  editorState.canvas = canvas;
+    editorState.canvas = canvas;
 
-  const imgEl = await new Promise((resolve, reject) => {
-    const img = new Image();
-    img.onload = () => resolve(img);
-    img.onerror = () => reject(new Error("โหลดรูปภาพไม่สำเร็จ"));
-    img.decoding = "async";
-    img.src = url;
-  });
+    const imgEl = await new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = () => reject(new Error("โหลดรูปภาพไม่สำเร็จ"));
+      img.decoding = "async";
+      img.src = url;
+    });
 
-  const imgW = imgEl.naturalWidth || imgEl.width;
-  const imgH = imgEl.naturalHeight || imgEl.height;
+    const imgW = imgEl.naturalWidth || imgEl.width;
+    const imgH = imgEl.naturalHeight || imgEl.height;
 
-  if (!imgW || !imgH) {
-    throw new Error("ไม่สามารถอ่านขนาดรูปภาพได้");
-  }
+    if (!imgW || !imgH) {
+      throw new Error("ไม่สามารถอ่านขนาดรูปภาพได้");
+    }
 
-  const scale = Math.min(maxW / imgW, maxH / imgH, 1);
-  const canvasW = Math.max(320, Math.round(imgW * scale));
-  const canvasH = Math.max(240, Math.round(imgH * scale));
+    const scale = Math.min(maxW / imgW, maxH / imgH, 1);
+    const canvasW = Math.max(320, Math.round(imgW * scale));
+    const canvasH = Math.max(240, Math.round(imgH * scale));
 
-  if (typeof canvas.setWidth === "function" && typeof canvas.setHeight === "function") {
-    canvas.setWidth(canvasW);
-    canvas.setHeight(canvasH);
-  } else if (typeof canvas.setDimensions === "function") {
-    canvas.setDimensions({ width: canvasW, height: canvasH });
-  } else {
-    editorState.canvasEl.width = canvasW;
-    editorState.canvasEl.height = canvasH;
-  }
+    if (typeof canvas.setWidth === "function" && typeof canvas.setHeight === "function") {
+      canvas.setWidth(canvasW);
+      canvas.setHeight(canvasH);
+    } else if (typeof canvas.setDimensions === "function") {
+      canvas.setDimensions({ width: canvasW, height: canvasH });
+    } else {
+      editorState.canvasEl.width = canvasW;
+      editorState.canvasEl.height = canvasH;
+    }
 
-  if (canvas.lowerCanvasEl) {
-    canvas.lowerCanvasEl.style.width = canvasW + "px";
-    canvas.lowerCanvasEl.style.height = canvasH + "px";
-  }
+    if (canvas.lowerCanvasEl) {
+      canvas.lowerCanvasEl.style.width = canvasW + "px";
+      canvas.lowerCanvasEl.style.height = canvasH + "px";
+    }
 
-  if (canvas.upperCanvasEl) {
-    canvas.upperCanvasEl.style.width = canvasW + "px";
-    canvas.upperCanvasEl.style.height = canvasH + "px";
-  }
+    if (canvas.upperCanvasEl) {
+      canvas.upperCanvasEl.style.width = canvasW + "px";
+      canvas.upperCanvasEl.style.height = canvasH + "px";
+    }
 
-  if (canvas.wrapperEl) {
-    canvas.wrapperEl.style.width = canvasW + "px";
-    canvas.wrapperEl.style.height = canvasH + "px";
-  }
+    if (canvas.wrapperEl) {
+      canvas.wrapperEl.style.width = canvasW + "px";
+      canvas.wrapperEl.style.height = canvasH + "px";
+    }
 
-  const baseImage = new fabric.Image(imgEl, {
-    left: canvasW / 2,
-    top: canvasH / 2,
-    originX: "center",
-    originY: "center",
-    selectable: false,
-    evented: false,
-    objectCaching: false
-  });
+    const baseImage = new fabric.Image(imgEl, {
+      left: canvasW / 2,
+      top: canvasH / 2,
+      originX: "center",
+      originY: "center",
+      selectable: false,
+      evented: false,
+      objectCaching: false
+    });
 
-  baseImage.scaleX = scale;
-  baseImage.scaleY = scale;
+    baseImage.scaleX = scale;
+    baseImage.scaleY = scale;
 
-  editorState.baseImage = baseImage;
+    editorState.baseImage = baseImage;
 
-  canvas.clear();
-  canvas.add(baseImage);
+    canvas.clear();
+    canvas.add(baseImage);
 
-  if (typeof baseImage.moveTo === "function") {
-    baseImage.moveTo(0);
-  } else if (typeof canvas.sendToBack === "function") {
-    canvas.sendToBack(baseImage);
-  } else if (typeof canvas.sendObjectToBack === "function") {
-    canvas.sendObjectToBack(baseImage);
-  }
+    if (typeof baseImage.moveTo === "function") {
+      baseImage.moveTo(0);
+    } else if (typeof canvas.sendToBack === "function") {
+      canvas.sendToBack(baseImage);
+    } else if (typeof canvas.sendObjectToBack === "function") {
+      canvas.sendObjectToBack(baseImage);
+    }
 
-  bindObjectEvents();
-  bindPointerDrawing();
+    bindObjectEvents();
+    bindPointerDrawing();
 
-  resetViewport();
-
-  if (typeof canvas.calcOffset === "function") {
-    canvas.calcOffset();
-  }
-
-  if (typeof canvas.requestRenderAll === "function") {
+    resetViewport();
+    if (typeof canvas.calcOffset === "function") {
+      canvas.calcOffset();
+    }
     canvas.requestRenderAll();
-  } else if (typeof canvas.renderAll === "function") {
-    canvas.renderAll();
   }
-}
+
   async function exportEditedFile() {
     const canvas = editorState.canvas;
     if (!canvas) {
@@ -1238,7 +1295,9 @@
     }
 
     if (editorState.canvas) {
-      editorState.canvas.calcOffset();
+      if (typeof editorState.canvas.calcOffset === "function") {
+        editorState.canvas.calcOffset();
+      }
       editorState.canvas.requestRenderAll();
     }
 
