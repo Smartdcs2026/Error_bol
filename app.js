@@ -8146,7 +8146,7 @@
 // };
 
 
- const API_BASE = "https://bol.somchaibutphon.workers.dev";
+const API_BASE = "https://bol.somchaibutphon.workers.dev";
 
 /** ==========================
  *  SHARED PROGRESS UI
@@ -8560,7 +8560,8 @@ async function init() {
   syncConfirmCauseOtherVisibility();
   setActiveTab("error");
   updateEmployeeConfirmPreview();
-} 
+}
+
 /** ==========================
  *  Tabs
  *  ========================== */
@@ -9286,6 +9287,7 @@ function addUploadField(label, opts = {}) {
     }
   });
 }
+
 /** ==========================
  *  Payload
  *  ========================== */
@@ -9728,96 +9730,120 @@ async function submitForm() {
       ? `<img class="sigThumb" src="${signRes.interpreterBase64}" alt="sign interpreter">`
       : `<div class="swalNote">ไม่มีลายเซ็น</div>`;
 
-    await Swal.fire({
-      icon: (emailInfo.emailOk || emailInfo.emailSkipped) ? "success" : "warning",
-      title: (emailInfo.emailOk || emailInfo.emailSkipped) ? "บันทึกสำเร็จ" : "บันทึกสำเร็จบางส่วน",
-      confirmButtonText: "ปิดหน้าต่าง",
-      confirmButtonColor: "#2563eb",
-      width: 920,
-      html: `
-        <div class="swalSummary">
-          <div class="swalHero">
-            <div class="swalHeroTitle">บันทึกรายการเรียบร้อยแล้ว</div>
-            <div class="swalHeroSub">ระบบจัดเก็บข้อมูล รูปภาพ ลายเซ็น และเอกสาร PDF เรียบร้อย</div>
-            <div class="swalPillRow">
-              <div class="swalPill primary">LPS: ${escapeHtml(AUTH.name || json.lpsName || "-")}</div>
-              <div class="swalPill">Ref: ${escapeHtml(p.refNo || "-")}</div>
-              <div class="swalPill">รูป ${Number((json.imageIds || []).length)}</div>
-            </div>
-          </div>
+    ProgressUI.hide(120);
 
-          <div class="swalSection">
-            <div class="swalSectionTitle">ข้อมูลเอกสาร</div>
-            <div class="swalKvGrid">
-              <div class="swalKv"><div class="swalKvLabel">วันที่เวลา</div><div class="swalKvValue">${escapeHtml(json.timestamp || "-")}</div></div>
-              <div class="swalKv"><div class="swalKvLabel">Ref:No.</div><div class="swalKvValue">${escapeHtml(p.refNo || "-")}</div></div>
-              <div class="swalKv"><div class="swalKvLabel">Label CID</div><div class="swalKvValue">${escapeHtml(p.labelCid || "-")}</div></div>
-              <div class="swalKv"><div class="swalKvLabel">ขนาด PDF</div><div class="swalKvValue">${escapeHtml(pdfSizeText)}</div></div>
-            </div>
-          </div>
-
-          <div class="swalSection">
-            <div class="swalSectionTitle">สถานะอีเมล</div>
-            ${
-              emailInfo.emailSkipped
-                ? `<div class="swalNote">ไม่ได้ส่งอีเมล เพราะยังไม่ได้เลือกผู้รับ</div>`
-                : emailInfo.emailOk
-                  ? `<div class="swalEmailOk">ส่งอีเมลสำเร็จ ${Number(emailInfo.emailResult.count || 0)} รายการ ${emailInfo.emailResult.attachmentMode ? `• ${escapeHtml(emailInfo.emailResult.attachmentMode)}` : ""}</div>`
-                  : `<div class="swalEmailFail">บันทึกข้อมูลสำเร็จ แต่ส่งอีเมลไม่สำเร็จ: ${escapeHtml(emailInfo.emailResult.error || "-")}</div>`
-            }
-          </div>
-
-          <div class="swalSection">
-            <div class="swalSectionTitle">ลายเซ็น</div>
-            <div class="sigGrid">
-              <div>
-                <div class="sigBoxTitle">หัวหน้างาน</div>
-                ${supSignThumb}
-                <div class="sigName">${escapeHtml(p.otm || "-")}</div>
-              </div>
-              <div>
-                <div class="sigBoxTitle">พนักงาน</div>
-                ${empSignThumb}
-                <div class="sigName">${escapeHtml(p.employeeName || "-")}</div>
-              </div>
-              <div>
-                <div class="sigBoxTitle">ล่ามแปลภาษา</div>
-                ${intSignThumb}
-                <div class="sigName">${escapeHtml(p.interpreterName || "-")}</div>
-              </div>
-            </div>
-          </div>
-
-          <div class="swalSection">
-            <div class="swalSectionTitle">รูปภาพแนบ</div>
-            ${galleryHtml || `<div class="swalNote">ไม่มีรูปภาพแนบ</div>`}
-          </div>
-
-          ${json.pdfUrl
-            ? `<div class="swalActionLink"><a href="${json.pdfUrl}" target="_blank" rel="noopener noreferrer">เปิดไฟล์ PDF รายงาน</a></div>`
-            : `<div class="swalNote" style="color:#dc2626;font-weight:900">ไม่พบลิงก์ PDF</div>`}
+await Swal.fire({
+  icon: (emailInfo.emailOk || emailInfo.emailSkipped) ? "success" : "warning",
+  title: (emailInfo.emailOk || emailInfo.emailSkipped) ? "บันทึกสำเร็จ" : "บันทึกสำเร็จบางส่วน",
+  showConfirmButton: false,
+  width: 920,
+  html: `
+    <div class="swalSummary">
+      <div class="swalHero">
+        <div class="swalHeroTitle">บันทึกรายการเรียบร้อยแล้ว</div>
+        <div class="swalHeroSub">ระบบจัดเก็บข้อมูล รูปภาพ ลายเซ็น และเอกสาร PDF เรียบร้อย</div>
+        <div class="swalPillRow">
+          <div class="swalPill primary">LPS: ${escapeHtml(AUTH.name || json.lpsName || "-")}</div>
+          <div class="swalPill">Ref: ${escapeHtml(p.refNo || "-")}</div>
+          <div class="swalPill">รูป ${Number((json.imageIds || []).length)}</div>
         </div>
-      `,
-      didOpen: () => bindGalleryClickInSwal()
-    });
+      </div>
 
+      <div class="swalSection">
+        <div class="swalSectionTitle">ข้อมูลเอกสาร</div>
+        <div class="swalKvGrid">
+          <div class="swalKv"><div class="swalKvLabel">วันที่เวลา</div><div class="swalKvValue">${escapeHtml(json.timestamp || "-")}</div></div>
+          <div class="swalKv"><div class="swalKvLabel">Ref:No.</div><div class="swalKvValue">${escapeHtml(p.refNo || "-")}</div></div>
+          <div class="swalKv"><div class="swalKvLabel">Label CID</div><div class="swalKvValue">${escapeHtml(p.labelCid || "-")}</div></div>
+          <div class="swalKv"><div class="swalKvLabel">ขนาด PDF</div><div class="swalKvValue">${escapeHtml(pdfSizeText)}</div></div>
+        </div>
+      </div>
+
+      <div class="swalSection">
+        <div class="swalSectionTitle">สถานะอีเมล</div>
+        ${
+          emailInfo.emailSkipped
+            ? `<div class="swalNote">ไม่ได้ส่งอีเมล เพราะยังไม่ได้เลือกผู้รับ</div>`
+            : emailInfo.emailOk
+              ? `<div class="swalEmailOk">ส่งอีเมลสำเร็จ ${Number(emailInfo.emailResult.count || 0)} รายการ ${emailInfo.emailResult.attachmentMode ? `• ${escapeHtml(emailInfo.emailResult.attachmentMode)}` : ""}</div>`
+              : `<div class="swalEmailFail">บันทึกข้อมูลสำเร็จ แต่ส่งอีเมลไม่สำเร็จ: ${escapeHtml(emailInfo.emailResult.error || "-")}</div>`
+        }
+      </div>
+
+      <div class="swalSection">
+        <div class="swalSectionTitle">ลายเซ็น</div>
+        <div class="sigGrid">
+          <div>
+            <div class="sigBoxTitle">หัวหน้างาน</div>
+            ${supSignThumb}
+            <div class="sigName">${escapeHtml(p.otm || "-")}</div>
+          </div>
+          <div>
+            <div class="sigBoxTitle">พนักงาน</div>
+            ${empSignThumb}
+            <div class="sigName">${escapeHtml(p.employeeName || "-")}</div>
+          </div>
+          <div>
+            <div class="sigBoxTitle">ล่ามแปลภาษา</div>
+            ${intSignThumb}
+            <div class="sigName">${escapeHtml(p.interpreterName || "-")}</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="swalSection">
+        <div class="swalSectionTitle">รูปภาพแนบ</div>
+        ${galleryHtml || `<div class="swalNote">ไม่มีรูปภาพแนบ</div>`}
+      </div>
+
+      <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:18px">
+        ${
+          json.pdfUrl
+            ? `<button type="button" id="btnOpenPdfAfterSave" class="swal2-confirm swal2-styled" style="background:#2563eb">เปิด PDF</button>`
+            : ``
+        }
+        <button type="button" id="btnCloseAfterSave" class="swal2-cancel swal2-styled" style="display:inline-block;background:#64748b">ปิดหน้าต่าง</button>
+      </div>
+    </div>
+  `,
+  didOpen: () => {
+    bindGalleryClickInSwal();
+
+    const btnOpen = document.getElementById("btnOpenPdfAfterSave");
+    const btnClose = document.getElementById("btnCloseAfterSave");
+
+    if (btnOpen && json.pdfUrl) {
+      btnOpen.addEventListener("click", () => {
+       window.open(json.pdfUrl, "_blank", "noopener,noreferrer");
+Swal.close();
+      });
+    }
+
+    if (btnClose) {
+      btnClose.addEventListener("click", () => {
+        Swal.close();
+      });
+    }
+  },
+  willClose: () => {
     resetForm();
-    ProgressUI.hide(180);
-
-  } catch (err2) {
-    console.error(err2);
-    ProgressUI.markError("save", err2?.message || "เกิดข้อผิดพลาด", 58);
-    ProgressUI.setHint("กรุณาตรวจสอบข้อมูล เครือข่าย หรือ backend แล้วลองใหม่อีกครั้ง");
-
-    await Swal.fire({
-      icon: "error",
-      title: "บันทึกไม่สำเร็จ",
-      text: err2?.message || String(err2),
-      confirmButtonText: "ตกลง"
-    });
-
-    ProgressUI.hide(180);
   }
+});
+
+} catch (err2) {
+  console.error(err2);
+  ProgressUI.markError("save", err2?.message || "เกิดข้อผิดพลาด", 58);
+  ProgressUI.setHint("กรุณาตรวจสอบข้อมูล เครือข่าย หรือ backend แล้วลองใหม่อีกครั้ง");
+
+  await Swal.fire({
+    icon: "error",
+    title: "บันทึกไม่สำเร็จ",
+    text: err2?.message || String(err2),
+    confirmButtonText: "ตกลง"
+  });
+
+  ProgressUI.hide(180);
+}
 }
 
 async function collectFilesAsBase64({ maxFiles = 6, maxMBEach = 4 } = {}) {
@@ -10073,4 +10099,36 @@ function resetForm() {
   updateEmployeeConfirmPreview();
 
   if ($("lps")) $("lps").value = AUTH.name || "";
+}
+
+function buildResultActionButtons_(pdfUrl) {
+  const hasPdf = !!String(pdfUrl || "").trim();
+
+  return `
+    <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:18px">
+      ${
+        hasPdf
+          ? `<button type="button" id="btnOpenPdfAfterSave" class="swal2-confirm swal2-styled" style="background:#2563eb">เปิด PDF</button>`
+          : ``
+      }
+      <button type="button" id="btnCloseAfterSave" class="swal2-cancel swal2-styled" style="display:inline-block;background:#64748b">ปิดหน้าต่าง</button>
+    </div>
+  `;
+}
+
+function bindResultActionButtons_(pdfUrl) {
+  const btnOpen = document.getElementById("btnOpenPdfAfterSave");
+  const btnClose = document.getElementById("btnCloseAfterSave");
+
+  if (btnOpen && pdfUrl) {
+    btnOpen.addEventListener("click", () => {
+      window.open(pdfUrl, "_blank", "noopener,noreferrer");
+    });
+  }
+
+  if (btnClose) {
+    btnClose.addEventListener("click", () => {
+      Swal.close();
+    });
+  }
 }
