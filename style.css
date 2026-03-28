@@ -1611,6 +1611,9 @@ body.progress-lock{
 /* =========================
    IMAGE EDITOR
 ========================= */
+/* =========================
+   IMAGE EDITOR
+========================= */
 .imgEditorModal{
   position:fixed;
   inset:0;
@@ -1686,6 +1689,7 @@ body.progress-lock{
   gap:8px;
   overflow:auto;
   padding-bottom:2px;
+  min-width:0;
 }
 
 .imgEditorToolbar::-webkit-scrollbar{
@@ -1722,11 +1726,13 @@ body.progress-lock{
   font-size:12px;
   font-weight:800;
   color:#334155;
+  flex:0 0 auto;
 }
 
 .ieField input[type="color"]{
   width:34px;
   height:34px;
+  min-height:34px;
   padding:0;
   border:none;
   background:transparent;
@@ -1734,109 +1740,3 @@ body.progress-lock{
 }
 
 .ieFieldSmall input[type="range"]{
-  width:110px;
-}
-
-.imgEditorBody{
-  padding:14px;
-  background:
-    linear-gradient(180deg,#f8fbff 0%,#f2f7ff 100%);
-  overflow:auto;
-}
-
-.imgEditorCanvasWrap{
-  min-height:56vh;
-  height:56vh;
-  border:1.5px dashed #bfd1e6;
-  border-radius:18px;
-  background:
-    linear-gradient(45deg,#f8fafc 25%,#eef4fb 25%,#eef4fb 50%,#f8fafc 50%,#f8fafc 75%,#eef4fb 75%,#eef4fb 100%);
-  background-size:24px 24px;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  overflow:hidden;
-}
-
-.imgEditorCanvasWrap canvas{
-  display:block;
-  max-width:100%;
-  max-height:100%;
-}
-
-.imgEditorFooter{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:12px;
-  padding:14px 16px;
-  border-top:1px solid #e5edf8;
-  background:#fff;
-}
-
-.imgEditorStatus{
-  display:flex;
-  align-items:center;
-  gap:8px;
-  color:#334155;
-  font-size:12px;
-  font-weight:900;
-}
-
-.ieBullet{
-  opacity:.45;
-}
-
-.imgEditorActions{
-  display:flex;
-  align-items:center;
-  gap:8px;
-  flex-wrap:wrap;
-}
-
-@media (max-width: 768px){
-  .imgEditorModal{
-    padding:10px;
-  }
-
-  .imgEditorDialog{
-    width:100%;
-    max-height:calc(100vh - 12px);
-    border-radius:18px;
-  }
-
-  .imgEditorHeader{
-    padding:14px 14px 12px;
-  }
-
-  .imgEditorTitle{
-    font-size:16px;
-  }
-
-  .imgEditorSub{
-    font-size:11px;
-  }
-
-  .imgEditorBody{
-    padding:10px;
-  }
-
-  .imgEditorCanvasWrap{
-    min-height:48vh;
-    height:48vh;
-    border-radius:14px;
-  }
-
-  .imgEditorFooter{
-    flex-direction:column;
-    align-items:stretch;
-  }
-
-  .imgEditorActions{
-    width:100%;
-  }
-
-  .imgEditorActions .btn{
-    flex:1 1 auto;
-  }
-}
