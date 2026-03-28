@@ -8365,10 +8365,8 @@ function ensureEditButtonForUploadBox(box, inputId) {
 
   btn = document.createElement("button");
   btn.type = "button";
-  btn.className = "btn ghost btnEditImage";
-  btn.style.padding = "6px 10px";
-  btn.style.borderRadius = "999px";
-  btn.textContent = "แก้ไขภาพ";
+ btn.className = "btn ghost btnEditImage";
+btn.textContent = "แก้ไขภาพ";
 
   topRow.appendChild(btn);
 
