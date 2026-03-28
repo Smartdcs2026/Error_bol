@@ -2093,9 +2093,6 @@
   }
 
   function todayIsoLocal() {
-    if (window.AppShared && typeof window.AppShared.todayIsoLocal === "function") {
-      return window.AppShared.todayIsoLocal();
-    }
     const d = new Date();
     const yyyy = d.getFullYear();
     const mm = String(d.getMonth() + 1).padStart(2, "0");
@@ -2216,69 +2213,69 @@
   }
 
   function renderWhereTypeSelections() {
-  const root = $("rptWhereTypeSelections");
-  if (!root) return;
+    const root = $("rptWhereTypeSelections");
+    if (!root) return;
 
-  const list = Array.isArray(state.options?.whereTypeList) ? state.options.whereTypeList : [];
-  if (!list.length) {
-    root.innerHTML = `<div class="emailEmpty">ไม่พบรายการประเภทสถานที่</div>`;
-    return;
-  }
+    const list = Array.isArray(state.options?.whereTypeList) ? state.options.whereTypeList : [];
+    if (!list.length) {
+      root.innerHTML = `<div class="emailEmpty">ไม่พบรายการประเภทสถานที่</div>`;
+      return;
+    }
 
-  root.innerHTML = list.map((item, idx) => {
-    const value = norm(item && item.value);
-    const needSuffix = !!(item && item.needSuffixInput);
-    const rowId = `rptWhereType_${idx}_${value.replace(/[^\wก-๙]+/g, "_")}`;
+    root.innerHTML = list.map((item, idx) => {
+      const value = norm(item && item.value);
+      const needSuffix = !!(item && item.needSuffixInput);
+      const rowId = `rptWhereType_${idx}_${value.replace(/[^\wก-๙]+/g, "_")}`;
 
-    return `
-      <div class="rptWhereTypeRow" data-value="${escapeHtml(value)}" data-need-suffix="${needSuffix ? "1" : "0"}">
-        <label class="optionChoice" for="${escapeHtml(rowId)}">
-          <div class="optionChoiceCard">
+      return `
+        <div class="rptWhereTypeRow" data-value="${escapeHtml(value)}" data-need-suffix="${needSuffix ? "1" : "0"}">
+          <label class="optionChoice" for="${escapeHtml(rowId)}">
+            <div class="optionChoiceCard">
+              <input
+                id="${escapeHtml(rowId)}"
+                type="checkbox"
+                class="rptWhereTypeChk"
+                value="${escapeHtml(value)}"
+              >
+              <span class="optionChoiceMark"></span>
+              <span class="optionChoiceText">${escapeHtml(value)}</span>
+            </div>
+          </label>
+
+          <div class="optionChoiceOther hidden">
             <input
-              id="${escapeHtml(rowId)}"
-              type="checkbox"
-              class="rptWhereTypeChk"
-              value="${escapeHtml(value)}"
+              type="text"
+              class="input rptWhereTypeSuffix"
+              placeholder="กรอกข้อมูลต่อท้าย ${escapeHtml(value)}"
             >
-            <span class="optionChoiceMark"></span>
-            <span class="optionChoiceText">${escapeHtml(value)}</span>
           </div>
-        </label>
-
-        <div class="optionChoiceOther hidden">
-          <input
-            type="text"
-            class="input rptWhereTypeSuffix"
-            placeholder="กรอกข้อมูลต่อท้าย ${escapeHtml(value)}"
-          >
         </div>
-      </div>
-    `;
-  }).join("");
+      `;
+    }).join("");
 
-  root.querySelectorAll(".rptWhereTypeRow").forEach((row) => {
-    const chk = row.querySelector(".rptWhereTypeChk");
-    const card = row.querySelector(".optionChoiceCard");
-    const wrap = row.querySelector(".optionChoiceOther");
-    const input = row.querySelector(".rptWhereTypeSuffix");
-    const needSuffix = row.getAttribute("data-need-suffix") === "1";
+    root.querySelectorAll(".rptWhereTypeRow").forEach((row) => {
+      const chk = row.querySelector(".rptWhereTypeChk");
+      const card = row.querySelector(".optionChoiceCard");
+      const wrap = row.querySelector(".optionChoiceOther");
+      const input = row.querySelector(".rptWhereTypeSuffix");
+      const needSuffix = row.getAttribute("data-need-suffix") === "1";
 
-    const sync = () => {
-      const show = !!chk?.checked && needSuffix;
-      wrap?.classList.toggle("hidden", !show);
-      if (!show && input) input.value = "";
-    };
+      const sync = () => {
+        const show = !!chk?.checked && needSuffix;
+        wrap?.classList.toggle("hidden", !show);
+        if (!show && input) input.value = "";
+      };
 
-    chk?.addEventListener("change", sync);
+      chk?.addEventListener("change", sync);
 
-    card?.addEventListener("click", (ev) => {
-      if (ev.target && (ev.target.tagName === "INPUT" || ev.target.tagName === "TEXTAREA")) return;
-      setTimeout(sync, 0);
+      card?.addEventListener("click", (ev) => {
+        if (ev.target && (ev.target.tagName === "INPUT" || ev.target.tagName === "TEXTAREA")) return;
+        setTimeout(sync, 0);
+      });
+
+      sync();
     });
-
-    sync();
-  });
-}
+  }
 
   function renderEmailSelector() {
     const root = $("rptEmailSelector");
@@ -2329,6 +2326,16 @@
         </div>
       </div>
     `;
+  }
+
+  function buildOptionsHtml(list, withPlaceholder) {
+    const items = Array.isArray(list) ? list : [];
+    const html = [];
+    if (withPlaceholder) html.push(`<option value="">-- เลือก --</option>`);
+    items.forEach((item) => {
+      html.push(`<option value="${escapeHtml(item)}">${escapeHtml(item)}</option>`);
+    });
+    return html.join("");
   }
 
   function createPersonRowHtml(index) {
@@ -2478,16 +2485,6 @@
         </div>
       </div>
     `;
-  }
-
-  function buildOptionsHtml(list, withPlaceholder) {
-    const items = Array.isArray(list) ? list : [];
-    const html = [];
-    if (withPlaceholder) html.push(`<option value="">-- เลือก --</option>`);
-    items.forEach((item) => {
-      html.push(`<option value="${escapeHtml(item)}">${escapeHtml(item)}</option>`);
-    });
-    return html.join("");
   }
 
   function appendRow(listId, html, emptyLabel) {
@@ -2723,20 +2720,20 @@
   }
 
   function collectWhereTypes() {
-  const root = $("rptWhereTypeSelections");
-  if (!root) return [];
+    const root = $("rptWhereTypeSelections");
+    if (!root) return [];
 
-  return Array.from(root.querySelectorAll(".rptWhereTypeRow")).map((row) => {
-    const chk = row.querySelector(".rptWhereTypeChk");
-    const suffix = row.querySelector(".rptWhereTypeSuffix");
+    return Array.from(root.querySelectorAll(".rptWhereTypeRow")).map((row) => {
+      const chk = row.querySelector(".rptWhereTypeChk");
+      const suffix = row.querySelector(".rptWhereTypeSuffix");
 
-    return {
-      value: norm(chk?.value),
-      checked: !!chk?.checked,
-      suffixText: !!chk?.checked ? norm(suffix?.value) : ""
-    };
-  }).filter((x) => x.value);
-}
+      return {
+        value: norm(chk?.value),
+        checked: !!chk?.checked,
+        suffixText: !!chk?.checked ? norm(suffix?.value) : ""
+      };
+    }).filter((x) => x.value);
+  }
 
   function collectPersons() {
     return Array.from(document.querySelectorAll("#rptPersonList .rptRepeatCard")).map((card, idx) => ({
@@ -3033,13 +3030,35 @@
 
       if (!ok.isConfirmed) return;
 
-      Swal.fire({
-        title: "กำลังบันทึกข้อมูล",
-        html: "ระบบกำลังบันทึก สร้าง PDF และส่งอีเมล",
-        allowOutsideClick: false,
-        allowEscapeKey: false,
-        didOpen: () => Swal.showLoading()
+      const Progress = window.ProgressUI;
+      Progress?.show(
+        "กำลังบันทึก Report",
+        "ระบบกำลังตรวจสอบข้อมูล อัปโหลดรูป สร้าง PDF และส่งอีเมล"
+      );
+
+      Progress?.activateOnly("validate", 8, "กำลังตรวจสอบข้อมูลรายงาน");
+      await window.sleepMs?.(160) || new Promise((r) => setTimeout(r, 160));
+      Progress?.markDone("validate", 14, "ตรวจสอบข้อมูลเรียบร้อย");
+
+      Progress?.activateOnly("upload", 18, "กำลังเตรียมรูปภาพสำหรับรายงาน");
+      const uploadProg = typeof window.estimateUploadProgressByFiles === "function"
+        ? window.estimateUploadProgressByFiles(Math.max(images.length, 1), 18, 42)
+        : {
+            next: (currentIndex) => {
+              const count = Math.max(1, images.length || 1);
+              const ratio = Math.max(0, Math.min(1, currentIndex / count));
+              return Math.round(18 + ((42 - 18) * ratio));
+            }
+          };
+
+      images.forEach((_, idx) => {
+        Progress?.setProgress(uploadProg.next(idx + 1), `เตรียมรูปภาพ ${idx + 1}/${images.length || 1}`);
       });
+
+      await window.sleepMs?.(120) || new Promise((r) => setTimeout(r, 120));
+      Progress?.markDone("upload", 44, `เตรียมรูปภาพเรียบร้อย (${images.length} รูป)`);
+
+      Progress?.activateOnly("save", 56, "กำลังบันทึกข้อมูล Report500");
 
       const res = await fetch(apiUrl("/report500/submit"), {
         method: "POST",
@@ -3063,32 +3082,76 @@
         throw new Error(json?.error || `บันทึกข้อมูลไม่สำเร็จ (HTTP ${res.status})`);
       }
 
+      Progress?.markDone("save", 72, "บันทึกข้อมูลลงระบบเรียบร้อย");
+
+      Progress?.activateOnly("pdf", 84, "กำลังสร้างไฟล์ PDF");
+      await window.sleepMs?.(180) || new Promise((r) => setTimeout(r, 180));
+
+      if (json.pdfFileId || json.pdfUrl) {
+        const sizeText = json.pdfSizeText ? ` (${json.pdfSizeText})` : "";
+        Progress?.markDone("pdf", 93, `สร้างไฟล์ PDF เรียบร้อย${sizeText}`);
+      } else {
+        Progress?.markDone("pdf", 93, "สร้างไฟล์ PDF เรียบร้อย");
+      }
+
+      Progress?.activateOnly("email", 97, "กำลังตรวจสอบผลการส่งอีเมล");
+      await window.sleepMs?.(160) || new Promise((r) => setTimeout(r, 160));
+
+      const emailResult = json.emailResult || {};
+      const emailOk = !!emailResult.ok;
+      const emailSkipped = !!emailResult.skipped;
+      const attachmentMode = String(emailResult.attachmentMode || "").trim();
+      const emailErr = String(emailResult.error || "").trim();
+
+      let emailText = "ส่งอีเมลเรียบร้อย";
+      if (attachmentMode === "LINK_ONLY") emailText = "ส่งอีเมลพร้อมลิงก์ PDF";
+      if (attachmentMode === "ATTACHED") emailText = "ส่งอีเมลพร้อมไฟล์ PDF";
+
+      if (emailOk) {
+        Progress?.markDone("email", 100, emailText, emailText);
+        Progress?.success("บันทึกสำเร็จ", "รายงานถูกบันทึกเรียบร้อยแล้ว");
+      } else if (emailSkipped) {
+        Progress?.markDone("email", 100, "ไม่ได้เลือกส่งอีเมล", "ข้าม");
+        Progress?.success("บันทึกสำเร็จ", "บันทึกข้อมูลและสร้าง PDF เรียบร้อยแล้ว");
+      } else {
+        Progress?.markError("email", "ส่งอีเมลไม่สำเร็จ", 100);
+        Progress?.success("บันทึกสำเร็จ", "ข้อมูลและ PDF สำเร็จแล้ว แต่การส่งอีเมลไม่สำเร็จ");
+        Progress?.setHint(emailErr || "กรุณาตรวจสอบสิทธิ์เมลหรือขนาดไฟล์ PDF");
+      }
+
       await Swal.fire({
-        icon: json.partial ? "warning" : "success",
-        title: json.partial ? "บันทึกข้อมูลสำเร็จบางส่วน" : "บันทึกข้อมูลสำเร็จ",
+        icon: (emailOk || emailSkipped) ? "success" : "warning",
+        title: (emailOk || emailSkipped) ? "บันทึก Report สำเร็จ" : "บันทึก Report สำเร็จบางส่วน",
         html: `
-          <div class="swalSummary">
-            <div class="swalSection">
-              <div class="swalKvGrid">
-                <div class="swalKv"><div class="swalKvLabel">Ref No.</div><div class="swalKvValue">${escapeHtml(json.refNo || payload.refNo || "-")}</div></div>
-                <div class="swalKv"><div class="swalKvLabel">ผู้บันทึก</div><div class="swalKvValue">${escapeHtml(json.lpsName || payload.reportedBy || "-")}</div></div>
-                <div class="swalKv"><div class="swalKvLabel">จำนวนรูปภาพ</div><div class="swalKvValue">${escapeHtml(String(json.imageCount || 0))}</div></div>
-                <div class="swalKv"><div class="swalKvLabel">PDF</div><div class="swalKvValue">${json.pdfFileId ? "สำเร็จ" : "ไม่สำเร็จ"}</div></div>
-              </div>
-              ${json.pdfUrl ? `<div class="swalActionLink"><a href="${json.pdfUrl}" target="_blank" rel="noopener noreferrer">เปิด PDF</a></div>` : ``}
-            </div>
+          <div style="text-align:left">
+            <div><b>Ref No.:</b> ${escapeHtml(json.refNo || payload.refNo || "-")}</div>
+            <div><b>รูปภาพ:</b> ${Number(json.imageCount || images.length || 0)} รูป</div>
+            <div><b>PDF:</b> ${json.pdfUrl ? `<a href="${json.pdfUrl}" target="_blank" rel="noopener noreferrer">เปิดเอกสาร</a>` : "สร้างแล้ว"}</div>
+            <div><b>การส่งอีเมล:</b> ${
+              emailOk ? emailText :
+              emailSkipped ? "ไม่ได้เลือกผู้รับอีเมล" :
+              `ไม่สำเร็จ${emailErr ? ` - ${escapeHtml(emailErr)}` : ""}`
+            }</div>
           </div>
         `,
-        confirmButtonText: "ปิด"
+        width: 760,
+        confirmButtonText: "ตกลง"
       });
 
       resetForm();
+      Progress?.hide(180);
     } catch (err) {
-      Swal.fire({
+      console.error(err);
+      window.ProgressUI?.markError("save", err?.message || "เกิดข้อผิดพลาด", 56);
+      window.ProgressUI?.setHint("กรุณาตรวจสอบข้อมูล เครือข่าย หรือ backend แล้วลองใหม่อีกครั้ง");
+
+      await Swal.fire({
         icon: "error",
-        title: "บันทึกข้อมูลไม่สำเร็จ",
+        title: "บันทึก Report500 ไม่สำเร็จ",
         text: err?.message || String(err)
       });
+
+      window.ProgressUI?.hide(180);
     }
   }
 
