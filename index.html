@@ -677,6 +677,88 @@
     </div>
   </div>
 
+    <!-- IMAGE EDITOR MODAL -->
+  <div id="imgEditorModal" class="imgEditorModal hidden" aria-hidden="true">
+    <div class="imgEditorBackdrop"></div>
+
+    <div class="imgEditorDialog" role="dialog" aria-modal="true" aria-labelledby="imgEditorTitle">
+      <div class="imgEditorHeader">
+        <div class="imgEditorHeaderText">
+          <div id="imgEditorTitle" class="imgEditorTitle">แก้ไขภาพก่อนบันทึก</div>
+          <div class="imgEditorSub">ซูม หมุน ปรับแสง วาด shape และพิมพ์ข้อความได้ก่อนนำภาพเข้าระบบ</div>
+        </div>
+
+        <button type="button" id="imgEditorCloseBtn" class="btn ghost imgEditorCloseBtn">ปิด</button>
+      </div>
+
+      <div class="imgEditorToolbarWrap">
+        <div class="imgEditorToolbar">
+          <button type="button" class="btn ghost ie-tool" data-tool="select">เลือก</button>
+          <button type="button" class="btn ghost ie-tool" data-tool="pan">เลื่อนภาพ</button>
+          <button type="button" class="btn ghost ie-tool" data-tool="line">เส้นตรง</button>
+          <button type="button" class="btn ghost ie-tool" data-tool="arrow">ลูกศร</button>
+          <button type="button" class="btn ghost ie-tool" data-tool="rect">สี่เหลี่ยม</button>
+          <button type="button" class="btn ghost ie-tool" data-tool="circle">วงกลม</button>
+          <button type="button" class="btn ghost ie-tool" data-tool="text">ข้อความ</button>
+
+          <div class="ieDivider"></div>
+
+          <button type="button" id="ieZoomOutBtn" class="btn ghost">ซูมออก</button>
+          <button type="button" id="ieZoomInBtn" class="btn ghost">ซูมเข้า</button>
+          <button type="button" id="ieZoomResetBtn" class="btn ghost">100%</button>
+
+          <div class="ieDivider"></div>
+
+          <button type="button" id="ieRotateLeftBtn" class="btn ghost">หมุนซ้าย</button>
+          <button type="button" id="ieRotateRightBtn" class="btn ghost">หมุนขวา</button>
+
+          <div class="ieDivider"></div>
+
+          <label class="ieField">
+            <span>สี</span>
+            <input type="color" id="ieColorPicker" value="#dc2626">
+          </label>
+
+          <label class="ieField ieFieldSmall">
+            <span>ขนาดเส้น</span>
+            <input type="range" id="ieStrokeWidth" min="1" max="16" step="1" value="3">
+          </label>
+
+          <label class="ieField ieFieldSmall">
+            <span>แสง</span>
+            <input type="range" id="ieBrightness" min="-1" max="1" step="0.05" value="0">
+          </label>
+        </div>
+      </div>
+
+      <div class="imgEditorBody">
+        <div class="imgEditorCanvasWrap">
+          <canvas id="imgEditorCanvas"></canvas>
+        </div>
+      </div>
+
+      <div class="imgEditorFooter">
+        <div class="imgEditorStatus">
+          <span id="ieZoomLabel">100%</span>
+          <span class="ieBullet">•</span>
+          <span id="ieToolLabel">เลือก</span>
+        </div>
+
+        <div class="imgEditorActions">
+          <button type="button" id="ieResetBtn" class="btn ghost">รีเซ็ต</button>
+          <button type="button" id="ieCancelBtn" class="btn ghost">ยกเลิก</button>
+          <button type="button" id="ieSaveBtn" class="btn primary">บันทึกภาพนี้</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Fabric.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/fabric@latest/dist/index.min.js"></script>
+
+  <!-- Shared image editor -->
+  <script src="./image-editor.js?v=1"></script>
+
   <script src="./report500.js?v=progress-ui-1"></script>
   <script src="./app.js?v=progress-ui-1"></script>
 </body>
