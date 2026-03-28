@@ -2175,3 +2175,20 @@ body.progress-lock{
     border-radius:10px;
   }
 }
+.btnEditImage{
+  min-height:38px;
+  padding:8px 14px;
+  border-radius:12px;
+  font-size:12px;
+  font-weight:900;
+  white-space:nowrap;
+}
+
+@media (max-width:640px){
+  .btnEditImage{
+    min-height:36px;
+    padding:7px 12px;
+    border-radius:11px;
+    font-size:11px;
+  }
+}
