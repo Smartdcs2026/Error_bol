@@ -254,7 +254,6 @@
     canvas.requestRenderAll();
     pushHistorySnapshot();
 
-    // one-time tool usage
     setActiveTool("select");
   }
 
@@ -612,7 +611,6 @@
       canvas.requestRenderAll();
       pushHistorySnapshot();
 
-      // one-time tool usage
       setActiveTool("select");
     } catch (err) {
       console.error(err);
@@ -741,6 +739,9 @@
     const canvas = editorState.canvas;
     if (!canvas) return;
 
+    if (canvas.__imageEditorObjectEventsBound) return;
+    canvas.__imageEditorObjectEventsBound = true;
+
     canvas.on("object:modified", () => {
       if (editorState.restoringHistory) return;
       pushHistorySnapshot();
@@ -761,6 +762,8 @@
   function bindPointerDrawing() {
     const canvas = editorState.canvas;
     if (!canvas) return;
+    if (canvas.__imageEditorPointerBound) return;
+    canvas.__imageEditorPointerBound = true;
 
     let startX = 0;
     let startY = 0;
@@ -918,8 +921,6 @@
         canvas.setActiveObject(arrow);
         canvas.requestRenderAll();
         pushHistorySnapshot();
-
-        // one-time tool usage
         setActiveTool("select");
         return;
       }
@@ -935,8 +936,6 @@
         canvas.setActiveObject(draft);
         canvas.requestRenderAll();
         pushHistorySnapshot();
-
-        // one-time tool usage
         setActiveTool("select");
         return;
       }
@@ -1113,74 +1112,265 @@
     };
   }
 
-  function ensureExtraControls() {
-    const toolbar = document.querySelector(".imgEditorToolbar");
-    const footerActions = document.querySelector(".imgEditorActions");
-    if (!toolbar || !footerActions) return;
+  function getToolButton(toolName) {
+    return document.querySelector(`.ie-tool[data-tool="${toolName}"]`);
+  }
 
-    function ensureBtn(container, id, text, className = "btn ghost", attrs = {}) {
-      let btn = $(id);
-      if (btn) return btn;
+  function getFieldByInputId(inputId) {
+    const input = $(inputId);
+    return input ? input.closest(".ieField") : null;
+  }
 
-      btn = document.createElement("button");
-      btn.type = "button";
-      btn.id = id;
-      btn.className = className;
-      btn.textContent = text;
-
+  function ensureBtn(container, id, text, className = "btn ghost", attrs = {}) {
+    let btn = $(id);
+    if (btn) {
+      if (text != null) btn.textContent = text;
+      if (className) btn.className = className;
       Object.keys(attrs || {}).forEach((k) => {
         btn.setAttribute(k, attrs[k]);
       });
-
-      container.appendChild(btn);
       return btn;
     }
 
-    function ensureDivider(container) {
-      const div = document.createElement("div");
-      div.className = "ieDivider";
-      container.appendChild(div);
+    btn = document.createElement("button");
+    btn.type = "button";
+    btn.id = id;
+    btn.className = className;
+    btn.textContent = text || "";
+
+    Object.keys(attrs || {}).forEach((k) => {
+      btn.setAttribute(k, attrs[k]);
+    });
+
+    container.appendChild(btn);
+    return btn;
+  }
+
+  function ensureToolBtn(container, id, text, toolName) {
+    const btn = ensureBtn(container, id, text, "btn ghost ie-tool", { "data-tool": toolName });
+    btn.classList.add("ie-tool");
+    btn.setAttribute("data-tool", toolName);
+    return btn;
+  }
+
+  function removeLegacyToolbarDividers(toolbar) {
+    toolbar.querySelectorAll(".ieDivider").forEach((el) => el.remove());
+  }
+
+  function createToolbarSection(title, extraClass = "") {
+    const section = document.createElement("section");
+    section.className = `ieToolbarSection ${extraClass}`.trim();
+
+    const head = document.createElement("div");
+    head.className = "ieToolbarTitle";
+    head.textContent = title;
+
+    const grid = document.createElement("div");
+    grid.className = "ieButtonGrid";
+
+    section.appendChild(head);
+    section.appendChild(grid);
+
+    return { section, grid };
+  }
+
+  function appendNodes(container, nodes) {
+    (Array.isArray(nodes) ? nodes : []).forEach((node) => {
+      if (!node) return;
+      container.appendChild(node);
+    });
+  }
+
+  function ensureToolbarResponsiveLabels() {
+    const compact = window.matchMedia("(max-width: 560px)").matches;
+
+    const labels = {
+      ieSelectBtn: compact ? "เลือก" : "เลือก",
+      iePanBtn: compact ? "เลื่อน" : "เลื่อนภาพ",
+      ieTextBtn: compact ? "ข้อความ" : "ข้อความ",
+      ieCropToolBtn: compact ? "ครอป" : "ครอป",
+
+      ieLineBtn: compact ? "เส้น" : "เส้นตรง",
+      ieArrowBtn: compact ? "ลูกศร" : "ลูกศร",
+      ieRectBtn: compact ? "กรอบ" : "สี่เหลี่ยม",
+      ieCircleBtn: compact ? "วงกลม" : "วงกลม",
+
+      ieBlurRectBtn: compact ? "เบลอสี่" : "เบลอสี่เหลี่ยม",
+      ieBlurCircleBtn: compact ? "เบลอวง" : "เบลอวงกลม",
+      ieMosaicRectBtn: compact ? "โมเสกสี่" : "โมเสกสี่เหลี่ยม",
+      ieMosaicCircleBtn: compact ? "โมเสกวง" : "โมเสกวงกลม",
+
+      ieZoomOutBtn: compact ? "ซูม-" : "ซูมออก",
+      ieZoomResetBtn: compact ? "100%" : "รีเซ็ตซูม",
+      ieZoomInBtn: compact ? "ซูม+" : "ซูมเข้า",
+      ieFitBtn: compact ? "พอดี" : "พอดีจอ",
+
+      ieRotateLeftBtn: compact ? "หมุนซ้าย" : "หมุนซ้าย",
+      ieRotateRightBtn: compact ? "หมุนขวา" : "หมุนขวา",
+
+      ieUndoBtn: compact ? "ย้อน" : "ย้อนกลับ",
+      ieRedoBtn: compact ? "ทำซ้ำ" : "ทำซ้ำ",
+      ieDeleteBtn: compact ? "ลบ" : "ลบที่เลือก",
+      ieApplyCropBtn: compact ? "ใช้ครอป" : "ใช้ครอป"
+    };
+
+    Object.keys(labels).forEach((id) => {
+      const el = $(id);
+      if (el) el.textContent = labels[id];
+    });
+  }
+
+  function rebuildToolbarLayout(toolbar) {
+    if (!toolbar) return;
+
+    removeLegacyToolbarDividers(toolbar);
+
+    const selectBtn = getToolButton("select");
+    const panBtn = getToolButton("pan");
+    const textBtn = getToolButton("text");
+    const cropBtn = $("ieCropToolBtn");
+
+    const lineBtn = getToolButton("line");
+    const arrowBtn = getToolButton("arrow");
+    const rectBtn = getToolButton("rect");
+    const circleBtn = getToolButton("circle");
+
+    const blurRectBtn = $("ieBlurRectBtn");
+    const blurCircleBtn = $("ieBlurCircleBtn");
+    const mosaicRectBtn = $("ieMosaicRectBtn");
+    const mosaicCircleBtn = $("ieMosaicCircleBtn");
+
+    const zoomOutBtn = $("ieZoomOutBtn");
+    const zoomResetBtn = $("ieZoomResetBtn");
+    const zoomInBtn = $("ieZoomInBtn");
+    const fitBtn = $("ieFitBtn");
+
+    const rotateLeftBtn = $("ieRotateLeftBtn");
+    const rotateRightBtn = $("ieRotateRightBtn");
+
+    const undoBtn = $("ieUndoBtn");
+    const redoBtn = $("ieRedoBtn");
+    const deleteBtn = $("ieDeleteBtn");
+    const applyCropBtn = $("ieApplyCropBtn");
+
+    const colorField = getFieldByInputId("ieColorPicker");
+    const strokeField = getFieldByInputId("ieStrokeWidth");
+    const brightnessField = getFieldByInputId("ieBrightness");
+
+    if (selectBtn) selectBtn.id = "ieSelectBtn";
+    if (panBtn) panBtn.id = "iePanBtn";
+    if (textBtn) textBtn.id = "ieTextBtn";
+    if (lineBtn) lineBtn.id = "ieLineBtn";
+    if (arrowBtn) arrowBtn.id = "ieArrowBtn";
+    if (rectBtn) rectBtn.id = "ieRectBtn";
+    if (circleBtn) circleBtn.id = "ieCircleBtn";
+
+    toolbar.innerHTML = "";
+
+    const gridRoot = document.createElement("div");
+    gridRoot.className = "imgEditorToolbarGrid ieToolbarGridEnhanced";
+
+    const secPrimary = createToolbarSection("เครื่องมือหลัก", "ieSectionPrimary");
+    secPrimary.grid.classList.add("ieButtonGridTools");
+    appendNodes(secPrimary.grid, [selectBtn, panBtn, textBtn, cropBtn]);
+
+    const secDraw = createToolbarSection("วาด / ทำเครื่องหมาย", "ieSectionDraw");
+    secDraw.grid.classList.add("ieButtonGridTools");
+    appendNodes(secDraw.grid, [lineBtn, arrowBtn, rectBtn, circleBtn]);
+
+    const secMask = createToolbarSection("ปิดข้อมูลสำคัญ", "ieSectionMask");
+    secMask.grid.classList.add("ieButtonGridEffects");
+    appendNodes(secMask.grid, [blurRectBtn, blurCircleBtn, mosaicRectBtn, mosaicCircleBtn]);
+
+    const secView = createToolbarSection("มุมมองภาพ", "ieSectionView");
+    secView.grid.classList.add("ieButtonGridView");
+    appendNodes(secView.grid, [zoomOutBtn, zoomResetBtn, zoomInBtn, fitBtn]);
+
+    const secManage = createToolbarSection("จัดการภาพ", "ieSectionManage");
+    secManage.grid.classList.add("ieButtonGridView");
+    appendNodes(secManage.grid, [undoBtn, redoBtn, deleteBtn, applyCropBtn, rotateLeftBtn, rotateRightBtn]);
+
+    const secControl = createToolbarSection("ตั้งค่า", "ieSectionControl");
+    secControl.grid.classList.add("ieControlGrid");
+    appendNodes(secControl.grid, [colorField, strokeField, brightnessField]);
+
+    [
+      secPrimary.section,
+      secDraw.section,
+      secMask.section,
+      secView.section,
+      secManage.section,
+      secControl.section
+    ].forEach((section) => gridRoot.appendChild(section));
+
+    toolbar.appendChild(gridRoot);
+  }
+
+  function ensureFooterControls() {
+    const footerActions = document.querySelector(".imgEditorActions");
+    if (!footerActions) return;
+
+    ensureBtn(footerActions, "ieFitBtn", "พอดีจอ");
+  }
+
+  function ensureCoreEditorButtons() {
+    const toolbar = document.querySelector(".imgEditorToolbar");
+    if (!toolbar) return;
+
+    ensureBtn(toolbar, "ieUndoBtn", "ย้อนกลับ");
+    ensureBtn(toolbar, "ieRedoBtn", "ทำซ้ำ");
+    ensureBtn(toolbar, "ieDeleteBtn", "ลบที่เลือก");
+
+    ensureToolBtn(toolbar, "ieCropToolBtn", "ครอป", "crop");
+    ensureBtn(toolbar, "ieApplyCropBtn", "ใช้ครอป");
+
+    ensureToolBtn(toolbar, "ieBlurRectBtn", "เบลอสี่เหลี่ยม", "blurRect");
+    ensureToolBtn(toolbar, "ieBlurCircleBtn", "เบลอวงกลม", "blurCircle");
+    ensureToolBtn(toolbar, "ieMosaicRectBtn", "โมเสกสี่เหลี่ยม", "mosaicRect");
+    ensureToolBtn(toolbar, "ieMosaicCircleBtn", "โมเสกวงกลม", "mosaicCircle");
+  }
+
+  function ensureExtraControls() {
+    const toolbar = document.querySelector(".imgEditorToolbar");
+    if (!toolbar) return;
+
+    ensureCoreEditorButtons();
+    ensureFooterControls();
+    rebuildToolbarLayout(toolbar);
+    ensureToolbarResponsiveLabels();
+  }
+
+  function bindResponsiveToolbarLabelOnce() {
+    if (window.__imgEditorResponsiveLabelBound) return;
+    window.__imgEditorResponsiveLabelBound = true;
+
+    const mq = window.matchMedia("(max-width: 560px)");
+
+    const apply = () => {
+      try {
+        ensureToolbarResponsiveLabels();
+      } catch (_) {}
+    };
+
+    if (typeof mq.addEventListener === "function") {
+      mq.addEventListener("change", apply);
+    } else if (typeof mq.addListener === "function") {
+      mq.addListener(apply);
     }
 
-    if (!$("ieUndoBtn")) {
-      ensureDivider(toolbar);
-      ensureBtn(toolbar, "ieUndoBtn", "ย้อนกลับ");
-      ensureBtn(toolbar, "ieRedoBtn", "ทำซ้ำ");
-      ensureBtn(toolbar, "ieDeleteBtn", "ลบที่เลือก");
-    }
+    window.addEventListener("resize", apply, { passive: true });
+  }
 
-    if (!$("ieCropToolBtn")) {
-      ensureDivider(toolbar);
-      const cropBtn = ensureBtn(toolbar, "ieCropToolBtn", "ครอป");
-      cropBtn.classList.add("ie-tool");
-      cropBtn.setAttribute("data-tool", "crop");
+  function bindToolButtons() {
+    document.querySelectorAll(".ie-tool").forEach((btn) => {
+      if (btn.dataset.boundClick === "1") return;
+      btn.dataset.boundClick = "1";
 
-      ensureBtn(toolbar, "ieApplyCropBtn", "ใช้ครอป");
-    }
-
-    if (!$("ieBlurRectBtn")) {
-      ensureDivider(toolbar);
-
-      const b1 = ensureBtn(toolbar, "ieBlurRectBtn", "เบลอสี่เหลี่ยม");
-      b1.classList.add("ie-tool");
-      b1.setAttribute("data-tool", "blurRect");
-
-      const b2 = ensureBtn(toolbar, "ieBlurCircleBtn", "เบลอวงกลม");
-      b2.classList.add("ie-tool");
-      b2.setAttribute("data-tool", "blurCircle");
-
-      const m1 = ensureBtn(toolbar, "ieMosaicRectBtn", "โมเสกสี่เหลี่ยม");
-      m1.classList.add("ie-tool");
-      m1.setAttribute("data-tool", "mosaicRect");
-
-      const m2 = ensureBtn(toolbar, "ieMosaicCircleBtn", "โมเสกวงกลม");
-      m2.classList.add("ie-tool");
-      m2.setAttribute("data-tool", "mosaicCircle");
-    }
-
-    if (!$("ieFitBtn")) {
-      ensureBtn(footerActions, "ieFitBtn", "พอดีจอ");
-    }
+      btn.addEventListener("click", () => {
+        const tool = btn.getAttribute("data-tool") || "select";
+        setActiveTool(tool);
+      });
+    });
   }
 
   function bindUiOnce() {
@@ -1188,6 +1378,7 @@
     window.__imgEditorBoundOnce = true;
 
     ensureExtraControls();
+    bindResponsiveToolbarLabelOnce();
 
     $("imgEditorCloseBtn")?.addEventListener("click", () => closeEditor({ ok: false }));
     $("ieCancelBtn")?.addEventListener("click", () => closeEditor({ ok: false }));
@@ -1235,6 +1426,8 @@
         editorState.zoom = 1;
         editorState.brightness = 0;
         if ($("ieBrightness")) $("ieBrightness").value = "0";
+        ensureExtraControls();
+        bindToolButtons();
         setActiveTool("select");
         pushHistorySnapshot(true);
       } catch (err) {
@@ -1248,12 +1441,7 @@
     $("ieDeleteBtn")?.addEventListener("click", () => deleteSelectedObject());
     $("ieApplyCropBtn")?.addEventListener("click", () => applyCrop());
 
-    document.querySelectorAll(".ie-tool").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        const tool = btn.getAttribute("data-tool") || "select";
-        setActiveTool(tool);
-      });
-    });
+    bindToolButtons();
   }
 
   async function openImageEditor(file, options = {}) {
@@ -1301,6 +1489,8 @@
       editorState.canvas.requestRenderAll();
     }
 
+    ensureExtraControls();
+    bindToolButtons();
     setActiveTool("select");
     setZoomLabel();
     setToolLabel();
