@@ -1634,7 +1634,7 @@ body.progress-lock{
 .imgEditorDialog{
   position:relative;
   z-index:1;
-  width:min(1380px,100%);
+  width:min(1400px,100%);
   height:min(calc(100dvh - 16px),980px);
   max-height:min(calc(100dvh - 16px),980px);
   display:grid;
@@ -1695,16 +1695,18 @@ body.progress-lock{
 }
 
 /* =========================
-   TOOLBAR AREA
+   TOP TOOLBAR
 ========================= */
 .imgEditorToolbarWrap{
   grid-area:toolbar;
   width:100%;
-  display:block;
-  padding:10px;
+  padding:8px 10px 10px;
   border-bottom:1px solid #e5edf8;
   background:linear-gradient(180deg,#fbfdff 0%,#f4f8ff 100%);
-  overflow:hidden;
+  overflow-x:auto;
+  overflow-y:hidden;
+  -webkit-overflow-scrolling:touch;
+  scrollbar-width:thin;
 }
 
 .imgEditorToolbar{
@@ -1714,16 +1716,20 @@ body.progress-lock{
 
 .imgEditorToolbarGrid,
 .ieToolbarGridEnhanced{
-  width:100%;
+  width:max-content;
+  min-width:100%;
   display:grid !important;
-  grid-template-columns:1.1fr 1.1fr 1fr 1fr;
+  grid-auto-flow:column;
+  grid-auto-columns:minmax(220px, 24vw);
+  grid-template-columns:none !important;
   gap:10px;
   align-items:start;
 }
 
+/* card แต่ละหมวด */
 .ieToolbarSection{
-  width:100%;
   min-width:0;
+  width:100%;
   display:block;
   padding:10px;
   border:1px solid #e2ebf7;
@@ -1738,6 +1744,7 @@ body.progress-lock{
   font-weight:900;
   color:#64748b;
   line-height:1.2;
+  white-space:nowrap;
 }
 
 .ieToolbarSection .ieButtonGrid,
@@ -1770,28 +1777,25 @@ body.progress-lock{
 }
 
 .ieDivider{
-  grid-column:1 / -1;
-  height:1px;
-  margin:2px 0;
-  background:linear-gradient(90deg,transparent,#d8e4f4,transparent);
-  border-radius:999px;
+  display:none !important;
 }
 
+/* ปุ่มทั้งหมด */
 .imgEditorToolbar .btn,
 .ieToolbarSection .btn{
   width:100%;
   min-width:0;
-  min-height:44px;
-  height:44px;
-  padding:8px 6px;
+  min-height:40px;
+  height:40px;
+  padding:6px 6px;
   display:flex;
   align-items:center;
   justify-content:center;
   text-align:center;
-  border-radius:14px;
-  font-size:12px;
+  border-radius:13px;
+  font-size:11px;
   font-weight:900;
-  line-height:1.08;
+  line-height:1.05;
   white-space:normal;
   word-break:break-word;
   writing-mode:horizontal-tb !important;
@@ -1843,22 +1847,22 @@ body.progress-lock{
 }
 
 /* =========================
-   CONTROLS / FIELDS
+   CONTROL FIELDS
 ========================= */
 .imgEditorToolbarWrap .ieField,
 .ieField{
   width:100%;
   min-width:0;
   display:grid;
-  grid-template-columns:56px minmax(0,1fr);
+  grid-template-columns:48px minmax(0,1fr);
   align-items:center;
   gap:8px;
-  min-height:44px;
-  padding:8px 10px;
+  min-height:40px;
+  padding:7px 8px;
   border:1.2px solid #d9e4f1;
-  border-radius:14px;
+  border-radius:13px;
   background:linear-gradient(180deg,#ffffff 0%,#fbfdff 100%);
-  font-size:12px;
+  font-size:11px;
   font-weight:800;
   color:#334155;
 }
@@ -1872,8 +1876,8 @@ body.progress-lock{
 .imgEditorToolbarWrap .ieField input[type="color"],
 .ieField input[type="color"]{
   width:100%;
-  height:30px;
-  min-height:30px;
+  height:26px;
+  min-height:26px;
   padding:0;
   border:none;
   background:transparent;
@@ -1899,7 +1903,7 @@ body.progress-lock{
 .imgEditorBody{
   grid-area:body;
   min-height:0;
-  padding:12px;
+  padding:10px;
   background:linear-gradient(180deg,#f8fbff 0%,#f1f6ff 100%);
   overflow:hidden;
 }
@@ -1908,7 +1912,7 @@ body.progress-lock{
   position:relative;
   width:100%;
   height:100%;
-  min-height:320px;
+  min-height:340px;
   display:flex;
   align-items:center;
   justify-content:center;
@@ -1941,7 +1945,7 @@ body.progress-lock{
   grid-template-columns:minmax(0,1fr) auto;
   gap:12px;
   align-items:center;
-  padding:12px 14px;
+  padding:10px 14px 12px;
   border-top:1px solid #e5edf8;
   background:#fff;
 }
@@ -1971,11 +1975,11 @@ body.progress-lock{
 }
 
 .imgEditorActions .btn{
-  min-height:42px;
-  height:42px;
+  min-height:40px;
+  height:40px;
   padding:8px 14px;
-  border-radius:14px;
-  font-size:13px;
+  border-radius:13px;
+  font-size:12px;
   font-weight:900;
   white-space:nowrap;
 }
@@ -1984,16 +1988,16 @@ body.progress-lock{
    TABLET
 ========================= */
 @media (max-width:1180px){
-  .ieToolbarGridEnhanced,
-  .imgEditorToolbarGrid{
-    grid-template-columns:repeat(2,minmax(0,1fr));
+  .imgEditorToolbarGrid,
+  .ieToolbarGridEnhanced{
+    grid-auto-columns:minmax(210px, 30vw);
   }
 }
 
 /* =========================
-   MOBILE
+   MOBILE PORTRAIT / LANDSCAPE
 ========================= */
-@media (max-width:860px){
+@media (max-width:950px){
   .imgEditorModal{
     padding:6px;
   }
@@ -2003,16 +2007,10 @@ body.progress-lock{
     height:calc(100dvh - 12px);
     max-height:calc(100dvh - 12px);
     border-radius:18px;
-    grid-template-areas:
-      "header"
-      "body"
-      "toolbar"
-      "footer";
-    grid-template-rows:auto minmax(0,1fr) auto auto;
   }
 
   .imgEditorHeader{
-    padding:12px 12px 10px;
+    padding:10px 12px 8px;
     gap:10px;
   }
 
@@ -2033,39 +2031,14 @@ body.progress-lock{
     font-size:12px;
   }
 
-  .imgEditorBody{
-    padding:8px;
-  }
-
-  .imgEditorCanvasWrap{
-    min-height:0;
-    height:100%;
-    border-radius:14px;
-  }
-
-  /* จุดสำคัญ: toolbar เตี้ยลง + เลื่อนแนวนอน */
   .imgEditorToolbarWrap{
     padding:6px 8px 8px;
-    max-height:20vh;
-    min-height:112px;
-    border-top:1px solid #e5edf8;
-    border-bottom:none;
-    overflow-x:auto;
-    overflow-y:hidden;
-    -webkit-overflow-scrolling:touch;
-    scrollbar-width:thin;
   }
 
   .imgEditorToolbarGrid,
   .ieToolbarGridEnhanced{
-    display:grid !important;
-    grid-auto-flow:column;
-    grid-auto-columns:minmax(220px, 72vw);
-    grid-template-columns:none !important;
+    grid-auto-columns:minmax(200px, 72vw);
     gap:8px;
-    align-items:stretch;
-    width:max-content;
-    min-width:100%;
   }
 
   .ieToolbarSection{
@@ -2102,7 +2075,6 @@ body.progress-lock{
     border-radius:11px;
     font-size:10px;
     line-height:1;
-    letter-spacing:-.1px;
   }
 
   .imgEditorToolbarWrap .ieField,
@@ -2121,10 +2093,20 @@ body.progress-lock{
     min-height:22px;
   }
 
+  .imgEditorBody{
+    padding:8px;
+  }
+
+  .imgEditorCanvasWrap{
+    min-height:0;
+    height:100%;
+    border-radius:14px;
+  }
+
   .imgEditorFooter{
     grid-template-columns:1fr;
-    gap:10px;
-    padding:10px 12px 12px;
+    gap:8px;
+    padding:8px 10px 10px;
   }
 
   .imgEditorStatus{
@@ -2133,26 +2115,26 @@ body.progress-lock{
 
   .imgEditorActions{
     width:100%;
-    grid-template-columns:repeat(3,minmax(0,1fr));
-    gap:8px;
+    grid-template-columns:repeat(4,minmax(0,1fr));
+    gap:6px;
   }
 
   .imgEditorActions .btn{
     width:100%;
-    min-height:40px;
-    height:40px;
-    padding:8px 10px;
-    border-radius:12px;
-    font-size:12px;
+    min-height:38px;
+    height:38px;
+    padding:7px 8px;
+    border-radius:11px;
+    font-size:11px;
   }
 }
 
 /* =========================
-   SMALL MOBILE
+   VERY SMALL
 ========================= */
 @media (max-width:560px){
   .imgEditorHeader{
-    padding:10px 10px 8px;
+    padding:9px 10px 7px;
   }
 
   .imgEditorTitle{
@@ -2163,35 +2145,15 @@ body.progress-lock{
     display:none;
   }
 
-  .imgEditorBody{
-    padding:6px;
-  }
-
-  .imgEditorToolbarWrap{
-    padding:5px 6px 7px;
-    max-height:18vh;
-    min-height:102px;
-  }
-
   .imgEditorToolbarGrid,
   .ieToolbarGridEnhanced{
-    grid-auto-columns:minmax(210px,78vw);
+    grid-auto-columns:minmax(190px, 78vw);
     gap:7px;
   }
 
   .ieToolbarSection{
     padding:7px;
     border-radius:13px;
-  }
-
-  .ieButtonGridTools{
-    gap:5px;
-  }
-
-  .ieButtonGridEffects,
-  .ieButtonGridView,
-  .ieSectionManage .ieButtonGridView{
-    gap:5px;
   }
 
   .imgEditorToolbar .btn,
@@ -2220,71 +2182,19 @@ body.progress-lock{
     min-height:20px;
   }
 
-  .imgEditorFooter{
-    padding:8px 10px 10px;
-    gap:8px;
-  }
-
-  .imgEditorActions .btn{
-    min-height:38px;
-    height:38px;
-    border-radius:11px;
-    font-size:11px;
-    padding:7px 8px;
-  }
-}
-
-/* =========================
-   VERY SMALL MOBILE
-========================= */
-@media (max-width:390px){
-  .imgEditorModal{
-    padding:4px;
-  }
-
-  .imgEditorDialog{
-    height:calc(100dvh - 8px);
-    max-height:calc(100dvh - 8px);
-    border-radius:14px;
-  }
-
-  .imgEditorToolbarWrap{
-    max-height:17vh;
-    min-height:96px;
-  }
-
-  .imgEditorToolbarGrid,
-  .ieToolbarGridEnhanced{
-    grid-auto-columns:minmax(198px,82vw);
-  }
-
-  .imgEditorToolbar .btn,
-  .ieToolbarSection .btn{
-    min-height:30px;
-    height:30px;
-    padding:3px 2px;
-    border-radius:9px;
-    font-size:9px;
-  }
-
-  .imgEditorToolbarWrap .ieField,
-  .ieField{
-    min-height:30px;
-    border-radius:9px;
-    font-size:9px;
-    grid-template-columns:34px minmax(0,1fr);
+  .imgEditorBody{
+    padding:6px;
   }
 
   .imgEditorActions{
-    gap:6px;
+    grid-template-columns:repeat(3,minmax(0,1fr));
   }
 
   .imgEditorActions .btn{
     min-height:36px;
     height:36px;
-    font-size:10.5px;
-    padding:6px 6px;
     border-radius:10px;
+    font-size:10.5px;
   }
 }
 
