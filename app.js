@@ -8365,8 +8365,8 @@ function ensureEditButtonForUploadBox(box, inputId) {
 
   btn = document.createElement("button");
   btn.type = "button";
- btn.className = "btn ghost btnEditImage";
-btn.textContent = "แก้ไขภาพ";
+  btn.className = "btn ghost btnEditImage";
+  btn.textContent = "แก้ไขภาพ";
 
   topRow.appendChild(btn);
 
@@ -8467,13 +8467,13 @@ async function handlePickedImageForUpload(input, box) {
     return;
   }
 
-  // ล้างสถานะไฟล์ที่เคยแก้ไขไว้ของ input นี้ก่อน
+  // เปลี่ยนรูปใหม่ ให้ล้างสถานะไฟล์ที่เคยแก้ไว้ก่อน
   EDITED_UPLOAD_STORE.delete(input);
 
-  // สร้างปุ่มแก้ไขภาพเหมือนเดิม แต่ยังไม่เปิด editor ทันที
+  // คงปุ่มแก้ไขภาพไว้เหมือนเดิม
   ensureEditButtonForUploadBox(box, input.id);
 
-  // แสดง preview ไฟล์ดิบก่อน เพื่อหลีกเลี่ยงการเปิด modal/canvas ทันทีบนมือถือ
+  // แสดง preview ก่อน และไม่เปิด editor ทันที
   updateUploadPreviewFromFile(
     input,
     box,
@@ -8482,9 +8482,6 @@ async function handlePickedImageForUpload(input, box) {
   );
 }
 
-  ensureEditButtonForUploadBox(box, input.id);
-  await openEditorForUploadInput(input, box);
-}
 const $ = (id) => document.getElementById(id);
 
 /** ==========================
