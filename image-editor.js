@@ -2934,7 +2934,7 @@
 //     editorState.modal.setAttribute("aria-hidden", "false");
 //     document.body.classList.add("progress-lock");
 
-//     destroyCanvas();
+//     ;
 //     revokeOriginalUrl();
 
 //     try {
@@ -4726,14 +4726,29 @@
     editorState.tempDraft = null;
     editorState.isRefreshingEffect = false;
   }
+function nextFrame() {
+  return new Promise((resolve) => {
+    requestAnimationFrame(() => resolve());
+  });
+}
+ function closeEditor(result = { ok: false }) {
+  editorState.modal?.classList.add("hidden");
+  editorState.modal?.setAttribute("aria-hidden", "true");
+  document.body.classList.remove("img-editor-lock");
 
-  function closeEditor(result = { ok: false }) {
-    editorState.modal?.classList.add("hidden");
-    editorState.modal?.setAttribute("aria-hidden", "true");
-    document.body.classList.remove("progress-lock");
+  destroyCanvas();
+  revokeOriginalUrl();
 
-    destroyCanvas();
-    revokeOriginalUrl();
+  editorState.originalFile = null;
+  editorState.history = [];
+  editorState.historyIndex = -1;
+  editorState.restoringHistory = false;
+  editorState.isApplyingCrop = false;
+
+  const resolve = editorState.resultResolve;
+  editorState.resultResolve = null;
+  if (resolve) resolve(result);
+}
 
     editorState.originalFile = null;
     editorState.history = [];
@@ -6205,12 +6220,12 @@
     bindResponsiveToolbarLabelOnce();
 
     $("imgEditorCloseBtn")?.addEventListener("click", () => closeEditor({ ok: false }));
-    $("ieCancelBtn")?.addEventListener("click", () => closeEditor({ ok: false }));
+    $("ieCancelBtn")?.addEventListener("click", () => ({ ok: false }));
 
     $("ieSaveBtn")?.addEventListener("click", async () => {
       try {
         const result = await exportEditedFile();
-        closeEditor(result);
+        (result);
       } catch (err) {
         console.error(err);
         showMessage("error", "บันทึกภาพไม่สำเร็จ", err?.message || String(err));
@@ -6305,41 +6320,30 @@
     bindToolButtons();
   }
 
-  async function openImageEditor(file, options = {}) {
-    ensureFabricReady();
-    ensureModal();
-    bindUiOnce();
+  editorState.modal.classList.remove("hidden");
+editorState.modal.setAttribute("aria-hidden", "false");
+document.body.classList.add("img-editor-lock");
 
-    if (!file || !/^image\//i.test(file.type || "")) {
-      throw new Error("ไฟล์ที่ส่งเข้า editor ต้องเป็นรูปภาพ");
-    }
+/**
+ * ให้ browser render modal รอบแรกก่อน
+ * แล้วค่อย destroy/create canvas เพื่อลดอาการ flash บนมือถือ
+ */
+await nextFrame();
+await nextFrame();
 
-    editorState.originalFile = file;
-    editorState.zoom = 1;
-    editorState.strokeColor = options.strokeColor || "#dc2626";
-    editorState.strokeWidth = Number(options.strokeWidth || 3);
-    editorState.brightness = 0;
-    editorState.history = [];
-    editorState.historyIndex = -1;
-    editorState.restoringHistory = false;
-    editorState.isRefreshingEffect = false;
+destroyCanvas();
+revokeOriginalUrl();
 
-    if ($("ieColorPicker")) $("ieColorPicker").value = editorState.strokeColor;
-    if ($("ieStrokeWidth")) $("ieStrokeWidth").value = String(editorState.strokeWidth);
-    if ($("ieBrightness")) $("ieBrightness").value = "0";
-
-    editorState.modal.classList.remove("hidden");
-    editorState.modal.setAttribute("aria-hidden", "false");
-    document.body.classList.add("progress-lock");
-
-    destroyCanvas();
-    revokeOriginalUrl();
-
-    try {
-      await loadImageToCanvas(file);
-    } catch (err) {
+try {
+  await loadImageToCanvas(file);
+} catch (err) {
+  console.error("loadImageToCanvas error:", err);
+  closeEditor({ ok: false });
+  await showMessage("error", "เปิดภาพไม่สำเร็จ", err?.message || String(err));
+  return Promise.resolve({ ok: false });
+}
       console.error("loadImageToCanvas error:", err);
-      closeEditor({ ok: false });
+      ({ ok: false });
       await showMessage("error", "เปิดภาพไม่สำเร็จ", err?.message || String(err));
       return Promise.resolve({ ok: false });
     }
