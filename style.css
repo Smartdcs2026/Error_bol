@@ -1612,7 +1612,7 @@ body.progress-lock{
    IMAGE EDITOR
 ========================= */
 /* =========================
-   IMAGE EDITOR - ICON + SHORT LABEL PRO
+   IMAGE EDITOR - PRO FLOAT PANEL
 ========================= */
 .imgEditorModal{
   position:fixed;
@@ -1650,9 +1650,7 @@ body.progress-lock{
   overflow:hidden;
 }
 
-/* =========================
-   HEADER
-========================= */
+/* HEADER */
 .imgEditorHeader{
   grid-area:header;
   display:grid;
@@ -1693,9 +1691,7 @@ body.progress-lock{
   white-space:nowrap;
 }
 
-/* =========================
-   BODY / CANVAS
-========================= */
+/* BODY / CANVAS */
 .imgEditorBody{
   grid-area:body;
   min-height:0;
@@ -1732,16 +1728,14 @@ body.progress-lock{
   flex:0 0 auto;
 }
 
-/* =========================
-   FLOATING EDIT BUTTON
-========================= */
+/* FLOATING PENCIL BUTTON */
 .ieFloatingToggle{
   position:absolute;
   top:12px;
   right:12px;
-  z-index:40;
-  width:50px;
-  height:50px;
+  z-index:50;
+  width:48px;
+  height:48px;
   border:none;
   border-radius:999px;
   display:flex;
@@ -1749,7 +1743,7 @@ body.progress-lock{
   justify-content:center;
   background:linear-gradient(180deg,#2563eb 0%,#1d4ed8 100%);
   color:#fff;
-  box-shadow:0 16px 30px rgba(37,99,235,.30);
+  box-shadow:0 14px 28px rgba(37,99,235,.28);
   cursor:pointer;
   transition:transform .16s ease, box-shadow .16s ease, opacity .16s ease;
 }
@@ -1769,30 +1763,28 @@ body.progress-lock{
   display:block;
 }
 
-/* =========================
-   FLOATING TOOL PANEL
-========================= */
+/* SMALL RIGHT PANEL UNDER BUTTON */
 .ieFloatingPanel{
   position:absolute;
-  top:72px;
+  top:66px;
   right:12px;
-  z-index:39;
-  width:min(980px,calc(100% - 24px));
-  max-height:min(44vh,350px);
+  z-index:49;
+  width:320px;
+  max-width:calc(100% - 24px);
+  max-height:min(54vh,430px);
   overflow:auto;
   padding:10px;
   border:1px solid #dbe6f3;
-  border-radius:20px;
-  background:rgba(255,255,255,.97);
+  border-radius:18px;
+  background:rgba(255,255,255,.98);
   backdrop-filter:blur(10px);
-  box-shadow:0 24px 50px rgba(15,23,42,.18);
+  box-shadow:0 22px 48px rgba(15,23,42,.18);
 }
 
 .ieFloatingPanel.hidden{
   display:none !important;
 }
 
-/* scrollbar */
 .ieFloatingPanel::-webkit-scrollbar{
   width:10px;
   height:10px;
@@ -1805,7 +1797,7 @@ body.progress-lock{
   background:transparent;
 }
 
-/* wrapper เดิมจาก HTML */
+/* wrapper เดิม */
 .imgEditorToolbarWrap{
   width:100%;
   padding:0;
@@ -1819,40 +1811,39 @@ body.progress-lock{
   display:block;
 }
 
+/* vertical compact sections */
 .imgEditorToolbarGrid,
 .ieToolbarGridEnhanced{
   width:100%;
   min-width:0;
   display:grid !important;
-  grid-template-columns:repeat(4,minmax(0,1fr));
-  gap:10px;
+  grid-template-columns:1fr;
+  gap:8px;
   align-items:start;
 }
 
-/* section card */
 .ieToolbarSection{
   min-width:0;
   width:100%;
   display:block;
-  padding:10px;
+  padding:8px;
   border:1px solid #e2ebf7;
-  border-radius:16px;
+  border-radius:14px;
   background:linear-gradient(180deg,#ffffff 0%,#fbfdff 100%);
   box-shadow:0 6px 18px rgba(15,23,42,.05);
 }
 
 .ieToolbarTitle{
-  margin:0 0 8px;
+  margin:0 0 6px;
   font-size:10px;
   font-weight:900;
   color:#64748b;
   line-height:1.2;
   text-transform:uppercase;
-  letter-spacing:.35px;
+  letter-spacing:.32px;
   white-space:nowrap;
 }
 
-/* grids */
 .ieToolbarSection .ieButtonGrid,
 .ieToolbarSection .ieControlGrid,
 .ieButtonGrid,
@@ -1862,7 +1853,7 @@ body.progress-lock{
 .ieButtonGridView{
   width:100%;
   display:grid;
-  gap:8px;
+  gap:6px;
 }
 
 .ieButtonGridTools{
@@ -1871,11 +1862,11 @@ body.progress-lock{
 
 .ieButtonGridEffects,
 .ieButtonGridView{
-  grid-template-columns:repeat(2,minmax(0,1fr));
+  grid-template-columns:repeat(3,minmax(0,1fr));
 }
 
 .ieSectionManage .ieButtonGridView{
-  grid-template-columns:repeat(2,minmax(0,1fr));
+  grid-template-columns:repeat(3,minmax(0,1fr));
 }
 
 .ieControlGrid{
@@ -1886,24 +1877,22 @@ body.progress-lock{
   display:none !important;
 }
 
-/* =========================
-   BUTTONS: ICON + SHORT LABEL
-========================= */
+/* BUTTONS */
 .imgEditorToolbar .btn,
 .ieToolbarSection .btn{
   width:100%;
   min-width:0;
-  min-height:54px;
-  height:54px;
-  padding:6px 6px 5px;
+  min-height:52px;
+  height:52px;
+  padding:5px 4px;
   display:flex;
   flex-direction:column;
   align-items:center;
   justify-content:center;
   gap:3px;
   text-align:center;
-  border-radius:13px;
-  font-size:10px;
+  border-radius:12px;
+  font-size:9.5px;
   font-weight:900;
   line-height:1;
   white-space:normal;
@@ -1924,7 +1913,7 @@ body.progress-lock{
 
 .imgEditorToolbar .btn::before,
 .ieToolbarSection .btn::before{
-  content:"";
+  content:attr(data-icon);
   display:block;
   font-size:16px;
   line-height:1;
@@ -1966,47 +1955,16 @@ body.progress-lock{
   box-shadow:0 10px 20px rgba(15,23,42,.18);
 }
 
-/* ไอคอนมาตรฐานแบบ CSS */
-#ieSelectBtn::before{ content:"⌖"; }
-#iePanBtn::before{ content:"✥"; }
-#ieTextBtn::before{ content:"T"; font-size:17px; }
-#ieCropToolBtn::before{ content:"◫"; }
-
-#ieLineBtn::before{ content:"／"; }
-#ieArrowBtn::before{ content:"➜"; }
-#ieRectBtn::before{ content:"▭"; }
-#ieCircleBtn::before{ content:"◯"; }
-
-#ieBlurRectBtn::before{ content:"◫"; }
-#ieBlurCircleBtn::before{ content:"◌"; }
-#ieMosaicRectBtn::before{ content:"▦"; }
-#ieMosaicCircleBtn::before{ content:"◍"; }
-
-#ieZoomOutBtn::before{ content:"－"; }
-#ieZoomResetBtn::before{ content:"◎"; }
-#ieZoomInBtn::before{ content:"＋"; }
-#ieFitBtn::before{ content:"⤢"; }
-
-#ieUndoBtn::before{ content:"↶"; }
-#ieRedoBtn::before{ content:"↷"; }
-#ieDeleteBtn::before{ content:"⌫"; }
-#ieApplyCropBtn::before{ content:"✓"; }
-
-#ieRotateLeftBtn::before{ content:"↺"; }
-#ieRotateRightBtn::before{ content:"↻"; }
-
-/* =========================
-   FIELDS
-========================= */
+/* FIELDS */
 .imgEditorToolbarWrap .ieField,
 .ieField{
   width:100%;
   min-width:0;
   display:grid;
-  grid-template-columns:40px minmax(0,1fr);
+  grid-template-columns:38px minmax(0,1fr);
   align-items:center;
   gap:8px;
-  min-height:40px;
+  min-height:38px;
   padding:6px 8px;
   border:1.2px solid #d9e4f1;
   border-radius:12px;
@@ -2027,8 +1985,8 @@ body.progress-lock{
 .imgEditorToolbarWrap .ieField input[type="color"],
 .ieField input[type="color"]{
   width:100%;
-  height:24px;
-  min-height:24px;
+  height:22px;
+  min-height:22px;
   padding:0;
   border:none;
   background:transparent;
@@ -2048,9 +2006,7 @@ body.progress-lock{
   box-shadow:none;
 }
 
-/* =========================
-   FOOTER
-========================= */
+/* FOOTER */
 .imgEditorFooter{
   grid-area:footer;
   display:grid;
@@ -2096,23 +2052,14 @@ body.progress-lock{
   white-space:nowrap;
 }
 
-/* =========================
-   TABLET
-========================= */
+/* TABLET */
 @media (max-width:1180px){
   .ieFloatingPanel{
-    width:min(860px,calc(100% - 24px));
-  }
-
-  .imgEditorToolbarGrid,
-  .ieToolbarGridEnhanced{
-    grid-template-columns:repeat(3,minmax(0,1fr));
+    width:310px;
   }
 }
 
-/* =========================
-   MOBILE / TABLET
-========================= */
+/* MOBILE / TABLET */
 @media (max-width:950px){
   .imgEditorModal{
     padding:6px;
@@ -2165,54 +2112,20 @@ body.progress-lock{
   }
 
   .ieFloatingPanel{
-    top:62px;
-    right:10px;
-    left:10px;
-    width:auto;
-    max-height:min(42vh,300px);
+    top:58px;
+    right:8px;
+    width:300px;
+    max-width:calc(100% - 16px);
+    max-height:min(50vh,360px);
     padding:8px;
     border-radius:16px;
-  }
-
-  .imgEditorToolbarGrid,
-  .ieToolbarGridEnhanced{
-    grid-template-columns:1fr !important;
-    gap:8px;
-  }
-
-  .ieToolbarSection{
-    padding:8px;
-    border-radius:14px;
-  }
-
-  .ieToolbarTitle{
-    margin-bottom:6px;
-    font-size:10px;
-  }
-
-  .ieButtonGridTools{
-    grid-template-columns:repeat(4,minmax(0,1fr));
-    gap:6px;
-  }
-
-  .ieButtonGridEffects,
-  .ieButtonGridView{
-    grid-template-columns:repeat(2,minmax(0,1fr));
-    gap:6px;
-  }
-
-  .ieSectionManage .ieButtonGridView{
-    grid-template-columns:repeat(2,minmax(0,1fr));
-    gap:6px;
   }
 
   .imgEditorToolbar .btn,
   .ieToolbarSection .btn{
     min-height:48px;
     height:48px;
-    padding:5px 4px 4px;
-    border-radius:11px;
-    font-size:9.5px;
+    font-size:9px;
   }
 
   .imgEditorToolbar .btn::before,
@@ -2220,20 +2133,10 @@ body.progress-lock{
     font-size:15px;
   }
 
-  .imgEditorToolbarWrap .ieField,
-  .ieField{
-    grid-template-columns:38px minmax(0,1fr);
-    min-height:34px;
-    padding:5px 6px;
-    border-radius:11px;
-    font-size:10px;
-    gap:6px;
-  }
-
-  .imgEditorToolbarWrap .ieField input[type="color"],
-  .ieField input[type="color"]{
-    height:22px;
-    min-height:22px;
+  .ieButtonGridEffects,
+  .ieButtonGridView,
+  .ieSectionManage .ieButtonGridView{
+    grid-template-columns:repeat(3,minmax(0,1fr));
   }
 
   .imgEditorFooter{
@@ -2262,9 +2165,7 @@ body.progress-lock{
   }
 }
 
-/* =========================
-   SMALL MOBILE
-========================= */
+/* SMALL MOBILE */
 @media (max-width:560px){
   .imgEditorHeader{
     padding:9px 10px 7px;
@@ -2291,9 +2192,9 @@ body.progress-lock{
 
   .ieFloatingPanel{
     top:52px;
-    left:8px;
     right:8px;
-    max-height:min(40vh,260px);
+    width:min(280px,calc(100vw - 16px));
+    max-height:min(48vh,320px);
     padding:7px;
     border-radius:14px;
   }
@@ -2305,17 +2206,22 @@ body.progress-lock{
 
   .imgEditorToolbar .btn,
   .ieToolbarSection .btn{
-    min-height:46px;
-    height:46px;
+    min-height:44px;
+    height:44px;
     padding:4px 3px;
     border-radius:10px;
-    font-size:9px;
-    font-weight:900;
+    font-size:8.5px;
   }
 
   .imgEditorToolbar .btn::before,
   .ieToolbarSection .btn::before{
     font-size:14px;
+  }
+
+  .ieButtonGridEffects,
+  .ieButtonGridView,
+  .ieSectionManage .ieButtonGridView{
+    grid-template-columns:repeat(2,minmax(0,1fr));
   }
 
   .imgEditorToolbarWrap .ieField,
@@ -2324,7 +2230,7 @@ body.progress-lock{
     min-height:32px;
     padding:4px 5px;
     border-radius:10px;
-    font-size:9.5px;
+    font-size:9px;
     gap:5px;
   }
 
