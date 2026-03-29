@@ -4623,7 +4623,6 @@
 
 
 
-
 (function () {
   const editorState = {
     modal: null,
@@ -4884,7 +4883,6 @@
     canvas.setActiveObject(text);
     canvas.requestRenderAll();
     pushHistorySnapshot();
-
     setActiveTool("select");
   }
 
@@ -5908,7 +5906,7 @@
 
   function ensureFloatingToolUi() {
     const wrap = document.querySelector(".imgEditorCanvasWrap");
-    const toolbar = document.querySelector(".imgEditorToolbar");
+    const toolbar = document.querySelector(".imgEditorToolbarWrap");
     if (!wrap || !toolbar) return;
 
     if (!editorState.floatingToggleBtn) {
@@ -5947,117 +5945,16 @@
     }
   }
 
-  function getToolButton(toolName) {
-    return document.querySelector(`.ie-tool[data-tool="${toolName}"]`);
-  }
+  function rebuildToolbarLayoutInWrap(toolbarWrap) {
+    if (!toolbarWrap) return;
 
-  function getFieldByInputId(inputId) {
-    const input = $(inputId);
-    return input ? input.closest(".ieField") : null;
-  }
-
-  function ensureBtn(container, id, text, className = "btn ghost", attrs = {}) {
-    let btn = $(id);
-    if (btn) {
-      if (text != null) btn.textContent = text;
-      if (className) btn.className = className;
-      Object.keys(attrs || {}).forEach((k) => {
-        btn.setAttribute(k, attrs[k]);
-      });
-      return btn;
+    let toolbar = toolbarWrap.querySelector(".imgEditorToolbar");
+    if (!toolbar) {
+      toolbar = document.createElement("div");
+      toolbar.className = "imgEditorToolbar";
+      toolbarWrap.innerHTML = "";
+      toolbarWrap.appendChild(toolbar);
     }
-
-    btn = document.createElement("button");
-    btn.type = "button";
-    btn.id = id;
-    btn.className = className;
-    btn.textContent = text || "";
-
-    Object.keys(attrs || {}).forEach((k) => {
-      btn.setAttribute(k, attrs[k]);
-    });
-
-    container.appendChild(btn);
-    return btn;
-  }
-
-  function ensureToolBtn(container, id, text, toolName) {
-    const btn = ensureBtn(container, id, text, "btn ghost ie-tool", { "data-tool": toolName });
-    btn.classList.add("ie-tool");
-    btn.setAttribute("data-tool", toolName);
-    return btn;
-  }
-
-  function removeLegacyToolbarDividers(toolbar) {
-    toolbar.querySelectorAll(".ieDivider").forEach((el) => el.remove());
-  }
-
-  function createToolbarSection(title, extraClass = "") {
-    const section = document.createElement("section");
-    section.className = `ieToolbarSection ${extraClass}`.trim();
-
-    const head = document.createElement("div");
-    head.className = "ieToolbarTitle";
-    head.textContent = title;
-
-    const grid = document.createElement("div");
-    grid.className = "ieButtonGrid";
-
-    section.appendChild(head);
-    section.appendChild(grid);
-
-    return { section, grid };
-  }
-
-  function appendNodes(container, nodes) {
-    (Array.isArray(nodes) ? nodes : []).forEach((node) => {
-      if (!node) return;
-      container.appendChild(node);
-    });
-  }
-
-  function ensureToolbarResponsiveLabels() {
-    const compact = window.matchMedia("(max-width: 560px)").matches;
-    const compact2 = window.matchMedia("(max-width: 390px)").matches;
-
-    const labels = {
-      ieSelectBtn: compact2 ? "เลือก" : "เลือก",
-      iePanBtn: compact2 ? "เลื่อน" : (compact ? "เลื่อน" : "เลื่อนภาพ"),
-      ieTextBtn: compact2 ? "ข้อความ" : "ข้อความ",
-      ieCropToolBtn: compact2 ? "ครอป" : "ครอป",
-
-      ieLineBtn: compact2 ? "เส้น" : (compact ? "เส้น" : "เส้นตรง"),
-      ieArrowBtn: compact2 ? "ลูกศร" : "ลูกศร",
-      ieRectBtn: compact2 ? "กรอบ" : (compact ? "กรอบ" : "สี่เหลี่ยม"),
-      ieCircleBtn: compact2 ? "วง" : (compact ? "วงกลม" : "วงกลม"),
-
-      ieBlurRectBtn: compact2 ? "เบลอสี่" : (compact ? "เบลอสี่" : "เบลอสี่เหลี่ยม"),
-      ieBlurCircleBtn: compact2 ? "เบลอวง" : (compact ? "เบลอวง" : "เบลอวงกลม"),
-      ieMosaicRectBtn: compact2 ? "โมเสกสี่" : (compact ? "โมเสกสี่" : "โมเสกสี่เหลี่ยม"),
-      ieMosaicCircleBtn: compact2 ? "โมเสกวง" : (compact ? "โมเสกวง" : "โมเสกวงกลม"),
-
-      ieZoomOutBtn: compact2 ? "ซูม-" : "ซูมออก",
-      ieZoomResetBtn: compact2 ? "100%" : (compact ? "100%" : "รีเซ็ตซูม"),
-      ieZoomInBtn: compact2 ? "ซูม+" : "ซูมเข้า",
-      ieFitBtn: compact2 ? "พอดี" : (compact ? "พอดี" : "พอดีจอ"),
-
-      ieRotateLeftBtn: compact2 ? "ซ้าย" : (compact ? "หมุนซ้าย" : "หมุนซ้าย"),
-      ieRotateRightBtn: compact2 ? "ขวา" : (compact ? "หมุนขวา" : "หมุนขวา"),
-
-      ieUndoBtn: compact2 ? "ย้อน" : (compact ? "ย้อน" : "ย้อนกลับ"),
-      ieRedoBtn: compact2 ? "ทำซ้ำ" : "ทำซ้ำ",
-      ieDeleteBtn: compact2 ? "ลบ" : (compact ? "ลบ" : "ลบที่เลือก"),
-      ieApplyCropBtn: compact2 ? "ใช้" : (compact ? "ใช้ครอป" : "ใช้ครอป")
-    };
-
-    Object.keys(labels).forEach((id) => {
-      const el = $(id);
-      if (el) el.textContent = labels[id];
-    });
-  }
-
-  function rebuildToolbarLayout(toolbar) {
-    if (!toolbar) return;
 
     removeLegacyToolbarDividers(toolbar);
 
@@ -6150,8 +6047,15 @@
   }
 
   function ensureCoreEditorButtons() {
-    const toolbar = document.querySelector(".imgEditorToolbar");
-    if (!toolbar) return;
+    const toolbarWrap = document.querySelector(".imgEditorToolbarWrap");
+    if (!toolbarWrap) return;
+
+    let toolbar = toolbarWrap.querySelector(".imgEditorToolbar");
+    if (!toolbar) {
+      toolbar = document.createElement("div");
+      toolbar.className = "imgEditorToolbar";
+      toolbarWrap.appendChild(toolbar);
+    }
 
     ensureBtn(toolbar, "ieUndoBtn", "ย้อนกลับ");
     ensureBtn(toolbar, "ieRedoBtn", "ทำซ้ำ");
@@ -6167,12 +6071,12 @@
   }
 
   function ensureExtraControls() {
-    const toolbar = document.querySelector(".imgEditorToolbar");
-    if (!toolbar) return;
+    const toolbarWrap = document.querySelector(".imgEditorToolbarWrap");
+    if (!toolbarWrap) return;
 
     ensureCoreEditorButtons();
     ensureFooterControls();
-    rebuildToolbarLayout(toolbar);
+    rebuildToolbarLayoutInWrap(toolbarWrap);
     ensureToolbarResponsiveLabels();
     ensureFloatingToolUi();
   }
@@ -6370,7 +6274,7 @@
 
     ensureExtraControls();
     bindToolButtons();
-    setFloatingPanelOpen(!window.matchMedia("(max-width: 950px)").matches);
+    setFloatingPanelOpen(false);
     setActiveTool("select");
     setZoomLabel();
     setToolLabel();
