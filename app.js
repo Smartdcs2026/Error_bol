@@ -8347,11 +8347,35 @@ let ITEM_LOOKUP_STATE = {
 
 const ITEM_LOCAL_CACHE = new Map();
 let itemLookupTimer = null;
+const ITEM_LOCAL_CACHE = new Map();
+let itemLookupTimer = null;
 const EDITED_UPLOAD_STORE = new WeakMap();
 
 function buildEditedImageBadgeHtml(file) {
   const sizeKb = file?.size ? Math.round(file.size / 1024) : 0;
   return `ไฟล์แก้ไขแล้ว: ${file?.name || "edited-image.jpg"} (${sizeKb} KB)`;
+}
+
+function getPickedOrEditedFile(input) {
+  if (!input) return null;
+  const edited = EDITED_UPLOAD_STORE.get(input)?.file || null;
+  const raw = input.files && input.files[0] ? input.files[0] : null;
+  return edited || raw || null;
+}
+
+function setEditedUploadFile(input, file, extra = {}) {
+  if (!input || !file) return;
+  EDITED_UPLOAD_STORE.set(input, {
+    edited: true,
+    file,
+    filename: extra.filename || file.name || "edited-image.jpg",
+    dataUrl: extra.dataUrl || ""
+  });
+}
+
+function clearEditedUploadFile(input) {
+  if (!input) return;
+  EDITED_UPLOAD_STORE.delete(input);
 }
 
 function ensureEditButtonForUploadBox(box, inputId) {
@@ -8365,8 +8389,9 @@ function ensureEditButtonForUploadBox(box, inputId) {
 
   btn = document.createElement("button");
   btn.type = "button";
- btn.className = "btn ghost btnEditImage";
-btn.textContent = "แก้ไขภาพ";
+  btn.className = "btn ghost btnEditImage";
+  btn.textContent = "แก้ไขภาพ";
+  btn.disabled = true;
 
   topRow.appendChild(btn);
 
@@ -8374,10 +8399,7 @@ btn.textContent = "แก้ไขภาพ";
     const input = $(inputId);
     if (!input) return;
 
-    const edited = EDITED_UPLOAD_STORE.get(input)?.file || null;
-    const raw = input.files && input.files[0] ? input.files[0] : null;
-    const file = edited || raw;
-
+    const file = getPickedOrEditedFile(input);
     if (!file) {
       await Swal.fire({
         icon: "info",
@@ -8394,22 +8416,35 @@ btn.textContent = "แก้ไขภาพ";
 }
 
 function updateUploadPreviewFromFile(input, box, file, messageText) {
-  if (!input || !box || !file) return;
+  if (!input || !box) return;
 
   const img = box.querySelector(".previewImg");
   const txt = box.querySelector(".small");
+  const btn = box.querySelector(".btnEditImage");
 
   if (txt) {
-    txt.textContent = messageText || buildEditedImageBadgeHtml(file);
+    txt.textContent = file
+      ? (messageText || buildEditedImageBadgeHtml(file))
+      : "ยังไม่เลือกรูป";
   }
 
   if (img) {
     if (img.dataset.objectUrl) {
       try { URL.revokeObjectURL(img.dataset.objectUrl); } catch (_) {}
+      img.dataset.objectUrl = "";
     }
-    const url = URL.createObjectURL(file);
-    img.src = url;
-    img.dataset.objectUrl = url;
+
+    if (file) {
+      const url = URL.createObjectURL(file);
+      img.src = url;
+      img.dataset.objectUrl = url;
+    } else {
+      img.removeAttribute("src");
+    }
+  }
+
+  if (btn) {
+    btn.disabled = !file;
   }
 }
 
@@ -8423,10 +8458,7 @@ async function openEditorForUploadInput(input, box) {
     return;
   }
 
-  const edited = EDITED_UPLOAD_STORE.get(input)?.file || null;
-  const raw = input.files && input.files[0] ? input.files[0] : null;
-  const sourceFile = edited || raw;
-
+  const sourceFile = getPickedOrEditedFile(input);
   if (!sourceFile) return;
 
   const result = await window.ImageEditorX.open(sourceFile, {
@@ -8436,9 +8468,7 @@ async function openEditorForUploadInput(input, box) {
 
   if (!result?.ok || !result.file) return;
 
-  EDITED_UPLOAD_STORE.set(input, {
-    edited: true,
-    file: result.file,
+  setEditedUploadFile(input, result.file, {
     filename: result.filename || result.file.name,
     dataUrl: result.dataUrl || ""
   });
@@ -8451,12 +8481,25 @@ async function openEditorForUploadInput(input, box) {
   );
 }
 
+/**
+ * ใช้กับ Error_BOL upload box
+ * จุดสำคัญ: เวอร์ชันนี้ “ไม่เปิด editor ทันที” เพื่อลดอาการกระพริบบนมือถือ
+ */
 async function handlePickedImageForUpload(input, box) {
   const f = input?.files && input.files[0] ? input.files[0] : null;
-  if (!f) return;
+  const btn = box?.querySelector(".btnEditImage");
+
+  clearEditedUploadFile(input);
+
+  if (!f) {
+    updateUploadPreviewFromFile(input, box, null, "ยังไม่เลือกรูป");
+    if (btn) btn.disabled = true;
+    return;
+  }
 
   if (!/^image\//i.test(f.type || "")) {
     input.value = "";
+    updateUploadPreviewFromFile(input, box, null, "ไฟล์ไม่ถูกต้อง (ต้องเป็นรูปภาพเท่านั้น)");
     await Swal.fire({
       icon: "warning",
       title: "ไฟล์ไม่ถูกต้อง",
@@ -8466,8 +8509,19 @@ async function handlePickedImageForUpload(input, box) {
   }
 
   ensureEditButtonForUploadBox(box, input.id);
-  await openEditorForUploadInput(input, box);
+  updateUploadPreviewFromFile(input, box, f, `เลือกรูปแล้ว: ${f.name}`);
+  if (btn) btn.disabled = false;
 }
+
+/** ===== shared helpers ให้ Report เรียกใช้ได้ ===== */
+window.UploadImageTools = {
+  getPickedOrEditedFile,
+  setEditedUploadFile,
+  clearEditedUploadFile,
+  updateUploadPreviewFromFile,
+  openEditorForUploadInput,
+  buildEditedImageBadgeHtml
+};
 const $ = (id) => document.getElementById(id);
 
 /** ==========================
