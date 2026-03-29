@@ -21,12 +21,7 @@
     tempDraft: null,
     history: [],
     historyIndex: -1,
-    restoringHistory: false,
-
-    fabRoot: null,
-    fabLauncher: null,
-    fabPanel: null,
-    fabBackdrop: null
+    restoringHistory: false
   };
 
   const $ = (id) => document.getElementById(id);
@@ -79,8 +74,6 @@
   }
 
   function closeEditor(result = { ok: false }) {
-    closeFabPanel();
-
     editorState.modal?.classList.add("hidden");
     editorState.modal?.setAttribute("aria-hidden", "true");
     document.body.classList.remove("progress-lock");
@@ -121,8 +114,6 @@
     };
     const el = $("ieToolLabel");
     if (el) el.textContent = map[editorState.activeTool] || editorState.activeTool;
-    updateFabLauncherLabel();
-    updateFabActiveButtons();
   }
 
   function setActiveButtonByTool(tool) {
@@ -173,15 +164,11 @@
     canvas.requestRenderAll();
   }
 
-  function setActiveTool(tool, autoCloseFab = false) {
+  function setActiveTool(tool) {
     editorState.activeTool = tool || "select";
     setActiveButtonByTool(editorState.activeTool);
     setToolLabel();
     setCanvasInteractivityForTool(editorState.activeTool);
-
-    if (autoCloseFab) {
-      closeFabPanel();
-    }
   }
 
   function resetViewport() {
@@ -266,6 +253,8 @@
     canvas.setActiveObject(text);
     canvas.requestRenderAll();
     pushHistorySnapshot();
+
+    // one-time tool usage
     setActiveTool("select");
   }
 
@@ -622,6 +611,8 @@
       canvas.setActiveObject(overlay);
       canvas.requestRenderAll();
       pushHistorySnapshot();
+
+      // one-time tool usage
       setActiveTool("select");
     } catch (err) {
       console.error(err);
@@ -741,23 +732,14 @@
   function updateUndoRedoState() {
     const undoBtn = $("ieUndoBtn");
     const redoBtn = $("ieRedoBtn");
-    const fabUndo = $("ieFabUndoBtn");
-    const fabRedo = $("ieFabRedoBtn");
 
-    const canUndo = editorState.historyIndex > 0;
-    const canRedo = editorState.historyIndex < editorState.history.length - 1;
-
-    if (undoBtn) undoBtn.disabled = !canUndo;
-    if (redoBtn) redoBtn.disabled = !canRedo;
-    if (fabUndo) fabUndo.disabled = !canUndo;
-    if (fabRedo) fabRedo.disabled = !canRedo;
+    if (undoBtn) undoBtn.disabled = !(editorState.historyIndex > 0);
+    if (redoBtn) redoBtn.disabled = !(editorState.historyIndex < editorState.history.length - 1);
   }
 
   function bindObjectEvents() {
     const canvas = editorState.canvas;
     if (!canvas) return;
-    if (canvas.__imageEditorObjectEventsBound) return;
-    canvas.__imageEditorObjectEventsBound = true;
 
     canvas.on("object:modified", () => {
       if (editorState.restoringHistory) return;
@@ -779,8 +761,6 @@
   function bindPointerDrawing() {
     const canvas = editorState.canvas;
     if (!canvas) return;
-    if (canvas.__imageEditorPointerBound) return;
-    canvas.__imageEditorPointerBound = true;
 
     let startX = 0;
     let startY = 0;
@@ -938,6 +918,8 @@
         canvas.setActiveObject(arrow);
         canvas.requestRenderAll();
         pushHistorySnapshot();
+
+        // one-time tool usage
         setActiveTool("select");
         return;
       }
@@ -953,6 +935,8 @@
         canvas.setActiveObject(draft);
         canvas.requestRenderAll();
         pushHistorySnapshot();
+
+        // one-time tool usage
         setActiveTool("select");
         return;
       }
@@ -1129,694 +1113,81 @@
     };
   }
 
-  function injectFabStylesOnce() {
-    if (document.getElementById("ieFabDynamicStyle")) return;
+  function ensureExtraControls() {
+    const toolbar = document.querySelector(".imgEditorToolbar");
+    const footerActions = document.querySelector(".imgEditorActions");
+    if (!toolbar || !footerActions) return;
 
-    const css = `
-      .imgEditorToolbarWrap{
-        display:none !important;
-      }
+    function ensureBtn(container, id, text, className = "btn ghost", attrs = {}) {
+      let btn = $(id);
+      if (btn) return btn;
 
-      .ieFabRoot{
-        position:absolute;
-        top:14px;
-        left:14px;
-        z-index:20;
-        pointer-events:none;
-      }
+      btn = document.createElement("button");
+      btn.type = "button";
+      btn.id = id;
+      btn.className = className;
+      btn.textContent = text;
 
-      .ieFabRoot *{
-        pointer-events:auto;
-      }
+      Object.keys(attrs || {}).forEach((k) => {
+        btn.setAttribute(k, attrs[k]);
+      });
 
-      .ieFabLauncher{
-        min-width:68px;
-        min-height:68px;
-        padding:10px 12px;
-        border:none;
-        border-radius:20px;
-        background:linear-gradient(180deg,#2563eb 0%,#1d4ed8 100%);
-        color:#fff;
-        box-shadow:0 18px 34px rgba(37,99,235,.28);
-        display:grid;
-        justify-items:center;
-        align-content:center;
-        gap:3px;
-        cursor:pointer;
-      }
-
-      .ieFabLauncher:active{
-        transform:translateY(1px);
-      }
-
-      .ieFabIcon{
-        font-size:18px;
-        line-height:1;
-      }
-
-      .ieFabLabel{
-        font-size:11px;
-        font-weight:900;
-        line-height:1.1;
-        white-space:nowrap;
-      }
-
-      .ieFabCurrent{
-        font-size:10px;
-        font-weight:800;
-        line-height:1.1;
-        opacity:.96;
-      }
-
-      .ieFabPanel{
-        position:absolute;
-        top:0;
-        left:0;
-        width:min(320px, calc(100vw - 28px));
-        max-height:min(72dvh, 640px);
-        overflow:auto;
-        padding:12px;
-        border-radius:24px;
-        border:1px solid #d9e6f7;
-        background:linear-gradient(180deg,#ffffff 0%,#f8fbff 100%);
-        box-shadow:0 24px 70px rgba(15,23,42,.24);
-        opacity:0;
-        transform:translateY(10px) scale(.98);
-        pointer-events:none;
-        transition:opacity .18s ease, transform .18s ease;
-      }
-
-      .ieFabPanel.open{
-        opacity:1;
-        transform:translateY(0) scale(1);
-        pointer-events:auto;
-      }
-
-      .ieFabBackdrop{
-        position:fixed;
-        inset:0;
-        background:transparent;
-        display:none;
-      }
-
-      .ieFabBackdrop.open{
-        display:block;
-      }
-
-      .ieFabPanelHead{
-        display:flex;
-        align-items:center;
-        justify-content:space-between;
-        gap:10px;
-        margin-bottom:10px;
-      }
-
-      .ieFabPanelTitle{
-        font-size:15px;
-        font-weight:900;
-        color:#0f172a;
-        line-height:1.15;
-      }
-
-      .ieFabClose{
-        min-height:36px;
-        padding:6px 12px;
-        border-radius:12px;
-      }
-
-      .ieFabSection + .ieFabSection{
-        margin-top:10px;
-      }
-
-      .ieFabSectionTitle{
-        display:inline-flex;
-        align-items:center;
-        min-height:28px;
-        padding:5px 10px;
-        border-radius:999px;
-        background:#eef4ff;
-        color:#1d4ed8;
-        border:1px solid #d8e5fb;
-        font-size:11px;
-        font-weight:900;
-        margin-bottom:8px;
-      }
-
-      .ieFabGrid{
-        display:grid;
-        gap:8px;
-      }
-
-      .ieFabGrid.cols2{
-        grid-template-columns:repeat(2,minmax(0,1fr));
-      }
-
-      .ieFabGrid.cols3{
-        grid-template-columns:repeat(3,minmax(0,1fr));
-      }
-
-      .ieFabGrid.cols4{
-        grid-template-columns:repeat(4,minmax(0,1fr));
-      }
-
-      .ieFabBtn{
-        width:100%;
-        min-width:0;
-        min-height:42px;
-        height:42px;
-        padding:7px 8px;
-        border-radius:14px;
-        border:1.2px solid #d8e4f4;
-        background:linear-gradient(180deg,#ffffff 0%,#f9fbff 100%);
-        color:#0f172a;
-        font-size:12px;
-        font-weight:900;
-        line-height:1.08;
-        text-align:center;
-        box-shadow:0 4px 12px rgba(15,23,42,.04);
-      }
-
-      .ieFabBtn.active{
-        background:linear-gradient(180deg,#2563eb 0%,#1d4ed8 100%);
-        color:#fff;
-        border-color:transparent;
-        box-shadow:0 10px 20px rgba(37,99,235,.22);
-      }
-
-      .ieFabBtn.dark{
-        background:linear-gradient(180deg,#0f172a 0%,#1f2937 100%);
-        color:#fff;
-        border-color:transparent;
-        box-shadow:0 10px 20px rgba(15,23,42,.18);
-      }
-
-      .ieFabBtn:disabled{
-        opacity:.45;
-        cursor:not-allowed;
-        box-shadow:none;
-      }
-
-      .ieFabField{
-        display:grid;
-        grid-template-columns:52px minmax(0,1fr);
-        align-items:center;
-        gap:8px;
-        min-height:42px;
-        padding:8px 10px;
-        border:1.2px solid #d9e4f1;
-        border-radius:14px;
-        background:linear-gradient(180deg,#ffffff 0%,#fbfdff 100%);
-        font-size:12px;
-        font-weight:800;
-        color:#334155;
-      }
-
-      .ieFabField input[type="color"]{
-        width:100%;
-        height:28px;
-        min-height:28px;
-        padding:0;
-        border:none;
-        background:transparent;
-        box-shadow:none;
-        cursor:pointer;
-      }
-
-      .ieFabField input[type="range"]{
-        width:100%;
-        min-width:0;
-        padding:0;
-        border:none;
-        background:transparent;
-        box-shadow:none;
-      }
-
-      @media (max-width: 860px){
-        .ieFabRoot{
-          top:10px;
-          left:10px;
-        }
-
-        .ieFabLauncher{
-          min-width:60px;
-          min-height:60px;
-          border-radius:18px;
-          padding:8px 10px;
-        }
-
-        .ieFabPanel{
-          width:min(296px, calc(100vw - 20px));
-          max-height:min(70dvh, 560px);
-          padding:10px;
-          border-radius:20px;
-        }
-
-        .ieFabBtn{
-          min-height:40px;
-          height:40px;
-          font-size:11px;
-          padding:6px 6px;
-          border-radius:12px;
-        }
-
-        .ieFabGrid.cols4{
-          grid-template-columns:repeat(4,minmax(0,1fr));
-        }
-
-        .ieFabGrid.cols3{
-          grid-template-columns:repeat(3,minmax(0,1fr));
-        }
-
-        .ieFabGrid.cols2{
-          grid-template-columns:repeat(2,minmax(0,1fr));
-        }
-      }
-
-      @media (max-width: 560px){
-        .ieFabPanel{
-          width:min(280px, calc(100vw - 16px));
-          left:0;
-        }
-
-        .ieFabLauncher{
-          min-width:56px;
-          min-height:56px;
-          border-radius:16px;
-        }
-
-        .ieFabIcon{
-          font-size:16px;
-        }
-
-        .ieFabLabel{
-          font-size:10px;
-        }
-
-        .ieFabCurrent{
-          font-size:9px;
-        }
-
-        .ieFabBtn{
-          min-height:38px;
-          height:38px;
-          font-size:10.5px;
-          border-radius:11px;
-          padding:5px 4px;
-        }
-
-        .ieFabField{
-          grid-template-columns:44px minmax(0,1fr);
-          min-height:38px;
-          padding:6px 7px;
-          font-size:10.5px;
-          border-radius:11px;
-        }
-      }
-    `;
-
-    const style = document.createElement("style");
-    style.id = "ieFabDynamicStyle";
-    style.textContent = css;
-    document.head.appendChild(style);
-  }
-
-  function toolDisplayName(tool) {
-    const map = {
-      select: "เลือก",
-      pan: "เลื่อน",
-      text: "ข้อความ",
-      crop: "ครอป",
-      line: "เส้น",
-      arrow: "ลูกศร",
-      rect: "กรอบ",
-      circle: "วงกลม",
-      blurRect: "เบลอสี่",
-      blurCircle: "เบลอวง",
-      mosaicRect: "โมเสกสี่",
-      mosaicCircle: "โมเสกวง"
-    };
-    return map[tool] || "เครื่องมือ";
-  }
-
-  function openFabPanel() {
-    if (!editorState.fabPanel || !editorState.fabBackdrop) return;
-    editorState.fabPanel.classList.add("open");
-    editorState.fabBackdrop.classList.add("open");
-    if (editorState.fabLauncher) editorState.fabLauncher.setAttribute("aria-expanded", "true");
-  }
-
-  function closeFabPanel() {
-    if (!editorState.fabPanel || !editorState.fabBackdrop) return;
-    editorState.fabPanel.classList.remove("open");
-    editorState.fabBackdrop.classList.remove("open");
-    if (editorState.fabLauncher) editorState.fabLauncher.setAttribute("aria-expanded", "false");
-  }
-
-  function toggleFabPanel() {
-    if (!editorState.fabPanel) return;
-    const isOpen = editorState.fabPanel.classList.contains("open");
-    if (isOpen) closeFabPanel();
-    else openFabPanel();
-  }
-
-  function updateFabLauncherLabel() {
-    const label = $("ieFabCurrentLabel");
-    if (label) label.textContent = toolDisplayName(editorState.activeTool);
-  }
-
-  function updateFabActiveButtons() {
-    document.querySelectorAll(".ie-fab-tool").forEach((btn) => {
-      btn.classList.toggle("active", btn.getAttribute("data-tool") === editorState.activeTool);
-    });
-  }
-
-  function createFabButton({ id, text, className = "", onClick, tool = "" }) {
-    const btn = document.createElement("button");
-    btn.type = "button";
-    btn.id = id || "";
-    btn.className = `ieFabBtn ${className}`.trim();
-    btn.textContent = text || "";
-    if (tool) {
-      btn.classList.add("ie-fab-tool");
-      btn.setAttribute("data-tool", tool);
-    }
-    if (typeof onClick === "function") {
-      btn.addEventListener("click", onClick);
-    }
-    return btn;
-  }
-
-  function createFabField(labelText, inputEl) {
-    const wrap = document.createElement("label");
-    wrap.className = "ieFabField";
-
-    const span = document.createElement("span");
-    span.textContent = labelText;
-
-    wrap.appendChild(span);
-    wrap.appendChild(inputEl);
-    return wrap;
-  }
-
-  function buildFabSection(title, cols, nodes) {
-    const section = document.createElement("section");
-    section.className = "ieFabSection";
-
-    const head = document.createElement("div");
-    head.className = "ieFabSectionTitle";
-    head.textContent = title;
-
-    const grid = document.createElement("div");
-    grid.className = `ieFabGrid ${cols}`.trim();
-
-    (Array.isArray(nodes) ? nodes : []).forEach((node) => {
-      if (node) grid.appendChild(node);
-    });
-
-    section.appendChild(head);
-    section.appendChild(grid);
-    return section;
-  }
-
-  function syncControlValuesToFab() {
-    const fabColor = $("ieFabColorPicker");
-    const fabStroke = $("ieFabStrokeWidth");
-    const fabBrightness = $("ieFabBrightness");
-
-    const color = $("ieColorPicker");
-    const stroke = $("ieStrokeWidth");
-    const brightness = $("ieBrightness");
-
-    if (fabColor && color) fabColor.value = color.value || editorState.strokeColor || "#dc2626";
-    if (fabStroke && stroke) fabStroke.value = stroke.value || String(editorState.strokeWidth || 3);
-    if (fabBrightness && brightness) fabBrightness.value = brightness.value || "0";
-  }
-
-  function ensureFabUi() {
-    injectFabStylesOnce();
-
-    if (editorState.fabRoot && document.body.contains(editorState.fabRoot)) {
-      syncControlValuesToFab();
-      updateFabLauncherLabel();
-      updateFabActiveButtons();
-      return;
+      container.appendChild(btn);
+      return btn;
     }
 
-    const body = editorState.modal?.querySelector(".imgEditorBody");
-    if (!body) return;
+    function ensureDivider(container) {
+      const div = document.createElement("div");
+      div.className = "ieDivider";
+      container.appendChild(div);
+    }
 
-    const root = document.createElement("div");
-    root.className = "ieFabRoot";
-    root.id = "ieFabRoot";
+    if (!$("ieUndoBtn")) {
+      ensureDivider(toolbar);
+      ensureBtn(toolbar, "ieUndoBtn", "ย้อนกลับ");
+      ensureBtn(toolbar, "ieRedoBtn", "ทำซ้ำ");
+      ensureBtn(toolbar, "ieDeleteBtn", "ลบที่เลือก");
+    }
 
-    const backdrop = document.createElement("button");
-    backdrop.type = "button";
-    backdrop.className = "ieFabBackdrop";
-    backdrop.id = "ieFabBackdrop";
-    backdrop.addEventListener("click", closeFabPanel);
+    if (!$("ieCropToolBtn")) {
+      ensureDivider(toolbar);
+      const cropBtn = ensureBtn(toolbar, "ieCropToolBtn", "ครอป");
+      cropBtn.classList.add("ie-tool");
+      cropBtn.setAttribute("data-tool", "crop");
 
-    const launcher = document.createElement("button");
-    launcher.type = "button";
-    launcher.className = "ieFabLauncher";
-    launcher.id = "ieFabLauncher";
-    launcher.setAttribute("aria-expanded", "false");
-    launcher.innerHTML = `
-      <span class="ieFabIcon">✦</span>
-      <span class="ieFabLabel">เครื่องมือ</span>
-      <span class="ieFabCurrent" id="ieFabCurrentLabel">เลือก</span>
-    `;
-    launcher.addEventListener("click", toggleFabPanel);
+      ensureBtn(toolbar, "ieApplyCropBtn", "ใช้ครอป");
+    }
 
-    const panel = document.createElement("div");
-    panel.className = "ieFabPanel";
-    panel.id = "ieFabPanel";
+    if (!$("ieBlurRectBtn")) {
+      ensureDivider(toolbar);
 
-    const panelHead = document.createElement("div");
-    panelHead.className = "ieFabPanelHead";
+      const b1 = ensureBtn(toolbar, "ieBlurRectBtn", "เบลอสี่เหลี่ยม");
+      b1.classList.add("ie-tool");
+      b1.setAttribute("data-tool", "blurRect");
 
-    const panelTitle = document.createElement("div");
-    panelTitle.className = "ieFabPanelTitle";
-    panelTitle.textContent = "เครื่องมือแก้ไขภาพ";
+      const b2 = ensureBtn(toolbar, "ieBlurCircleBtn", "เบลอวงกลม");
+      b2.classList.add("ie-tool");
+      b2.setAttribute("data-tool", "blurCircle");
 
-    const panelClose = document.createElement("button");
-    panelClose.type = "button";
-    panelClose.className = "btn ghost ieFabClose";
-    panelClose.textContent = "ปิด";
-    panelClose.addEventListener("click", closeFabPanel);
+      const m1 = ensureBtn(toolbar, "ieMosaicRectBtn", "โมเสกสี่เหลี่ยม");
+      m1.classList.add("ie-tool");
+      m1.setAttribute("data-tool", "mosaicRect");
 
-    panelHead.appendChild(panelTitle);
-    panelHead.appendChild(panelClose);
+      const m2 = ensureBtn(toolbar, "ieMosaicCircleBtn", "โมเสกวงกลม");
+      m2.classList.add("ie-tool");
+      m2.setAttribute("data-tool", "mosaicCircle");
+    }
 
-    const primarySection = buildFabSection("หลัก", "cols2", [
-      createFabButton({
-        id: "ieFabSelectBtn",
-        text: "เลือก",
-        tool: "select",
-        onClick: () => setActiveTool("select", true)
-      }),
-      createFabButton({
-        id: "ieFabPanBtn",
-        text: "เลื่อน",
-        tool: "pan",
-        onClick: () => setActiveTool("pan", true)
-      }),
-      createFabButton({
-        id: "ieFabTextBtn",
-        text: "ข้อความ",
-        tool: "text",
-        onClick: () => setActiveTool("text", true)
-      }),
-      createFabButton({
-        id: "ieFabCropBtn",
-        text: "ครอป",
-        tool: "crop",
-        onClick: () => setActiveTool("crop", true)
-      })
-    ]);
-
-    const drawSection = buildFabSection("วาด / ทำเครื่องหมาย", "cols2", [
-      createFabButton({
-        id: "ieFabLineBtn",
-        text: "เส้น",
-        tool: "line",
-        onClick: () => setActiveTool("line", true)
-      }),
-      createFabButton({
-        id: "ieFabArrowBtn",
-        text: "ลูกศร",
-        tool: "arrow",
-        onClick: () => setActiveTool("arrow", true)
-      }),
-      createFabButton({
-        id: "ieFabRectBtn",
-        text: "กรอบ",
-        tool: "rect",
-        onClick: () => setActiveTool("rect", true)
-      }),
-      createFabButton({
-        id: "ieFabCircleBtn",
-        text: "วงกลม",
-        tool: "circle",
-        onClick: () => setActiveTool("circle", true)
-      })
-    ]);
-
-    const maskSection = buildFabSection("ปิดข้อมูลสำคัญ", "cols2", [
-      createFabButton({
-        id: "ieFabBlurRectBtn",
-        text: "เบลอสี่",
-        tool: "blurRect",
-        onClick: () => setActiveTool("blurRect", true)
-      }),
-      createFabButton({
-        id: "ieFabBlurCircleBtn",
-        text: "เบลอวง",
-        tool: "blurCircle",
-        onClick: () => setActiveTool("blurCircle", true)
-      }),
-      createFabButton({
-        id: "ieFabMosaicRectBtn",
-        text: "โมเสกสี่",
-        tool: "mosaicRect",
-        onClick: () => setActiveTool("mosaicRect", true)
-      }),
-      createFabButton({
-        id: "ieFabMosaicCircleBtn",
-        text: "โมเสกวง",
-        tool: "mosaicCircle",
-        onClick: () => setActiveTool("mosaicCircle", true)
-      })
-    ]);
-
-    const viewSection = buildFabSection("มุมมองภาพ", "cols2", [
-      createFabButton({
-        id: "ieFabZoomOutBtn",
-        text: "ซูม-",
-        onClick: () => setZoom(editorState.zoom - 0.1)
-      }),
-      createFabButton({
-        id: "ieFabZoomResetBtn",
-        text: "100%",
-        onClick: () => resetViewport()
-      }),
-      createFabButton({
-        id: "ieFabZoomInBtn",
-        text: "ซูม+",
-        onClick: () => setZoom(editorState.zoom + 0.1)
-      }),
-      createFabButton({
-        id: "ieFabFitBtn",
-        text: "พอดี",
-        onClick: () => resetViewport()
-      })
-    ]);
-
-    const manageSection = buildFabSection("จัดการภาพ", "cols2", [
-      createFabButton({
-        id: "ieFabUndoBtn",
-        text: "ย้อน",
-        onClick: () => undoHistory()
-      }),
-      createFabButton({
-        id: "ieFabRedoBtn",
-        text: "ทำซ้ำ",
-        onClick: () => redoHistory()
-      }),
-      createFabButton({
-        id: "ieFabDeleteBtn",
-        text: "ลบ",
-        onClick: () => deleteSelectedObject()
-      }),
-      createFabButton({
-        id: "ieFabApplyCropBtn",
-        text: "ใช้ครอป",
-        className: "dark",
-        onClick: () => applyCrop()
-      }),
-      createFabButton({
-        id: "ieFabRotateLeftBtn",
-        text: "หมุนซ้าย",
-        onClick: () => rotateBaseImage(-90)
-      }),
-      createFabButton({
-        id: "ieFabRotateRightBtn",
-        text: "หมุนขวา",
-        onClick: () => rotateBaseImage(90)
-      })
-    ]);
-
-    const colorInput = document.createElement("input");
-    colorInput.type = "color";
-    colorInput.id = "ieFabColorPicker";
-    colorInput.value = editorState.strokeColor || "#dc2626";
-    colorInput.addEventListener("input", (e) => {
-      editorState.strokeColor = e.target.value || "#dc2626";
-      const base = $("ieColorPicker");
-      if (base) base.value = editorState.strokeColor;
-    });
-
-    const strokeInput = document.createElement("input");
-    strokeInput.type = "range";
-    strokeInput.min = "1";
-    strokeInput.max = "12";
-    strokeInput.step = "1";
-    strokeInput.id = "ieFabStrokeWidth";
-    strokeInput.value = String(editorState.strokeWidth || 3);
-    strokeInput.addEventListener("input", (e) => {
-      editorState.strokeWidth = Number(e.target.value || 3);
-      const base = $("ieStrokeWidth");
-      if (base) base.value = String(editorState.strokeWidth);
-    });
-
-    const brightInput = document.createElement("input");
-    brightInput.type = "range";
-    brightInput.min = "-1";
-    brightInput.max = "1";
-    brightInput.step = "0.05";
-    brightInput.id = "ieFabBrightness";
-    brightInput.value = "0";
-    brightInput.addEventListener("input", (e) => {
-      const base = $("ieBrightness");
-      if (base) base.value = e.target.value;
-      applyBrightness(e.target.value);
-    });
-    brightInput.addEventListener("change", () => {
-      commitBrightnessToHistory();
-    });
-
-    const controlSection = buildFabSection("ตั้งค่า", "cols1", [
-      createFabField("สี", colorInput),
-      createFabField("เส้น", strokeInput),
-      createFabField("แสง", brightInput)
-    ]);
-
-    panel.appendChild(panelHead);
-    panel.appendChild(primarySection);
-    panel.appendChild(drawSection);
-    panel.appendChild(maskSection);
-    panel.appendChild(viewSection);
-    panel.appendChild(manageSection);
-    panel.appendChild(controlSection);
-
-    root.appendChild(backdrop);
-    root.appendChild(launcher);
-    root.appendChild(panel);
-    body.appendChild(root);
-
-    editorState.fabRoot = root;
-    editorState.fabLauncher = launcher;
-    editorState.fabPanel = panel;
-    editorState.fabBackdrop = backdrop;
-
-    syncControlValuesToFab();
-    updateFabLauncherLabel();
-    updateFabActiveButtons();
-    updateUndoRedoState();
+    if (!$("ieFitBtn")) {
+      ensureBtn(footerActions, "ieFitBtn", "พอดีจอ");
+    }
   }
 
   function bindUiOnce() {
     if (window.__imgEditorBoundOnce) return;
     window.__imgEditorBoundOnce = true;
+
+    ensureExtraControls();
 
     $("imgEditorCloseBtn")?.addEventListener("click", () => closeEditor({ ok: false }));
     $("ieCancelBtn")?.addEventListener("click", () => closeEditor({ ok: false }));
@@ -1841,20 +1212,14 @@
 
     $("ieColorPicker")?.addEventListener("input", (e) => {
       editorState.strokeColor = e.target.value || "#dc2626";
-      const fab = $("ieFabColorPicker");
-      if (fab) fab.value = editorState.strokeColor;
     });
 
     $("ieStrokeWidth")?.addEventListener("input", (e) => {
       editorState.strokeWidth = Number(e.target.value || 3);
-      const fab = $("ieFabStrokeWidth");
-      if (fab) fab.value = String(editorState.strokeWidth);
     });
 
     $("ieBrightness")?.addEventListener("input", (e) => {
       applyBrightness(e.target.value);
-      const fab = $("ieFabBrightness");
-      if (fab) fab.value = e.target.value;
     });
 
     $("ieBrightness")?.addEventListener("change", () => {
@@ -1870,7 +1235,6 @@
         editorState.zoom = 1;
         editorState.brightness = 0;
         if ($("ieBrightness")) $("ieBrightness").value = "0";
-        syncControlValuesToFab();
         setActiveTool("select");
         pushHistorySnapshot(true);
       } catch (err) {
@@ -1884,13 +1248,11 @@
     $("ieDeleteBtn")?.addEventListener("click", () => deleteSelectedObject());
     $("ieApplyCropBtn")?.addEventListener("click", () => applyCrop());
 
-    document.addEventListener("keydown", (e) => {
-      if (editorState.modal?.classList.contains("hidden")) return;
-      if (e.key === "Escape") {
-        if (editorState.fabPanel?.classList.contains("open")) {
-          closeFabPanel();
-        }
-      }
+    document.querySelectorAll(".ie-tool").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const tool = btn.getAttribute("data-tool") || "select";
+        setActiveTool(tool);
+      });
     });
   }
 
@@ -1939,8 +1301,6 @@
       editorState.canvas.requestRenderAll();
     }
 
-    ensureFabUi();
-    closeFabPanel();
     setActiveTool("select");
     setZoomLabel();
     setToolLabel();
