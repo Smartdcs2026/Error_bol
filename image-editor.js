@@ -1,3 +1,4627 @@
+// (function () {
+//   const editorState = {
+//     modal: null,
+//     canvasEl: null,
+//     canvas: null,
+//     baseImage: null,
+//     originalFile: null,
+//     originalUrl: "",
+//     resultResolve: null,
+
+//     activeTool: "select",
+//     strokeColor: "#dc2626",
+//     strokeWidth: 3,
+//     zoom: 1,
+//     brightness: 0,
+
+//     isPanning: false,
+//     isApplyingCrop: false,
+
+//     cropRect: null,
+//     tempDraft: null,
+//     history: [],
+//     historyIndex: -1,
+//     restoringHistory: false
+//   };
+
+//   const $ = (id) => document.getElementById(id);
+
+//   function showMessage(type, title, text) {
+//     if (window.Swal) {
+//       return Swal.fire({
+//         icon: type || "info",
+//         title: title || "",
+//         text: text || "",
+//         confirmButtonText: "ตกลง"
+//       });
+//     }
+//     alert((title ? title + "\n" : "") + (text || ""));
+//     return Promise.resolve();
+//   }
+
+//   function ensureFabricReady() {
+//     if (!window.fabric) {
+//       throw new Error("ยังไม่พบ Fabric.js");
+//     }
+//   }
+
+//   function ensureModal() {
+//     editorState.modal = $("imgEditorModal");
+//     editorState.canvasEl = $("imgEditorCanvas");
+
+//     if (!editorState.modal || !editorState.canvasEl) {
+//       throw new Error("ยังไม่พบโครง modal ของ image editor");
+//     }
+//   }
+
+//   function revokeOriginalUrl() {
+//     if (editorState.originalUrl) {
+//       try { URL.revokeObjectURL(editorState.originalUrl); } catch (_) {}
+//       editorState.originalUrl = "";
+//     }
+//   }
+
+//   function destroyCanvas() {
+//     if (editorState.canvas) {
+//       try {
+//         editorState.canvas.dispose();
+//       } catch (_) {}
+//       editorState.canvas = null;
+//     }
+//     editorState.baseImage = null;
+//     editorState.cropRect = null;
+//     editorState.tempDraft = null;
+//   }
+
+//   function closeEditor(result = { ok: false }) {
+//     editorState.modal?.classList.add("hidden");
+//     editorState.modal?.setAttribute("aria-hidden", "true");
+//     document.body.classList.remove("progress-lock");
+
+//     destroyCanvas();
+//     revokeOriginalUrl();
+
+//     editorState.originalFile = null;
+//     editorState.history = [];
+//     editorState.historyIndex = -1;
+//     editorState.restoringHistory = false;
+//     editorState.isApplyingCrop = false;
+
+//     const resolve = editorState.resultResolve;
+//     editorState.resultResolve = null;
+//     if (resolve) resolve(result);
+//   }
+
+//   function setZoomLabel() {
+//     const el = $("ieZoomLabel");
+//     if (el) el.textContent = `${Math.round(editorState.zoom * 100)}%`;
+//   }
+
+//   function setToolLabel() {
+//     const map = {
+//       select: "เลือก",
+//       pan: "เลื่อนภาพ",
+//       line: "เส้นตรง",
+//       arrow: "ลูกศร",
+//       rect: "สี่เหลี่ยม",
+//       circle: "วงกลม",
+//       text: "ข้อความ",
+//       crop: "ครอปภาพ",
+//       blurRect: "เบลอสี่เหลี่ยม",
+//       blurCircle: "เบลอวงกลม",
+//       mosaicRect: "โมเสกสี่เหลี่ยม",
+//       mosaicCircle: "โมเสกวงกลม"
+//     };
+//     const el = $("ieToolLabel");
+//     if (el) el.textContent = map[editorState.activeTool] || editorState.activeTool;
+//   }
+
+//   function setActiveButtonByTool(tool) {
+//     document.querySelectorAll(".ie-tool").forEach((btn) => {
+//       btn.classList.toggle("active", btn.getAttribute("data-tool") === tool);
+//     });
+//   }
+
+//   function setObjectEditableState(obj, editable) {
+//     if (!obj || obj === editorState.baseImage) return;
+
+//     obj.selectable = !!editable;
+//     obj.evented = true;
+//     obj.hasControls = true;
+//     obj.hasBorders = true;
+//     obj.lockRotation = false;
+//   }
+
+//   function setCanvasInteractivityForTool(tool) {
+//     const canvas = editorState.canvas;
+//     if (!canvas) return;
+
+//     canvas.isDrawingMode = false;
+//     canvas.selection = (tool === "select");
+//     canvas.defaultCursor = tool === "pan" ? "grab" : "default";
+
+//     canvas.forEachObject((obj) => {
+//       if (obj === editorState.baseImage) return;
+
+//       if (obj === editorState.cropRect) {
+//         obj.selectable = tool === "crop";
+//         obj.evented = tool === "crop";
+//         obj.hasControls = true;
+//         obj.hasBorders = true;
+//         obj.lockRotation = true;
+//         return;
+//       }
+
+//       setObjectEditableState(obj, tool === "select");
+//     });
+
+//     if (tool !== "crop") {
+//       removeCropRect();
+//     } else {
+//       ensureCropRect();
+//     }
+
+//     canvas.requestRenderAll();
+//   }
+
+//   function setActiveTool(tool) {
+//     editorState.activeTool = tool || "select";
+//     setActiveButtonByTool(editorState.activeTool);
+//     setToolLabel();
+//     setCanvasInteractivityForTool(editorState.activeTool);
+//   }
+
+//   function resetViewport() {
+//     const canvas = editorState.canvas;
+//     if (!canvas) return;
+
+//     editorState.zoom = 1;
+//     canvas.setViewportTransform([1, 0, 0, 1, 0, 0]);
+//     canvas.requestRenderAll();
+//     setZoomLabel();
+//   }
+
+//   function setZoom(nextZoom) {
+//     const canvas = editorState.canvas;
+//     if (!canvas) return;
+
+//     editorState.zoom = Math.max(0.2, Math.min(5, Number(nextZoom) || 1));
+
+//     let center;
+//     if (typeof canvas.getCenter === "function") {
+//       center = canvas.getCenter();
+//     } else {
+//       center = {
+//         left: canvas.getWidth() / 2,
+//         top: canvas.getHeight() / 2
+//       };
+//     }
+
+//     canvas.zoomToPoint(
+//       new fabric.Point(center.left, center.top),
+//       editorState.zoom
+//     );
+//     canvas.requestRenderAll();
+//     setZoomLabel();
+//   }
+
+//   function rotateBaseImage(delta) {
+//     const canvas = editorState.canvas;
+//     if (!canvas || !editorState.baseImage) return;
+
+//     editorState.baseImage.rotate((editorState.baseImage.angle || 0) + delta);
+//     canvas.requestRenderAll();
+//     pushHistorySnapshot();
+//   }
+
+//   function applyBrightness(value) {
+//     const canvas = editorState.canvas;
+//     const baseImage = editorState.baseImage;
+//     if (!canvas || !baseImage || !fabric.filters || !fabric.filters.Brightness) return;
+
+//     editorState.brightness = Number(value || 0);
+//     baseImage.filters = [
+//       new fabric.filters.Brightness({ brightness: editorState.brightness })
+//     ];
+//     baseImage.applyFilters();
+//     canvas.requestRenderAll();
+//   }
+
+//   function commitBrightnessToHistory() {
+//     pushHistorySnapshot();
+//   }
+
+//   function addTextbox() {
+//     const canvas = editorState.canvas;
+//     if (!canvas) return;
+
+//     const text = new fabric.IText("ข้อความ", {
+//       left: 80,
+//       top: 80,
+//       fill: editorState.strokeColor,
+//       fontSize: 28,
+//       fontFamily: "Kanit, Arial, sans-serif",
+//       editable: true,
+//       selectable: true,
+//       evented: true,
+//       hasControls: true,
+//       hasBorders: true,
+//       lockRotation: false
+//     });
+
+//     canvas.add(text);
+//     canvas.setActiveObject(text);
+//     canvas.requestRenderAll();
+//     pushHistorySnapshot();
+
+//     // one-time tool usage
+//     setActiveTool("select");
+//   }
+
+//   function deleteSelectedObject() {
+//     const canvas = editorState.canvas;
+//     if (!canvas) return;
+
+//     const active = canvas.getActiveObject();
+//     if (!active) return;
+
+//     if (active === editorState.baseImage) return;
+//     if (active === editorState.cropRect) return;
+
+//     canvas.remove(active);
+//     canvas.discardActiveObject();
+//     canvas.requestRenderAll();
+//     pushHistorySnapshot();
+//   }
+
+//   function createArrowGroup(x1, y1, x2, y2) {
+//     const line = new fabric.Line([x1, y1, x2, y2], {
+//       stroke: editorState.strokeColor,
+//       strokeWidth: editorState.strokeWidth,
+//       selectable: true,
+//       evented: true,
+//       objectCaching: false
+//     });
+
+//     const angle = Math.atan2(y2 - y1, x2 - x1) * 180 / Math.PI;
+
+//     const head = new fabric.Triangle({
+//       left: x2,
+//       top: y2,
+//       originX: "center",
+//       originY: "center",
+//       width: 18 + editorState.strokeWidth,
+//       height: 24 + editorState.strokeWidth,
+//       fill: editorState.strokeColor,
+//       angle: angle + 90,
+//       selectable: true,
+//       evented: true,
+//       objectCaching: false
+//     });
+
+//     return new fabric.Group([line, head], {
+//       selectable: true,
+//       evented: true,
+//       objectCaching: false,
+//       hasControls: true,
+//       hasBorders: true,
+//       lockRotation: false
+//     });
+//   }
+
+//   function ensureCropRect() {
+//     const canvas = editorState.canvas;
+//     if (!canvas || editorState.cropRect) return;
+
+//     const w = Math.max(80, Math.round(canvas.getWidth() * 0.7));
+//     const h = Math.max(80, Math.round(canvas.getHeight() * 0.7));
+
+//     editorState.cropRect = new fabric.Rect({
+//       left: Math.round((canvas.getWidth() - w) / 2),
+//       top: Math.round((canvas.getHeight() - h) / 2),
+//       width: w,
+//       height: h,
+//       fill: "rgba(37,99,235,0.10)",
+//       stroke: "#2563eb",
+//       strokeWidth: 2,
+//       strokeDashArray: [8, 6],
+//       cornerColor: "#2563eb",
+//       cornerStyle: "circle",
+//       transparentCorners: false,
+//       selectable: true,
+//       evented: true,
+//       hasRotatingPoint: false,
+//       lockRotation: true,
+//       objectCaching: false
+//     });
+
+//     editorState.cropRect.scaleX = 1;
+//     editorState.cropRect.scaleY = 1;
+
+//     canvas.add(editorState.cropRect);
+//     canvas.setActiveObject(editorState.cropRect);
+//     canvas.requestRenderAll();
+//   }
+
+//   function removeCropRect() {
+//     const canvas = editorState.canvas;
+//     if (!canvas || !editorState.cropRect) return;
+
+//     try {
+//       canvas.remove(editorState.cropRect);
+//     } catch (_) {}
+//     editorState.cropRect = null;
+//     canvas.requestRenderAll();
+//   }
+
+//   function clamp(n, min, max) {
+//     return Math.max(min, Math.min(max, n));
+//   }
+
+//   function dataURLToBlob(dataUrl) {
+//     const arr = dataUrl.split(",");
+//     const mime = arr[0].match(/:(.*?);/)[1];
+//     const bstr = atob(arr[1]);
+//     let n = bstr.length;
+//     const u8arr = new Uint8Array(n);
+
+//     while (n--) {
+//       u8arr[n] = bstr.charCodeAt(n);
+//     }
+
+//     return new Blob([u8arr], { type: mime });
+//   }
+
+//   async function blobToFile(blob, filename, mimeType = "image/jpeg") {
+//     return new File([blob], filename, {
+//       type: mimeType,
+//       lastModified: Date.now()
+//     });
+//   }
+
+//   function getCanvasSnapshotDataUrl(options = {}) {
+//     const canvas = editorState.canvas;
+//     if (!canvas) return "";
+
+//     const active = canvas.getActiveObject();
+//     if (active) canvas.discardActiveObject();
+
+//     const hadCrop = !!editorState.cropRect && canvas.getObjects().includes(editorState.cropRect);
+//     if (hadCrop) {
+//       editorState.cropRect.visible = false;
+//       canvas.requestRenderAll();
+//     }
+
+//     const dataUrl = canvas.toDataURL({
+//       format: options.format || "png",
+//       quality: options.quality == null ? 1 : options.quality,
+//       multiplier: options.multiplier || 1,
+//       enableRetinaScaling: false
+//     });
+
+//     if (hadCrop) {
+//       editorState.cropRect.visible = true;
+//       canvas.requestRenderAll();
+//     }
+
+//     return dataUrl;
+//   }
+
+//   function createOffscreenCanvas(width, height) {
+//     const c = document.createElement("canvas");
+//     c.width = Math.max(1, Math.round(width));
+//     c.height = Math.max(1, Math.round(height));
+//     return c;
+//   }
+
+//   function applyMosaicToCanvasRegion(ctx, width, height, blockSize) {
+//     const size = Math.max(4, Math.round(blockSize || 12));
+//     const imageData = ctx.getImageData(0, 0, width, height);
+//     const data = imageData.data;
+
+//     for (let y = 0; y < height; y += size) {
+//       for (let x = 0; x < width; x += size) {
+//         let r = 0, g = 0, b = 0, a = 0, count = 0;
+
+//         for (let yy = y; yy < Math.min(y + size, height); yy++) {
+//           for (let xx = x; xx < Math.min(x + size, width); xx++) {
+//             const idx = (yy * width + xx) * 4;
+//             r += data[idx];
+//             g += data[idx + 1];
+//             b += data[idx + 2];
+//             a += data[idx + 3];
+//             count++;
+//           }
+//         }
+
+//         if (!count) continue;
+
+//         r = Math.round(r / count);
+//         g = Math.round(g / count);
+//         b = Math.round(b / count);
+//         a = Math.round(a / count);
+
+//         for (let yy = y; yy < Math.min(y + size, height); yy++) {
+//           for (let xx = x; xx < Math.min(x + size, width); xx++) {
+//             const idx = (yy * width + xx) * 4;
+//             data[idx] = r;
+//             data[idx + 1] = g;
+//             data[idx + 2] = b;
+//             data[idx + 3] = a;
+//           }
+//         }
+//       }
+//     }
+
+//     ctx.putImageData(imageData, 0, 0);
+//   }
+
+//   async function buildEffectOverlayFromRegion(shapeType, effectType, x, y, w, h) {
+//     const snapshotUrl = getCanvasSnapshotDataUrl({ format: "png", multiplier: 1 });
+//     if (!snapshotUrl) return null;
+
+//     const img = await new Promise((resolve, reject) => {
+//       const im = new Image();
+//       im.onload = () => resolve(im);
+//       im.onerror = reject;
+//       im.src = snapshotUrl;
+//     });
+
+//     const sx = clamp(Math.round(x), 0, img.width);
+//     const sy = clamp(Math.round(y), 0, img.height);
+//     const sw = clamp(Math.round(w), 1, img.width - sx);
+//     const sh = clamp(Math.round(h), 1, img.height - sy);
+
+//     const off = createOffscreenCanvas(sw, sh);
+//     const offCtx = off.getContext("2d");
+
+//     if (effectType === "blur") {
+//       offCtx.filter = "blur(10px)";
+//       offCtx.drawImage(img, sx, sy, sw, sh, 0, 0, sw, sh);
+//       offCtx.filter = "none";
+//     } else {
+//       offCtx.drawImage(img, sx, sy, sw, sh, 0, 0, sw, sh);
+//       applyMosaicToCanvasRegion(offCtx, sw, sh, 12);
+//     }
+
+//     const regionUrl = off.toDataURL("image/png");
+//     const regionImg = await new Promise((resolve, reject) => {
+//       const im = new Image();
+//       im.onload = () => resolve(im);
+//       im.onerror = reject;
+//       im.src = regionUrl;
+//     });
+
+//     const overlay = new fabric.Image(regionImg, {
+//       left: sx,
+//       top: sy,
+//       selectable: true,
+//       evented: true,
+//       objectCaching: false
+//     });
+
+//     overlay.set({
+//       effectType,
+//       toolType: shapeType === "circle"
+//         ? (effectType === "blur" ? "blurCircle" : "mosaicCircle")
+//         : (effectType === "blur" ? "blurRect" : "mosaicRect"),
+//       hasControls: true,
+//       hasBorders: true,
+//       lockRotation: false
+//     });
+
+//     if (shapeType === "circle") {
+//       overlay.clipPath = new fabric.Ellipse({
+//         rx: sw / 2,
+//         ry: sh / 2,
+//         left: 0,
+//         top: 0,
+//         originX: "left",
+//         originY: "top"
+//       });
+//     }
+
+//     return overlay;
+//   }
+
+//   async function applyCrop() {
+//     const canvas = editorState.canvas;
+//     const crop = editorState.cropRect;
+//     if (!canvas || !crop || editorState.isApplyingCrop) return;
+
+//     try {
+//       editorState.isApplyingCrop = true;
+
+//       const dataUrl = getCanvasSnapshotDataUrl({ format: "png", multiplier: 1 });
+//       const img = await new Promise((resolve, reject) => {
+//         const im = new Image();
+//         im.onload = () => resolve(im);
+//         im.onerror = reject;
+//         im.src = dataUrl;
+//       });
+
+//       const left = clamp(Math.round(crop.left), 0, img.width - 1);
+//       const top = clamp(Math.round(crop.top), 0, img.height - 1);
+//       const width = clamp(Math.round(crop.width * crop.scaleX), 1, img.width - left);
+//       const height = clamp(Math.round(crop.height * crop.scaleY), 1, img.height - top);
+
+//       const off = createOffscreenCanvas(width, height);
+//       const ctx = off.getContext("2d");
+//       ctx.drawImage(img, left, top, width, height, 0, 0, width, height);
+
+//       const blob = dataURLToBlob(off.toDataURL("image/png"));
+//       const baseName = (editorState.originalFile?.name || "edited-image").replace(/\.[^.]+$/, "");
+//       const croppedFile = await blobToFile(blob, `${baseName}_cropped.png`, "image/png");
+
+//       editorState.originalFile = croppedFile;
+
+//       destroyCanvas();
+//       revokeOriginalUrl();
+//       await loadImageToCanvas(croppedFile);
+
+//       resetViewport();
+//       if (editorState.canvas) {
+//         editorState.canvas.calcOffset();
+//         editorState.canvas.requestRenderAll();
+//       }
+
+//       setActiveTool("select");
+//       pushHistorySnapshot(true);
+//     } catch (err) {
+//       console.error(err);
+//       await showMessage("error", "ครอปภาพไม่สำเร็จ", err?.message || String(err));
+//     } finally {
+//       editorState.isApplyingCrop = false;
+//     }
+//   }
+
+//   async function applyAreaEffect(effectType, shapeType) {
+//     const canvas = editorState.canvas;
+//     if (!canvas) return;
+
+//     const active = canvas.getActiveObject();
+//     if (!active || active === editorState.baseImage) {
+//       await showMessage("info", "ยังไม่ได้เลือกพื้นที่", "กรุณาวาดพื้นที่ก่อน แล้วจึงกดใช้เอฟเฟกต์");
+//       return;
+//     }
+
+//     let x = 0, y = 0, w = 0, h = 0;
+
+//     if (active.type === "rect") {
+//       x = active.left;
+//       y = active.top;
+//       w = active.width * active.scaleX;
+//       h = active.height * active.scaleY;
+//     } else if (active.type === "ellipse") {
+//       x = active.left;
+//       y = active.top;
+//       w = (active.rx * 2) * active.scaleX;
+//       h = (active.ry * 2) * active.scaleY;
+//     } else {
+//       await showMessage("warning", "รูปทรงไม่ถูกต้อง", "กรุณาเลือกสี่เหลี่ยมหรือวงกลมสำหรับใช้เอฟเฟกต์นี้");
+//       return;
+//     }
+
+//     try {
+//       const overlay = await buildEffectOverlayFromRegion(shapeType, effectType, x, y, w, h);
+//       if (!overlay) throw new Error("สร้างเอฟเฟกต์ไม่สำเร็จ");
+
+//       canvas.remove(active);
+//       canvas.add(overlay);
+//       canvas.setActiveObject(overlay);
+//       canvas.requestRenderAll();
+//       pushHistorySnapshot();
+
+//       // one-time tool usage
+//       setActiveTool("select");
+//     } catch (err) {
+//       console.error(err);
+//       await showMessage("error", "ใช้เอฟเฟกต์ไม่สำเร็จ", err?.message || String(err));
+//     }
+//   }
+
+//   function collectCanvasState() {
+//     const canvas = editorState.canvas;
+//     if (!canvas) return null;
+
+//     const cropWasVisible = !!editorState.cropRect && editorState.cropRect.visible;
+//     if (editorState.cropRect) {
+//       editorState.cropRect.visible = false;
+//       canvas.requestRenderAll();
+//     }
+
+//     const json = canvas.toDatalessJSON(["toolType", "effectType"]);
+
+//     if (editorState.cropRect) {
+//       editorState.cropRect.visible = cropWasVisible;
+//       canvas.requestRenderAll();
+//     }
+
+//     return {
+//       json,
+//       zoom: editorState.zoom,
+//       brightness: editorState.brightness
+//     };
+//   }
+
+//   function pushHistorySnapshot(force = false) {
+//     const canvas = editorState.canvas;
+//     if (!canvas || editorState.restoringHistory) return;
+
+//     const snapshot = collectCanvasState();
+//     if (!snapshot) return;
+
+//     const serialized = JSON.stringify(snapshot);
+//     const last = editorState.history[editorState.historyIndex];
+//     if (!force && last && JSON.stringify(last) === serialized) {
+//       return;
+//     }
+
+//     if (editorState.historyIndex < editorState.history.length - 1) {
+//       editorState.history = editorState.history.slice(0, editorState.historyIndex + 1);
+//     }
+
+//     editorState.history.push(snapshot);
+//     editorState.historyIndex = editorState.history.length - 1;
+
+//     if (editorState.history.length > 40) {
+//       editorState.history.shift();
+//       editorState.historyIndex = editorState.history.length - 1;
+//     }
+
+//     updateUndoRedoState();
+//   }
+
+//   async function restoreHistoryAt(index) {
+//     const canvas = editorState.canvas;
+//     if (!canvas) return;
+//     if (index < 0 || index >= editorState.history.length) return;
+
+//     const snapshot = editorState.history[index];
+//     if (!snapshot) return;
+
+//     editorState.restoringHistory = true;
+//     try {
+//       removeCropRect();
+
+//       await new Promise((resolve) => {
+//         canvas.loadFromJSON(snapshot.json, () => {
+//           canvas.renderAll();
+//           resolve();
+//         });
+//       });
+
+//       const objs = canvas.getObjects();
+//       editorState.baseImage = objs.length ? objs[0] : null;
+//       editorState.historyIndex = index;
+//       editorState.zoom = snapshot.zoom || 1;
+//       editorState.brightness = Number(snapshot.brightness || 0);
+
+//       const brightEl = $("ieBrightness");
+//       if (brightEl) brightEl.value = String(editorState.brightness);
+
+//       resetViewport();
+//       if (editorState.zoom !== 1) {
+//         setZoom(editorState.zoom);
+//       } else {
+//         setZoomLabel();
+//       }
+
+//       if (editorState.canvas) {
+//         editorState.canvas.calcOffset();
+//         editorState.canvas.requestRenderAll();
+//       }
+
+//       setActiveTool("select");
+//       updateUndoRedoState();
+//     } finally {
+//       editorState.restoringHistory = false;
+//     }
+//   }
+
+//   function undoHistory() {
+//     if (editorState.historyIndex <= 0) return;
+//     restoreHistoryAt(editorState.historyIndex - 1);
+//   }
+
+//   function redoHistory() {
+//     if (editorState.historyIndex >= editorState.history.length - 1) return;
+//     restoreHistoryAt(editorState.historyIndex + 1);
+//   }
+
+//   function updateUndoRedoState() {
+//     const undoBtn = $("ieUndoBtn");
+//     const redoBtn = $("ieRedoBtn");
+
+//     if (undoBtn) undoBtn.disabled = !(editorState.historyIndex > 0);
+//     if (redoBtn) redoBtn.disabled = !(editorState.historyIndex < editorState.history.length - 1);
+//   }
+
+//   function bindObjectEvents() {
+//     const canvas = editorState.canvas;
+//     if (!canvas) return;
+
+//     canvas.on("object:modified", () => {
+//       if (editorState.restoringHistory) return;
+//       pushHistorySnapshot();
+//     });
+//   }
+
+//   function getPointerFromEvent(canvas, evt) {
+//     if (typeof canvas.getPointer === "function") {
+//       return canvas.getPointer(evt);
+//     }
+//     const rect = canvas.upperCanvasEl.getBoundingClientRect();
+//     return {
+//       x: evt.clientX - rect.left,
+//       y: evt.clientY - rect.top
+//     };
+//   }
+
+//   function bindPointerDrawing() {
+//     const canvas = editorState.canvas;
+//     if (!canvas) return;
+
+//     let startX = 0;
+//     let startY = 0;
+//     let drawingObject = null;
+
+//     canvas.on("mouse:down", function (opt) {
+//       const evt = opt.e;
+//       if (!evt) return;
+
+//       if (editorState.activeTool === "pan") {
+//         editorState.isPanning = true;
+//         canvas.defaultCursor = "grabbing";
+//         this.selection = false;
+//         this.lastPosX = evt.clientX;
+//         this.lastPosY = evt.clientY;
+//         return;
+//       }
+
+//       if (editorState.activeTool === "text") {
+//         addTextbox();
+//         return;
+//       }
+
+//       if (!["line", "arrow", "rect", "circle", "blurRect", "blurCircle", "mosaicRect", "mosaicCircle"].includes(editorState.activeTool)) {
+//         return;
+//       }
+
+//       const pointer = getPointerFromEvent(canvas, evt);
+//       startX = pointer.x;
+//       startY = pointer.y;
+
+//       const tool = editorState.activeTool;
+
+//       if (tool === "line" || tool === "arrow") {
+//         drawingObject = new fabric.Line([startX, startY, startX, startY], {
+//           stroke: editorState.strokeColor,
+//           strokeWidth: editorState.strokeWidth,
+//           selectable: false,
+//           evented: false,
+//           objectCaching: false,
+//           hasControls: true,
+//           hasBorders: true,
+//           lockRotation: false
+//         });
+//         editorState.tempDraft = drawingObject;
+//         canvas.add(drawingObject);
+//       }
+
+//       if (tool === "rect" || tool === "blurRect" || tool === "mosaicRect") {
+//         drawingObject = new fabric.Rect({
+//           left: startX,
+//           top: startY,
+//           width: 1,
+//           height: 1,
+//           fill: ["blurRect", "mosaicRect"].includes(tool) ? "rgba(37,99,235,0.08)" : "transparent",
+//           stroke: editorState.strokeColor,
+//           strokeWidth: editorState.strokeWidth,
+//           selectable: false,
+//           evented: false,
+//           objectCaching: false,
+//           hasControls: true,
+//           hasBorders: true,
+//           lockRotation: false
+//         });
+//         editorState.tempDraft = drawingObject;
+//         canvas.add(drawingObject);
+//       }
+
+//       if (tool === "circle" || tool === "blurCircle" || tool === "mosaicCircle") {
+//         drawingObject = new fabric.Ellipse({
+//           left: startX,
+//           top: startY,
+//           rx: 1,
+//           ry: 1,
+//           fill: ["blurCircle", "mosaicCircle"].includes(tool) ? "rgba(37,99,235,0.08)" : "transparent",
+//           stroke: editorState.strokeColor,
+//           strokeWidth: editorState.strokeWidth,
+//           selectable: false,
+//           evented: false,
+//           originX: "left",
+//           originY: "top",
+//           objectCaching: false,
+//           hasControls: true,
+//           hasBorders: true,
+//           lockRotation: false
+//         });
+//         editorState.tempDraft = drawingObject;
+//         canvas.add(drawingObject);
+//       }
+//     });
+
+//     canvas.on("mouse:move", function (opt) {
+//       const evt = opt.e;
+//       if (!evt) return;
+
+//       if (editorState.activeTool === "pan" && editorState.isPanning) {
+//         const vpt = this.viewportTransform;
+//         vpt[4] += evt.clientX - this.lastPosX;
+//         vpt[5] += evt.clientY - this.lastPosY;
+//         this.requestRenderAll();
+//         this.lastPosX = evt.clientX;
+//         this.lastPosY = evt.clientY;
+//         return;
+//       }
+
+//       const draft = editorState.tempDraft;
+//       if (!draft) return;
+
+//       const pointer = getPointerFromEvent(canvas, evt);
+//       const tool = editorState.activeTool;
+
+//       if (tool === "line" || tool === "arrow") {
+//         draft.set({ x2: pointer.x, y2: pointer.y });
+//       }
+
+//       if (tool === "rect" || tool === "blurRect" || tool === "mosaicRect") {
+//         draft.set({
+//           left: Math.min(startX, pointer.x),
+//           top: Math.min(startY, pointer.y),
+//           width: Math.abs(pointer.x - startX),
+//           height: Math.abs(pointer.y - startY)
+//         });
+//       }
+
+//       if (tool === "circle" || tool === "blurCircle" || tool === "mosaicCircle") {
+//         draft.set({
+//           left: Math.min(startX, pointer.x),
+//           top: Math.min(startY, pointer.y),
+//           rx: Math.abs(pointer.x - startX) / 2,
+//           ry: Math.abs(pointer.y - startY) / 2
+//         });
+//       }
+
+//       canvas.requestRenderAll();
+//     });
+
+//     canvas.on("mouse:up", async function () {
+//       if (editorState.activeTool === "pan") {
+//         editorState.isPanning = false;
+//         canvas.defaultCursor = "grab";
+//         return;
+//       }
+
+//       const draft = editorState.tempDraft;
+//       const tool = editorState.activeTool;
+
+//       if (!draft) return;
+
+//       editorState.tempDraft = null;
+
+//       if (tool === "arrow") {
+//         const arrow = createArrowGroup(draft.x1, draft.y1, draft.x2, draft.y2);
+//         canvas.remove(draft);
+//         canvas.add(arrow);
+//         canvas.setActiveObject(arrow);
+//         canvas.requestRenderAll();
+//         pushHistorySnapshot();
+
+//         // one-time tool usage
+//         setActiveTool("select");
+//         return;
+//       }
+
+//       if (tool === "line" || tool === "rect" || tool === "circle") {
+//         draft.set({
+//           selectable: true,
+//           evented: true,
+//           hasControls: true,
+//           hasBorders: true,
+//           lockRotation: false
+//         });
+//         canvas.setActiveObject(draft);
+//         canvas.requestRenderAll();
+//         pushHistorySnapshot();
+
+//         // one-time tool usage
+//         setActiveTool("select");
+//         return;
+//       }
+
+//       if (tool === "blurRect") {
+//         canvas.setActiveObject(draft);
+//         await applyAreaEffect("blur", "rect");
+//         return;
+//       }
+
+//       if (tool === "blurCircle") {
+//         canvas.setActiveObject(draft);
+//         await applyAreaEffect("blur", "circle");
+//         return;
+//       }
+
+//       if (tool === "mosaicRect") {
+//         canvas.setActiveObject(draft);
+//         await applyAreaEffect("mosaic", "rect");
+//         return;
+//       }
+
+//       if (tool === "mosaicCircle") {
+//         canvas.setActiveObject(draft);
+//         await applyAreaEffect("mosaic", "circle");
+//         return;
+//       }
+//     });
+
+//     canvas.on("mouse:wheel", function (opt) {
+//       const evt = opt.e;
+//       if (!evt) return;
+//       evt.preventDefault();
+//       evt.stopPropagation();
+
+//       let zoom = canvas.getZoom();
+//       zoom *= 0.999 ** evt.deltaY;
+//       zoom = Math.max(0.2, Math.min(5, zoom));
+//       editorState.zoom = zoom;
+//       canvas.zoomToPoint({ x: evt.offsetX, y: evt.offsetY }, zoom);
+//       setZoomLabel();
+//     });
+//   }
+
+//   async function loadImageToCanvas(file) {
+//     const url = URL.createObjectURL(file);
+//     editorState.originalUrl = url;
+
+//     const wrap = editorState.canvasEl.parentElement;
+//     if (!wrap) throw new Error("ไม่พบพื้นที่แสดง canvas");
+
+//     const maxW = Math.max(640, Math.floor(wrap.clientWidth - 20));
+//     const maxH = Math.max(420, Math.floor(wrap.clientHeight - 20));
+
+//     if (editorState.canvas) {
+//       try { editorState.canvas.dispose(); } catch (_) {}
+//       editorState.canvas = null;
+//     }
+
+//     const canvas = new fabric.Canvas(editorState.canvasEl, {
+//       preserveObjectStacking: true,
+//       selection: true,
+//       renderOnAddRemove: true
+//     });
+
+//     editorState.canvas = canvas;
+
+//     const imgEl = await new Promise((resolve, reject) => {
+//       const img = new Image();
+//       img.onload = () => resolve(img);
+//       img.onerror = () => reject(new Error("โหลดรูปภาพไม่สำเร็จ"));
+//       img.decoding = "async";
+//       img.src = url;
+//     });
+
+//     const imgW = imgEl.naturalWidth || imgEl.width;
+//     const imgH = imgEl.naturalHeight || imgEl.height;
+
+//     if (!imgW || !imgH) {
+//       throw new Error("ไม่สามารถอ่านขนาดรูปภาพได้");
+//     }
+
+//     const scale = Math.min(maxW / imgW, maxH / imgH, 1);
+//     const canvasW = Math.max(320, Math.round(imgW * scale));
+//     const canvasH = Math.max(240, Math.round(imgH * scale));
+
+//     if (typeof canvas.setWidth === "function" && typeof canvas.setHeight === "function") {
+//       canvas.setWidth(canvasW);
+//       canvas.setHeight(canvasH);
+//     } else if (typeof canvas.setDimensions === "function") {
+//       canvas.setDimensions({ width: canvasW, height: canvasH });
+//     } else {
+//       editorState.canvasEl.width = canvasW;
+//       editorState.canvasEl.height = canvasH;
+//     }
+
+//     if (canvas.lowerCanvasEl) {
+//       canvas.lowerCanvasEl.style.width = canvasW + "px";
+//       canvas.lowerCanvasEl.style.height = canvasH + "px";
+//     }
+
+//     if (canvas.upperCanvasEl) {
+//       canvas.upperCanvasEl.style.width = canvasW + "px";
+//       canvas.upperCanvasEl.style.height = canvasH + "px";
+//     }
+
+//     if (canvas.wrapperEl) {
+//       canvas.wrapperEl.style.width = canvasW + "px";
+//       canvas.wrapperEl.style.height = canvasH + "px";
+//     }
+
+//     const baseImage = new fabric.Image(imgEl, {
+//       left: canvasW / 2,
+//       top: canvasH / 2,
+//       originX: "center",
+//       originY: "center",
+//       selectable: false,
+//       evented: false,
+//       objectCaching: false
+//     });
+
+//     baseImage.scaleX = scale;
+//     baseImage.scaleY = scale;
+
+//     editorState.baseImage = baseImage;
+
+//     canvas.clear();
+//     canvas.add(baseImage);
+
+//     if (typeof baseImage.moveTo === "function") {
+//       baseImage.moveTo(0);
+//     } else if (typeof canvas.sendToBack === "function") {
+//       canvas.sendToBack(baseImage);
+//     } else if (typeof canvas.sendObjectToBack === "function") {
+//       canvas.sendObjectToBack(baseImage);
+//     }
+
+//     bindObjectEvents();
+//     bindPointerDrawing();
+
+//     resetViewport();
+//     if (typeof canvas.calcOffset === "function") {
+//       canvas.calcOffset();
+//     }
+//     canvas.requestRenderAll();
+//   }
+
+//   async function exportEditedFile() {
+//     const canvas = editorState.canvas;
+//     if (!canvas) {
+//       throw new Error("ยังไม่มี canvas สำหรับ export");
+//     }
+
+//     removeCropRect();
+
+//     const dataUrl = canvas.toDataURL({
+//       format: "jpeg",
+//       quality: 0.92,
+//       multiplier: 1,
+//       enableRetinaScaling: false
+//     });
+
+//     const blob = dataURLToBlob(dataUrl);
+//     const filenameBase = (editorState.originalFile?.name || "edited-image").replace(/\.[^.]+$/, "");
+//     const outFile = await blobToFile(blob, `${filenameBase}_edited.jpg`, "image/jpeg");
+
+//     return {
+//       ok: true,
+//       file: outFile,
+//       blob,
+//       dataUrl,
+//       filename: outFile.name,
+//       mimeType: outFile.type
+//     };
+//   }
+
+//   function ensureExtraControls() {
+//     const toolbar = document.querySelector(".imgEditorToolbar");
+//     const footerActions = document.querySelector(".imgEditorActions");
+//     if (!toolbar || !footerActions) return;
+
+//     function ensureBtn(container, id, text, className = "btn ghost", attrs = {}) {
+//       let btn = $(id);
+//       if (btn) return btn;
+
+//       btn = document.createElement("button");
+//       btn.type = "button";
+//       btn.id = id;
+//       btn.className = className;
+//       btn.textContent = text;
+
+//       Object.keys(attrs || {}).forEach((k) => {
+//         btn.setAttribute(k, attrs[k]);
+//       });
+
+//       container.appendChild(btn);
+//       return btn;
+//     }
+
+//     function ensureDivider(container) {
+//       const div = document.createElement("div");
+//       div.className = "ieDivider";
+//       container.appendChild(div);
+//     }
+
+//     if (!$("ieUndoBtn")) {
+//       ensureDivider(toolbar);
+//       ensureBtn(toolbar, "ieUndoBtn", "ย้อนกลับ");
+//       ensureBtn(toolbar, "ieRedoBtn", "ทำซ้ำ");
+//       ensureBtn(toolbar, "ieDeleteBtn", "ลบที่เลือก");
+//     }
+
+//     if (!$("ieCropToolBtn")) {
+//       ensureDivider(toolbar);
+//       const cropBtn = ensureBtn(toolbar, "ieCropToolBtn", "ครอป");
+//       cropBtn.classList.add("ie-tool");
+//       cropBtn.setAttribute("data-tool", "crop");
+
+//       ensureBtn(toolbar, "ieApplyCropBtn", "ใช้ครอป");
+//     }
+
+//     if (!$("ieBlurRectBtn")) {
+//       ensureDivider(toolbar);
+
+//       const b1 = ensureBtn(toolbar, "ieBlurRectBtn", "เบลอสี่เหลี่ยม");
+//       b1.classList.add("ie-tool");
+//       b1.setAttribute("data-tool", "blurRect");
+
+//       const b2 = ensureBtn(toolbar, "ieBlurCircleBtn", "เบลอวงกลม");
+//       b2.classList.add("ie-tool");
+//       b2.setAttribute("data-tool", "blurCircle");
+
+//       const m1 = ensureBtn(toolbar, "ieMosaicRectBtn", "โมเสกสี่เหลี่ยม");
+//       m1.classList.add("ie-tool");
+//       m1.setAttribute("data-tool", "mosaicRect");
+
+//       const m2 = ensureBtn(toolbar, "ieMosaicCircleBtn", "โมเสกวงกลม");
+//       m2.classList.add("ie-tool");
+//       m2.setAttribute("data-tool", "mosaicCircle");
+//     }
+
+//     if (!$("ieFitBtn")) {
+//       ensureBtn(footerActions, "ieFitBtn", "พอดีจอ");
+//     }
+//   }
+
+//   function bindUiOnce() {
+//     if (window.__imgEditorBoundOnce) return;
+//     window.__imgEditorBoundOnce = true;
+
+//     ensureExtraControls();
+
+//     $("imgEditorCloseBtn")?.addEventListener("click", () => closeEditor({ ok: false }));
+//     $("ieCancelBtn")?.addEventListener("click", () => closeEditor({ ok: false }));
+
+//     $("ieSaveBtn")?.addEventListener("click", async () => {
+//       try {
+//         const result = await exportEditedFile();
+//         closeEditor(result);
+//       } catch (err) {
+//         console.error(err);
+//         showMessage("error", "บันทึกภาพไม่สำเร็จ", err?.message || String(err));
+//       }
+//     });
+
+//     $("ieZoomInBtn")?.addEventListener("click", () => setZoom(editorState.zoom + 0.1));
+//     $("ieZoomOutBtn")?.addEventListener("click", () => setZoom(editorState.zoom - 0.1));
+//     $("ieZoomResetBtn")?.addEventListener("click", () => resetViewport());
+//     $("ieFitBtn")?.addEventListener("click", () => resetViewport());
+
+//     $("ieRotateLeftBtn")?.addEventListener("click", () => rotateBaseImage(-90));
+//     $("ieRotateRightBtn")?.addEventListener("click", () => rotateBaseImage(90));
+
+//     $("ieColorPicker")?.addEventListener("input", (e) => {
+//       editorState.strokeColor = e.target.value || "#dc2626";
+//     });
+
+//     $("ieStrokeWidth")?.addEventListener("input", (e) => {
+//       editorState.strokeWidth = Number(e.target.value || 3);
+//     });
+
+//     $("ieBrightness")?.addEventListener("input", (e) => {
+//       applyBrightness(e.target.value);
+//     });
+
+//     $("ieBrightness")?.addEventListener("change", () => {
+//       commitBrightnessToHistory();
+//     });
+
+//     $("ieResetBtn")?.addEventListener("click", async () => {
+//       if (!editorState.originalFile) return;
+//       try {
+//         destroyCanvas();
+//         revokeOriginalUrl();
+//         await loadImageToCanvas(editorState.originalFile);
+//         editorState.zoom = 1;
+//         editorState.brightness = 0;
+//         if ($("ieBrightness")) $("ieBrightness").value = "0";
+//         setActiveTool("select");
+//         pushHistorySnapshot(true);
+//       } catch (err) {
+//         console.error(err);
+//         showMessage("error", "รีเซ็ตภาพไม่สำเร็จ", err?.message || String(err));
+//       }
+//     });
+
+//     $("ieUndoBtn")?.addEventListener("click", () => undoHistory());
+//     $("ieRedoBtn")?.addEventListener("click", () => redoHistory());
+//     $("ieDeleteBtn")?.addEventListener("click", () => deleteSelectedObject());
+//     $("ieApplyCropBtn")?.addEventListener("click", () => applyCrop());
+
+//     document.querySelectorAll(".ie-tool").forEach((btn) => {
+//       btn.addEventListener("click", () => {
+//         const tool = btn.getAttribute("data-tool") || "select";
+//         setActiveTool(tool);
+//       });
+//     });
+//   }
+
+//   async function openImageEditor(file, options = {}) {
+//     ensureFabricReady();
+//     ensureModal();
+//     bindUiOnce();
+
+//     if (!file || !/^image\//i.test(file.type || "")) {
+//       throw new Error("ไฟล์ที่ส่งเข้า editor ต้องเป็นรูปภาพ");
+//     }
+
+//     editorState.originalFile = file;
+//     editorState.zoom = 1;
+//     editorState.strokeColor = options.strokeColor || "#dc2626";
+//     editorState.strokeWidth = Number(options.strokeWidth || 3);
+//     editorState.brightness = 0;
+//     editorState.history = [];
+//     editorState.historyIndex = -1;
+//     editorState.restoringHistory = false;
+
+//     if ($("ieColorPicker")) $("ieColorPicker").value = editorState.strokeColor;
+//     if ($("ieStrokeWidth")) $("ieStrokeWidth").value = String(editorState.strokeWidth);
+//     if ($("ieBrightness")) $("ieBrightness").value = "0";
+
+//     editorState.modal.classList.remove("hidden");
+//     editorState.modal.setAttribute("aria-hidden", "false");
+//     document.body.classList.add("progress-lock");
+
+//     destroyCanvas();
+//     revokeOriginalUrl();
+
+//     try {
+//       await loadImageToCanvas(file);
+//     } catch (err) {
+//       console.error("loadImageToCanvas error:", err);
+//       closeEditor({ ok: false });
+//       await showMessage("error", "เปิดภาพไม่สำเร็จ", err?.message || String(err));
+//       return Promise.resolve({ ok: false });
+//     }
+
+//     if (editorState.canvas) {
+//       if (typeof editorState.canvas.calcOffset === "function") {
+//         editorState.canvas.calcOffset();
+//       }
+//       editorState.canvas.requestRenderAll();
+//     }
+
+//     setActiveTool("select");
+//     setZoomLabel();
+//     setToolLabel();
+//     pushHistorySnapshot(true);
+//     updateUndoRedoState();
+
+//     return new Promise((resolve) => {
+//       editorState.resultResolve = resolve;
+//     });
+//   }
+
+//   window.ImageEditorX = {
+//     open: openImageEditor
+//   };
+// })();
+
+
+// (function () {
+//   const editorState = {
+//     modal: null,
+//     canvasEl: null,
+//     canvas: null,
+//     baseImage: null,
+//     originalFile: null,
+//     originalUrl: "",
+//     resultResolve: null,
+
+//     activeTool: "select",
+//     strokeColor: "#dc2626",
+//     strokeWidth: 3,
+//     zoom: 1,
+//     brightness: 0,
+
+//     isPanning: false,
+//     isApplyingCrop: false,
+//     isRefreshingEffect: false,
+
+//     cropRect: null,
+//     tempDraft: null,
+//     history: [],
+//     historyIndex: -1,
+//     restoringHistory: false
+//   };
+
+//   const $ = (id) => document.getElementById(id);
+
+//   function showMessage(type, title, text) {
+//     if (window.Swal) {
+//       return Swal.fire({
+//         icon: type || "info",
+//         title: title || "",
+//         text: text || "",
+//         confirmButtonText: "ตกลง"
+//       });
+//     }
+//     alert((title ? title + "\n" : "") + (text || ""));
+//     return Promise.resolve();
+//   }
+
+//   function ensureFabricReady() {
+//     if (!window.fabric) {
+//       throw new Error("ยังไม่พบ Fabric.js");
+//     }
+//   }
+
+//   function ensureModal() {
+//     editorState.modal = $("imgEditorModal");
+//     editorState.canvasEl = $("imgEditorCanvas");
+
+//     if (!editorState.modal || !editorState.canvasEl) {
+//       throw new Error("ยังไม่พบโครง modal ของ image editor");
+//     }
+//   }
+
+//   function revokeOriginalUrl() {
+//     if (editorState.originalUrl) {
+//       try { URL.revokeObjectURL(editorState.originalUrl); } catch (_) {}
+//       editorState.originalUrl = "";
+//     }
+//   }
+
+//   function destroyCanvas() {
+//     if (editorState.canvas) {
+//       try {
+//         editorState.canvas.dispose();
+//       } catch (_) {}
+//       editorState.canvas = null;
+//     }
+//     editorState.baseImage = null;
+//     editorState.cropRect = null;
+//     editorState.tempDraft = null;
+//     editorState.isRefreshingEffect = false;
+//   }
+
+//   function closeEditor(result = { ok: false }) {
+//     editorState.modal?.classList.add("hidden");
+//     editorState.modal?.setAttribute("aria-hidden", "true");
+//     document.body.classList.remove("progress-lock");
+
+//     destroyCanvas();
+//     revokeOriginalUrl();
+
+//     editorState.originalFile = null;
+//     editorState.history = [];
+//     editorState.historyIndex = -1;
+//     editorState.restoringHistory = false;
+//     editorState.isApplyingCrop = false;
+
+//     const resolve = editorState.resultResolve;
+//     editorState.resultResolve = null;
+//     if (resolve) resolve(result);
+//   }
+
+//   function setZoomLabel() {
+//     const el = $("ieZoomLabel");
+//     if (el) el.textContent = `${Math.round(editorState.zoom * 100)}%`;
+//   }
+
+//   function setToolLabel() {
+//     const map = {
+//       select: "เลือก",
+//       pan: "เลื่อนภาพ",
+//       line: "เส้นตรง",
+//       arrow: "ลูกศร",
+//       rect: "สี่เหลี่ยม",
+//       circle: "วงกลม",
+//       text: "ข้อความ",
+//       crop: "ครอปภาพ",
+//       blurRect: "เบลอสี่เหลี่ยม",
+//       blurCircle: "เบลอวงกลม",
+//       mosaicRect: "โมเสกสี่เหลี่ยม",
+//       mosaicCircle: "โมเสกวงกลม"
+//     };
+//     const el = $("ieToolLabel");
+//     if (el) el.textContent = map[editorState.activeTool] || editorState.activeTool;
+//   }
+
+//   function setActiveButtonByTool(tool) {
+//     document.querySelectorAll(".ie-tool").forEach((btn) => {
+//       btn.classList.toggle("active", btn.getAttribute("data-tool") === tool);
+//     });
+//   }
+
+//   function setObjectEditableState(obj, editable) {
+//     if (!obj || obj === editorState.baseImage) return;
+
+//     obj.selectable = !!editable;
+//     obj.evented = true;
+//     obj.hasControls = true;
+//     obj.hasBorders = true;
+//     obj.lockRotation = false;
+//   }
+
+//   function setCanvasInteractivityForTool(tool) {
+//     const canvas = editorState.canvas;
+//     if (!canvas) return;
+
+//     canvas.isDrawingMode = false;
+//     canvas.selection = (tool === "select");
+//     canvas.defaultCursor = tool === "pan" ? "grab" : "default";
+
+//     canvas.forEachObject((obj) => {
+//       if (obj === editorState.baseImage) return;
+
+//       if (obj === editorState.cropRect) {
+//         obj.selectable = tool === "crop";
+//         obj.evented = tool === "crop";
+//         obj.hasControls = true;
+//         obj.hasBorders = true;
+//         obj.lockRotation = true;
+//         return;
+//       }
+
+//       setObjectEditableState(obj, tool === "select");
+//     });
+
+//     if (tool !== "crop") {
+//       removeCropRect();
+//     } else {
+//       ensureCropRect();
+//     }
+
+//     canvas.requestRenderAll();
+//   }
+
+//   function setActiveTool(tool) {
+//     editorState.activeTool = tool || "select";
+//     setActiveButtonByTool(editorState.activeTool);
+//     setToolLabel();
+//     setCanvasInteractivityForTool(editorState.activeTool);
+//   }
+
+//   function resetViewport() {
+//     const canvas = editorState.canvas;
+//     if (!canvas) return;
+
+//     editorState.zoom = 1;
+//     canvas.setViewportTransform([1, 0, 0, 1, 0, 0]);
+//     canvas.requestRenderAll();
+//     setZoomLabel();
+//   }
+
+//   function setZoom(nextZoom) {
+//     const canvas = editorState.canvas;
+//     if (!canvas) return;
+
+//     editorState.zoom = Math.max(0.2, Math.min(5, Number(nextZoom) || 1));
+
+//     let center;
+//     if (typeof canvas.getCenter === "function") {
+//       center = canvas.getCenter();
+//     } else {
+//       center = {
+//         left: canvas.getWidth() / 2,
+//         top: canvas.getHeight() / 2
+//       };
+//     }
+
+//     canvas.zoomToPoint(
+//       new fabric.Point(center.left, center.top),
+//       editorState.zoom
+//     );
+//     canvas.requestRenderAll();
+//     setZoomLabel();
+//   }
+
+//   function rotateBaseImage(delta) {
+//     const canvas = editorState.canvas;
+//     if (!canvas || !editorState.baseImage) return;
+
+//     editorState.baseImage.rotate((editorState.baseImage.angle || 0) + delta);
+//     canvas.requestRenderAll();
+//     pushHistorySnapshot();
+//   }
+
+//   function applyBrightness(value) {
+//     const canvas = editorState.canvas;
+//     const baseImage = editorState.baseImage;
+//     if (!canvas || !baseImage || !fabric.filters || !fabric.filters.Brightness) return;
+
+//     editorState.brightness = Number(value || 0);
+//     baseImage.filters = [
+//       new fabric.filters.Brightness({ brightness: editorState.brightness })
+//     ];
+//     baseImage.applyFilters();
+//     canvas.requestRenderAll();
+//   }
+
+//   function commitBrightnessToHistory() {
+//     pushHistorySnapshot();
+//   }
+
+//   function addTextbox() {
+//     const canvas = editorState.canvas;
+//     if (!canvas) return;
+
+//     const text = new fabric.IText("ข้อความ", {
+//       left: 80,
+//       top: 80,
+//       fill: editorState.strokeColor,
+//       fontSize: 28,
+//       fontFamily: "Kanit, Arial, sans-serif",
+//       editable: true,
+//       selectable: true,
+//       evented: true,
+//       hasControls: true,
+//       hasBorders: true,
+//       lockRotation: false
+//     });
+
+//     canvas.add(text);
+//     canvas.setActiveObject(text);
+//     canvas.requestRenderAll();
+//     pushHistorySnapshot();
+
+//     setActiveTool("select");
+//   }
+
+//   function deleteSelectedObject() {
+//     const canvas = editorState.canvas;
+//     if (!canvas) return;
+
+//     const active = canvas.getActiveObject();
+//     if (!active) return;
+
+//     if (active === editorState.baseImage) return;
+//     if (active === editorState.cropRect) return;
+
+//     canvas.remove(active);
+//     canvas.discardActiveObject();
+//     canvas.requestRenderAll();
+//     pushHistorySnapshot();
+//   }
+
+//   function createArrowGroup(x1, y1, x2, y2) {
+//     const line = new fabric.Line([x1, y1, x2, y2], {
+//       stroke: editorState.strokeColor,
+//       strokeWidth: editorState.strokeWidth,
+//       selectable: true,
+//       evented: true,
+//       objectCaching: false
+//     });
+
+//     const angle = Math.atan2(y2 - y1, x2 - x1) * 180 / Math.PI;
+
+//     const head = new fabric.Triangle({
+//       left: x2,
+//       top: y2,
+//       originX: "center",
+//       originY: "center",
+//       width: 18 + editorState.strokeWidth,
+//       height: 24 + editorState.strokeWidth,
+//       fill: editorState.strokeColor,
+//       angle: angle + 90,
+//       selectable: true,
+//       evented: true,
+//       objectCaching: false
+//     });
+
+//     return new fabric.Group([line, head], {
+//       selectable: true,
+//       evented: true,
+//       objectCaching: false,
+//       hasControls: true,
+//       hasBorders: true,
+//       lockRotation: false
+//     });
+//   }
+
+//   function ensureCropRect() {
+//     const canvas = editorState.canvas;
+//     if (!canvas || editorState.cropRect) return;
+
+//     const w = Math.max(80, Math.round(canvas.getWidth() * 0.7));
+//     const h = Math.max(80, Math.round(canvas.getHeight() * 0.7));
+
+//     editorState.cropRect = new fabric.Rect({
+//       left: Math.round((canvas.getWidth() - w) / 2),
+//       top: Math.round((canvas.getHeight() - h) / 2),
+//       width: w,
+//       height: h,
+//       fill: "rgba(37,99,235,0.10)",
+//       stroke: "#2563eb",
+//       strokeWidth: 2,
+//       strokeDashArray: [8, 6],
+//       cornerColor: "#2563eb",
+//       cornerStyle: "circle",
+//       transparentCorners: false,
+//       selectable: true,
+//       evented: true,
+//       hasRotatingPoint: false,
+//       lockRotation: true,
+//       objectCaching: false
+//     });
+
+//     editorState.cropRect.scaleX = 1;
+//     editorState.cropRect.scaleY = 1;
+
+//     canvas.add(editorState.cropRect);
+//     canvas.setActiveObject(editorState.cropRect);
+//     canvas.requestRenderAll();
+//   }
+
+//   function removeCropRect() {
+//     const canvas = editorState.canvas;
+//     if (!canvas || !editorState.cropRect) return;
+
+//     try {
+//       canvas.remove(editorState.cropRect);
+//     } catch (_) {}
+//     editorState.cropRect = null;
+//     canvas.requestRenderAll();
+//   }
+
+//   function clamp(n, min, max) {
+//     return Math.max(min, Math.min(max, n));
+//   }
+
+//   function dataURLToBlob(dataUrl) {
+//     const arr = dataUrl.split(",");
+//     const mime = arr[0].match(/:(.*?);/)[1];
+//     const bstr = atob(arr[1]);
+//     let n = bstr.length;
+//     const u8arr = new Uint8Array(n);
+
+//     while (n--) {
+//       u8arr[n] = bstr.charCodeAt(n);
+//     }
+
+//     return new Blob([u8arr], { type: mime });
+//   }
+
+//   async function blobToFile(blob, filename, mimeType = "image/jpeg") {
+//     return new File([blob], filename, {
+//       type: mimeType,
+//       lastModified: Date.now()
+//     });
+//   }
+
+//   function isEffectOverlay(obj) {
+//     return !!(obj && (obj.effectType === "blur" || obj.effectType === "mosaic"));
+//   }
+
+//   function getEffectShapeType(obj) {
+//     const tool = String(obj?.toolType || "");
+//     if (/Circle$/i.test(tool)) return "circle";
+//     return "rect";
+//   }
+
+//   function getCanvasSnapshotDataUrl(options = {}) {
+//     const canvas = editorState.canvas;
+//     if (!canvas) return "";
+
+//     const active = canvas.getActiveObject();
+//     if (active) canvas.discardActiveObject();
+
+//     const hidden = [];
+//     const rememberHidden = (obj) => {
+//       if (!obj || hidden.some((x) => x.obj === obj)) return;
+//       hidden.push({ obj, visible: obj.visible });
+//       obj.visible = false;
+//     };
+
+//     if (editorState.cropRect && canvas.getObjects().includes(editorState.cropRect)) {
+//       rememberHidden(editorState.cropRect);
+//     }
+
+//     if (options.excludeEffectObjects) {
+//       canvas.getObjects().forEach((obj) => {
+//         if (isEffectOverlay(obj)) rememberHidden(obj);
+//       });
+//     }
+
+//     if (Array.isArray(options.hideObjects)) {
+//       options.hideObjects.forEach((obj) => {
+//         if (obj && canvas.getObjects().includes(obj)) {
+//           rememberHidden(obj);
+//         }
+//       });
+//     }
+
+//     canvas.requestRenderAll();
+
+//     const dataUrl = canvas.toDataURL({
+//       format: options.format || "png",
+//       quality: options.quality == null ? 1 : options.quality,
+//       multiplier: options.multiplier || 1,
+//       enableRetinaScaling: false
+//     });
+
+//     hidden.forEach(({ obj, visible }) => {
+//       obj.visible = visible;
+//     });
+//     canvas.requestRenderAll();
+
+//     return dataUrl;
+//   }
+
+//   function createOffscreenCanvas(width, height) {
+//     const c = document.createElement("canvas");
+//     c.width = Math.max(1, Math.round(width));
+//     c.height = Math.max(1, Math.round(height));
+//     return c;
+//   }
+
+//   function applyMosaicToCanvasRegion(ctx, width, height, blockSize) {
+//     const size = Math.max(4, Math.round(blockSize || 12));
+//     const imageData = ctx.getImageData(0, 0, width, height);
+//     const data = imageData.data;
+
+//     for (let y = 0; y < height; y += size) {
+//       for (let x = 0; x < width; x += size) {
+//         let r = 0, g = 0, b = 0, a = 0, count = 0;
+
+//         for (let yy = y; yy < Math.min(y + size, height); yy++) {
+//           for (let xx = x; xx < Math.min(x + size, width); xx++) {
+//             const idx = (yy * width + xx) * 4;
+//             r += data[idx];
+//             g += data[idx + 1];
+//             b += data[idx + 2];
+//             a += data[idx + 3];
+//             count++;
+//           }
+//         }
+
+//         if (!count) continue;
+
+//         r = Math.round(r / count);
+//         g = Math.round(g / count);
+//         b = Math.round(b / count);
+//         a = Math.round(a / count);
+
+//         for (let yy = y; yy < Math.min(y + size, height); yy++) {
+//           for (let xx = x; xx < Math.min(x + size, width); xx++) {
+//             const idx = (yy * width + xx) * 4;
+//             data[idx] = r;
+//             data[idx + 1] = g;
+//             data[idx + 2] = b;
+//             data[idx + 3] = a;
+//           }
+//         }
+//       }
+//     }
+
+//     ctx.putImageData(imageData, 0, 0);
+//   }
+
+//   function normalizeRegionBounds(x, y, w, h) {
+//     return {
+//       sx: Math.round(x),
+//       sy: Math.round(y),
+//       sw: Math.max(1, Math.round(w)),
+//       sh: Math.max(1, Math.round(h))
+//     };
+//   }
+
+//   async function loadImageFromDataUrl(dataUrl) {
+//     return new Promise((resolve, reject) => {
+//       const im = new Image();
+//       im.onload = () => resolve(im);
+//       im.onerror = reject;
+//       im.src = dataUrl;
+//     });
+//   }
+
+//   async function buildEffectOverlayFromRegion(shapeType, effectType, x, y, w, h, opts = {}) {
+//     const snapshotUrl = getCanvasSnapshotDataUrl({
+//       format: "png",
+//       multiplier: 1,
+//       excludeEffectObjects: true,
+//       hideObjects: Array.isArray(opts.hideObjects) ? opts.hideObjects : []
+//     });
+
+//     if (!snapshotUrl) return null;
+
+//     const img = await loadImageFromDataUrl(snapshotUrl);
+
+//     const sx = clamp(Math.round(x), 0, img.width);
+//     const sy = clamp(Math.round(y), 0, img.height);
+//     const sw = clamp(Math.round(w), 1, img.width - sx);
+//     const sh = clamp(Math.round(h), 1, img.height - sy);
+
+//     const off = createOffscreenCanvas(sw, sh);
+//     const offCtx = off.getContext("2d");
+
+//     if (effectType === "blur") {
+//       offCtx.filter = "blur(10px)";
+//       offCtx.drawImage(img, sx, sy, sw, sh, 0, 0, sw, sh);
+//       offCtx.filter = "none";
+//     } else {
+//       offCtx.drawImage(img, sx, sy, sw, sh, 0, 0, sw, sh);
+//       applyMosaicToCanvasRegion(offCtx, sw, sh, 12);
+//     }
+
+//     const regionUrl = off.toDataURL("image/png");
+//     const regionImg = await loadImageFromDataUrl(regionUrl);
+
+//     const overlay = new fabric.Image(regionImg, {
+//       left: sx,
+//       top: sy,
+//       originX: "left",
+//       originY: "top",
+//       selectable: true,
+//       evented: true,
+//       objectCaching: false
+//     });
+
+//     overlay.set({
+//       effectType,
+//       toolType: shapeType === "circle"
+//         ? (effectType === "blur" ? "blurCircle" : "mosaicCircle")
+//         : (effectType === "blur" ? "blurRect" : "mosaicRect"),
+//       hasControls: true,
+//       hasBorders: true,
+//       lockRotation: true
+//     });
+
+//     overlay.scaleX = 1;
+//     overlay.scaleY = 1;
+
+//     if (shapeType === "circle") {
+//       overlay.clipPath = new fabric.Ellipse({
+//         rx: sw / 2,
+//         ry: sh / 2,
+//         originX: "center",
+//         originY: "center",
+//         left: sw / 2,
+//         top: sh / 2,
+//         absolutePositioned: false
+//       });
+//     }
+
+//     return overlay;
+//   }
+
+//   function getObjectBounds(obj) {
+//     if (!obj) return null;
+
+//     if (obj.type === "rect") {
+//       return normalizeRegionBounds(
+//         obj.left,
+//         obj.top,
+//         obj.width * obj.scaleX,
+//         obj.height * obj.scaleY
+//       );
+//     }
+
+//     if (obj.type === "ellipse") {
+//       const rx = (obj.rx || 0) * (obj.scaleX || 1);
+//       const ry = (obj.ry || 0) * (obj.scaleY || 1);
+//       return normalizeRegionBounds(
+//         (obj.left || 0) - rx,
+//         (obj.top || 0) - ry,
+//         rx * 2,
+//         ry * 2
+//       );
+//     }
+
+//     if (isEffectOverlay(obj)) {
+//       return normalizeRegionBounds(
+//         obj.left || 0,
+//         obj.top || 0,
+//         (obj.width || 1) * (obj.scaleX || 1),
+//         (obj.height || 1) * (obj.scaleY || 1)
+//       );
+//     }
+
+//     return null;
+//   }
+
+//   async function regenerateEffectOverlayObject(overlay, pushHistoryAfter = true) {
+//     const canvas = editorState.canvas;
+//     if (!canvas || !overlay || !isEffectOverlay(overlay) || editorState.isRefreshingEffect) return;
+
+//     const bounds = getObjectBounds(overlay);
+//     if (!bounds) return;
+
+//     const shapeType = getEffectShapeType(overlay);
+//     const effectType = overlay.effectType || "blur";
+//     const idx = canvas.getObjects().indexOf(overlay);
+
+//     try {
+//       editorState.isRefreshingEffect = true;
+
+//       const replacement = await buildEffectOverlayFromRegion(
+//         shapeType,
+//         effectType,
+//         bounds.sx,
+//         bounds.sy,
+//         bounds.sw,
+//         bounds.sh,
+//         { hideObjects: [overlay] }
+//       );
+
+//       if (!replacement) return;
+
+//       if (idx >= 0) {
+//         canvas.remove(overlay);
+//         if (typeof canvas.insertAt === "function") {
+//           canvas.insertAt(replacement, idx, false);
+//         } else {
+//           canvas.add(replacement);
+//         }
+//       } else {
+//         canvas.remove(overlay);
+//         canvas.add(replacement);
+//       }
+
+//       canvas.setActiveObject(replacement);
+//       canvas.requestRenderAll();
+
+//       if (pushHistoryAfter) pushHistorySnapshot();
+//     } finally {
+//       editorState.isRefreshingEffect = false;
+//     }
+//   }
+
+//   async function applyCrop() {
+//     const canvas = editorState.canvas;
+//     const crop = editorState.cropRect;
+//     if (!canvas || !crop || editorState.isApplyingCrop) return;
+
+//     try {
+//       editorState.isApplyingCrop = true;
+
+//       const dataUrl = getCanvasSnapshotDataUrl({
+//         format: "png",
+//         multiplier: 1
+//       });
+
+//       const img = await loadImageFromDataUrl(dataUrl);
+
+//       const left = clamp(Math.round(crop.left), 0, img.width - 1);
+//       const top = clamp(Math.round(crop.top), 0, img.height - 1);
+//       const width = clamp(Math.round(crop.width * crop.scaleX), 1, img.width - left);
+//       const height = clamp(Math.round(crop.height * crop.scaleY), 1, img.height - top);
+
+//       const off = createOffscreenCanvas(width, height);
+//       const ctx = off.getContext("2d");
+//       ctx.drawImage(img, left, top, width, height, 0, 0, width, height);
+
+//       const blob = dataURLToBlob(off.toDataURL("image/png"));
+//       const baseName = (editorState.originalFile?.name || "edited-image").replace(/\.[^.]+$/, "");
+//       const croppedFile = await blobToFile(blob, `${baseName}_cropped.png`, "image/png");
+
+//       editorState.originalFile = croppedFile;
+
+//       destroyCanvas();
+//       revokeOriginalUrl();
+//       await loadImageToCanvas(croppedFile);
+
+//       resetViewport();
+//       if (editorState.canvas) {
+//         editorState.canvas.calcOffset();
+//         editorState.canvas.requestRenderAll();
+//       }
+
+//       setActiveTool("select");
+//       pushHistorySnapshot(true);
+//     } catch (err) {
+//       console.error(err);
+//       await showMessage("error", "ครอปภาพไม่สำเร็จ", err?.message || String(err));
+//     } finally {
+//       editorState.isApplyingCrop = false;
+//     }
+//   }
+
+//   async function applyAreaEffect(effectType, shapeType) {
+//     const canvas = editorState.canvas;
+//     if (!canvas) return;
+
+//     const active = canvas.getActiveObject();
+//     if (!active || active === editorState.baseImage) {
+//       await showMessage("info", "ยังไม่ได้เลือกพื้นที่", "กรุณาวาดพื้นที่ก่อน แล้วจึงกดใช้เอฟเฟกต์");
+//       return;
+//     }
+
+//     const bounds = getObjectBounds(active);
+//     if (!bounds) {
+//       await showMessage("warning", "รูปทรงไม่ถูกต้อง", "กรุณาเลือกสี่เหลี่ยมหรือวงกลมสำหรับใช้เอฟเฟกต์นี้");
+//       return;
+//     }
+
+//     try {
+//       const overlay = await buildEffectOverlayFromRegion(
+//         shapeType,
+//         effectType,
+//         bounds.sx,
+//         bounds.sy,
+//         bounds.sw,
+//         bounds.sh,
+//         { hideObjects: [active] }
+//       );
+
+//       if (!overlay) throw new Error("สร้างเอฟเฟกต์ไม่สำเร็จ");
+
+//       canvas.remove(active);
+//       canvas.add(overlay);
+//       canvas.setActiveObject(overlay);
+//       canvas.requestRenderAll();
+//       pushHistorySnapshot();
+
+//       setActiveTool("select");
+//     } catch (err) {
+//       console.error(err);
+//       await showMessage("error", "ใช้เอฟเฟกต์ไม่สำเร็จ", err?.message || String(err));
+//     }
+//   }
+
+//   function collectCanvasState() {
+//     const canvas = editorState.canvas;
+//     if (!canvas) return null;
+
+//     const cropWasVisible = !!editorState.cropRect && editorState.cropRect.visible;
+//     if (editorState.cropRect) {
+//       editorState.cropRect.visible = false;
+//       canvas.requestRenderAll();
+//     }
+
+//     const json = canvas.toDatalessJSON(["toolType", "effectType"]);
+
+//     if (editorState.cropRect) {
+//       editorState.cropRect.visible = cropWasVisible;
+//       canvas.requestRenderAll();
+//     }
+
+//     return {
+//       json,
+//       zoom: editorState.zoom,
+//       brightness: editorState.brightness
+//     };
+//   }
+
+//   function pushHistorySnapshot(force = false) {
+//     const canvas = editorState.canvas;
+//     if (!canvas || editorState.restoringHistory || editorState.isRefreshingEffect) return;
+
+//     const snapshot = collectCanvasState();
+//     if (!snapshot) return;
+
+//     const serialized = JSON.stringify(snapshot);
+//     const last = editorState.history[editorState.historyIndex];
+//     if (!force && last && JSON.stringify(last) === serialized) {
+//       return;
+//     }
+
+//     if (editorState.historyIndex < editorState.history.length - 1) {
+//       editorState.history = editorState.history.slice(0, editorState.historyIndex + 1);
+//     }
+
+//     editorState.history.push(snapshot);
+//     editorState.historyIndex = editorState.history.length - 1;
+
+//     if (editorState.history.length > 40) {
+//       editorState.history.shift();
+//       editorState.historyIndex = editorState.history.length - 1;
+//     }
+
+//     updateUndoRedoState();
+//   }
+
+//   async function restoreHistoryAt(index) {
+//     const canvas = editorState.canvas;
+//     if (!canvas) return;
+//     if (index < 0 || index >= editorState.history.length) return;
+
+//     const snapshot = editorState.history[index];
+//     if (!snapshot) return;
+
+//     editorState.restoringHistory = true;
+//     try {
+//       removeCropRect();
+
+//       await new Promise((resolve) => {
+//         canvas.loadFromJSON(snapshot.json, () => {
+//           canvas.renderAll();
+//           resolve();
+//         });
+//       });
+
+//       const objs = canvas.getObjects();
+//       editorState.baseImage = objs.length ? objs[0] : null;
+//       editorState.historyIndex = index;
+//       editorState.zoom = snapshot.zoom || 1;
+//       editorState.brightness = Number(snapshot.brightness || 0);
+
+//       const brightEl = $("ieBrightness");
+//       if (brightEl) brightEl.value = String(editorState.brightness);
+
+//       resetViewport();
+//       if (editorState.zoom !== 1) {
+//         setZoom(editorState.zoom);
+//       } else {
+//         setZoomLabel();
+//       }
+
+//       if (editorState.canvas) {
+//         editorState.canvas.calcOffset();
+//         editorState.canvas.requestRenderAll();
+//       }
+
+//       setActiveTool("select");
+//       updateUndoRedoState();
+//     } finally {
+//       editorState.restoringHistory = false;
+//     }
+//   }
+
+//   function undoHistory() {
+//     if (editorState.historyIndex <= 0) return;
+//     restoreHistoryAt(editorState.historyIndex - 1);
+//   }
+
+//   function redoHistory() {
+//     if (editorState.historyIndex >= editorState.history.length - 1) return;
+//     restoreHistoryAt(editorState.historyIndex + 1);
+//   }
+
+//   function updateUndoRedoState() {
+//     const undoBtn = $("ieUndoBtn");
+//     const redoBtn = $("ieRedoBtn");
+
+//     if (undoBtn) undoBtn.disabled = !(editorState.historyIndex > 0);
+//     if (redoBtn) redoBtn.disabled = !(editorState.historyIndex < editorState.history.length - 1);
+//   }
+
+//   function bindObjectEvents() {
+//     const canvas = editorState.canvas;
+//     if (!canvas || canvas.__imgEditorObjectEventsBound) return;
+//     canvas.__imgEditorObjectEventsBound = true;
+
+//     canvas.on("object:modified", async (evt) => {
+//       if (editorState.restoringHistory) return;
+//       const obj = evt?.target;
+//       if (!obj) return;
+
+//       if (isEffectOverlay(obj)) {
+//         await regenerateEffectOverlayObject(obj, true);
+//         return;
+//       }
+
+//       pushHistorySnapshot();
+//     });
+//   }
+
+//   function getPointerFromEvent(canvas, evt) {
+//     if (typeof canvas.getPointer === "function") {
+//       return canvas.getPointer(evt);
+//     }
+//     const rect = canvas.upperCanvasEl.getBoundingClientRect();
+//     return {
+//       x: evt.clientX - rect.left,
+//       y: evt.clientY - rect.top
+//     };
+//   }
+
+//   function bindPointerDrawing() {
+//     const canvas = editorState.canvas;
+//     if (!canvas || canvas.__imgEditorPointerBound) return;
+//     canvas.__imgEditorPointerBound = true;
+
+//     let startX = 0;
+//     let startY = 0;
+//     let drawingObject = null;
+
+//     canvas.on("mouse:down", function (opt) {
+//       const evt = opt.e;
+//       if (!evt) return;
+
+//       if (editorState.activeTool === "pan") {
+//         editorState.isPanning = true;
+//         canvas.defaultCursor = "grabbing";
+//         this.selection = false;
+//         this.lastPosX = evt.clientX;
+//         this.lastPosY = evt.clientY;
+//         return;
+//       }
+
+//       if (editorState.activeTool === "text") {
+//         addTextbox();
+//         return;
+//       }
+
+//       if (!["line", "arrow", "rect", "circle", "blurRect", "blurCircle", "mosaicRect", "mosaicCircle"].includes(editorState.activeTool)) {
+//         return;
+//       }
+
+//       const pointer = getPointerFromEvent(canvas, evt);
+//       startX = pointer.x;
+//       startY = pointer.y;
+
+//       const tool = editorState.activeTool;
+
+//       if (tool === "line" || tool === "arrow") {
+//         drawingObject = new fabric.Line([startX, startY, startX, startY], {
+//           stroke: editorState.strokeColor,
+//           strokeWidth: editorState.strokeWidth,
+//           selectable: false,
+//           evented: false,
+//           objectCaching: false,
+//           hasControls: true,
+//           hasBorders: true,
+//           lockRotation: false
+//         });
+//         editorState.tempDraft = drawingObject;
+//         canvas.add(drawingObject);
+//       }
+
+//       if (tool === "rect" || tool === "blurRect" || tool === "mosaicRect") {
+//         drawingObject = new fabric.Rect({
+//           left: startX,
+//           top: startY,
+//           width: 1,
+//           height: 1,
+//           originX: "left",
+//           originY: "top",
+//           fill: ["blurRect", "mosaicRect"].includes(tool) ? "rgba(37,99,235,0.08)" : "transparent",
+//           stroke: editorState.strokeColor,
+//           strokeWidth: editorState.strokeWidth,
+//           selectable: false,
+//           evented: false,
+//           objectCaching: false,
+//           hasControls: true,
+//           hasBorders: true,
+//           lockRotation: false
+//         });
+//         editorState.tempDraft = drawingObject;
+//         canvas.add(drawingObject);
+//       }
+
+//       if (tool === "circle" || tool === "blurCircle" || tool === "mosaicCircle") {
+//         drawingObject = new fabric.Ellipse({
+//           left: startX,
+//           top: startY,
+//           rx: 1,
+//           ry: 1,
+//           originX: "center",
+//           originY: "center",
+//           fill: ["blurCircle", "mosaicCircle"].includes(tool) ? "rgba(37,99,235,0.08)" : "transparent",
+//           stroke: editorState.strokeColor,
+//           strokeWidth: editorState.strokeWidth,
+//           selectable: false,
+//           evented: false,
+//           objectCaching: false,
+//           hasControls: true,
+//           hasBorders: true,
+//           lockRotation: false
+//         });
+//         editorState.tempDraft = drawingObject;
+//         canvas.add(drawingObject);
+//       }
+//     });
+
+//     canvas.on("mouse:move", function (opt) {
+//       const evt = opt.e;
+//       if (!evt) return;
+
+//       if (editorState.activeTool === "pan" && editorState.isPanning) {
+//         const vpt = this.viewportTransform;
+//         vpt[4] += evt.clientX - this.lastPosX;
+//         vpt[5] += evt.clientY - this.lastPosY;
+//         this.requestRenderAll();
+//         this.lastPosX = evt.clientX;
+//         this.lastPosY = evt.clientY;
+//         return;
+//       }
+
+//       const draft = editorState.tempDraft;
+//       if (!draft) return;
+
+//       const pointer = getPointerFromEvent(canvas, evt);
+//       const tool = editorState.activeTool;
+
+//       if (tool === "line" || tool === "arrow") {
+//         draft.set({ x2: pointer.x, y2: pointer.y });
+//       }
+
+//       if (tool === "rect" || tool === "blurRect" || tool === "mosaicRect") {
+//         draft.set({
+//           left: Math.min(startX, pointer.x),
+//           top: Math.min(startY, pointer.y),
+//           width: Math.abs(pointer.x - startX),
+//           height: Math.abs(pointer.y - startY)
+//         });
+//       }
+
+//       if (tool === "circle" || tool === "blurCircle" || tool === "mosaicCircle") {
+//         draft.set({
+//           left: (startX + pointer.x) / 2,
+//           top: (startY + pointer.y) / 2,
+//           rx: Math.abs(pointer.x - startX) / 2,
+//           ry: Math.abs(pointer.y - startY) / 2
+//         });
+//       }
+
+//       canvas.requestRenderAll();
+//     });
+
+//     canvas.on("mouse:up", async function () {
+//       if (editorState.activeTool === "pan") {
+//         editorState.isPanning = false;
+//         canvas.defaultCursor = "grab";
+//         return;
+//       }
+
+//       const draft = editorState.tempDraft;
+//       const tool = editorState.activeTool;
+
+//       if (!draft) return;
+
+//       editorState.tempDraft = null;
+
+//       if (tool === "arrow") {
+//         const arrow = createArrowGroup(draft.x1, draft.y1, draft.x2, draft.y2);
+//         canvas.remove(draft);
+//         canvas.add(arrow);
+//         canvas.setActiveObject(arrow);
+//         canvas.requestRenderAll();
+//         pushHistorySnapshot();
+//         setActiveTool("select");
+//         return;
+//       }
+
+//       if (tool === "line" || tool === "rect" || tool === "circle") {
+//         draft.set({
+//           selectable: true,
+//           evented: true,
+//           hasControls: true,
+//           hasBorders: true,
+//           lockRotation: false
+//         });
+//         canvas.setActiveObject(draft);
+//         canvas.requestRenderAll();
+//         pushHistorySnapshot();
+//         setActiveTool("select");
+//         return;
+//       }
+
+//       if (tool === "blurRect") {
+//         canvas.setActiveObject(draft);
+//         await applyAreaEffect("blur", "rect");
+//         return;
+//       }
+
+//       if (tool === "blurCircle") {
+//         canvas.setActiveObject(draft);
+//         await applyAreaEffect("blur", "circle");
+//         return;
+//       }
+
+//       if (tool === "mosaicRect") {
+//         canvas.setActiveObject(draft);
+//         await applyAreaEffect("mosaic", "rect");
+//         return;
+//       }
+
+//       if (tool === "mosaicCircle") {
+//         canvas.setActiveObject(draft);
+//         await applyAreaEffect("mosaic", "circle");
+//         return;
+//       }
+//     });
+
+//     canvas.on("mouse:wheel", function (opt) {
+//       const evt = opt.e;
+//       if (!evt) return;
+//       evt.preventDefault();
+//       evt.stopPropagation();
+
+//       let zoom = canvas.getZoom();
+//       zoom *= 0.999 ** evt.deltaY;
+//       zoom = Math.max(0.2, Math.min(5, zoom));
+//       editorState.zoom = zoom;
+//       canvas.zoomToPoint({ x: evt.offsetX, y: evt.offsetY }, zoom);
+//       setZoomLabel();
+//     });
+//   }
+
+//   async function loadImageToCanvas(file) {
+//     const url = URL.createObjectURL(file);
+//     editorState.originalUrl = url;
+
+//     const wrap = editorState.canvasEl.parentElement;
+//     if (!wrap) throw new Error("ไม่พบพื้นที่แสดง canvas");
+
+//     const maxW = Math.max(640, Math.floor(wrap.clientWidth - 20));
+//     const maxH = Math.max(420, Math.floor(wrap.clientHeight - 20));
+
+//     if (editorState.canvas) {
+//       try { editorState.canvas.dispose(); } catch (_) {}
+//       editorState.canvas = null;
+//     }
+
+//     const canvas = new fabric.Canvas(editorState.canvasEl, {
+//       preserveObjectStacking: true,
+//       selection: true,
+//       renderOnAddRemove: true
+//     });
+
+//     editorState.canvas = canvas;
+
+//     const imgEl = await new Promise((resolve, reject) => {
+//       const img = new Image();
+//       img.onload = () => resolve(img);
+//       img.onerror = () => reject(new Error("โหลดรูปภาพไม่สำเร็จ"));
+//       img.decoding = "async";
+//       img.src = url;
+//     });
+
+//     const imgW = imgEl.naturalWidth || imgEl.width;
+//     const imgH = imgEl.naturalHeight || imgEl.height;
+
+//     if (!imgW || !imgH) {
+//       throw new Error("ไม่สามารถอ่านขนาดรูปภาพได้");
+//     }
+
+//     const scale = Math.min(maxW / imgW, maxH / imgH, 1);
+//     const canvasW = Math.max(320, Math.round(imgW * scale));
+//     const canvasH = Math.max(240, Math.round(imgH * scale));
+
+//     if (typeof canvas.setWidth === "function" && typeof canvas.setHeight === "function") {
+//       canvas.setWidth(canvasW);
+//       canvas.setHeight(canvasH);
+//     } else if (typeof canvas.setDimensions === "function") {
+//       canvas.setDimensions({ width: canvasW, height: canvasH });
+//     } else {
+//       editorState.canvasEl.width = canvasW;
+//       editorState.canvasEl.height = canvasH;
+//     }
+
+//     if (canvas.lowerCanvasEl) {
+//       canvas.lowerCanvasEl.style.width = canvasW + "px";
+//       canvas.lowerCanvasEl.style.height = canvasH + "px";
+//     }
+
+//     if (canvas.upperCanvasEl) {
+//       canvas.upperCanvasEl.style.width = canvasW + "px";
+//       canvas.upperCanvasEl.style.height = canvasH + "px";
+//     }
+
+//     if (canvas.wrapperEl) {
+//       canvas.wrapperEl.style.width = canvasW + "px";
+//       canvas.wrapperEl.style.height = canvasH + "px";
+//     }
+
+//     const baseImage = new fabric.Image(imgEl, {
+//       left: canvasW / 2,
+//       top: canvasH / 2,
+//       originX: "center",
+//       originY: "center",
+//       selectable: false,
+//       evented: false,
+//       objectCaching: false
+//     });
+
+//     baseImage.scaleX = scale;
+//     baseImage.scaleY = scale;
+
+//     editorState.baseImage = baseImage;
+
+//     canvas.clear();
+//     canvas.add(baseImage);
+
+//     if (typeof baseImage.moveTo === "function") {
+//       baseImage.moveTo(0);
+//     } else if (typeof canvas.sendToBack === "function") {
+//       canvas.sendToBack(baseImage);
+//     } else if (typeof canvas.sendObjectToBack === "function") {
+//       canvas.sendObjectToBack(baseImage);
+//     }
+
+//     bindObjectEvents();
+//     bindPointerDrawing();
+
+//     resetViewport();
+//     if (typeof canvas.calcOffset === "function") {
+//       canvas.calcOffset();
+//     }
+//     canvas.requestRenderAll();
+//   }
+
+//   async function exportEditedFile() {
+//     const canvas = editorState.canvas;
+//     if (!canvas) {
+//       throw new Error("ยังไม่มี canvas สำหรับ export");
+//     }
+
+//     removeCropRect();
+
+//     const dataUrl = canvas.toDataURL({
+//       format: "jpeg",
+//       quality: 0.92,
+//       multiplier: 1,
+//       enableRetinaScaling: false
+//     });
+
+//     const blob = dataURLToBlob(dataUrl);
+//     const filenameBase = (editorState.originalFile?.name || "edited-image").replace(/\.[^.]+$/, "");
+//     const outFile = await blobToFile(blob, `${filenameBase}_edited.jpg`, "image/jpeg");
+
+//     return {
+//       ok: true,
+//       file: outFile,
+//       blob,
+//       dataUrl,
+//       filename: outFile.name,
+//       mimeType: outFile.type
+//     };
+//   }
+
+//   function getToolButton(toolName) {
+//     return document.querySelector(`.ie-tool[data-tool="${toolName}"]`);
+//   }
+
+//   function getFieldByInputId(inputId) {
+//     const input = $(inputId);
+//     return input ? input.closest(".ieField") : null;
+//   }
+
+//   function ensureBtn(container, id, text, className = "btn ghost", attrs = {}) {
+//     let btn = $(id);
+//     if (btn) {
+//       if (text != null) btn.textContent = text;
+//       if (className) btn.className = className;
+//       Object.keys(attrs || {}).forEach((k) => {
+//         btn.setAttribute(k, attrs[k]);
+//       });
+//       return btn;
+//     }
+
+//     btn = document.createElement("button");
+//     btn.type = "button";
+//     btn.id = id;
+//     btn.className = className;
+//     btn.textContent = text || "";
+
+//     Object.keys(attrs || {}).forEach((k) => {
+//       btn.setAttribute(k, attrs[k]);
+//     });
+
+//     container.appendChild(btn);
+//     return btn;
+//   }
+
+//   function ensureToolBtn(container, id, text, toolName) {
+//     const btn = ensureBtn(container, id, text, "btn ghost ie-tool", { "data-tool": toolName });
+//     btn.classList.add("ie-tool");
+//     btn.setAttribute("data-tool", toolName);
+//     return btn;
+//   }
+
+//   function removeLegacyToolbarDividers(toolbar) {
+//     toolbar.querySelectorAll(".ieDivider").forEach((el) => el.remove());
+//   }
+
+//   function createToolbarSection(title, extraClass = "") {
+//     const section = document.createElement("section");
+//     section.className = `ieToolbarSection ${extraClass}`.trim();
+
+//     const head = document.createElement("div");
+//     head.className = "ieToolbarTitle";
+//     head.textContent = title;
+
+//     const grid = document.createElement("div");
+//     grid.className = "ieButtonGrid";
+
+//     section.appendChild(head);
+//     section.appendChild(grid);
+
+//     return { section, grid };
+//   }
+
+//   function appendNodes(container, nodes) {
+//     (Array.isArray(nodes) ? nodes : []).forEach((node) => {
+//       if (!node) return;
+//       container.appendChild(node);
+//     });
+//   }
+
+//   function ensureToolbarResponsiveLabels() {
+//     const compact = window.matchMedia("(max-width: 560px)").matches;
+//     const compact2 = window.matchMedia("(max-width: 390px)").matches;
+
+//     const labels = {
+//       ieSelectBtn: compact2 ? "เลือก" : "เลือก",
+//       iePanBtn: compact2 ? "เลื่อน" : (compact ? "เลื่อน" : "เลื่อนภาพ"),
+//       ieTextBtn: compact2 ? "ข้อความ" : "ข้อความ",
+//       ieCropToolBtn: compact2 ? "ครอป" : "ครอป",
+
+//       ieLineBtn: compact2 ? "เส้น" : (compact ? "เส้น" : "เส้นตรง"),
+//       ieArrowBtn: compact2 ? "ลูกศร" : "ลูกศร",
+//       ieRectBtn: compact2 ? "กรอบ" : (compact ? "กรอบ" : "สี่เหลี่ยม"),
+//       ieCircleBtn: compact2 ? "วง" : (compact ? "วงกลม" : "วงกลม"),
+
+//       ieBlurRectBtn: compact2 ? "เบลอสี่" : (compact ? "เบลอสี่" : "เบลอสี่เหลี่ยม"),
+//       ieBlurCircleBtn: compact2 ? "เบลอวง" : (compact ? "เบลอวง" : "เบลอวงกลม"),
+//       ieMosaicRectBtn: compact2 ? "โมเสกสี่" : (compact ? "โมเสกสี่" : "โมเสกสี่เหลี่ยม"),
+//       ieMosaicCircleBtn: compact2 ? "โมเสกวง" : (compact ? "โมเสกวง" : "โมเสกวงกลม"),
+
+//       ieZoomOutBtn: compact2 ? "ซูม-" : "ซูมออก",
+//       ieZoomResetBtn: compact2 ? "100%" : (compact ? "100%" : "รีเซ็ตซูม"),
+//       ieZoomInBtn: compact2 ? "ซูม+" : "ซูมเข้า",
+//       ieFitBtn: compact2 ? "พอดี" : (compact ? "พอดี" : "พอดีจอ"),
+
+//       ieRotateLeftBtn: compact2 ? "ซ้าย" : (compact ? "หมุนซ้าย" : "หมุนซ้าย"),
+//       ieRotateRightBtn: compact2 ? "ขวา" : (compact ? "หมุนขวา" : "หมุนขวา"),
+
+//       ieUndoBtn: compact2 ? "ย้อน" : (compact ? "ย้อน" : "ย้อนกลับ"),
+//       ieRedoBtn: compact2 ? "ทำซ้ำ" : "ทำซ้ำ",
+//       ieDeleteBtn: compact2 ? "ลบ" : (compact ? "ลบ" : "ลบที่เลือก"),
+//       ieApplyCropBtn: compact2 ? "ใช้" : (compact ? "ใช้ครอป" : "ใช้ครอป")
+//     };
+
+//     Object.keys(labels).forEach((id) => {
+//       const el = $(id);
+//       if (el) el.textContent = labels[id];
+//     });
+//   }
+
+//   function rebuildToolbarLayout(toolbar) {
+//     if (!toolbar) return;
+
+//     removeLegacyToolbarDividers(toolbar);
+
+//     const selectBtn = getToolButton("select");
+//     const panBtn = getToolButton("pan");
+//     const textBtn = getToolButton("text");
+//     const cropBtn = $("ieCropToolBtn");
+
+//     const lineBtn = getToolButton("line");
+//     const arrowBtn = getToolButton("arrow");
+//     const rectBtn = getToolButton("rect");
+//     const circleBtn = getToolButton("circle");
+
+//     const blurRectBtn = $("ieBlurRectBtn");
+//     const blurCircleBtn = $("ieBlurCircleBtn");
+//     const mosaicRectBtn = $("ieMosaicRectBtn");
+//     const mosaicCircleBtn = $("ieMosaicCircleBtn");
+
+//     const zoomOutBtn = $("ieZoomOutBtn");
+//     const zoomResetBtn = $("ieZoomResetBtn");
+//     const zoomInBtn = $("ieZoomInBtn");
+//     const fitBtn = $("ieFitBtn");
+
+//     const rotateLeftBtn = $("ieRotateLeftBtn");
+//     const rotateRightBtn = $("ieRotateRightBtn");
+
+//     const undoBtn = $("ieUndoBtn");
+//     const redoBtn = $("ieRedoBtn");
+//     const deleteBtn = $("ieDeleteBtn");
+//     const applyCropBtn = $("ieApplyCropBtn");
+
+//     const colorField = getFieldByInputId("ieColorPicker");
+//     const strokeField = getFieldByInputId("ieStrokeWidth");
+//     const brightnessField = getFieldByInputId("ieBrightness");
+
+//     if (selectBtn) selectBtn.id = "ieSelectBtn";
+//     if (panBtn) panBtn.id = "iePanBtn";
+//     if (textBtn) textBtn.id = "ieTextBtn";
+//     if (lineBtn) lineBtn.id = "ieLineBtn";
+//     if (arrowBtn) arrowBtn.id = "ieArrowBtn";
+//     if (rectBtn) rectBtn.id = "ieRectBtn";
+//     if (circleBtn) circleBtn.id = "ieCircleBtn";
+
+//     toolbar.innerHTML = "";
+
+//     const gridRoot = document.createElement("div");
+//     gridRoot.className = "imgEditorToolbarGrid ieToolbarGridEnhanced";
+
+//     const secPrimary = createToolbarSection("หลัก", "ieSectionPrimary");
+//     secPrimary.grid.classList.add("ieButtonGridTools");
+//     appendNodes(secPrimary.grid, [selectBtn, panBtn, textBtn, cropBtn]);
+
+//     const secDraw = createToolbarSection("วาด", "ieSectionDraw");
+//     secDraw.grid.classList.add("ieButtonGridTools");
+//     appendNodes(secDraw.grid, [lineBtn, arrowBtn, rectBtn, circleBtn]);
+
+//     const secMask = createToolbarSection("เบลอ/โมเสก", "ieSectionMask");
+//     secMask.grid.classList.add("ieButtonGridEffects");
+//     appendNodes(secMask.grid, [blurRectBtn, blurCircleBtn, mosaicRectBtn, mosaicCircleBtn]);
+
+//     const secView = createToolbarSection("มุมมอง", "ieSectionView");
+//     secView.grid.classList.add("ieButtonGridView");
+//     appendNodes(secView.grid, [zoomOutBtn, zoomResetBtn, zoomInBtn, fitBtn]);
+
+//     const secManage = createToolbarSection("จัดการ", "ieSectionManage");
+//     secManage.grid.classList.add("ieButtonGridView");
+//     appendNodes(secManage.grid, [undoBtn, redoBtn, deleteBtn, applyCropBtn, rotateLeftBtn, rotateRightBtn]);
+
+//     const secControl = createToolbarSection("ตั้งค่า", "ieSectionControl");
+//     secControl.grid.classList.add("ieControlGrid");
+//     appendNodes(secControl.grid, [colorField, strokeField, brightnessField]);
+
+//     [
+//       secPrimary.section,
+//       secDraw.section,
+//       secMask.section,
+//       secView.section,
+//       secManage.section,
+//       secControl.section
+//     ].forEach((section) => gridRoot.appendChild(section));
+
+//     toolbar.appendChild(gridRoot);
+//   }
+
+//   function ensureFooterControls() {
+//     const footerActions = document.querySelector(".imgEditorActions");
+//     if (!footerActions) return;
+
+//     ensureBtn(footerActions, "ieFitBtn", "พอดีจอ");
+//   }
+
+//   function ensureCoreEditorButtons() {
+//     const toolbar = document.querySelector(".imgEditorToolbar");
+//     if (!toolbar) return;
+
+//     ensureBtn(toolbar, "ieUndoBtn", "ย้อนกลับ");
+//     ensureBtn(toolbar, "ieRedoBtn", "ทำซ้ำ");
+//     ensureBtn(toolbar, "ieDeleteBtn", "ลบที่เลือก");
+
+//     ensureToolBtn(toolbar, "ieCropToolBtn", "ครอป", "crop");
+//     ensureBtn(toolbar, "ieApplyCropBtn", "ใช้ครอป");
+
+//     ensureToolBtn(toolbar, "ieBlurRectBtn", "เบลอสี่เหลี่ยม", "blurRect");
+//     ensureToolBtn(toolbar, "ieBlurCircleBtn", "เบลอวงกลม", "blurCircle");
+//     ensureToolBtn(toolbar, "ieMosaicRectBtn", "โมเสกสี่เหลี่ยม", "mosaicRect");
+//     ensureToolBtn(toolbar, "ieMosaicCircleBtn", "โมเสกวงกลม", "mosaicCircle");
+//   }
+
+//   function ensureExtraControls() {
+//     const toolbar = document.querySelector(".imgEditorToolbar");
+//     if (!toolbar) return;
+
+//     ensureCoreEditorButtons();
+//     ensureFooterControls();
+//     rebuildToolbarLayout(toolbar);
+//     ensureToolbarResponsiveLabels();
+//   }
+
+//   function bindResponsiveToolbarLabelOnce() {
+//     if (window.__imgEditorResponsiveLabelBound) return;
+//     window.__imgEditorResponsiveLabelBound = true;
+
+//     const mq1 = window.matchMedia("(max-width: 560px)");
+//     const mq2 = window.matchMedia("(max-width: 390px)");
+
+//     const apply = () => {
+//       try {
+//         ensureToolbarResponsiveLabels();
+//       } catch (_) {}
+//     };
+
+//     [mq1, mq2].forEach((mq) => {
+//       if (typeof mq.addEventListener === "function") {
+//         mq.addEventListener("change", apply);
+//       } else if (typeof mq.addListener === "function") {
+//         mq.addListener(apply);
+//       }
+//     });
+
+//     window.addEventListener("resize", apply, { passive: true });
+//   }
+
+//   function bindToolButtons() {
+//     document.querySelectorAll(".ie-tool").forEach((btn) => {
+//       if (btn.dataset.boundClick === "1") return;
+//       btn.dataset.boundClick = "1";
+
+//       btn.addEventListener("click", () => {
+//         const tool = btn.getAttribute("data-tool") || "select";
+//         setActiveTool(tool);
+//       });
+//     });
+//   }
+
+//   function bindUiOnce() {
+//     if (window.__imgEditorBoundOnce) return;
+//     window.__imgEditorBoundOnce = true;
+
+//     ensureExtraControls();
+//     bindResponsiveToolbarLabelOnce();
+
+//     $("imgEditorCloseBtn")?.addEventListener("click", () => closeEditor({ ok: false }));
+//     $("ieCancelBtn")?.addEventListener("click", () => closeEditor({ ok: false }));
+
+//     $("ieSaveBtn")?.addEventListener("click", async () => {
+//       try {
+//         const result = await exportEditedFile();
+//         closeEditor(result);
+//       } catch (err) {
+//         console.error(err);
+//         showMessage("error", "บันทึกภาพไม่สำเร็จ", err?.message || String(err));
+//       }
+//     });
+
+//     $("ieZoomInBtn")?.addEventListener("click", () => setZoom(editorState.zoom + 0.1));
+//     $("ieZoomOutBtn")?.addEventListener("click", () => setZoom(editorState.zoom - 0.1));
+//     $("ieZoomResetBtn")?.addEventListener("click", () => resetViewport());
+//     $("ieFitBtn")?.addEventListener("click", () => resetViewport());
+
+//     $("ieRotateLeftBtn")?.addEventListener("click", () => rotateBaseImage(-90));
+//     $("ieRotateRightBtn")?.addEventListener("click", () => rotateBaseImage(90));
+
+//     $("ieColorPicker")?.addEventListener("input", (e) => {
+//       editorState.strokeColor = e.target.value || "#dc2626";
+//     });
+
+//     $("ieStrokeWidth")?.addEventListener("input", (e) => {
+//       editorState.strokeWidth = Number(e.target.value || 3);
+//     });
+
+//     $("ieBrightness")?.addEventListener("input", (e) => {
+//       applyBrightness(e.target.value);
+//     });
+
+//     $("ieBrightness")?.addEventListener("change", () => {
+//       commitBrightnessToHistory();
+//     });
+
+//     $("ieResetBtn")?.addEventListener("click", async () => {
+//       if (!editorState.originalFile) return;
+//       try {
+//         destroyCanvas();
+//         revokeOriginalUrl();
+//         await loadImageToCanvas(editorState.originalFile);
+//         editorState.zoom = 1;
+//         editorState.brightness = 0;
+//         if ($("ieBrightness")) $("ieBrightness").value = "0";
+//         ensureExtraControls();
+//         bindToolButtons();
+//         setActiveTool("select");
+//         pushHistorySnapshot(true);
+//       } catch (err) {
+//         console.error(err);
+//         showMessage("error", "รีเซ็ตภาพไม่สำเร็จ", err?.message || String(err));
+//       }
+//     });
+
+//     $("ieUndoBtn")?.addEventListener("click", () => undoHistory());
+//     $("ieRedoBtn")?.addEventListener("click", () => redoHistory());
+//     $("ieDeleteBtn")?.addEventListener("click", () => deleteSelectedObject());
+//     $("ieApplyCropBtn")?.addEventListener("click", () => applyCrop());
+
+//     bindToolButtons();
+//   }
+
+//   async function openImageEditor(file, options = {}) {
+//     ensureFabricReady();
+//     ensureModal();
+//     bindUiOnce();
+
+//     if (!file || !/^image\//i.test(file.type || "")) {
+//       throw new Error("ไฟล์ที่ส่งเข้า editor ต้องเป็นรูปภาพ");
+//     }
+
+//     editorState.originalFile = file;
+//     editorState.zoom = 1;
+//     editorState.strokeColor = options.strokeColor || "#dc2626";
+//     editorState.strokeWidth = Number(options.strokeWidth || 3);
+//     editorState.brightness = 0;
+//     editorState.history = [];
+//     editorState.historyIndex = -1;
+//     editorState.restoringHistory = false;
+//     editorState.isRefreshingEffect = false;
+
+//     if ($("ieColorPicker")) $("ieColorPicker").value = editorState.strokeColor;
+//     if ($("ieStrokeWidth")) $("ieStrokeWidth").value = String(editorState.strokeWidth);
+//     if ($("ieBrightness")) $("ieBrightness").value = "0";
+
+//     editorState.modal.classList.remove("hidden");
+//     editorState.modal.setAttribute("aria-hidden", "false");
+//     document.body.classList.add("progress-lock");
+
+//     destroyCanvas();
+//     revokeOriginalUrl();
+
+//     try {
+//       await loadImageToCanvas(file);
+//     } catch (err) {
+//       console.error("loadImageToCanvas error:", err);
+//       closeEditor({ ok: false });
+//       await showMessage("error", "เปิดภาพไม่สำเร็จ", err?.message || String(err));
+//       return Promise.resolve({ ok: false });
+//     }
+
+//     if (editorState.canvas) {
+//       if (typeof editorState.canvas.calcOffset === "function") {
+//         editorState.canvas.calcOffset();
+//       }
+//       editorState.canvas.requestRenderAll();
+//     }
+
+//     ensureExtraControls();
+//     bindToolButtons();
+//     setActiveTool("select");
+//     setZoomLabel();
+//     setToolLabel();
+//     pushHistorySnapshot(true);
+//     updateUndoRedoState();
+
+//     return new Promise((resolve) => {
+//       editorState.resultResolve = resolve;
+//     });
+//   }
+
+//   window.ImageEditorX = {
+//     open: openImageEditor
+//   };
+// })();
+
+// (function () {
+//   const editorState = {
+//     modal: null,
+//     canvasEl: null,
+//     canvas: null,
+//     baseImage: null,
+//     originalFile: null,
+//     originalUrl: "",
+//     resultResolve: null,
+
+//     activeTool: "select",
+//     strokeColor: "#dc2626",
+//     strokeWidth: 3,
+//     zoom: 1,
+//     brightness: 0,
+
+//     isPanning: false,
+//     isApplyingCrop: false,
+//     isRefreshingEffect: false,
+
+//     cropRect: null,
+//     tempDraft: null,
+//     history: [],
+//     historyIndex: -1,
+//     restoringHistory: false
+//   };
+
+//   const $ = (id) => document.getElementById(id);
+
+//   function showMessage(type, title, text) {
+//     if (window.Swal) {
+//       return Swal.fire({
+//         icon: type || "info",
+//         title: title || "",
+//         text: text || "",
+//         confirmButtonText: "ตกลง"
+//       });
+//     }
+//     alert((title ? title + "\n" : "") + (text || ""));
+//     return Promise.resolve();
+//   }
+
+//   function ensureFabricReady() {
+//     if (!window.fabric) {
+//       throw new Error("ยังไม่พบ Fabric.js");
+//     }
+//   }
+
+//   function ensureModal() {
+//     editorState.modal = $("imgEditorModal");
+//     editorState.canvasEl = $("imgEditorCanvas");
+
+//     if (!editorState.modal || !editorState.canvasEl) {
+//       throw new Error("ยังไม่พบโครง modal ของ image editor");
+//     }
+//   }
+
+//   function revokeOriginalUrl() {
+//     if (editorState.originalUrl) {
+//       try { URL.revokeObjectURL(editorState.originalUrl); } catch (_) {}
+//       editorState.originalUrl = "";
+//     }
+//   }
+
+//   function destroyCanvas() {
+//     if (editorState.canvas) {
+//       try {
+//         editorState.canvas.dispose();
+//       } catch (_) {}
+//       editorState.canvas = null;
+//     }
+//     editorState.baseImage = null;
+//     editorState.cropRect = null;
+//     editorState.tempDraft = null;
+//     editorState.isRefreshingEffect = false;
+//   }
+
+//   function closeEditor(result = { ok: false }) {
+//     editorState.modal?.classList.add("hidden");
+//     editorState.modal?.setAttribute("aria-hidden", "true");
+//     document.body.classList.remove("progress-lock");
+
+//     destroyCanvas();
+//     revokeOriginalUrl();
+
+//     editorState.originalFile = null;
+//     editorState.history = [];
+//     editorState.historyIndex = -1;
+//     editorState.restoringHistory = false;
+//     editorState.isApplyingCrop = false;
+
+//     const resolve = editorState.resultResolve;
+//     editorState.resultResolve = null;
+//     if (resolve) resolve(result);
+//   }
+
+//   function setZoomLabel() {
+//     const el = $("ieZoomLabel");
+//     if (el) el.textContent = `${Math.round(editorState.zoom * 100)}%`;
+//   }
+
+//   function setToolLabel() {
+//     const map = {
+//       select: "เลือก",
+//       pan: "เลื่อนภาพ",
+//       line: "เส้นตรง",
+//       arrow: "ลูกศร",
+//       rect: "สี่เหลี่ยม",
+//       circle: "วงกลม",
+//       text: "ข้อความ",
+//       crop: "ครอปภาพ",
+//       blurRect: "เบลอสี่เหลี่ยม",
+//       blurCircle: "เบลอวงกลม",
+//       mosaicRect: "โมเสกสี่เหลี่ยม",
+//       mosaicCircle: "โมเสกวงกลม"
+//     };
+//     const el = $("ieToolLabel");
+//     if (el) el.textContent = map[editorState.activeTool] || editorState.activeTool;
+//   }
+
+//   function setActiveButtonByTool(tool) {
+//     document.querySelectorAll(".ie-tool").forEach((btn) => {
+//       btn.classList.toggle("active", btn.getAttribute("data-tool") === tool);
+//     });
+//   }
+
+//   function setObjectEditableState(obj, editable) {
+//     if (!obj || obj === editorState.baseImage) return;
+
+//     obj.selectable = !!editable;
+//     obj.evented = true;
+//     obj.hasControls = true;
+//     obj.hasBorders = true;
+//     obj.lockRotation = false;
+//   }
+
+//   function setCanvasInteractivityForTool(tool) {
+//     const canvas = editorState.canvas;
+//     if (!canvas) return;
+
+//     canvas.isDrawingMode = false;
+//     canvas.selection = (tool === "select");
+//     canvas.defaultCursor = tool === "pan" ? "grab" : "default";
+
+//     canvas.forEachObject((obj) => {
+//       if (obj === editorState.baseImage) return;
+
+//       if (obj === editorState.cropRect) {
+//         obj.selectable = tool === "crop";
+//         obj.evented = tool === "crop";
+//         obj.hasControls = true;
+//         obj.hasBorders = true;
+//         obj.lockRotation = true;
+//         return;
+//       }
+
+//       setObjectEditableState(obj, tool === "select");
+//     });
+
+//     if (tool !== "crop") {
+//       removeCropRect();
+//     } else {
+//       ensureCropRect();
+//     }
+
+//     canvas.requestRenderAll();
+//   }
+
+//   function setActiveTool(tool) {
+//     editorState.activeTool = tool || "select";
+//     setActiveButtonByTool(editorState.activeTool);
+//     setToolLabel();
+//     setCanvasInteractivityForTool(editorState.activeTool);
+//   }
+
+//   function resetViewport() {
+//     const canvas = editorState.canvas;
+//     if (!canvas) return;
+
+//     editorState.zoom = 1;
+//     canvas.setViewportTransform([1, 0, 0, 1, 0, 0]);
+//     canvas.requestRenderAll();
+//     setZoomLabel();
+//   }
+
+//   function setZoom(nextZoom) {
+//     const canvas = editorState.canvas;
+//     if (!canvas) return;
+
+//     editorState.zoom = Math.max(0.2, Math.min(5, Number(nextZoom) || 1));
+
+//     let center;
+//     if (typeof canvas.getCenter === "function") {
+//       center = canvas.getCenter();
+//     } else {
+//       center = {
+//         left: canvas.getWidth() / 2,
+//         top: canvas.getHeight() / 2
+//       };
+//     }
+
+//     canvas.zoomToPoint(
+//       new fabric.Point(center.left, center.top),
+//       editorState.zoom
+//     );
+//     canvas.requestRenderAll();
+//     setZoomLabel();
+//   }
+
+//   function rotateBaseImage(delta) {
+//     const canvas = editorState.canvas;
+//     if (!canvas || !editorState.baseImage) return;
+
+//     editorState.baseImage.rotate((editorState.baseImage.angle || 0) + delta);
+//     canvas.requestRenderAll();
+//     pushHistorySnapshot();
+//   }
+
+//   function applyBrightness(value) {
+//     const canvas = editorState.canvas;
+//     const baseImage = editorState.baseImage;
+//     if (!canvas || !baseImage || !fabric.filters || !fabric.filters.Brightness) return;
+
+//     editorState.brightness = Number(value || 0);
+//     baseImage.filters = [
+//       new fabric.filters.Brightness({ brightness: editorState.brightness })
+//     ];
+//     baseImage.applyFilters();
+//     canvas.requestRenderAll();
+//   }
+
+//   function commitBrightnessToHistory() {
+//     pushHistorySnapshot();
+//   }
+
+//   function addTextbox() {
+//     const canvas = editorState.canvas;
+//     if (!canvas) return;
+
+//     const text = new fabric.IText("ข้อความ", {
+//       left: 80,
+//       top: 80,
+//       fill: editorState.strokeColor,
+//       fontSize: 28,
+//       fontFamily: "Kanit, Arial, sans-serif",
+//       editable: true,
+//       selectable: true,
+//       evented: true,
+//       hasControls: true,
+//       hasBorders: true,
+//       lockRotation: false
+//     });
+
+//     canvas.add(text);
+//     canvas.setActiveObject(text);
+//     canvas.requestRenderAll();
+//     pushHistorySnapshot();
+
+//     setActiveTool("select");
+//   }
+
+//   function deleteSelectedObject() {
+//     const canvas = editorState.canvas;
+//     if (!canvas) return;
+
+//     const active = canvas.getActiveObject();
+//     if (!active) return;
+
+//     if (active === editorState.baseImage) return;
+//     if (active === editorState.cropRect) return;
+
+//     canvas.remove(active);
+//     canvas.discardActiveObject();
+//     canvas.requestRenderAll();
+//     pushHistorySnapshot();
+//   }
+
+//   function createArrowGroup(x1, y1, x2, y2) {
+//     const line = new fabric.Line([x1, y1, x2, y2], {
+//       stroke: editorState.strokeColor,
+//       strokeWidth: editorState.strokeWidth,
+//       selectable: true,
+//       evented: true,
+//       objectCaching: false
+//     });
+
+//     const angle = Math.atan2(y2 - y1, x2 - x1) * 180 / Math.PI;
+
+//     const head = new fabric.Triangle({
+//       left: x2,
+//       top: y2,
+//       originX: "center",
+//       originY: "center",
+//       width: 18 + editorState.strokeWidth,
+//       height: 24 + editorState.strokeWidth,
+//       fill: editorState.strokeColor,
+//       angle: angle + 90,
+//       selectable: true,
+//       evented: true,
+//       objectCaching: false
+//     });
+
+//     return new fabric.Group([line, head], {
+//       selectable: true,
+//       evented: true,
+//       objectCaching: false,
+//       hasControls: true,
+//       hasBorders: true,
+//       lockRotation: false
+//     });
+//   }
+
+//   function ensureCropRect() {
+//     const canvas = editorState.canvas;
+//     if (!canvas || editorState.cropRect) return;
+
+//     const w = Math.max(80, Math.round(canvas.getWidth() * 0.7));
+//     const h = Math.max(80, Math.round(canvas.getHeight() * 0.7));
+
+//     editorState.cropRect = new fabric.Rect({
+//       left: Math.round((canvas.getWidth() - w) / 2),
+//       top: Math.round((canvas.getHeight() - h) / 2),
+//       width: w,
+//       height: h,
+//       fill: "rgba(37,99,235,0.10)",
+//       stroke: "#2563eb",
+//       strokeWidth: 2,
+//       strokeDashArray: [8, 6],
+//       cornerColor: "#2563eb",
+//       cornerStyle: "circle",
+//       transparentCorners: false,
+//       selectable: true,
+//       evented: true,
+//       hasRotatingPoint: false,
+//       lockRotation: true,
+//       objectCaching: false
+//     });
+
+//     editorState.cropRect.scaleX = 1;
+//     editorState.cropRect.scaleY = 1;
+
+//     canvas.add(editorState.cropRect);
+//     canvas.setActiveObject(editorState.cropRect);
+//     canvas.requestRenderAll();
+//   }
+
+//   function removeCropRect() {
+//     const canvas = editorState.canvas;
+//     if (!canvas || !editorState.cropRect) return;
+
+//     try {
+//       canvas.remove(editorState.cropRect);
+//     } catch (_) {}
+//     editorState.cropRect = null;
+//     canvas.requestRenderAll();
+//   }
+
+//   function clamp(n, min, max) {
+//     return Math.max(min, Math.min(max, n));
+//   }
+
+//   function dataURLToBlob(dataUrl) {
+//     const arr = dataUrl.split(",");
+//     const mime = arr[0].match(/:(.*?);/)[1];
+//     const bstr = atob(arr[1]);
+//     let n = bstr.length;
+//     const u8arr = new Uint8Array(n);
+
+//     while (n--) {
+//       u8arr[n] = bstr.charCodeAt(n);
+//     }
+
+//     return new Blob([u8arr], { type: mime });
+//   }
+
+//   async function blobToFile(blob, filename, mimeType = "image/jpeg") {
+//     return new File([blob], filename, {
+//       type: mimeType,
+//       lastModified: Date.now()
+//     });
+//   }
+
+//   function isEffectOverlay(obj) {
+//     return !!(obj && (obj.effectType === "blur" || obj.effectType === "mosaic"));
+//   }
+
+//   function getEffectShapeType(obj) {
+//     const tool = String(obj?.toolType || "");
+//     if (/Circle$/i.test(tool)) return "circle";
+//     return "rect";
+//   }
+
+//   function getCanvasSnapshotDataUrl(options = {}) {
+//     const canvas = editorState.canvas;
+//     if (!canvas) return "";
+
+//     const active = canvas.getActiveObject();
+//     if (active) canvas.discardActiveObject();
+
+//     const hidden = [];
+//     const rememberHidden = (obj) => {
+//       if (!obj || hidden.some((x) => x.obj === obj)) return;
+//       hidden.push({ obj, visible: obj.visible });
+//       obj.visible = false;
+//     };
+
+//     if (editorState.cropRect && canvas.getObjects().includes(editorState.cropRect)) {
+//       rememberHidden(editorState.cropRect);
+//     }
+
+//     if (options.excludeEffectObjects) {
+//       canvas.getObjects().forEach((obj) => {
+//         if (isEffectOverlay(obj)) rememberHidden(obj);
+//       });
+//     }
+
+//     if (Array.isArray(options.hideObjects)) {
+//       options.hideObjects.forEach((obj) => {
+//         if (obj && canvas.getObjects().includes(obj)) {
+//           rememberHidden(obj);
+//         }
+//       });
+//     }
+
+//     canvas.requestRenderAll();
+
+//     const dataUrl = canvas.toDataURL({
+//       format: options.format || "png",
+//       quality: options.quality == null ? 1 : options.quality,
+//       multiplier: options.multiplier || 1,
+//       enableRetinaScaling: false
+//     });
+
+//     hidden.forEach(({ obj, visible }) => {
+//       obj.visible = visible;
+//     });
+//     canvas.requestRenderAll();
+
+//     return dataUrl;
+//   }
+
+//   function createOffscreenCanvas(width, height) {
+//     const c = document.createElement("canvas");
+//     c.width = Math.max(1, Math.round(width));
+//     c.height = Math.max(1, Math.round(height));
+//     return c;
+//   }
+
+//   function applyMosaicToCanvasRegion(ctx, width, height, blockSize) {
+//     const size = Math.max(4, Math.round(blockSize || 12));
+//     const imageData = ctx.getImageData(0, 0, width, height);
+//     const data = imageData.data;
+
+//     for (let y = 0; y < height; y += size) {
+//       for (let x = 0; x < width; x += size) {
+//         let r = 0, g = 0, b = 0, a = 0, count = 0;
+
+//         for (let yy = y; yy < Math.min(y + size, height); yy++) {
+//           for (let xx = x; xx < Math.min(x + size, width); xx++) {
+//             const idx = (yy * width + xx) * 4;
+//             r += data[idx];
+//             g += data[idx + 1];
+//             b += data[idx + 2];
+//             a += data[idx + 3];
+//             count++;
+//           }
+//         }
+
+//         if (!count) continue;
+
+//         r = Math.round(r / count);
+//         g = Math.round(g / count);
+//         b = Math.round(b / count);
+//         a = Math.round(a / count);
+
+//         for (let yy = y; yy < Math.min(y + size, height); yy++) {
+//           for (let xx = x; xx < Math.min(x + size, width); xx++) {
+//             const idx = (yy * width + xx) * 4;
+//             data[idx] = r;
+//             data[idx + 1] = g;
+//             data[idx + 2] = b;
+//             data[idx + 3] = a;
+//           }
+//         }
+//       }
+//     }
+
+//     ctx.putImageData(imageData, 0, 0);
+//   }
+
+//   function maskCanvasToEllipse(ctx, width, height) {
+//     ctx.save();
+//     ctx.globalCompositeOperation = "destination-in";
+//     ctx.beginPath();
+//     ctx.ellipse(width / 2, height / 2, width / 2, height / 2, 0, 0, Math.PI * 2);
+//     ctx.closePath();
+//     ctx.fill();
+//     ctx.restore();
+//   }
+
+//   function normalizeRegionBounds(x, y, w, h) {
+//     return {
+//       sx: Math.round(x),
+//       sy: Math.round(y),
+//       sw: Math.max(1, Math.round(w)),
+//       sh: Math.max(1, Math.round(h))
+//     };
+//   }
+
+//   async function loadImageFromDataUrl(dataUrl) {
+//     return new Promise((resolve, reject) => {
+//       const im = new Image();
+//       im.onload = () => resolve(im);
+//       im.onerror = reject;
+//       im.src = dataUrl;
+//     });
+//   }
+
+//   async function buildEffectOverlayFromRegion(shapeType, effectType, x, y, w, h, opts = {}) {
+//     const snapshotUrl = getCanvasSnapshotDataUrl({
+//       format: "png",
+//       multiplier: 1,
+//       excludeEffectObjects: true,
+//       hideObjects: Array.isArray(opts.hideObjects) ? opts.hideObjects : []
+//     });
+
+//     if (!snapshotUrl) return null;
+
+//     const img = await loadImageFromDataUrl(snapshotUrl);
+
+//     const sx = clamp(Math.round(x), 0, img.width);
+//     const sy = clamp(Math.round(y), 0, img.height);
+//     const sw = clamp(Math.round(w), 1, img.width - sx);
+//     const sh = clamp(Math.round(h), 1, img.height - sy);
+
+//     const off = createOffscreenCanvas(sw, sh);
+//     const offCtx = off.getContext("2d");
+
+//     if (effectType === "blur") {
+//       offCtx.filter = "blur(10px)";
+//       offCtx.drawImage(img, sx, sy, sw, sh, 0, 0, sw, sh);
+//       offCtx.filter = "none";
+//     } else {
+//       offCtx.drawImage(img, sx, sy, sw, sh, 0, 0, sw, sh);
+//       applyMosaicToCanvasRegion(offCtx, sw, sh, 12);
+//     }
+
+//     if (shapeType === "circle") {
+//       maskCanvasToEllipse(offCtx, sw, sh);
+//     }
+
+//     const regionUrl = off.toDataURL("image/png");
+//     const regionImg = await loadImageFromDataUrl(regionUrl);
+
+//     const overlay = new fabric.Image(regionImg, {
+//       left: sx,
+//       top: sy,
+//       originX: "left",
+//       originY: "top",
+//       selectable: true,
+//       evented: true,
+//       objectCaching: false
+//     });
+
+//     overlay.set({
+//       effectType,
+//       toolType: shapeType === "circle"
+//         ? (effectType === "blur" ? "blurCircle" : "mosaicCircle")
+//         : (effectType === "blur" ? "blurRect" : "mosaicRect"),
+//       hasControls: true,
+//       hasBorders: true,
+//       lockRotation: true
+//     });
+
+//     overlay.scaleX = 1;
+//     overlay.scaleY = 1;
+
+//     return overlay;
+//   }
+
+//   function getObjectBounds(obj) {
+//     if (!obj) return null;
+
+//     if (obj.type === "rect") {
+//       return normalizeRegionBounds(
+//         obj.left,
+//         obj.top,
+//         obj.width * obj.scaleX,
+//         obj.height * obj.scaleY
+//       );
+//     }
+
+//     if (obj.type === "ellipse") {
+//       const rx = (obj.rx || 0) * (obj.scaleX || 1);
+//       const ry = (obj.ry || 0) * (obj.scaleY || 1);
+//       return normalizeRegionBounds(
+//         (obj.left || 0) - rx,
+//         (obj.top || 0) - ry,
+//         rx * 2,
+//         ry * 2
+//       );
+//     }
+
+//     if (isEffectOverlay(obj)) {
+//       return normalizeRegionBounds(
+//         obj.left || 0,
+//         obj.top || 0,
+//         (obj.width || 1) * (obj.scaleX || 1),
+//         (obj.height || 1) * (obj.scaleY || 1)
+//       );
+//     }
+
+//     return null;
+//   }
+
+//   async function regenerateEffectOverlayObject(overlay, pushHistoryAfter = true) {
+//     const canvas = editorState.canvas;
+//     if (!canvas || !overlay || !isEffectOverlay(overlay) || editorState.isRefreshingEffect) return;
+
+//     const bounds = getObjectBounds(overlay);
+//     if (!bounds) return;
+
+//     const shapeType = getEffectShapeType(overlay);
+//     const effectType = overlay.effectType || "blur";
+//     const idx = canvas.getObjects().indexOf(overlay);
+
+//     try {
+//       editorState.isRefreshingEffect = true;
+
+//       const replacement = await buildEffectOverlayFromRegion(
+//         shapeType,
+//         effectType,
+//         bounds.sx,
+//         bounds.sy,
+//         bounds.sw,
+//         bounds.sh,
+//         { hideObjects: [overlay] }
+//       );
+
+//       if (!replacement) return;
+
+//       canvas.remove(overlay);
+//       if (idx >= 0 && typeof canvas.insertAt === "function") {
+//         canvas.insertAt(replacement, idx, false);
+//       } else {
+//         canvas.add(replacement);
+//       }
+
+//       canvas.setActiveObject(replacement);
+//       canvas.requestRenderAll();
+
+//       if (pushHistoryAfter) pushHistorySnapshot();
+//     } finally {
+//       editorState.isRefreshingEffect = false;
+//     }
+//   }
+
+//   async function applyCrop() {
+//     const canvas = editorState.canvas;
+//     const crop = editorState.cropRect;
+//     if (!canvas || !crop || editorState.isApplyingCrop) return;
+
+//     try {
+//       editorState.isApplyingCrop = true;
+
+//       const dataUrl = getCanvasSnapshotDataUrl({
+//         format: "png",
+//         multiplier: 1
+//       });
+
+//       const img = await loadImageFromDataUrl(dataUrl);
+
+//       const left = clamp(Math.round(crop.left), 0, img.width - 1);
+//       const top = clamp(Math.round(crop.top), 0, img.height - 1);
+//       const width = clamp(Math.round(crop.width * crop.scaleX), 1, img.width - left);
+//       const height = clamp(Math.round(crop.height * crop.scaleY), 1, img.height - top);
+
+//       const off = createOffscreenCanvas(width, height);
+//       const ctx = off.getContext("2d");
+//       ctx.drawImage(img, left, top, width, height, 0, 0, width, height);
+
+//       const blob = dataURLToBlob(off.toDataURL("image/png"));
+//       const baseName = (editorState.originalFile?.name || "edited-image").replace(/\.[^.]+$/, "");
+//       const croppedFile = await blobToFile(blob, `${baseName}_cropped.png`, "image/png");
+
+//       editorState.originalFile = croppedFile;
+
+//       destroyCanvas();
+//       revokeOriginalUrl();
+//       await loadImageToCanvas(croppedFile);
+
+//       resetViewport();
+//       if (editorState.canvas) {
+//         editorState.canvas.calcOffset();
+//         editorState.canvas.requestRenderAll();
+//       }
+
+//       setActiveTool("select");
+//       pushHistorySnapshot(true);
+//     } catch (err) {
+//       console.error(err);
+//       await showMessage("error", "ครอปภาพไม่สำเร็จ", err?.message || String(err));
+//     } finally {
+//       editorState.isApplyingCrop = false;
+//     }
+//   }
+
+//   async function applyAreaEffect(effectType, shapeType) {
+//     const canvas = editorState.canvas;
+//     if (!canvas) return;
+
+//     const active = canvas.getActiveObject();
+//     if (!active || active === editorState.baseImage) {
+//       await showMessage("info", "ยังไม่ได้เลือกพื้นที่", "กรุณาวาดพื้นที่ก่อน แล้วจึงกดใช้เอฟเฟกต์");
+//       return;
+//     }
+
+//     const bounds = getObjectBounds(active);
+//     if (!bounds) {
+//       await showMessage("warning", "รูปทรงไม่ถูกต้อง", "กรุณาเลือกสี่เหลี่ยมหรือวงกลมสำหรับใช้เอฟเฟกต์นี้");
+//       return;
+//     }
+
+//     try {
+//       const overlay = await buildEffectOverlayFromRegion(
+//         shapeType,
+//         effectType,
+//         bounds.sx,
+//         bounds.sy,
+//         bounds.sw,
+//         bounds.sh,
+//         { hideObjects: [active] }
+//       );
+
+//       if (!overlay) throw new Error("สร้างเอฟเฟกต์ไม่สำเร็จ");
+
+//       canvas.remove(active);
+//       canvas.add(overlay);
+//       canvas.setActiveObject(overlay);
+//       canvas.requestRenderAll();
+//       pushHistorySnapshot();
+
+//       setActiveTool("select");
+//     } catch (err) {
+//       console.error(err);
+//       await showMessage("error", "ใช้เอฟเฟกต์ไม่สำเร็จ", err?.message || String(err));
+//     }
+//   }
+
+//   function collectCanvasState() {
+//     const canvas = editorState.canvas;
+//     if (!canvas) return null;
+
+//     const cropWasVisible = !!editorState.cropRect && editorState.cropRect.visible;
+//     if (editorState.cropRect) {
+//       editorState.cropRect.visible = false;
+//       canvas.requestRenderAll();
+//     }
+
+//     const json = canvas.toDatalessJSON(["toolType", "effectType"]);
+
+//     if (editorState.cropRect) {
+//       editorState.cropRect.visible = cropWasVisible;
+//       canvas.requestRenderAll();
+//     }
+
+//     return {
+//       json,
+//       zoom: editorState.zoom,
+//       brightness: editorState.brightness
+//     };
+//   }
+
+//   function pushHistorySnapshot(force = false) {
+//     const canvas = editorState.canvas;
+//     if (!canvas || editorState.restoringHistory || editorState.isRefreshingEffect) return;
+
+//     const snapshot = collectCanvasState();
+//     if (!snapshot) return;
+
+//     const serialized = JSON.stringify(snapshot);
+//     const last = editorState.history[editorState.historyIndex];
+//     if (!force && last && JSON.stringify(last) === serialized) {
+//       return;
+//     }
+
+//     if (editorState.historyIndex < editorState.history.length - 1) {
+//       editorState.history = editorState.history.slice(0, editorState.historyIndex + 1);
+//     }
+
+//     editorState.history.push(snapshot);
+//     editorState.historyIndex = editorState.history.length - 1;
+
+//     if (editorState.history.length > 40) {
+//       editorState.history.shift();
+//       editorState.historyIndex = editorState.history.length - 1;
+//     }
+
+//     updateUndoRedoState();
+//   }
+
+//   async function restoreHistoryAt(index) {
+//     const canvas = editorState.canvas;
+//     if (!canvas) return;
+//     if (index < 0 || index >= editorState.history.length) return;
+
+//     const snapshot = editorState.history[index];
+//     if (!snapshot) return;
+
+//     editorState.restoringHistory = true;
+//     try {
+//       removeCropRect();
+
+//       await new Promise((resolve) => {
+//         canvas.loadFromJSON(snapshot.json, () => {
+//           canvas.renderAll();
+//           resolve();
+//         });
+//       });
+
+//       const objs = canvas.getObjects();
+//       editorState.baseImage = objs.length ? objs[0] : null;
+//       editorState.historyIndex = index;
+//       editorState.zoom = snapshot.zoom || 1;
+//       editorState.brightness = Number(snapshot.brightness || 0);
+
+//       const brightEl = $("ieBrightness");
+//       if (brightEl) brightEl.value = String(editorState.brightness);
+
+//       resetViewport();
+//       if (editorState.zoom !== 1) {
+//         setZoom(editorState.zoom);
+//       } else {
+//         setZoomLabel();
+//       }
+
+//       if (editorState.canvas) {
+//         editorState.canvas.calcOffset();
+//         editorState.canvas.requestRenderAll();
+//       }
+
+//       setActiveTool("select");
+//       updateUndoRedoState();
+//     } finally {
+//       editorState.restoringHistory = false;
+//     }
+//   }
+
+//   function undoHistory() {
+//     if (editorState.historyIndex <= 0) return;
+//     restoreHistoryAt(editorState.historyIndex - 1);
+//   }
+
+//   function redoHistory() {
+//     if (editorState.historyIndex >= editorState.history.length - 1) return;
+//     restoreHistoryAt(editorState.historyIndex + 1);
+//   }
+
+//   function updateUndoRedoState() {
+//     const undoBtn = $("ieUndoBtn");
+//     const redoBtn = $("ieRedoBtn");
+
+//     if (undoBtn) undoBtn.disabled = !(editorState.historyIndex > 0);
+//     if (redoBtn) redoBtn.disabled = !(editorState.historyIndex < editorState.history.length - 1);
+//   }
+
+//   function bindObjectEvents() {
+//     const canvas = editorState.canvas;
+//     if (!canvas || canvas.__imgEditorObjectEventsBound) return;
+//     canvas.__imgEditorObjectEventsBound = true;
+
+//     canvas.on("object:modified", async (evt) => {
+//       if (editorState.restoringHistory) return;
+//       const obj = evt?.target;
+//       if (!obj) return;
+
+//       if (isEffectOverlay(obj)) {
+//         await regenerateEffectOverlayObject(obj, true);
+//         return;
+//       }
+
+//       pushHistorySnapshot();
+//     });
+//   }
+
+//   function getPointerFromEvent(canvas, evt) {
+//     if (typeof canvas.getPointer === "function") {
+//       return canvas.getPointer(evt);
+//     }
+//     const rect = canvas.upperCanvasEl.getBoundingClientRect();
+//     return {
+//       x: evt.clientX - rect.left,
+//       y: evt.clientY - rect.top
+//     };
+//   }
+
+//   function bindPointerDrawing() {
+//     const canvas = editorState.canvas;
+//     if (!canvas || canvas.__imgEditorPointerBound) return;
+//     canvas.__imgEditorPointerBound = true;
+
+//     let startX = 0;
+//     let startY = 0;
+//     let drawingObject = null;
+
+//     canvas.on("mouse:down", function (opt) {
+//       const evt = opt.e;
+//       if (!evt) return;
+
+//       if (editorState.activeTool === "pan") {
+//         editorState.isPanning = true;
+//         canvas.defaultCursor = "grabbing";
+//         this.selection = false;
+//         this.lastPosX = evt.clientX;
+//         this.lastPosY = evt.clientY;
+//         return;
+//       }
+
+//       if (editorState.activeTool === "text") {
+//         addTextbox();
+//         return;
+//       }
+
+//       if (!["line", "arrow", "rect", "circle", "blurRect", "blurCircle", "mosaicRect", "mosaicCircle"].includes(editorState.activeTool)) {
+//         return;
+//       }
+
+//       const pointer = getPointerFromEvent(canvas, evt);
+//       startX = pointer.x;
+//       startY = pointer.y;
+
+//       const tool = editorState.activeTool;
+
+//       if (tool === "line" || tool === "arrow") {
+//         drawingObject = new fabric.Line([startX, startY, startX, startY], {
+//           stroke: editorState.strokeColor,
+//           strokeWidth: editorState.strokeWidth,
+//           selectable: false,
+//           evented: false,
+//           objectCaching: false,
+//           hasControls: true,
+//           hasBorders: true,
+//           lockRotation: false
+//         });
+//         editorState.tempDraft = drawingObject;
+//         canvas.add(drawingObject);
+//       }
+
+//       if (tool === "rect" || tool === "blurRect" || tool === "mosaicRect") {
+//         drawingObject = new fabric.Rect({
+//           left: startX,
+//           top: startY,
+//           width: 1,
+//           height: 1,
+//           originX: "left",
+//           originY: "top",
+//           fill: ["blurRect", "mosaicRect"].includes(tool) ? "rgba(37,99,235,0.08)" : "transparent",
+//           stroke: editorState.strokeColor,
+//           strokeWidth: editorState.strokeWidth,
+//           selectable: false,
+//           evented: false,
+//           objectCaching: false,
+//           hasControls: true,
+//           hasBorders: true,
+//           lockRotation: false
+//         });
+//         editorState.tempDraft = drawingObject;
+//         canvas.add(drawingObject);
+//       }
+
+//       if (tool === "circle" || tool === "blurCircle" || tool === "mosaicCircle") {
+//         drawingObject = new fabric.Ellipse({
+//           left: startX,
+//           top: startY,
+//           rx: 1,
+//           ry: 1,
+//           originX: "center",
+//           originY: "center",
+//           fill: ["blurCircle", "mosaicCircle"].includes(tool) ? "rgba(37,99,235,0.08)" : "transparent",
+//           stroke: editorState.strokeColor,
+//           strokeWidth: editorState.strokeWidth,
+//           selectable: false,
+//           evented: false,
+//           objectCaching: false,
+//           hasControls: true,
+//           hasBorders: true,
+//           lockRotation: false
+//         });
+//         editorState.tempDraft = drawingObject;
+//         canvas.add(drawingObject);
+//       }
+//     });
+
+//     canvas.on("mouse:move", function (opt) {
+//       const evt = opt.e;
+//       if (!evt) return;
+
+//       if (editorState.activeTool === "pan" && editorState.isPanning) {
+//         const vpt = this.viewportTransform;
+//         vpt[4] += evt.clientX - this.lastPosX;
+//         vpt[5] += evt.clientY - this.lastPosY;
+//         this.requestRenderAll();
+//         this.lastPosX = evt.clientX;
+//         this.lastPosY = evt.clientY;
+//         return;
+//       }
+
+//       const draft = editorState.tempDraft;
+//       if (!draft) return;
+
+//       const pointer = getPointerFromEvent(canvas, evt);
+//       const tool = editorState.activeTool;
+
+//       if (tool === "line" || tool === "arrow") {
+//         draft.set({ x2: pointer.x, y2: pointer.y });
+//       }
+
+//       if (tool === "rect" || tool === "blurRect" || tool === "mosaicRect") {
+//         draft.set({
+//           left: Math.min(startX, pointer.x),
+//           top: Math.min(startY, pointer.y),
+//           width: Math.abs(pointer.x - startX),
+//           height: Math.abs(pointer.y - startY)
+//         });
+//       }
+
+//       if (tool === "circle" || tool === "blurCircle" || tool === "mosaicCircle") {
+//         draft.set({
+//           left: (startX + pointer.x) / 2,
+//           top: (startY + pointer.y) / 2,
+//           rx: Math.abs(pointer.x - startX) / 2,
+//           ry: Math.abs(pointer.y - startY) / 2
+//         });
+//       }
+
+//       canvas.requestRenderAll();
+//     });
+
+//     canvas.on("mouse:up", async function () {
+//       if (editorState.activeTool === "pan") {
+//         editorState.isPanning = false;
+//         canvas.defaultCursor = "grab";
+//         return;
+//       }
+
+//       const draft = editorState.tempDraft;
+//       const tool = editorState.activeTool;
+
+//       if (!draft) return;
+
+//       editorState.tempDraft = null;
+
+//       if (tool === "arrow") {
+//         const arrow = createArrowGroup(draft.x1, draft.y1, draft.x2, draft.y2);
+//         canvas.remove(draft);
+//         canvas.add(arrow);
+//         canvas.setActiveObject(arrow);
+//         canvas.requestRenderAll();
+//         pushHistorySnapshot();
+//         setActiveTool("select");
+//         return;
+//       }
+
+//       if (tool === "line" || tool === "rect" || tool === "circle") {
+//         draft.set({
+//           selectable: true,
+//           evented: true,
+//           hasControls: true,
+//           hasBorders: true,
+//           lockRotation: false
+//         });
+//         canvas.setActiveObject(draft);
+//         canvas.requestRenderAll();
+//         pushHistorySnapshot();
+//         setActiveTool("select");
+//         return;
+//       }
+
+//       if (tool === "blurRect") {
+//         canvas.setActiveObject(draft);
+//         await applyAreaEffect("blur", "rect");
+//         return;
+//       }
+
+//       if (tool === "blurCircle") {
+//         canvas.setActiveObject(draft);
+//         await applyAreaEffect("blur", "circle");
+//         return;
+//       }
+
+//       if (tool === "mosaicRect") {
+//         canvas.setActiveObject(draft);
+//         await applyAreaEffect("mosaic", "rect");
+//         return;
+//       }
+
+//       if (tool === "mosaicCircle") {
+//         canvas.setActiveObject(draft);
+//         await applyAreaEffect("mosaic", "circle");
+//         return;
+//       }
+//     });
+
+//     canvas.on("mouse:wheel", function (opt) {
+//       const evt = opt.e;
+//       if (!evt) return;
+//       evt.preventDefault();
+//       evt.stopPropagation();
+
+//       let zoom = canvas.getZoom();
+//       zoom *= 0.999 ** evt.deltaY;
+//       zoom = Math.max(0.2, Math.min(5, zoom));
+//       editorState.zoom = zoom;
+//       canvas.zoomToPoint({ x: evt.offsetX, y: evt.offsetY }, zoom);
+//       setZoomLabel();
+//     });
+//   }
+
+//   async function loadImageToCanvas(file) {
+//     const url = URL.createObjectURL(file);
+//     editorState.originalUrl = url;
+
+//     const wrap = editorState.canvasEl.parentElement;
+//     if (!wrap) throw new Error("ไม่พบพื้นที่แสดง canvas");
+
+//     const maxW = Math.max(640, Math.floor(wrap.clientWidth - 20));
+//     const maxH = Math.max(420, Math.floor(wrap.clientHeight - 20));
+
+//     if (editorState.canvas) {
+//       try { editorState.canvas.dispose(); } catch (_) {}
+//       editorState.canvas = null;
+//     }
+
+//     const canvas = new fabric.Canvas(editorState.canvasEl, {
+//       preserveObjectStacking: true,
+//       selection: true,
+//       renderOnAddRemove: true
+//     });
+
+//     editorState.canvas = canvas;
+
+//     const imgEl = await new Promise((resolve, reject) => {
+//       const img = new Image();
+//       img.onload = () => resolve(img);
+//       img.onerror = () => reject(new Error("โหลดรูปภาพไม่สำเร็จ"));
+//       img.decoding = "async";
+//       img.src = url;
+//     });
+
+//     const imgW = imgEl.naturalWidth || imgEl.width;
+//     const imgH = imgEl.naturalHeight || imgEl.height;
+
+//     if (!imgW || !imgH) {
+//       throw new Error("ไม่สามารถอ่านขนาดรูปภาพได้");
+//     }
+
+//     const scale = Math.min(maxW / imgW, maxH / imgH, 1);
+//     const canvasW = Math.max(320, Math.round(imgW * scale));
+//     const canvasH = Math.max(240, Math.round(imgH * scale));
+
+//     if (typeof canvas.setWidth === "function" && typeof canvas.setHeight === "function") {
+//       canvas.setWidth(canvasW);
+//       canvas.setHeight(canvasH);
+//     } else if (typeof canvas.setDimensions === "function") {
+//       canvas.setDimensions({ width: canvasW, height: canvasH });
+//     } else {
+//       editorState.canvasEl.width = canvasW;
+//       editorState.canvasEl.height = canvasH;
+//     }
+
+//     if (canvas.lowerCanvasEl) {
+//       canvas.lowerCanvasEl.style.width = canvasW + "px";
+//       canvas.lowerCanvasEl.style.height = canvasH + "px";
+//     }
+
+//     if (canvas.upperCanvasEl) {
+//       canvas.upperCanvasEl.style.width = canvasW + "px";
+//       canvas.upperCanvasEl.style.height = canvasH + "px";
+//     }
+
+//     if (canvas.wrapperEl) {
+//       canvas.wrapperEl.style.width = canvasW + "px";
+//       canvas.wrapperEl.style.height = canvasH + "px";
+//     }
+
+//     const baseImage = new fabric.Image(imgEl, {
+//       left: canvasW / 2,
+//       top: canvasH / 2,
+//       originX: "center",
+//       originY: "center",
+//       selectable: false,
+//       evented: false,
+//       objectCaching: false
+//     });
+
+//     baseImage.scaleX = scale;
+//     baseImage.scaleY = scale;
+
+//     editorState.baseImage = baseImage;
+
+//     canvas.clear();
+//     canvas.add(baseImage);
+
+//     if (typeof baseImage.moveTo === "function") {
+//       baseImage.moveTo(0);
+//     } else if (typeof canvas.sendToBack === "function") {
+//       canvas.sendToBack(baseImage);
+//     } else if (typeof canvas.sendObjectToBack === "function") {
+//       canvas.sendObjectToBack(baseImage);
+//     }
+
+//     bindObjectEvents();
+//     bindPointerDrawing();
+
+//     resetViewport();
+//     if (typeof canvas.calcOffset === "function") {
+//       canvas.calcOffset();
+//     }
+//     canvas.requestRenderAll();
+//   }
+
+//   async function exportEditedFile() {
+//     const canvas = editorState.canvas;
+//     if (!canvas) {
+//       throw new Error("ยังไม่มี canvas สำหรับ export");
+//     }
+
+//     removeCropRect();
+
+//     const dataUrl = canvas.toDataURL({
+//       format: "jpeg",
+//       quality: 0.92,
+//       multiplier: 1,
+//       enableRetinaScaling: false
+//     });
+
+//     const blob = dataURLToBlob(dataUrl);
+//     const filenameBase = (editorState.originalFile?.name || "edited-image").replace(/\.[^.]+$/, "");
+//     const outFile = await blobToFile(blob, `${filenameBase}_edited.jpg`, "image/jpeg");
+
+//     return {
+//       ok: true,
+//       file: outFile,
+//       blob,
+//       dataUrl,
+//       filename: outFile.name,
+//       mimeType: outFile.type
+//     };
+//   }
+
+//   function getToolButton(toolName) {
+//     return document.querySelector(`.ie-tool[data-tool="${toolName}"]`);
+//   }
+
+//   function getFieldByInputId(inputId) {
+//     const input = $(inputId);
+//     return input ? input.closest(".ieField") : null;
+//   }
+
+//   function ensureBtn(container, id, text, className = "btn ghost", attrs = {}) {
+//     let btn = $(id);
+//     if (btn) {
+//       if (text != null) btn.textContent = text;
+//       if (className) btn.className = className;
+//       Object.keys(attrs || {}).forEach((k) => {
+//         btn.setAttribute(k, attrs[k]);
+//       });
+//       return btn;
+//     }
+
+//     btn = document.createElement("button");
+//     btn.type = "button";
+//     btn.id = id;
+//     btn.className = className;
+//     btn.textContent = text || "";
+
+//     Object.keys(attrs || {}).forEach((k) => {
+//       btn.setAttribute(k, attrs[k]);
+//     });
+
+//     container.appendChild(btn);
+//     return btn;
+//   }
+
+//   function ensureToolBtn(container, id, text, toolName) {
+//     const btn = ensureBtn(container, id, text, "btn ghost ie-tool", { "data-tool": toolName });
+//     btn.classList.add("ie-tool");
+//     btn.setAttribute("data-tool", toolName);
+//     return btn;
+//   }
+
+//   function removeLegacyToolbarDividers(toolbar) {
+//     toolbar.querySelectorAll(".ieDivider").forEach((el) => el.remove());
+//   }
+
+//   function createToolbarSection(title, extraClass = "") {
+//     const section = document.createElement("section");
+//     section.className = `ieToolbarSection ${extraClass}`.trim();
+
+//     const head = document.createElement("div");
+//     head.className = "ieToolbarTitle";
+//     head.textContent = title;
+
+//     const grid = document.createElement("div");
+//     grid.className = "ieButtonGrid";
+
+//     section.appendChild(head);
+//     section.appendChild(grid);
+
+//     return { section, grid };
+//   }
+
+//   function appendNodes(container, nodes) {
+//     (Array.isArray(nodes) ? nodes : []).forEach((node) => {
+//       if (!node) return;
+//       container.appendChild(node);
+//     });
+//   }
+
+//   function ensureToolbarResponsiveLabels() {
+//     const compact = window.matchMedia("(max-width: 560px)").matches;
+//     const compact2 = window.matchMedia("(max-width: 390px)").matches;
+
+//     const labels = {
+//       ieSelectBtn: compact2 ? "เลือก" : "เลือก",
+//       iePanBtn: compact2 ? "เลื่อน" : (compact ? "เลื่อน" : "เลื่อนภาพ"),
+//       ieTextBtn: compact2 ? "ข้อความ" : "ข้อความ",
+//       ieCropToolBtn: compact2 ? "ครอป" : "ครอป",
+
+//       ieLineBtn: compact2 ? "เส้น" : (compact ? "เส้น" : "เส้นตรง"),
+//       ieArrowBtn: compact2 ? "ลูกศร" : "ลูกศร",
+//       ieRectBtn: compact2 ? "กรอบ" : (compact ? "กรอบ" : "สี่เหลี่ยม"),
+//       ieCircleBtn: compact2 ? "วง" : (compact ? "วงกลม" : "วงกลม"),
+
+//       ieBlurRectBtn: compact2 ? "เบลอสี่" : (compact ? "เบลอสี่" : "เบลอสี่เหลี่ยม"),
+//       ieBlurCircleBtn: compact2 ? "เบลอวง" : (compact ? "เบลอวง" : "เบลอวงกลม"),
+//       ieMosaicRectBtn: compact2 ? "โมเสกสี่" : (compact ? "โมเสกสี่" : "โมเสกสี่เหลี่ยม"),
+//       ieMosaicCircleBtn: compact2 ? "โมเสกวง" : (compact ? "โมเสกวง" : "โมเสกวงกลม"),
+
+//       ieZoomOutBtn: compact2 ? "ซูม-" : "ซูมออก",
+//       ieZoomResetBtn: compact2 ? "100%" : (compact ? "100%" : "รีเซ็ตซูม"),
+//       ieZoomInBtn: compact2 ? "ซูม+" : "ซูมเข้า",
+//       ieFitBtn: compact2 ? "พอดี" : (compact ? "พอดี" : "พอดีจอ"),
+
+//       ieRotateLeftBtn: compact2 ? "ซ้าย" : (compact ? "หมุนซ้าย" : "หมุนซ้าย"),
+//       ieRotateRightBtn: compact2 ? "ขวา" : (compact ? "หมุนขวา" : "หมุนขวา"),
+
+//       ieUndoBtn: compact2 ? "ย้อน" : (compact ? "ย้อน" : "ย้อนกลับ"),
+//       ieRedoBtn: compact2 ? "ทำซ้ำ" : "ทำซ้ำ",
+//       ieDeleteBtn: compact2 ? "ลบ" : (compact ? "ลบ" : "ลบที่เลือก"),
+//       ieApplyCropBtn: compact2 ? "ใช้" : (compact ? "ใช้ครอป" : "ใช้ครอป")
+//     };
+
+//     Object.keys(labels).forEach((id) => {
+//       const el = $(id);
+//       if (el) el.textContent = labels[id];
+//     });
+//   }
+
+//   function rebuildToolbarLayout(toolbar) {
+//     if (!toolbar) return;
+
+//     removeLegacyToolbarDividers(toolbar);
+
+//     const selectBtn = getToolButton("select");
+//     const panBtn = getToolButton("pan");
+//     const textBtn = getToolButton("text");
+//     const cropBtn = $("ieCropToolBtn");
+
+//     const lineBtn = getToolButton("line");
+//     const arrowBtn = getToolButton("arrow");
+//     const rectBtn = getToolButton("rect");
+//     const circleBtn = getToolButton("circle");
+
+//     const blurRectBtn = $("ieBlurRectBtn");
+//     const blurCircleBtn = $("ieBlurCircleBtn");
+//     const mosaicRectBtn = $("ieMosaicRectBtn");
+//     const mosaicCircleBtn = $("ieMosaicCircleBtn");
+
+//     const zoomOutBtn = $("ieZoomOutBtn");
+//     const zoomResetBtn = $("ieZoomResetBtn");
+//     const zoomInBtn = $("ieZoomInBtn");
+//     const fitBtn = $("ieFitBtn");
+
+//     const rotateLeftBtn = $("ieRotateLeftBtn");
+//     const rotateRightBtn = $("ieRotateRightBtn");
+
+//     const undoBtn = $("ieUndoBtn");
+//     const redoBtn = $("ieRedoBtn");
+//     const deleteBtn = $("ieDeleteBtn");
+//     const applyCropBtn = $("ieApplyCropBtn");
+
+//     const colorField = getFieldByInputId("ieColorPicker");
+//     const strokeField = getFieldByInputId("ieStrokeWidth");
+//     const brightnessField = getFieldByInputId("ieBrightness");
+
+//     if (selectBtn) selectBtn.id = "ieSelectBtn";
+//     if (panBtn) panBtn.id = "iePanBtn";
+//     if (textBtn) textBtn.id = "ieTextBtn";
+//     if (lineBtn) lineBtn.id = "ieLineBtn";
+//     if (arrowBtn) arrowBtn.id = "ieArrowBtn";
+//     if (rectBtn) rectBtn.id = "ieRectBtn";
+//     if (circleBtn) circleBtn.id = "ieCircleBtn";
+
+//     toolbar.innerHTML = "";
+
+//     const gridRoot = document.createElement("div");
+//     gridRoot.className = "imgEditorToolbarGrid ieToolbarGridEnhanced";
+
+//     const secPrimary = createToolbarSection("หลัก", "ieSectionPrimary");
+//     secPrimary.grid.classList.add("ieButtonGridTools");
+//     appendNodes(secPrimary.grid, [selectBtn, panBtn, textBtn, cropBtn]);
+
+//     const secDraw = createToolbarSection("วาด", "ieSectionDraw");
+//     secDraw.grid.classList.add("ieButtonGridTools");
+//     appendNodes(secDraw.grid, [lineBtn, arrowBtn, rectBtn, circleBtn]);
+
+//     const secMask = createToolbarSection("เบลอ/โมเสก", "ieSectionMask");
+//     secMask.grid.classList.add("ieButtonGridEffects");
+//     appendNodes(secMask.grid, [blurRectBtn, blurCircleBtn, mosaicRectBtn, mosaicCircleBtn]);
+
+//     const secView = createToolbarSection("มุมมอง", "ieSectionView");
+//     secView.grid.classList.add("ieButtonGridView");
+//     appendNodes(secView.grid, [zoomOutBtn, zoomResetBtn, zoomInBtn, fitBtn]);
+
+//     const secManage = createToolbarSection("จัดการ", "ieSectionManage");
+//     secManage.grid.classList.add("ieButtonGridView");
+//     appendNodes(secManage.grid, [undoBtn, redoBtn, deleteBtn, applyCropBtn, rotateLeftBtn, rotateRightBtn]);
+
+//     const secControl = createToolbarSection("ตั้งค่า", "ieSectionControl");
+//     secControl.grid.classList.add("ieControlGrid");
+//     appendNodes(secControl.grid, [colorField, strokeField, brightnessField]);
+
+//     [
+//       secPrimary.section,
+//       secDraw.section,
+//       secMask.section,
+//       secView.section,
+//       secManage.section,
+//       secControl.section
+//     ].forEach((section) => gridRoot.appendChild(section));
+
+//     toolbar.appendChild(gridRoot);
+//   }
+
+//   function ensureFooterControls() {
+//     const footerActions = document.querySelector(".imgEditorActions");
+//     if (!footerActions) return;
+
+//     ensureBtn(footerActions, "ieFitBtn", "พอดีจอ");
+//   }
+
+//   function ensureCoreEditorButtons() {
+//     const toolbar = document.querySelector(".imgEditorToolbar");
+//     if (!toolbar) return;
+
+//     ensureBtn(toolbar, "ieUndoBtn", "ย้อนกลับ");
+//     ensureBtn(toolbar, "ieRedoBtn", "ทำซ้ำ");
+//     ensureBtn(toolbar, "ieDeleteBtn", "ลบที่เลือก");
+
+//     ensureToolBtn(toolbar, "ieCropToolBtn", "ครอป", "crop");
+//     ensureBtn(toolbar, "ieApplyCropBtn", "ใช้ครอป");
+
+//     ensureToolBtn(toolbar, "ieBlurRectBtn", "เบลอสี่เหลี่ยม", "blurRect");
+//     ensureToolBtn(toolbar, "ieBlurCircleBtn", "เบลอวงกลม", "blurCircle");
+//     ensureToolBtn(toolbar, "ieMosaicRectBtn", "โมเสกสี่เหลี่ยม", "mosaicRect");
+//     ensureToolBtn(toolbar, "ieMosaicCircleBtn", "โมเสกวงกลม", "mosaicCircle");
+//   }
+
+//   function ensureExtraControls() {
+//     const toolbar = document.querySelector(".imgEditorToolbar");
+//     if (!toolbar) return;
+
+//     ensureCoreEditorButtons();
+//     ensureFooterControls();
+//     rebuildToolbarLayout(toolbar);
+//     ensureToolbarResponsiveLabels();
+//   }
+
+//   function bindResponsiveToolbarLabelOnce() {
+//     if (window.__imgEditorResponsiveLabelBound) return;
+//     window.__imgEditorResponsiveLabelBound = true;
+
+//     const mq1 = window.matchMedia("(max-width: 560px)");
+//     const mq2 = window.matchMedia("(max-width: 390px)");
+
+//     const apply = () => {
+//       try {
+//         ensureToolbarResponsiveLabels();
+//       } catch (_) {}
+//     };
+
+//     [mq1, mq2].forEach((mq) => {
+//       if (typeof mq.addEventListener === "function") {
+//         mq.addEventListener("change", apply);
+//       } else if (typeof mq.addListener === "function") {
+//         mq.addListener(apply);
+//       }
+//     });
+
+//     window.addEventListener("resize", apply, { passive: true });
+//   }
+
+//   function bindToolButtons() {
+//     document.querySelectorAll(".ie-tool").forEach((btn) => {
+//       if (btn.dataset.boundClick === "1") return;
+//       btn.dataset.boundClick = "1";
+
+//       btn.addEventListener("click", () => {
+//         const tool = btn.getAttribute("data-tool") || "select";
+//         setActiveTool(tool);
+//       });
+//     });
+//   }
+
+//   function bindUiOnce() {
+//     if (window.__imgEditorBoundOnce) return;
+//     window.__imgEditorBoundOnce = true;
+
+//     ensureExtraControls();
+//     bindResponsiveToolbarLabelOnce();
+
+//     $("imgEditorCloseBtn")?.addEventListener("click", () => closeEditor({ ok: false }));
+//     $("ieCancelBtn")?.addEventListener("click", () => closeEditor({ ok: false }));
+
+//     $("ieSaveBtn")?.addEventListener("click", async () => {
+//       try {
+//         const result = await exportEditedFile();
+//         closeEditor(result);
+//       } catch (err) {
+//         console.error(err);
+//         showMessage("error", "บันทึกภาพไม่สำเร็จ", err?.message || String(err));
+//       }
+//     });
+
+//     $("ieZoomInBtn")?.addEventListener("click", () => setZoom(editorState.zoom + 0.1));
+//     $("ieZoomOutBtn")?.addEventListener("click", () => setZoom(editorState.zoom - 0.1));
+//     $("ieZoomResetBtn")?.addEventListener("click", () => resetViewport());
+//     $("ieFitBtn")?.addEventListener("click", () => resetViewport());
+
+//     $("ieRotateLeftBtn")?.addEventListener("click", () => rotateBaseImage(-90));
+//     $("ieRotateRightBtn")?.addEventListener("click", () => rotateBaseImage(90));
+
+//     $("ieColorPicker")?.addEventListener("input", (e) => {
+//       editorState.strokeColor = e.target.value || "#dc2626";
+//     });
+
+//     $("ieStrokeWidth")?.addEventListener("input", (e) => {
+//       editorState.strokeWidth = Number(e.target.value || 3);
+//     });
+
+//     $("ieBrightness")?.addEventListener("input", (e) => {
+//       applyBrightness(e.target.value);
+//     });
+
+//     $("ieBrightness")?.addEventListener("change", () => {
+//       commitBrightnessToHistory();
+//     });
+
+//     $("ieResetBtn")?.addEventListener("click", async () => {
+//       if (!editorState.originalFile) return;
+//       try {
+//         destroyCanvas();
+//         revokeOriginalUrl();
+//         await loadImageToCanvas(editorState.originalFile);
+//         editorState.zoom = 1;
+//         editorState.brightness = 0;
+//         if ($("ieBrightness")) $("ieBrightness").value = "0";
+//         ensureExtraControls();
+//         bindToolButtons();
+//         setActiveTool("select");
+//         pushHistorySnapshot(true);
+//       } catch (err) {
+//         console.error(err);
+//         showMessage("error", "รีเซ็ตภาพไม่สำเร็จ", err?.message || String(err));
+//       }
+//     });
+
+//     $("ieUndoBtn")?.addEventListener("click", () => undoHistory());
+//     $("ieRedoBtn")?.addEventListener("click", () => redoHistory());
+//     $("ieDeleteBtn")?.addEventListener("click", () => deleteSelectedObject());
+//     $("ieApplyCropBtn")?.addEventListener("click", () => applyCrop());
+
+//     bindToolButtons();
+//   }
+
+//   async function openImageEditor(file, options = {}) {
+//     ensureFabricReady();
+//     ensureModal();
+//     bindUiOnce();
+
+//     if (!file || !/^image\//i.test(file.type || "")) {
+//       throw new Error("ไฟล์ที่ส่งเข้า editor ต้องเป็นรูปภาพ");
+//     }
+
+//     editorState.originalFile = file;
+//     editorState.zoom = 1;
+//     editorState.strokeColor = options.strokeColor || "#dc2626";
+//     editorState.strokeWidth = Number(options.strokeWidth || 3);
+//     editorState.brightness = 0;
+//     editorState.history = [];
+//     editorState.historyIndex = -1;
+//     editorState.restoringHistory = false;
+//     editorState.isRefreshingEffect = false;
+
+//     if ($("ieColorPicker")) $("ieColorPicker").value = editorState.strokeColor;
+//     if ($("ieStrokeWidth")) $("ieStrokeWidth").value = String(editorState.strokeWidth);
+//     if ($("ieBrightness")) $("ieBrightness").value = "0";
+
+//     editorState.modal.classList.remove("hidden");
+//     editorState.modal.setAttribute("aria-hidden", "false");
+//     document.body.classList.add("progress-lock");
+
+//     destroyCanvas();
+//     revokeOriginalUrl();
+
+//     try {
+//       await loadImageToCanvas(file);
+//     } catch (err) {
+//       console.error("loadImageToCanvas error:", err);
+//       closeEditor({ ok: false });
+//       await showMessage("error", "เปิดภาพไม่สำเร็จ", err?.message || String(err));
+//       return Promise.resolve({ ok: false });
+//     }
+
+//     if (editorState.canvas) {
+//       if (typeof editorState.canvas.calcOffset === "function") {
+//         editorState.canvas.calcOffset();
+//       }
+//       editorState.canvas.requestRenderAll();
+//     }
+
+//     ensureExtraControls();
+//     bindToolButtons();
+//     setActiveTool("select");
+//     setZoomLabel();
+//     setToolLabel();
+//     pushHistorySnapshot(true);
+//     updateUndoRedoState();
+
+//     return new Promise((resolve) => {
+//       editorState.resultResolve = resolve;
+//     });
+//   }
+
+//   window.ImageEditorX = {
+//     open: openImageEditor
+//   };
+// })();
+
+
 (function () {
   const editorState = {
     modal: null,
@@ -103,16 +4727,10 @@
     editorState.isRefreshingEffect = false;
   }
 
-  function nextFrame() {
-    return new Promise((resolve) => {
-      requestAnimationFrame(() => resolve());
-    });
-  }
-
   function closeEditor(result = { ok: false }) {
     editorState.modal?.classList.add("hidden");
     editorState.modal?.setAttribute("aria-hidden", "true");
-    document.body.classList.remove("img-editor-lock");
+    document.body.classList.remove("progress-lock");
 
     destroyCanvas();
     revokeOriginalUrl();
@@ -381,384 +4999,315 @@
     return new Blob([u8arr], { type: mime });
   }
 
-  async function blobToFile(blob, filename, mimeType) {
-    const type = mimeType || blob.type || "image/png";
-    return new File([blob], filename, { type });
+  async function blobToFile(blob, filename, mimeType = "image/jpeg") {
+    return new File([blob], filename, { type: mimeType, lastModified: Date.now() });
   }
 
-  function genEditedFilename(originalName) {
-    const name = String(originalName || "edited-image.png");
-    const dot = name.lastIndexOf(".");
-    if (dot <= 0) return `${name}-edited.png`;
-    return `${name.slice(0, dot)}-edited${name.slice(dot)}`;
+  function isEffectOverlay(obj) {
+    return !!(obj && (obj.effectType === "blur" || obj.effectType === "mosaic"));
   }
 
-  function serializeCanvasForHistory() {
+  function getEffectShapeType(obj) {
+    const tool = String(obj?.toolType || "");
+    return /Circle$/i.test(tool) ? "circle" : "rect";
+  }
+
+  function getCanvasSnapshotDataUrl(options = {}) {
     const canvas = editorState.canvas;
-    if (!canvas) return null;
+    if (!canvas) return "";
 
-    const json = canvas.toJSON(["dataRole", "effectType", "effectShape", "effectMeta"]);
-    return {
-      json,
-      zoom: editorState.zoom,
-      brightness: editorState.brightness,
-      activeTool: editorState.activeTool
+    const active = canvas.getActiveObject();
+    if (active) canvas.discardActiveObject();
+
+    const hidden = [];
+    const rememberHidden = (obj) => {
+      if (!obj || hidden.some((x) => x.obj === obj)) return;
+      hidden.push({ obj, visible: obj.visible });
+      obj.visible = false;
     };
-  }
 
-  function updateUndoRedoState() {
-    const undoBtn = $("ieUndoBtn");
-    const redoBtn = $("ieRedoBtn");
-    if (undoBtn) undoBtn.disabled = editorState.historyIndex <= 0;
-    if (redoBtn) redoBtn.disabled = editorState.historyIndex >= editorState.history.length - 1;
-  }
-
-  function pushHistorySnapshot(replaceCurrent = false) {
-    if (editorState.restoringHistory) return;
-    const snapshot = serializeCanvasForHistory();
-    if (!snapshot) return;
-
-    if (replaceCurrent && editorState.historyIndex >= 0) {
-      editorState.history[editorState.historyIndex] = snapshot;
-      updateUndoRedoState();
-      return;
+    if (editorState.cropRect && canvas.getObjects().includes(editorState.cropRect)) {
+      rememberHidden(editorState.cropRect);
     }
 
-    if (editorState.historyIndex < editorState.history.length - 1) {
-      editorState.history = editorState.history.slice(0, editorState.historyIndex + 1);
-    }
-
-    editorState.history.push(snapshot);
-
-    if (editorState.history.length > 30) {
-      editorState.history.shift();
-    }
-
-    editorState.historyIndex = editorState.history.length - 1;
-    updateUndoRedoState();
-  }
-
-  async function restoreHistorySnapshot(snapshot) {
-    const canvas = editorState.canvas;
-    if (!canvas || !snapshot?.json) return;
-
-    editorState.restoringHistory = true;
-
-    try {
-      canvas.clear();
-      await new Promise((resolve) => {
-        canvas.loadFromJSON(snapshot.json, () => {
-          canvas.renderAll();
-          resolve();
-        });
-      });
-
-      editorState.baseImage = null;
-      editorState.cropRect = null;
-
+    if (options.excludeEffectObjects) {
       canvas.getObjects().forEach((obj) => {
-        if (obj?.dataRole === "base-image") editorState.baseImage = obj;
-        if (obj?.dataRole === "crop-rect") editorState.cropRect = obj;
+        if (isEffectOverlay(obj)) rememberHidden(obj);
       });
-
-      editorState.zoom = Number(snapshot.zoom || 1);
-      editorState.brightness = Number(snapshot.brightness || 0);
-
-      if ($("ieBrightness")) $("ieBrightness").value = String(editorState.brightness);
-
-      const center = typeof canvas.getCenter === "function"
-        ? canvas.getCenter()
-        : { left: canvas.getWidth() / 2, top: canvas.getHeight() / 2 };
-
-      canvas.setViewportTransform([1, 0, 0, 1, 0, 0]);
-      canvas.zoomToPoint(new fabric.Point(center.left, center.top), editorState.zoom);
-      setZoomLabel();
-      setActiveTool(snapshot.activeTool || "select");
-      canvas.requestRenderAll();
-    } finally {
-      editorState.restoringHistory = false;
-      updateUndoRedoState();
-    }
-  }
-
-  function undoHistory() {
-    if (editorState.historyIndex <= 0) return;
-    editorState.historyIndex -= 1;
-    restoreHistorySnapshot(editorState.history[editorState.historyIndex]);
-  }
-
-  function redoHistory() {
-    if (editorState.historyIndex >= editorState.history.length - 1) return;
-    editorState.historyIndex += 1;
-    restoreHistorySnapshot(editorState.history[editorState.historyIndex]);
-  }
-
-  function getCanvasPointer(e) {
-    const canvas = editorState.canvas;
-    if (!canvas) return { x: 0, y: 0 };
-    return canvas.getPointer(e);
-  }
-
-  function makeRectFromPoints(x1, y1, x2, y2) {
-    return {
-      left: Math.min(x1, x2),
-      top: Math.min(y1, y2),
-      width: Math.abs(x2 - x1),
-      height: Math.abs(y2 - y1)
-    };
-  }
-
-  function addRectShape(rect) {
-    const canvas = editorState.canvas;
-    if (!canvas || !rect) return;
-
-    const shape = new fabric.Rect({
-      ...rect,
-      fill: "rgba(0,0,0,0)",
-      stroke: editorState.strokeColor,
-      strokeWidth: editorState.strokeWidth,
-      selectable: true,
-      evented: true,
-      hasControls: true,
-      hasBorders: true,
-      lockRotation: false,
-      objectCaching: false
-    });
-
-    canvas.add(shape);
-    canvas.setActiveObject(shape);
-    canvas.requestRenderAll();
-    pushHistorySnapshot();
-  }
-
-  function addCircleShape(rect) {
-    const canvas = editorState.canvas;
-    if (!canvas || !rect) return;
-
-    const shape = new fabric.Ellipse({
-      left: rect.left,
-      top: rect.top,
-      rx: Math.max(1, rect.width / 2),
-      ry: Math.max(1, rect.height / 2),
-      fill: "rgba(0,0,0,0)",
-      stroke: editorState.strokeColor,
-      strokeWidth: editorState.strokeWidth,
-      selectable: true,
-      evented: true,
-      hasControls: true,
-      hasBorders: true,
-      lockRotation: false,
-      objectCaching: false
-    });
-
-    canvas.add(shape);
-    canvas.setActiveObject(shape);
-    canvas.requestRenderAll();
-    pushHistorySnapshot();
-  }
-
-  function addLineShape(x1, y1, x2, y2) {
-    const canvas = editorState.canvas;
-    if (!canvas) return;
-
-    const line = new fabric.Line([x1, y1, x2, y2], {
-      stroke: editorState.strokeColor,
-      strokeWidth: editorState.strokeWidth,
-      selectable: true,
-      evented: true,
-      hasControls: true,
-      hasBorders: true,
-      lockRotation: false,
-      objectCaching: false
-    });
-
-    canvas.add(line);
-    canvas.setActiveObject(line);
-    canvas.requestRenderAll();
-    pushHistorySnapshot();
-  }
-
-  function addArrowShape(x1, y1, x2, y2) {
-    const canvas = editorState.canvas;
-    if (!canvas) return;
-    const group = createArrowGroup(x1, y1, x2, y2);
-    canvas.add(group);
-    canvas.setActiveObject(group);
-    canvas.requestRenderAll();
-    pushHistorySnapshot();
-  }
-
-  function getBaseImageElementFromCanvas() {
-    const base = editorState.baseImage;
-    if (!base) return null;
-
-    if (typeof base.getElement === "function") {
-      return base.getElement();
     }
 
-    return base._element || null;
-  }
-
-  function createEffectOverlay(effectType, effectShape, rect) {
-    const canvas = editorState.canvas;
-    if (!canvas || !rect || rect.width < 2 || rect.height < 2) return null;
-
-    const imgEl = getBaseImageElementFromCanvas();
-    if (!imgEl) return null;
-
-    const left = Math.round(rect.left);
-    const top = Math.round(rect.top);
-    const width = Math.round(rect.width);
-    const height = Math.round(rect.height);
-
-    const off = document.createElement("canvas");
-    off.width = width;
-    off.height = height;
-    const ctx = off.getContext("2d");
-
-    try {
-      ctx.drawImage(imgEl, left, top, width, height, 0, 0, width, height);
-    } catch (_) {
-      return null;
+    if (Array.isArray(options.hideObjects)) {
+      options.hideObjects.forEach((obj) => {
+        if (obj && canvas.getObjects().includes(obj)) rememberHidden(obj);
+      });
     }
 
-    if (effectType === "blur") {
-      const tmp = document.createElement("canvas");
-      const tctx = tmp.getContext("2d");
-      const smallW = Math.max(4, Math.round(width / 12));
-      const smallH = Math.max(4, Math.round(height / 12));
-      tmp.width = smallW;
-      tmp.height = smallH;
-      tctx.imageSmoothingEnabled = true;
-      tctx.drawImage(off, 0, 0, smallW, smallH);
-      ctx.clearRect(0, 0, width, height);
-      ctx.imageSmoothingEnabled = true;
-      ctx.drawImage(tmp, 0, 0, smallW, smallH, 0, 0, width, height);
-    } else if (effectType === "mosaic") {
-      const block = 10;
-      const imgData = ctx.getImageData(0, 0, width, height);
-      const data = imgData.data;
-      for (let y = 0; y < height; y += block) {
-        for (let x = 0; x < width; x += block) {
-          const px = ((y * width) + x) * 4;
-          const r = data[px];
-          const g = data[px + 1];
-          const b = data[px + 2];
-          const a = data[px + 3] / 255;
-          ctx.fillStyle = `rgba(${r},${g},${b},${a})`;
-          ctx.fillRect(x, y, block, block);
+    canvas.requestRenderAll();
+
+    const dataUrl = canvas.toDataURL({
+      format: options.format || "png",
+      quality: options.quality == null ? 1 : options.quality,
+      multiplier: options.multiplier || 1,
+      enableRetinaScaling: false
+    });
+
+    hidden.forEach(({ obj, visible }) => { obj.visible = visible; });
+    canvas.requestRenderAll();
+
+    return dataUrl;
+  }
+
+  function createOffscreenCanvas(width, height) {
+    const c = document.createElement("canvas");
+    c.width = Math.max(1, Math.round(width));
+    c.height = Math.max(1, Math.round(height));
+    return c;
+  }
+
+  function applyMosaicToCanvasRegion(ctx, width, height, blockSize) {
+    const size = Math.max(4, Math.round(blockSize || 12));
+    const imageData = ctx.getImageData(0, 0, width, height);
+    const data = imageData.data;
+
+    for (let y = 0; y < height; y += size) {
+      for (let x = 0; x < width; x += size) {
+        let r = 0, g = 0, b = 0, a = 0, count = 0;
+
+        for (let yy = y; yy < Math.min(y + size, height); yy++) {
+          for (let xx = x; xx < Math.min(x + size, width); xx++) {
+            const idx = (yy * width + xx) * 4;
+            r += data[idx];
+            g += data[idx + 1];
+            b += data[idx + 2];
+            a += data[idx + 3];
+            count++;
+          }
+        }
+
+        if (!count) continue;
+
+        r = Math.round(r / count);
+        g = Math.round(g / count);
+        b = Math.round(b / count);
+        a = Math.round(a / count);
+
+        for (let yy = y; yy < Math.min(y + size, height); yy++) {
+          for (let xx = x; xx < Math.min(x + size, width); xx++) {
+            const idx = (yy * width + xx) * 4;
+            data[idx] = r;
+            data[idx + 1] = g;
+            data[idx + 2] = b;
+            data[idx + 3] = a;
+          }
         }
       }
     }
 
-    const dataUrl = off.toDataURL("image/png");
-    const overlay = new fabric.Image.fromURL ? null : null;
-    return new Promise((resolve) => {
-      fabric.Image.fromURL(dataUrl, (img) => {
-        img.set({
-          left,
-          top,
-          selectable: true,
-          evented: true,
-          hasControls: true,
-          hasBorders: true,
-          lockRotation: false,
-          objectCaching: false,
-          dataRole: "effect-overlay",
-          effectType,
-          effectShape,
-          effectMeta: { left, top, width, height }
-        });
-
-        if (effectShape === "circle") {
-          img.clipPath = new fabric.Ellipse({
-            rx: width / 2,
-            ry: height / 2,
-            left: width / 2,
-            top: height / 2,
-            originX: "center",
-            originY: "center"
-          });
-        }
-
-        resolve(img);
-      }, { crossOrigin: "anonymous" });
-    });
+    ctx.putImageData(imageData, 0, 0);
   }
 
-  async function addEffectShape(effectType, effectShape, rect) {
-    const canvas = editorState.canvas;
-    if (!canvas) return;
-    const overlay = await createEffectOverlay(effectType, effectShape, rect);
-    if (!overlay) return;
-    canvas.add(overlay);
-    canvas.setActiveObject(overlay);
-    canvas.requestRenderAll();
-    pushHistorySnapshot();
+  function maskCanvasToEllipse(ctx, width, height) {
+    ctx.save();
+    ctx.globalCompositeOperation = "destination-in";
+    ctx.beginPath();
+    ctx.ellipse(width / 2, height / 2, width / 2, height / 2, 0, 0, Math.PI * 2);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
   }
 
-  function normalizeRectObject(rect) {
-    if (!rect) return null;
-    const scaleX = Number(rect.scaleX || 1);
-    const scaleY = Number(rect.scaleY || 1);
+  function normalizeRegionBounds(x, y, w, h) {
     return {
-      left: Number(rect.left || 0),
-      top: Number(rect.top || 0),
-      width: Number(rect.width || 0) * scaleX,
-      height: Number(rect.height || 0) * scaleY
+      sx: Math.round(x),
+      sy: Math.round(y),
+      sw: Math.max(1, Math.round(w)),
+      sh: Math.max(1, Math.round(h))
     };
   }
 
-  async function applyCrop() {
-    if (editorState.isApplyingCrop) return;
+  async function loadImageFromDataUrl(dataUrl) {
+    return new Promise((resolve, reject) => {
+      const im = new Image();
+      im.onload = () => resolve(im);
+      im.onerror = reject;
+      im.src = dataUrl;
+    });
+  }
 
-    const canvas = editorState.canvas;
-    const base = editorState.baseImage;
-    const cropRect = editorState.cropRect;
-    if (!canvas || !base || !cropRect) return;
+  async function buildEffectOverlayFromRegion(shapeType, effectType, x, y, w, h, opts = {}) {
+    const snapshotUrl = getCanvasSnapshotDataUrl({
+      format: "png",
+      multiplier: 1,
+      excludeEffectObjects: true,
+      hideObjects: Array.isArray(opts.hideObjects) ? opts.hideObjects : []
+    });
 
-    const rect = normalizeRectObject(cropRect);
-    if (!rect || rect.width < 10 || rect.height < 10) {
-      await showMessage("warning", "ยังครอปไม่ได้", "กรุณาปรับกรอบครอปให้มีขนาดใหญ่ขึ้น");
-      return;
+    if (!snapshotUrl) return null;
+
+    const img = await loadImageFromDataUrl(snapshotUrl);
+
+    const sx = clamp(Math.round(x), 0, img.width);
+    const sy = clamp(Math.round(y), 0, img.height);
+    const sw = clamp(Math.round(w), 1, img.width - sx);
+    const sh = clamp(Math.round(h), 1, img.height - sy);
+
+    const off = createOffscreenCanvas(sw, sh);
+    const offCtx = off.getContext("2d");
+
+    if (effectType === "blur") {
+      offCtx.filter = "blur(10px)";
+      offCtx.drawImage(img, sx, sy, sw, sh, 0, 0, sw, sh);
+      offCtx.filter = "none";
+    } else {
+      offCtx.drawImage(img, sx, sy, sw, sh, 0, 0, sw, sh);
+      applyMosaicToCanvasRegion(offCtx, sw, sh, 12);
     }
 
-    editorState.isApplyingCrop = true;
+    if (shapeType === "circle") {
+      maskCanvasToEllipse(offCtx, sw, sh);
+    }
+
+    const regionUrl = off.toDataURL("image/png");
+    const regionImg = await loadImageFromDataUrl(regionUrl);
+
+    const overlay = new fabric.Image(regionImg, {
+      left: sx,
+      top: sy,
+      originX: "left",
+      originY: "top",
+      selectable: true,
+      evented: true,
+      objectCaching: false
+    });
+
+    overlay.set({
+      effectType,
+      toolType: shapeType === "circle"
+        ? (effectType === "blur" ? "blurCircle" : "mosaicCircle")
+        : (effectType === "blur" ? "blurRect" : "mosaicRect"),
+      hasControls: true,
+      hasBorders: true,
+      lockRotation: true
+    });
+
+    overlay.scaleX = 1;
+    overlay.scaleY = 1;
+
+    return overlay;
+  }
+
+  function getObjectBounds(obj) {
+    if (!obj) return null;
+
+    if (obj.type === "rect") {
+      return normalizeRegionBounds(
+        obj.left,
+        obj.top,
+        obj.width * obj.scaleX,
+        obj.height * obj.scaleY
+      );
+    }
+
+    if (obj.type === "ellipse") {
+      const rx = (obj.rx || 0) * (obj.scaleX || 1);
+      const ry = (obj.ry || 0) * (obj.scaleY || 1);
+      return normalizeRegionBounds(
+        (obj.left || 0) - rx,
+        (obj.top || 0) - ry,
+        rx * 2,
+        ry * 2
+      );
+    }
+
+    if (isEffectOverlay(obj)) {
+      return normalizeRegionBounds(
+        obj.left || 0,
+        obj.top || 0,
+        (obj.width || 1) * (obj.scaleX || 1),
+        (obj.height || 1) * (obj.scaleY || 1)
+      );
+    }
+
+    return null;
+  }
+
+  async function regenerateEffectOverlayObject(overlay, pushHistoryAfter = true) {
+    const canvas = editorState.canvas;
+    if (!canvas || !overlay || !isEffectOverlay(overlay) || editorState.isRefreshingEffect) return;
+
+    const bounds = getObjectBounds(overlay);
+    if (!bounds) return;
+
+    const shapeType = getEffectShapeType(overlay);
+    const effectType = overlay.effectType || "blur";
+    const idx = canvas.getObjects().indexOf(overlay);
 
     try {
-      const exportCanvas = document.createElement("canvas");
-      exportCanvas.width = Math.round(rect.width);
-      exportCanvas.height = Math.round(rect.height);
-      const ctx = exportCanvas.getContext("2d");
+      editorState.isRefreshingEffect = true;
 
-      const dataUrl = canvas.toDataURL({
-        format: "png",
-        multiplier: 1,
-        left: rect.left,
-        top: rect.top,
-        width: rect.width,
-        height: rect.height
-      });
+      const replacement = await buildEffectOverlayFromRegion(
+        shapeType,
+        effectType,
+        bounds.sx,
+        bounds.sy,
+        bounds.sw,
+        bounds.sh,
+        { hideObjects: [overlay] }
+      );
 
-      await new Promise((resolve) => {
-        const img = new Image();
-        img.onload = () => {
-          ctx.drawImage(img, 0, 0);
-          resolve();
-        };
-        img.src = dataUrl;
-      });
+      if (!replacement) return;
 
-      const blob = dataURLToBlob(exportCanvas.toDataURL("image/png"));
-      const file = await blobToFile(blob, genEditedFilename(editorState.originalFile?.name), "image/png");
+      canvas.remove(overlay);
+      if (idx >= 0 && typeof canvas.insertAt === "function") {
+        canvas.insertAt(replacement, idx, false);
+      } else {
+        canvas.add(replacement);
+      }
+
+      canvas.setActiveObject(replacement);
+      canvas.requestRenderAll();
+
+      if (pushHistoryAfter) pushHistorySnapshot();
+    } finally {
+      editorState.isRefreshingEffect = false;
+    }
+  }
+
+  async function applyCrop() {
+    const canvas = editorState.canvas;
+    const crop = editorState.cropRect;
+    if (!canvas || !crop || editorState.isApplyingCrop) return;
+
+    try {
+      editorState.isApplyingCrop = true;
+
+      const dataUrl = getCanvasSnapshotDataUrl({ format: "png", multiplier: 1 });
+      const img = await loadImageFromDataUrl(dataUrl);
+
+      const left = clamp(Math.round(crop.left), 0, img.width - 1);
+      const top = clamp(Math.round(crop.top), 0, img.height - 1);
+      const width = clamp(Math.round(crop.width * crop.scaleX), 1, img.width - left);
+      const height = clamp(Math.round(crop.height * crop.scaleY), 1, img.height - top);
+
+      const off = createOffscreenCanvas(width, height);
+      const ctx = off.getContext("2d");
+      ctx.drawImage(img, left, top, width, height, 0, 0, width, height);
+
+      const blob = dataURLToBlob(off.toDataURL("image/png"));
+      const baseName = (editorState.originalFile?.name || "edited-image").replace(/\.[^.]+$/, "");
+      const croppedFile = await blobToFile(blob, `${baseName}_cropped.png`, "image/png");
+
+      editorState.originalFile = croppedFile;
 
       destroyCanvas();
       revokeOriginalUrl();
-      await loadImageToCanvas(file);
-      editorState.originalFile = file;
+      await loadImageToCanvas(croppedFile);
 
-      if ($("ieBrightness")) $("ieBrightness").value = "0";
-      editorState.brightness = 0;
+      resetViewport();
+      if (editorState.canvas) {
+        editorState.canvas.calcOffset();
+        editorState.canvas.requestRenderAll();
+      }
 
       setActiveTool("select");
       pushHistorySnapshot(true);
@@ -770,283 +5319,664 @@
     }
   }
 
-  async function exportEditedFile() {
-    const canvas = editorState.canvas;
-    if (!canvas) throw new Error("ยังไม่พบ canvas");
-
-    const dataUrl = canvas.toDataURL({
-      format: "png",
-      multiplier: 1
-    });
-
-    const blob = dataURLToBlob(dataUrl);
-    const filename = genEditedFilename(editorState.originalFile?.name || "edited-image.png");
-    const file = await blobToFile(blob, filename, "image/png");
-
-    return {
-      ok: true,
-      file,
-      filename,
-      dataUrl
-    };
-  }
-
-  async function loadImageToCanvas(file) {
-    ensureModal();
-
-    const wrap = document.querySelector(".imgEditorCanvasWrap");
-    const wrapWidth = Math.max(320, Math.round(wrap?.clientWidth || 920));
-    const wrapHeight = Math.max(320, Math.round(wrap?.clientHeight || 560));
-
-    editorState.originalUrl = URL.createObjectURL(file);
-
-    const img = await new Promise((resolve, reject) => {
-      fabric.Image.fromURL(editorState.originalUrl, (image) => {
-        if (!image) {
-          reject(new Error("โหลดภาพไม่สำเร็จ"));
-          return;
-        }
-        resolve(image);
-      }, { crossOrigin: "anonymous" });
-    });
-
-    const canvas = new fabric.Canvas(editorState.canvasEl, {
-      width: wrapWidth,
-      height: wrapHeight,
-      preserveObjectStacking: true,
-      selection: true
-    });
-
-    editorState.canvas = canvas;
-    editorState.baseImage = img;
-
-    img.set({
-      left: 0,
-      top: 0,
-      selectable: false,
-      evented: false,
-      hasControls: false,
-      hasBorders: false,
-      lockMovementX: true,
-      lockMovementY: true,
-      lockRotation: true,
-      dataRole: "base-image"
-    });
-
-    const scale = Math.min(
-      canvas.getWidth() / img.width,
-      canvas.getHeight() / img.height
-    );
-
-    img.scale(scale);
-    img.set({
-      left: Math.round((canvas.getWidth() - img.getScaledWidth()) / 2),
-      top: Math.round((canvas.getHeight() - img.getScaledHeight()) / 2)
-    });
-
-    canvas.add(img);
-    canvas.sendToBack(img);
-    canvas.requestRenderAll();
-
-    bindCanvasPointerEvents();
-  }
-
-  function bindCanvasPointerEvents() {
+  async function applyAreaEffect(effectType, shapeType) {
     const canvas = editorState.canvas;
     if (!canvas) return;
 
-    let downPoint = null;
-    let tempShape = null;
+    const active = canvas.getActiveObject();
+    if (!active || active === editorState.baseImage) {
+      await showMessage("info", "ยังไม่ได้เลือกพื้นที่", "กรุณาวาดพื้นที่ก่อน แล้วจึงกดใช้เอฟเฟกต์");
+      return;
+    }
 
-    canvas.off("mouse:down");
-    canvas.off("mouse:move");
-    canvas.off("mouse:up");
-    canvas.off("selection:created");
-    canvas.off("selection:updated");
-    canvas.off("selection:cleared");
+    const bounds = getObjectBounds(active);
+    if (!bounds) {
+      await showMessage("warning", "รูปทรงไม่ถูกต้อง", "กรุณาเลือกสี่เหลี่ยมหรือวงกลมสำหรับใช้เอฟเฟกต์นี้");
+      return;
+    }
 
-    canvas.on("mouse:down", (opt) => {
+    try {
+      const overlay = await buildEffectOverlayFromRegion(
+        shapeType,
+        effectType,
+        bounds.sx,
+        bounds.sy,
+        bounds.sw,
+        bounds.sh,
+        { hideObjects: [active] }
+      );
+
+      if (!overlay) throw new Error("สร้างเอฟเฟกต์ไม่สำเร็จ");
+
+      canvas.remove(active);
+      canvas.add(overlay);
+      canvas.setActiveObject(overlay);
+      canvas.requestRenderAll();
+      pushHistorySnapshot();
+
+      setActiveTool("select");
+    } catch (err) {
+      console.error(err);
+      await showMessage("error", "ใช้เอฟเฟกต์ไม่สำเร็จ", err?.message || String(err));
+    }
+  }
+
+  function collectCanvasState() {
+    const canvas = editorState.canvas;
+    if (!canvas) return null;
+
+    const cropWasVisible = !!editorState.cropRect && editorState.cropRect.visible;
+    if (editorState.cropRect) {
+      editorState.cropRect.visible = false;
+      canvas.requestRenderAll();
+    }
+
+    const json = canvas.toDatalessJSON(["toolType", "effectType"]);
+
+    if (editorState.cropRect) {
+      editorState.cropRect.visible = cropWasVisible;
+      canvas.requestRenderAll();
+    }
+
+    return {
+      json,
+      zoom: editorState.zoom,
+      brightness: editorState.brightness
+    };
+  }
+
+  function pushHistorySnapshot(force = false) {
+    const canvas = editorState.canvas;
+    if (!canvas || editorState.restoringHistory || editorState.isRefreshingEffect) return;
+
+    const snapshot = collectCanvasState();
+    if (!snapshot) return;
+
+    const serialized = JSON.stringify(snapshot);
+    const last = editorState.history[editorState.historyIndex];
+    if (!force && last && JSON.stringify(last) === serialized) return;
+
+    if (editorState.historyIndex < editorState.history.length - 1) {
+      editorState.history = editorState.history.slice(0, editorState.historyIndex + 1);
+    }
+
+    editorState.history.push(snapshot);
+    editorState.historyIndex = editorState.history.length - 1;
+
+    if (editorState.history.length > 40) {
+      editorState.history.shift();
+      editorState.historyIndex = editorState.history.length - 1;
+    }
+
+    updateUndoRedoState();
+  }
+
+  async function restoreHistoryAt(index) {
+    const canvas = editorState.canvas;
+    if (!canvas) return;
+    if (index < 0 || index >= editorState.history.length) return;
+
+    const snapshot = editorState.history[index];
+    if (!snapshot) return;
+
+    editorState.restoringHistory = true;
+    try {
+      removeCropRect();
+
+      await new Promise((resolve) => {
+        canvas.loadFromJSON(snapshot.json, () => {
+          canvas.renderAll();
+          resolve();
+        });
+      });
+
+      const objs = canvas.getObjects();
+      editorState.baseImage = objs.length ? objs[0] : null;
+      editorState.historyIndex = index;
+      editorState.zoom = snapshot.zoom || 1;
+      editorState.brightness = Number(snapshot.brightness || 0);
+
+      const brightEl = $("ieBrightness");
+      if (brightEl) brightEl.value = String(editorState.brightness);
+
+      resetViewport();
+      if (editorState.zoom !== 1) setZoom(editorState.zoom);
+      else setZoomLabel();
+
+      if (editorState.canvas) {
+        editorState.canvas.calcOffset();
+        editorState.canvas.requestRenderAll();
+      }
+
+      setActiveTool("select");
+      updateUndoRedoState();
+    } finally {
+      editorState.restoringHistory = false;
+    }
+  }
+
+  function undoHistory() {
+    if (editorState.historyIndex <= 0) return;
+    restoreHistoryAt(editorState.historyIndex - 1);
+  }
+
+  function redoHistory() {
+    if (editorState.historyIndex >= editorState.history.length - 1) return;
+    restoreHistoryAt(editorState.historyIndex + 1);
+  }
+
+  function updateUndoRedoState() {
+    const undoBtn = $("ieUndoBtn");
+    const redoBtn = $("ieRedoBtn");
+    if (undoBtn) undoBtn.disabled = !(editorState.historyIndex > 0);
+    if (redoBtn) redoBtn.disabled = !(editorState.historyIndex < editorState.history.length - 1);
+  }
+
+  function bindObjectEvents() {
+    const canvas = editorState.canvas;
+    if (!canvas || canvas.__imgEditorObjectEventsBound) return;
+    canvas.__imgEditorObjectEventsBound = true;
+
+    canvas.on("object:modified", async (evt) => {
+      if (editorState.restoringHistory) return;
+      const obj = evt?.target;
+      if (!obj) return;
+
+      if (isEffectOverlay(obj)) {
+        await regenerateEffectOverlayObject(obj, true);
+        return;
+      }
+
+      pushHistorySnapshot();
+    });
+  }
+
+  function getPointerFromEvent(canvas, evt) {
+    if (typeof canvas.getPointer === "function") return canvas.getPointer(evt);
+    const rect = canvas.upperCanvasEl.getBoundingClientRect();
+    return { x: evt.clientX - rect.left, y: evt.clientY - rect.top };
+  }
+
+  function bindPointerDrawing() {
+    const canvas = editorState.canvas;
+    if (!canvas || canvas.__imgEditorPointerBound) return;
+    canvas.__imgEditorPointerBound = true;
+
+    let startX = 0;
+    let startY = 0;
+    let drawingObject = null;
+
+    canvas.on("mouse:down", function (opt) {
       const evt = opt.e;
-      const pointer = getCanvasPointer(evt);
+      if (!evt) return;
 
       if (editorState.activeTool === "pan") {
         editorState.isPanning = true;
         canvas.defaultCursor = "grabbing";
-        downPoint = { x: evt.clientX, y: evt.clientY };
-        return;
-      }
-
-      if (editorState.activeTool === "select" || editorState.activeTool === "crop" || editorState.activeTool === "text") {
-        return;
-      }
-
-      downPoint = pointer;
-
-      if (editorState.activeTool === "rect") {
-        tempShape = new fabric.Rect({
-          left: pointer.x,
-          top: pointer.y,
-          width: 1,
-          height: 1,
-          fill: "rgba(0,0,0,0)",
-          stroke: editorState.strokeColor,
-          strokeWidth: editorState.strokeWidth,
-          selectable: false,
-          evented: false,
-          objectCaching: false
-        });
-        canvas.add(tempShape);
-      } else if (editorState.activeTool === "circle") {
-        tempShape = new fabric.Ellipse({
-          left: pointer.x,
-          top: pointer.y,
-          rx: 1,
-          ry: 1,
-          fill: "rgba(0,0,0,0)",
-          stroke: editorState.strokeColor,
-          strokeWidth: editorState.strokeWidth,
-          selectable: false,
-          evented: false,
-          objectCaching: false
-        });
-        canvas.add(tempShape);
-      } else if (editorState.activeTool === "line") {
-        tempShape = new fabric.Line([pointer.x, pointer.y, pointer.x, pointer.y], {
-          stroke: editorState.strokeColor,
-          strokeWidth: editorState.strokeWidth,
-          selectable: false,
-          evented: false,
-          objectCaching: false
-        });
-        canvas.add(tempShape);
-      } else if (editorState.activeTool === "arrow") {
-        tempShape = new fabric.Line([pointer.x, pointer.y, pointer.x, pointer.y], {
-          stroke: editorState.strokeColor,
-          strokeWidth: editorState.strokeWidth,
-          selectable: false,
-          evented: false,
-          objectCaching: false
-        });
-        canvas.add(tempShape);
-      }
-    });
-
-    canvas.on("mouse:move", (opt) => {
-      const evt = opt.e;
-      const pointer = getCanvasPointer(evt);
-
-      if (editorState.activeTool === "pan" && editorState.isPanning && downPoint) {
-        const vpt = canvas.viewportTransform;
-        vpt[4] += evt.clientX - downPoint.x;
-        vpt[5] += evt.clientY - downPoint.y;
-        canvas.requestRenderAll();
-        downPoint = { x: evt.clientX, y: evt.clientY };
-        return;
-      }
-
-      if (!downPoint || !tempShape) return;
-
-      const rect = makeRectFromPoints(downPoint.x, downPoint.y, pointer.x, pointer.y);
-
-      if (editorState.activeTool === "rect") {
-        tempShape.set({
-          left: rect.left,
-          top: rect.top,
-          width: Math.max(1, rect.width),
-          height: Math.max(1, rect.height)
-        });
-      } else if (editorState.activeTool === "circle") {
-        tempShape.set({
-          left: rect.left,
-          top: rect.top,
-          rx: Math.max(1, rect.width / 2),
-          ry: Math.max(1, rect.height / 2)
-        });
-      } else if (editorState.activeTool === "line" || editorState.activeTool === "arrow") {
-        tempShape.set({ x2: pointer.x, y2: pointer.y });
-      }
-
-      canvas.requestRenderAll();
-    });
-
-    canvas.on("mouse:up", async (opt) => {
-      const evt = opt.e;
-      const pointer = getCanvasPointer(evt);
-
-      if (editorState.activeTool === "pan") {
-        editorState.isPanning = false;
-        canvas.defaultCursor = "grab";
-        downPoint = null;
+        this.selection = false;
+        this.lastPosX = evt.clientX;
+        this.lastPosY = evt.clientY;
         return;
       }
 
       if (editorState.activeTool === "text") {
         addTextbox();
-        downPoint = null;
-        tempShape = null;
         return;
       }
 
-      if (!downPoint) return;
-
-      const rect = makeRectFromPoints(downPoint.x, downPoint.y, pointer.x, pointer.y);
-
-      if (tempShape) {
-        canvas.remove(tempShape);
-        tempShape = null;
+      if (!["line", "arrow", "rect", "circle", "blurRect", "blurCircle", "mosaicRect", "mosaicCircle"].includes(editorState.activeTool)) {
+        return;
       }
 
-      if (editorState.activeTool === "rect" && rect.width > 3 && rect.height > 3) {
-        addRectShape(rect);
-      } else if (editorState.activeTool === "circle" && rect.width > 3 && rect.height > 3) {
-        addCircleShape(rect);
-      } else if (editorState.activeTool === "line") {
-        addLineShape(downPoint.x, downPoint.y, pointer.x, pointer.y);
-      } else if (editorState.activeTool === "arrow") {
-        addArrowShape(downPoint.x, downPoint.y, pointer.x, pointer.y);
-      } else if (editorState.activeTool === "blurRect" && rect.width > 3 && rect.height > 3) {
-        await addEffectShape("blur", "rect", rect);
-      } else if (editorState.activeTool === "blurCircle" && rect.width > 3 && rect.height > 3) {
-        await addEffectShape("blur", "circle", rect);
-      } else if (editorState.activeTool === "mosaicRect" && rect.width > 3 && rect.height > 3) {
-        await addEffectShape("mosaic", "rect", rect);
-      } else if (editorState.activeTool === "mosaicCircle" && rect.width > 3 && rect.height > 3) {
-        await addEffectShape("mosaic", "circle", rect);
+      const pointer = getPointerFromEvent(canvas, evt);
+      startX = pointer.x;
+      startY = pointer.y;
+      const tool = editorState.activeTool;
+
+      if (tool === "line" || tool === "arrow") {
+        drawingObject = new fabric.Line([startX, startY, startX, startY], {
+          stroke: editorState.strokeColor,
+          strokeWidth: editorState.strokeWidth,
+          selectable: false,
+          evented: false,
+          objectCaching: false,
+          hasControls: true,
+          hasBorders: true,
+          lockRotation: false
+        });
+        editorState.tempDraft = drawingObject;
+        canvas.add(drawingObject);
       }
 
-      downPoint = null;
-      tempShape = null;
+      if (tool === "rect" || tool === "blurRect" || tool === "mosaicRect") {
+        drawingObject = new fabric.Rect({
+          left: startX,
+          top: startY,
+          width: 1,
+          height: 1,
+          originX: "left",
+          originY: "top",
+          fill: ["blurRect", "mosaicRect"].includes(tool) ? "rgba(37,99,235,0.08)" : "transparent",
+          stroke: editorState.strokeColor,
+          strokeWidth: editorState.strokeWidth,
+          selectable: false,
+          evented: false,
+          objectCaching: false,
+          hasControls: true,
+          hasBorders: true,
+          lockRotation: false
+        });
+        editorState.tempDraft = drawingObject;
+        canvas.add(drawingObject);
+      }
+
+      if (tool === "circle" || tool === "blurCircle" || tool === "mosaicCircle") {
+        drawingObject = new fabric.Ellipse({
+          left: startX,
+          top: startY,
+          rx: 1,
+          ry: 1,
+          originX: "center",
+          originY: "center",
+          fill: ["blurCircle", "mosaicCircle"].includes(tool) ? "rgba(37,99,235,0.08)" : "transparent",
+          stroke: editorState.strokeColor,
+          strokeWidth: editorState.strokeWidth,
+          selectable: false,
+          evented: false,
+          objectCaching: false,
+          hasControls: true,
+          hasBorders: true,
+          lockRotation: false
+        });
+        editorState.tempDraft = drawingObject;
+        canvas.add(drawingObject);
+      }
     });
 
-    canvas.on("selection:created", () => {
+    canvas.on("mouse:move", function (opt) {
+      const evt = opt.e;
+      if (!evt) return;
+
+      if (editorState.activeTool === "pan" && editorState.isPanning) {
+        const vpt = this.viewportTransform;
+        vpt[4] += evt.clientX - this.lastPosX;
+        vpt[5] += evt.clientY - this.lastPosY;
+        this.requestRenderAll();
+        this.lastPosX = evt.clientX;
+        this.lastPosY = evt.clientY;
+        return;
+      }
+
+      const draft = editorState.tempDraft;
+      if (!draft) return;
+
+      const pointer = getPointerFromEvent(canvas, evt);
+      const tool = editorState.activeTool;
+
+      if (tool === "line" || tool === "arrow") {
+        draft.set({ x2: pointer.x, y2: pointer.y });
+      }
+
+      if (tool === "rect" || tool === "blurRect" || tool === "mosaicRect") {
+        draft.set({
+          left: Math.min(startX, pointer.x),
+          top: Math.min(startY, pointer.y),
+          width: Math.abs(pointer.x - startX),
+          height: Math.abs(pointer.y - startY)
+        });
+      }
+
+      if (tool === "circle" || tool === "blurCircle" || tool === "mosaicCircle") {
+        draft.set({
+          left: (startX + pointer.x) / 2,
+          top: (startY + pointer.y) / 2,
+          rx: Math.abs(pointer.x - startX) / 2,
+          ry: Math.abs(pointer.y - startY) / 2
+        });
+      }
+
       canvas.requestRenderAll();
     });
 
-    canvas.on("selection:updated", () => {
-      canvas.requestRenderAll();
+    canvas.on("mouse:up", async function () {
+      if (editorState.activeTool === "pan") {
+        editorState.isPanning = false;
+        canvas.defaultCursor = "grab";
+        return;
+      }
+
+      const draft = editorState.tempDraft;
+      const tool = editorState.activeTool;
+      if (!draft) return;
+      editorState.tempDraft = null;
+
+      if (tool === "arrow") {
+        const arrow = createArrowGroup(draft.x1, draft.y1, draft.x2, draft.y2);
+        canvas.remove(draft);
+        canvas.add(arrow);
+        canvas.setActiveObject(arrow);
+        canvas.requestRenderAll();
+        pushHistorySnapshot();
+        setActiveTool("select");
+        return;
+      }
+
+      if (tool === "line" || tool === "rect" || tool === "circle") {
+        draft.set({
+          selectable: true,
+          evented: true,
+          hasControls: true,
+          hasBorders: true,
+          lockRotation: false
+        });
+        canvas.setActiveObject(draft);
+        canvas.requestRenderAll();
+        pushHistorySnapshot();
+        setActiveTool("select");
+        return;
+      }
+
+      if (tool === "blurRect") {
+        canvas.setActiveObject(draft);
+        await applyAreaEffect("blur", "rect");
+        return;
+      }
+
+      if (tool === "blurCircle") {
+        canvas.setActiveObject(draft);
+        await applyAreaEffect("blur", "circle");
+        return;
+      }
+
+      if (tool === "mosaicRect") {
+        canvas.setActiveObject(draft);
+        await applyAreaEffect("mosaic", "rect");
+        return;
+      }
+
+      if (tool === "mosaicCircle") {
+        canvas.setActiveObject(draft);
+        await applyAreaEffect("mosaic", "circle");
+      }
     });
 
-    canvas.on("selection:cleared", () => {
-      canvas.requestRenderAll();
+    canvas.on("mouse:wheel", function (opt) {
+      const evt = opt.e;
+      if (!evt) return;
+      evt.preventDefault();
+      evt.stopPropagation();
+
+      let zoom = canvas.getZoom();
+      zoom *= 0.999 ** evt.deltaY;
+      zoom = Math.max(0.2, Math.min(5, zoom));
+      editorState.zoom = zoom;
+      canvas.zoomToPoint({ x: evt.offsetX, y: evt.offsetY }, zoom);
+      setZoomLabel();
     });
   }
 
-  function appendNodes(parent, nodes) {
-    (Array.isArray(nodes) ? nodes : []).forEach((node) => {
-      if (node) parent.appendChild(node);
+  async function loadImageToCanvas(file) {
+    const url = URL.createObjectURL(file);
+    editorState.originalUrl = url;
+
+    const wrap = editorState.canvasEl.parentElement;
+    if (!wrap) throw new Error("ไม่พบพื้นที่แสดง canvas");
+
+    const maxW = Math.max(640, Math.floor(wrap.clientWidth - 20));
+    const maxH = Math.max(420, Math.floor(wrap.clientHeight - 20));
+
+    if (editorState.canvas) {
+      try { editorState.canvas.dispose(); } catch (_) {}
+      editorState.canvas = null;
+    }
+
+    const canvas = new fabric.Canvas(editorState.canvasEl, {
+      preserveObjectStacking: true,
+      selection: true,
+      renderOnAddRemove: true
     });
+
+    editorState.canvas = canvas;
+
+    const imgEl = await new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = () => reject(new Error("โหลดรูปภาพไม่สำเร็จ"));
+      img.decoding = "async";
+      img.src = url;
+    });
+
+    const imgW = imgEl.naturalWidth || imgEl.width;
+    const imgH = imgEl.naturalHeight || imgEl.height;
+    if (!imgW || !imgH) throw new Error("ไม่สามารถอ่านขนาดรูปภาพได้");
+
+    const scale = Math.min(maxW / imgW, maxH / imgH, 1);
+    const canvasW = Math.max(320, Math.round(imgW * scale));
+    const canvasH = Math.max(240, Math.round(imgH * scale));
+
+    if (typeof canvas.setWidth === "function" && typeof canvas.setHeight === "function") {
+      canvas.setWidth(canvasW);
+      canvas.setHeight(canvasH);
+    } else if (typeof canvas.setDimensions === "function") {
+      canvas.setDimensions({ width: canvasW, height: canvasH });
+    } else {
+      editorState.canvasEl.width = canvasW;
+      editorState.canvasEl.height = canvasH;
+    }
+
+    if (canvas.lowerCanvasEl) {
+      canvas.lowerCanvasEl.style.width = canvasW + "px";
+      canvas.lowerCanvasEl.style.height = canvasH + "px";
+    }
+    if (canvas.upperCanvasEl) {
+      canvas.upperCanvasEl.style.width = canvasW + "px";
+      canvas.upperCanvasEl.style.height = canvasH + "px";
+    }
+    if (canvas.wrapperEl) {
+      canvas.wrapperEl.style.width = canvasW + "px";
+      canvas.wrapperEl.style.height = canvasH + "px";
+    }
+
+    const baseImage = new fabric.Image(imgEl, {
+      left: canvasW / 2,
+      top: canvasH / 2,
+      originX: "center",
+      originY: "center",
+      selectable: false,
+      evented: false,
+      objectCaching: false
+    });
+
+    baseImage.scaleX = scale;
+    baseImage.scaleY = scale;
+    editorState.baseImage = baseImage;
+
+    canvas.clear();
+    canvas.add(baseImage);
+
+    if (typeof baseImage.moveTo === "function") {
+      baseImage.moveTo(0);
+    } else if (typeof canvas.sendToBack === "function") {
+      canvas.sendToBack(baseImage);
+    } else if (typeof canvas.sendObjectToBack === "function") {
+      canvas.sendObjectToBack(baseImage);
+    }
+
+    bindObjectEvents();
+    bindPointerDrawing();
+
+    resetViewport();
+    if (typeof canvas.calcOffset === "function") canvas.calcOffset();
+    canvas.requestRenderAll();
   }
 
-  function createToolbarSection(title, sectionClass = "") {
+  async function exportEditedFile() {
+    const canvas = editorState.canvas;
+    if (!canvas) throw new Error("ยังไม่มี canvas สำหรับ export");
+
+    removeCropRect();
+
+    const dataUrl = canvas.toDataURL({
+      format: "jpeg",
+      quality: 0.92,
+      multiplier: 1,
+      enableRetinaScaling: false
+    });
+
+    const blob = dataURLToBlob(dataUrl);
+    const filenameBase = (editorState.originalFile?.name || "edited-image").replace(/\.[^.]+$/, "");
+    const outFile = await blobToFile(blob, `${filenameBase}_edited.jpg`, "image/jpeg");
+
+    return {
+      ok: true,
+      file: outFile,
+      blob,
+      dataUrl,
+      filename: outFile.name,
+      mimeType: outFile.type
+    };
+  }
+
+  function getEditIconSvg() {
+    return `
+      <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25Z" fill="currentColor"></path>
+        <path d="M14.06 4.94l3.75 3.75 1.47-1.47a1.5 1.5 0 0 0 0-2.12l-1.63-1.63a1.5 1.5 0 0 0-2.12 0l-1.47 1.47Z" fill="currentColor"></path>
+      </svg>
+    `;
+  }
+
+  function setFloatingPanelOpen(isOpen) {
+    const panel = editorState.floatingToolPanel;
+    const btn = editorState.floatingToggleBtn;
+    if (!panel || !btn) return;
+
+    panel.classList.toggle("hidden", !isOpen);
+    btn.setAttribute("aria-expanded", isOpen ? "true" : "false");
+    btn.title = isOpen ? "ซ่อนเครื่องมือแก้ไขภาพ" : "แสดงเครื่องมือแก้ไขภาพ";
+  }
+
+  function toggleFloatingPanel(forceState) {
+    const panel = editorState.floatingToolPanel;
+    if (!panel) return;
+
+    const next = typeof forceState === "boolean"
+      ? forceState
+      : panel.classList.contains("hidden");
+
+    setFloatingPanelOpen(next);
+  }
+
+  function ensureFloatingToolUi() {
+    const canvasWrap = document.querySelector(".imgEditorCanvasWrap");
+    const toolbarWrap = document.querySelector(".imgEditorToolbarWrap");
+    if (!canvasWrap || !toolbarWrap) return;
+
+    if (!editorState.floatingToggleBtn) {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.id = "ieFloatingToggleBtn";
+      btn.className = "ieFloatingToggle";
+      btn.innerHTML = getEditIconSvg();
+      btn.setAttribute("aria-label", "เปิดเครื่องมือแก้ไขภาพ");
+      btn.setAttribute("aria-expanded", "false");
+      btn.title = "แสดงเครื่องมือแก้ไขภาพ";
+      canvasWrap.appendChild(btn);
+      editorState.floatingToggleBtn = btn;
+
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        toggleFloatingPanel();
+      });
+    }
+
+    if (!editorState.floatingToolPanel) {
+      const panel = document.createElement("div");
+      panel.id = "ieFloatingToolPanel";
+      panel.className = "ieFloatingPanel hidden";
+      canvasWrap.appendChild(panel);
+      editorState.floatingToolPanel = panel;
+
+      panel.addEventListener("click", (e) => e.stopPropagation());
+    }
+
+    if (toolbarWrap.parentElement !== editorState.floatingToolPanel) {
+      editorState.floatingToolPanel.appendChild(toolbarWrap);
+    }
+
+    if (!canvasWrap.__ieOutsidePanelBind) {
+      canvasWrap.__ieOutsidePanelBind = true;
+      document.addEventListener("click", (e) => {
+        if (!editorState.modal || editorState.modal.classList.contains("hidden")) return;
+        const panel = editorState.floatingToolPanel;
+        const btn = editorState.floatingToggleBtn;
+        if (!panel || !btn) return;
+        if (panel.contains(e.target) || btn.contains(e.target)) return;
+        setFloatingPanelOpen(false);
+      });
+    }
+  }
+
+  function collapseFloatingPanelAfterToolPick() {
+    if (window.matchMedia("(max-width: 950px)").matches) {
+      setFloatingPanelOpen(false);
+    }
+  }
+
+  function getToolButton(toolName) {
+    return document.querySelector(`.ie-tool[data-tool="${toolName}"]`);
+  }
+
+  function getFieldByInputId(inputId) {
+    const input = $(inputId);
+    return input ? input.closest(".ieField") : null;
+  }
+
+  function ensureBtn(container, id, text, className = "btn ghost", attrs = {}) {
+    let btn = $(id);
+    if (btn) {
+      if (text != null) btn.textContent = text;
+      if (className) btn.className = className;
+      Object.keys(attrs || {}).forEach((k) => btn.setAttribute(k, attrs[k]));
+      return btn;
+    }
+
+    btn = document.createElement("button");
+    btn.type = "button";
+    btn.id = id;
+    btn.className = className;
+    btn.textContent = text || "";
+    Object.keys(attrs || {}).forEach((k) => btn.setAttribute(k, attrs[k]));
+    container.appendChild(btn);
+    return btn;
+  }
+
+  function ensureToolBtn(container, id, text, toolName) {
+    const btn = ensureBtn(container, id, text, "btn ghost ie-tool", { "data-tool": toolName });
+    btn.classList.add("ie-tool");
+    btn.setAttribute("data-tool", toolName);
+    return btn;
+  }
+
+  function setButtonIcon(id, fallbackIcon) {
+    const el = $(id);
+    if (el) el.setAttribute("data-icon", TOOL_ICONS[id] || fallbackIcon || "•");
+  }
+
+  function applyIconsToToolbar() {
+    Object.keys(TOOL_ICONS).forEach((id) => setButtonIcon(id, TOOL_ICONS[id]));
+  }
+
+  function createToolbarSection(title, extraClass = "") {
     const section = document.createElement("section");
-    section.className = `ieToolbarSection ${sectionClass}`.trim();
+    section.className = `ieToolbarSection ${extraClass}`.trim();
 
     const head = document.createElement("div");
-    head.className = "ieToolbarSectionTitle";
+    head.className = "ieToolbarTitle";
     head.textContent = title;
 
     const grid = document.createElement("div");
-    grid.className = "ieToolbarSectionGrid";
+    grid.className = "ieButtonGrid";
 
     section.appendChild(head);
     section.appendChild(grid);
@@ -1054,269 +5984,74 @@
     return { section, grid };
   }
 
-  function getFieldByInputId(inputId) {
-    const input = $(inputId);
-    if (!input) return null;
-    return input.closest(".ieToolbarField") || input.parentElement || null;
-  }
-
-  function createButton(id, text, className = "btn ghost") {
-    let btn = $(id);
-    if (btn) return btn;
-
-    btn = document.createElement("button");
-    btn.type = "button";
-    btn.id = id;
-    btn.className = className;
-    btn.textContent = text || "";
-    return btn;
-  }
-
-  function ensureBtn(parent, id, label, className = "btn ghost") {
-    let btn = $(id);
-    if (!btn) {
-      btn = document.createElement("button");
-      btn.type = "button";
-      btn.id = id;
-      btn.className = className;
-      btn.textContent = label || "";
-      parent.appendChild(btn);
-    }
-    return btn;
-  }
-
-  function ensureToolBtn(parent, id, label, toolName) {
-    let btn = $(id);
-    if (!btn) {
-      btn = document.createElement("button");
-      btn.type = "button";
-      btn.id = id;
-      btn.className = "btn ghost ie-tool";
-      btn.setAttribute("data-tool", toolName);
-      btn.textContent = label || "";
-      parent.appendChild(btn);
-    } else {
-      btn.classList.add("ie-tool");
-      btn.setAttribute("data-tool", toolName);
-      if (!btn.textContent.trim()) btn.textContent = label || "";
-    }
-    return btn;
-  }
-
-  function ensureToolbarField(id, labelText, inputHtml) {
-    let field = getFieldByInputId(id);
-    if (field) return field;
-
-    field = document.createElement("label");
-    field.className = "ieToolbarField";
-    field.innerHTML = `
-      <span>${labelText}</span>
-      ${inputHtml}
-    `;
-    return field;
-  }
-
-  function ensureToolbarBaseStructure() {
-    const body = document.querySelector(".imgEditorBody");
-    if (!body) return null;
-
-    let wrap = body.querySelector(".imgEditorToolbarWrap");
-    if (!wrap) {
-      wrap = document.createElement("aside");
-      wrap.className = "imgEditorToolbarWrap";
-      body.insertBefore(wrap, body.firstChild);
-    }
-
-    let toolbar = wrap.querySelector(".imgEditorToolbar");
-    if (!toolbar) {
-      toolbar = document.createElement("div");
-      toolbar.className = "imgEditorToolbar";
-      wrap.appendChild(toolbar);
-    }
-
-    return { wrap, toolbar };
-  }
-
-  function ensureTopToolbarButtons(toolbar) {
-    const selectBtn = ensureToolBtn(toolbar, "ieSelectBtn", "เลือก", "select");
-    const panBtn = ensureToolBtn(toolbar, "iePanBtn", "เลื่อน", "pan");
-    const textBtn = ensureToolBtn(toolbar, "ieTextBtn", "ข้อความ", "text");
-    const cropBtn = ensureToolBtn(toolbar, "ieCropToolBtn", "ครอป", "crop");
-
-    const lineBtn = ensureToolBtn(toolbar, "ieLineBtn", "เส้น", "line");
-    const arrowBtn = ensureToolBtn(toolbar, "ieArrowBtn", "ลูกศร", "arrow");
-    const rectBtn = ensureToolBtn(toolbar, "ieRectBtn", "สี่เหลี่ยม", "rect");
-    const circleBtn = ensureToolBtn(toolbar, "ieCircleBtn", "วงกลม", "circle");
-
-    const blurRectBtn = ensureToolBtn(toolbar, "ieBlurRectBtn", "เบลอสี่", "blurRect");
-    const blurCircleBtn = ensureToolBtn(toolbar, "ieBlurCircleBtn", "เบลอวง", "blurCircle");
-    const mosaicRectBtn = ensureToolBtn(toolbar, "ieMosaicRectBtn", "โมเสกสี่", "mosaicRect");
-    const mosaicCircleBtn = ensureToolBtn(toolbar, "ieMosaicCircleBtn", "โมเสกวง", "mosaicCircle");
-
-    const zoomOutBtn = ensureBtn(toolbar, "ieZoomOutBtn", "ย่อ");
-    const zoomResetBtn = ensureBtn(toolbar, "ieZoomResetBtn", "100%");
-    const zoomInBtn = ensureBtn(toolbar, "ieZoomInBtn", "ขยาย");
-    const fitBtn = ensureBtn(toolbar, "ieFitBtn", "พอดี");
-
-    const undoBtn = ensureBtn(toolbar, "ieUndoBtn", "ย้อน");
-    const redoBtn = ensureBtn(toolbar, "ieRedoBtn", "ทำซ้ำ");
-    const deleteBtn = ensureBtn(toolbar, "ieDeleteBtn", "ลบ");
-    const applyCropBtn = ensureBtn(toolbar, "ieApplyCropBtn", "ใช้");
-
-    const rotateLeftBtn = ensureBtn(toolbar, "ieRotateLeftBtn", "หมุนซ้าย");
-    const rotateRightBtn = ensureBtn(toolbar, "ieRotateRightBtn", "หมุนขวา");
-
-    return {
-      selectBtn, panBtn, textBtn, cropBtn,
-      lineBtn, arrowBtn, rectBtn, circleBtn,
-      blurRectBtn, blurCircleBtn, mosaicRectBtn, mosaicCircleBtn,
-      zoomOutBtn, zoomResetBtn, zoomInBtn, fitBtn,
-      undoBtn, redoBtn, deleteBtn, applyCropBtn,
-      rotateLeftBtn, rotateRightBtn
-    };
-  }
-
-  function ensureSettingsFields(toolbar) {
-    const colorField = ensureToolbarField(
-      "ieColorPicker",
-      "สี",
-      `<input id="ieColorPicker" type="color" value="#dc2626">`
-    );
-
-    const strokeField = ensureToolbarField(
-      "ieStrokeWidth",
-      "ความหนา",
-      `<input id="ieStrokeWidth" type="range" min="1" max="12" step="1" value="3">`
-    );
-
-    const brightnessField = ensureToolbarField(
-      "ieBrightness",
-      "ความสว่าง",
-      `<input id="ieBrightness" type="range" min="-1" max="1" step="0.05" value="0">`
-    );
-
-    [colorField, strokeField, brightnessField].forEach((field) => {
-      if (field && !toolbar.contains(field)) toolbar.appendChild(field);
+  function appendNodes(container, nodes) {
+    (Array.isArray(nodes) ? nodes : []).forEach((node) => {
+      if (node) container.appendChild(node);
     });
   }
 
   function ensureToolbarResponsiveLabels() {
-    const isNarrow = window.matchMedia("(max-width: 560px)").matches;
-    const isVeryNarrow = window.matchMedia("(max-width: 390px)").matches;
+    const compact = window.matchMedia("(max-width: 560px)").matches;
+    const compact2 = window.matchMedia("(max-width: 390px)").matches;
 
-    const labelMap = {
-      ieSelectBtn: isVeryNarrow ? "" : "เลือก",
-      iePanBtn: isVeryNarrow ? "" : "เลื่อน",
-      ieTextBtn: isVeryNarrow ? "" : "ข้อความ",
-      ieCropToolBtn: isVeryNarrow ? "" : "ครอป",
+    const labels = {
+      ieSelectBtn: "เลือก",
+      iePanBtn: compact2 ? "เลื่อน" : (compact ? "เลื่อน" : "เลื่อนภาพ"),
+      ieTextBtn: "ข้อความ",
+      ieCropToolBtn: "ครอป",
 
-      ieLineBtn: isVeryNarrow ? "" : "เส้น",
-      ieArrowBtn: isVeryNarrow ? "" : "ลูกศร",
-      ieRectBtn: isVeryNarrow ? "" : "สี่เหลี่ยม",
-      ieCircleBtn: isVeryNarrow ? "" : "วงกลม",
+      ieLineBtn: compact2 ? "เส้น" : "เส้น",
+      ieArrowBtn: "ลูกศร",
+      ieRectBtn: compact2 ? "กรอบ" : "สี่เหลี่ยม",
+      ieCircleBtn: compact2 ? "วง" : "วงกลม",
 
-      ieBlurRectBtn: isVeryNarrow ? "" : "เบลอสี่",
-      ieBlurCircleBtn: isVeryNarrow ? "" : "เบลอวง",
-      ieMosaicRectBtn: isVeryNarrow ? "" : "โมเสกสี่",
-      ieMosaicCircleBtn: isVeryNarrow ? "" : "โมเสกวง",
+      ieBlurRectBtn: compact2 ? "เบลอสี่" : "เบลอสี่",
+      ieBlurCircleBtn: compact2 ? "เบลอวง" : "เบลอวง",
+      ieMosaicRectBtn: compact2 ? "โมเสกสี่" : "โมเสกสี่",
+      ieMosaicCircleBtn: compact2 ? "โมเสกวง" : "โมเสกวง",
 
-      ieZoomOutBtn: isNarrow ? "" : "ย่อ",
-      ieZoomResetBtn: isNarrow ? "100%" : "100%",
-      ieZoomInBtn: isNarrow ? "" : "ขยาย",
-      ieFitBtn: isNarrow ? "" : "พอดี",
+      ieZoomOutBtn: "ซูม-",
+      ieZoomResetBtn: "100%",
+      ieZoomInBtn: "ซูม+",
+      ieFitBtn: "พอดี",
 
-      ieUndoBtn: isNarrow ? "" : "ย้อน",
-      ieRedoBtn: isNarrow ? "" : "ทำซ้ำ",
-      ieDeleteBtn: isNarrow ? "" : "ลบ",
-      ieApplyCropBtn: isNarrow ? "" : "ใช้",
+      ieRotateLeftBtn: "ซ้าย",
+      ieRotateRightBtn: "ขวา",
 
-      ieRotateLeftBtn: isNarrow ? "" : "หมุนซ้าย",
-      ieRotateRightBtn: isNarrow ? "" : "หมุนขวา"
+      ieUndoBtn: "ย้อน",
+      ieRedoBtn: "ทำซ้ำ",
+      ieDeleteBtn: "ลบ",
+      ieApplyCropBtn: "ใช้"
     };
 
-    Object.entries(labelMap).forEach(([id, label]) => {
-      const btn = $(id);
-      if (!btn) return;
-
-      const icon = TOOL_ICONS[id] || "";
-      if (icon && label) {
-        btn.innerHTML = `<span class="ieBtnIcon">${icon}</span><span class="ieBtnText">${label}</span>`;
-      } else if (icon && !label) {
-        btn.innerHTML = `<span class="ieBtnIcon">${icon}</span>`;
-      } else {
-        btn.textContent = label;
-      }
+    Object.keys(labels).forEach((id) => {
+      const el = $(id);
+      if (el) el.textContent = labels[id];
     });
-  }
 
-  function ensureFloatingToolUi() {
-    const toolbarWrap = document.querySelector(".imgEditorToolbarWrap");
-    const toolbar = toolbarWrap?.querySelector(".imgEditorToolbar");
-    const dialog = document.querySelector(".imgEditorDialog");
-    if (!toolbarWrap || !toolbar || !dialog) return;
-
-    let fab = dialog.querySelector(".ieFloatingToggleBtn");
-    let panel = dialog.querySelector(".ieFloatingPanel");
-
-    if (!fab) {
-      fab = document.createElement("button");
-      fab.type = "button";
-      fab.className = "ieFloatingToggleBtn";
-      fab.setAttribute("aria-label", "เปิดเครื่องมือแก้ไขภาพ");
-      fab.innerHTML = `<span class="ieFabIcon">✎</span>`;
-      dialog.appendChild(fab);
-    }
-
-    if (!panel) {
-      panel = document.createElement("div");
-      panel.className = "ieFloatingPanel hidden";
-      panel.setAttribute("aria-hidden", "true");
-      dialog.appendChild(panel);
-    }
-
-    editorState.floatingToggleBtn = fab;
-    editorState.floatingToolPanel = panel;
-
-    if (!panel.contains(toolbarWrap)) {
-      panel.appendChild(toolbarWrap);
-    }
-
-    if (!fab.dataset.boundClick) {
-      fab.dataset.boundClick = "1";
-      fab.addEventListener("click", () => {
-        setFloatingPanelOpen(!panel.classList.contains("hidden"));
-      });
-    }
-  }
-
-  function setFloatingPanelOpen(shouldOpen) {
-    const panel = editorState.floatingToolPanel;
-    if (!panel) return;
-    const open = !!shouldOpen;
-
-    panel.classList.toggle("hidden", !open);
-    panel.setAttribute("aria-hidden", open ? "false" : "true");
-    document.body.classList.toggle("ie-panel-open", open);
-  }
-
-  function collapseFloatingPanelAfterToolPick() {
-    if (!window.matchMedia("(max-width: 768px)").matches) return;
-    setFloatingPanelOpen(false);
+    applyIconsToToolbar();
   }
 
   function rebuildToolbarLayoutInWrap(toolbarWrap) {
-    const toolbar = toolbarWrap?.querySelector(".imgEditorToolbar");
-    if (!toolbar) return;
+    if (!toolbarWrap) return;
 
-    const selectBtn = $("ieSelectBtn");
-    const panBtn = $("iePanBtn");
-    const textBtn = $("ieTextBtn");
+    let toolbar = toolbarWrap.querySelector(".imgEditorToolbar");
+    if (!toolbar) {
+      toolbar = document.createElement("div");
+      toolbar.className = "imgEditorToolbar";
+      toolbarWrap.innerHTML = "";
+      toolbarWrap.appendChild(toolbar);
+    }
+
+    const selectBtn = getToolButton("select");
+    const panBtn = getToolButton("pan");
+    const textBtn = getToolButton("text");
     const cropBtn = $("ieCropToolBtn");
 
-    const lineBtn = $("ieLineBtn");
-    const arrowBtn = $("ieArrowBtn");
-    const rectBtn = $("ieRectBtn");
-    const circleBtn = $("ieCircleBtn");
+    const lineBtn = getToolButton("line");
+    const arrowBtn = getToolButton("arrow");
+    const rectBtn = getToolButton("rect");
+    const circleBtn = getToolButton("circle");
 
     const blurRectBtn = $("ieBlurRectBtn");
     const blurCircleBtn = $("ieBlurCircleBtn");
@@ -1595,10 +6330,7 @@
 
     editorState.modal.classList.remove("hidden");
     editorState.modal.setAttribute("aria-hidden", "false");
-    document.body.classList.add("img-editor-lock");
-
-    await nextFrame();
-    await nextFrame();
+    document.body.classList.add("progress-lock");
 
     destroyCanvas();
     revokeOriginalUrl();
