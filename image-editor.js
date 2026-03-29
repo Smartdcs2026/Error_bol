@@ -4626,8 +4626,6 @@
 
 (function () {
   const editorState = {
-     floatingToggleBtn: null,
-    floatingToolPanel: null,
     modal: null,
     canvasEl: null,
     canvas: null,
@@ -4650,7 +4648,10 @@
     tempDraft: null,
     history: [],
     historyIndex: -1,
-    restoringHistory: false
+    restoringHistory: false,
+
+    floatingToggleBtn: null,
+    floatingToolPanel: null
   };
 
   const $ = (id) => document.getElementById(id);
@@ -4893,7 +4894,6 @@
 
     const active = canvas.getActiveObject();
     if (!active) return;
-
     if (active === editorState.baseImage) return;
     if (active === editorState.cropRect) return;
 
@@ -5876,6 +5876,77 @@
     };
   }
 
+  function getEditIconSvg() {
+    return `
+      <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25Z" fill="currentColor"></path>
+        <path d="M14.06 4.94l3.75 3.75 1.47-1.47a1.5 1.5 0 0 0 0-2.12l-1.63-1.63a1.5 1.5 0 0 0-2.12 0l-1.47 1.47Z" fill="currentColor"></path>
+      </svg>
+    `;
+  }
+
+  function setFloatingPanelOpen(isOpen) {
+    const panel = editorState.floatingToolPanel;
+    const btn = editorState.floatingToggleBtn;
+    if (!panel || !btn) return;
+
+    panel.classList.toggle("hidden", !isOpen);
+    btn.setAttribute("aria-expanded", isOpen ? "true" : "false");
+    btn.title = isOpen ? "ซ่อนเครื่องมือแก้ไขภาพ" : "แสดงเครื่องมือแก้ไขภาพ";
+  }
+
+  function toggleFloatingPanel(forceState) {
+    const panel = editorState.floatingToolPanel;
+    if (!panel) return;
+
+    const next = typeof forceState === "boolean"
+      ? forceState
+      : panel.classList.contains("hidden");
+
+    setFloatingPanelOpen(next);
+  }
+
+  function ensureFloatingToolUi() {
+    const wrap = document.querySelector(".imgEditorCanvasWrap");
+    const toolbar = document.querySelector(".imgEditorToolbar");
+    if (!wrap || !toolbar) return;
+
+    if (!editorState.floatingToggleBtn) {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.id = "ieFloatingToggleBtn";
+      btn.className = "ieFloatingToggle";
+      btn.innerHTML = getEditIconSvg();
+      btn.setAttribute("aria-label", "เปิดเครื่องมือแก้ไขภาพ");
+      btn.setAttribute("aria-expanded", "false");
+      btn.title = "แสดงเครื่องมือแก้ไขภาพ";
+      wrap.appendChild(btn);
+      editorState.floatingToggleBtn = btn;
+
+      btn.addEventListener("click", () => {
+        toggleFloatingPanel();
+      });
+    }
+
+    if (!editorState.floatingToolPanel) {
+      const panel = document.createElement("div");
+      panel.id = "ieFloatingToolPanel";
+      panel.className = "ieFloatingPanel hidden";
+      wrap.appendChild(panel);
+      editorState.floatingToolPanel = panel;
+    }
+
+    if (toolbar.parentElement !== editorState.floatingToolPanel) {
+      editorState.floatingToolPanel.appendChild(toolbar);
+    }
+  }
+
+  function collapseFloatingPanelAfterToolPick() {
+    if (window.matchMedia("(max-width: 950px)").matches) {
+      setFloatingPanelOpen(false);
+    }
+  }
+
   function getToolButton(toolName) {
     return document.querySelector(`.ie-tool[data-tool="${toolName}"]`);
   }
@@ -6135,83 +6206,12 @@
       if (btn.dataset.boundClick === "1") return;
       btn.dataset.boundClick = "1";
 
-           btn.addEventListener("click", () => {
+      btn.addEventListener("click", () => {
         const tool = btn.getAttribute("data-tool") || "select";
         setActiveTool(tool);
         collapseFloatingPanelAfterToolPick();
       });
     });
-  }
-
-  function getEditIconSvg() {
-    return `
-      <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-        <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25Z" fill="currentColor"></path>
-        <path d="M14.06 4.94l3.75 3.75 1.47-1.47a1.5 1.5 0 0 0 0-2.12l-1.63-1.63a1.5 1.5 0 0 0-2.12 0l-1.47 1.47Z" fill="currentColor"></path>
-      </svg>
-    `;
-  }
-
-  function setFloatingPanelOpen(isOpen) {
-    const panel = editorState.floatingToolPanel;
-    const btn = editorState.floatingToggleBtn;
-    if (!panel || !btn) return;
-
-    panel.classList.toggle("hidden", !isOpen);
-    btn.setAttribute("aria-expanded", isOpen ? "true" : "false");
-    btn.title = isOpen ? "ซ่อนเครื่องมือแก้ไขภาพ" : "แสดงเครื่องมือแก้ไขภาพ";
-  }
-
-  function toggleFloatingPanel(forceState) {
-    const panel = editorState.floatingToolPanel;
-    if (!panel) return;
-
-    const next = typeof forceState === "boolean"
-      ? forceState
-      : panel.classList.contains("hidden");
-
-    setFloatingPanelOpen(next);
-  }
-
-  function ensureFloatingToolUi() {
-    const wrap = document.querySelector(".imgEditorCanvasWrap");
-    const toolbar = document.querySelector(".imgEditorToolbar");
-    if (!wrap || !toolbar) return;
-
-    if (!editorState.floatingToggleBtn) {
-      const btn = document.createElement("button");
-      btn.type = "button";
-      btn.id = "ieFloatingToggleBtn";
-      btn.className = "ieFloatingToggle";
-      btn.innerHTML = getEditIconSvg();
-      btn.setAttribute("aria-label", "เปิดเครื่องมือแก้ไขภาพ");
-      btn.setAttribute("aria-expanded", "false");
-      btn.title = "แสดงเครื่องมือแก้ไขภาพ";
-      wrap.appendChild(btn);
-      editorState.floatingToggleBtn = btn;
-
-      btn.addEventListener("click", () => {
-        toggleFloatingPanel();
-      });
-    }
-
-    if (!editorState.floatingToolPanel) {
-      const panel = document.createElement("div");
-      panel.id = "ieFloatingToolPanel";
-      panel.className = "ieFloatingPanel hidden";
-      wrap.appendChild(panel);
-      editorState.floatingToolPanel = panel;
-    }
-
-    if (toolbar.parentElement !== editorState.floatingToolPanel) {
-      editorState.floatingToolPanel.appendChild(toolbar);
-    }
-  }
-
-  function collapseFloatingPanelAfterToolPick() {
-    if (window.matchMedia("(max-width: 950px)").matches) {
-      setFloatingPanelOpen(false);
-    }
   }
 
   function bindUiOnce() {
@@ -6234,7 +6234,7 @@
       }
     });
 
-          $("ieZoomInBtn")?.addEventListener("click", () => {
+    $("ieZoomInBtn")?.addEventListener("click", () => {
       setZoom(editorState.zoom + 0.1);
       collapseFloatingPanelAfterToolPick();
     });
@@ -6264,6 +6264,41 @@
       collapseFloatingPanelAfterToolPick();
     });
 
+    $("ieColorPicker")?.addEventListener("input", (e) => {
+      editorState.strokeColor = e.target.value || "#dc2626";
+    });
+
+    $("ieStrokeWidth")?.addEventListener("input", (e) => {
+      editorState.strokeWidth = Number(e.target.value || 3);
+    });
+
+    $("ieBrightness")?.addEventListener("input", (e) => {
+      applyBrightness(e.target.value);
+    });
+
+    $("ieBrightness")?.addEventListener("change", () => {
+      commitBrightnessToHistory();
+    });
+
+    $("ieResetBtn")?.addEventListener("click", async () => {
+      if (!editorState.originalFile) return;
+      try {
+        destroyCanvas();
+        revokeOriginalUrl();
+        await loadImageToCanvas(editorState.originalFile);
+        editorState.zoom = 1;
+        editorState.brightness = 0;
+        if ($("ieBrightness")) $("ieBrightness").value = "0";
+        ensureExtraControls();
+        bindToolButtons();
+        setActiveTool("select");
+        pushHistorySnapshot(true);
+      } catch (err) {
+        console.error(err);
+        showMessage("error", "รีเซ็ตภาพไม่สำเร็จ", err?.message || String(err));
+      }
+    });
+
     $("ieUndoBtn")?.addEventListener("click", () => {
       undoHistory();
       collapseFloatingPanelAfterToolPick();
@@ -6283,12 +6318,14 @@
       applyCrop();
       collapseFloatingPanelAfterToolPick();
     });
-  async function openImageEditor(file, options = {}) {
-         ensureExtraControls();
+
     bindToolButtons();
-    setFloatingPanelOpen(!window.matchMedia("(max-width: 950px)").matches);
-    setActiveTool("select");
-    
+  }
+
+  async function openImageEditor(file, options = {}) {
+    ensureFabricReady();
+    ensureModal();
+    bindUiOnce();
 
     if (!file || !/^image\//i.test(file.type || "")) {
       throw new Error("ไฟล์ที่ส่งเข้า editor ต้องเป็นรูปภาพ");
@@ -6333,6 +6370,7 @@
 
     ensureExtraControls();
     bindToolButtons();
+    setFloatingPanelOpen(!window.matchMedia("(max-width: 950px)").matches);
     setActiveTool("select");
     setZoomLabel();
     setToolLabel();
