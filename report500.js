@@ -1723,39 +1723,40 @@
   }
 
   function createImageRowHtml(index) {
-    return `
-      <div class="rptRepeatCard" data-type="image">
-        <div class="rptCardHead" style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid #e7eef8">
-          <div style="font-size:13px;font-weight:900;line-height:1.2">รูปภาพ ${index}</div>
-          <div class="rptRowIndex" style="display:inline-flex;align-items:center;justify-content:center;min-width:34px;height:30px;padding:0 10px;border-radius:999px;background:#eef4ff;color:#1d4ed8;border:1px solid #d8e5fb;font-size:11px;font-weight:900">${index}</div>
+  return `
+    <div class="rptRepeatCard" data-type="image">
+      <div class="rptCardHead" style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid #e7eef8">
+        <div style="font-size:13px;font-weight:900;line-height:1.2">รูปภาพ ${index}</div>
+        <div class="rptRowIndex" style="display:inline-flex;align-items:center;justify-content:center;min-width:34px;height:30px;padding:0 10px;border-radius:999px;background:#eef4ff;color:#1d4ed8;border:1px solid #d8e5fb;font-size:11px;font-weight:900">${index}</div>
+      </div>
+
+      <div class="gridCompact">
+        <div class="field">
+          <label>เลือกรูปภาพ</label>
+          <input type="file" class="rptImageFile" accept="image/*">
+          <div class="fieldHint rptImageMeta">ยังไม่เลือกรูปภาพ</div>
         </div>
 
-        <div class="gridCompact">
-          <div class="field">
-            <label>เลือกรูปภาพ</label>
-            <input type="file" class="rptImageFile" accept="image/*">
-            <div class="fieldHint rptImageMeta"></div>
-          </div>
-
-          <div class="field">
-            <label>คำบรรยายภาพ</label>
-            <textarea class="rptImageCaption" rows="4" placeholder="อธิบายภาพนี้"></textarea>
-          </div>
-        </div>
-
-        <div class="field" style="margin-top:10px">
-          <div class="rptImagePreviewEmpty" style="padding:12px 14px;border:1px dashed #bfd1e6;border-radius:14px;background:#f8fbff;color:#64748b;font-size:12px;font-weight:800">
-            ยังไม่ได้เลือกรูปภาพ
-          </div>
-          <img class="rptImagePreview hidden" alt="preview" style="width:100%;max-height:260px;object-fit:contain;border-radius:14px;border:1px solid #d9e4f1;background:#fff;padding:6px">
-        </div>
-
-        <div class="panelActions" style="justify-content:flex-end;margin-top:10px">
-          <button type="button" class="btn ghost rptRemoveRow">ลบแถว</button>
+        <div class="field">
+          <label>คำบรรยายภาพ</label>
+          <textarea class="rptImageCaption" rows="4" placeholder="อธิบายภาพนี้"></textarea>
         </div>
       </div>
-    `;
-  }
+
+      <div class="rptImagePreviewWrap">
+        <div class="rptImagePreviewEmpty">
+          ยังไม่ได้เลือกรูปภาพ
+        </div>
+        <img class="rptImagePreview hidden" alt="preview">
+      </div>
+
+      <div class="rptImageActions">
+        <button type="button" class="btn ghost rptEditImageBtn" disabled>แก้ไขภาพ</button>
+        <button type="button" class="btn ghost rptRemoveRow">ลบแถว</button>
+      </div>
+    </div>
+  `;
+}
 
   function appendRow(listId, html, emptyLabel) {
     const root = $(listId);
@@ -1773,20 +1774,74 @@
     if (!node) return;
 
     node.querySelector(".rptRemoveRow")?.addEventListener("click", () => {
-      const img = node.querySelector(".rptImagePreview");
-      if (img && img.dataset.objectUrl) {
-        try { URL.revokeObjectURL(img.dataset.objectUrl); } catch (_) {}
-      }
-      const parentId = node.parentElement?.id || "";
-      node.remove();
-      if (parentId) {
-        refreshRowIndex(parentId);
-        toggleEmptyState(parentId, emptyStateLabelFor(parentId));
-      }
-    });
+  const img = node.querySelector(".rptImagePreview");
+  if (img) {
+    if (img.dataset.objectUrl) {
+      try { URL.revokeObjectURL(img.dataset.objectUrl); } catch (_) {}
+      img.dataset.objectUrl = "";
+    }
+  }
+
+  const input = node.querySelector(".rptImageFile");
+  if (input && window.UploadImageTools?.clearEditedUploadFile) {
+    window.UploadImageTools.clearEditedUploadFile(input);
+  }
+
+  const parentId = node.parentElement?.id || "";
+  node.remove();
+  if (parentId) {
+    refreshRowIndex(parentId);
+    toggleEmptyState(parentId, emptyStateLabelFor(parentId));
+  }
+});
 
     if (node.getAttribute("data-type") === "person") {
       bindSelectOtherInRow(node, ".rptPersonPosition", ".rptPersonPositionOtherWrap", ".rptPersonPositionOther");
+      function getUploadImageTools() {
+  return window.UploadImageTools || {};
+}
+
+function revokePreviewObjectUrl(img) {
+  if (!img) return;
+  if (img.dataset.objectUrl) {
+    try { URL.revokeObjectURL(img.dataset.objectUrl); } catch (_) {}
+    img.dataset.objectUrl = "";
+  }
+}
+
+function setReportImagePreview(row, file, metaText, isEdited = false) {
+  const preview = row?.querySelector(".rptImagePreview");
+  const empty = row?.querySelector(".rptImagePreviewEmpty");
+  const meta = row?.querySelector(".rptImageMeta");
+  const editBtn = row?.querySelector(".rptEditImageBtn");
+
+  if (meta) {
+    meta.textContent = metaText || (file ? file.name : "ยังไม่เลือกรูปภาพ");
+    meta.classList.toggle("is-edited", !!isEdited);
+  }
+
+  if (editBtn) {
+    editBtn.disabled = !file;
+  }
+
+  if (!preview || !empty) return;
+
+  revokePreviewObjectUrl(preview);
+
+  if (!file) {
+    preview.classList.add("hidden");
+    preview.removeAttribute("src");
+    empty.classList.remove("hidden");
+    empty.textContent = "ยังไม่ได้เลือกรูปภาพ";
+    return;
+  }
+
+  const url = URL.createObjectURL(file);
+  preview.src = url;
+  preview.dataset.objectUrl = url;
+  preview.classList.remove("hidden");
+  empty.classList.add("hidden");
+}
       bindSelectOtherInRow(node, ".rptPersonDepartment", ".rptPersonDepartmentOtherWrap", ".rptPersonDepartmentOther");
       bindSelectOtherInRow(node, ".rptPersonRemark", ".rptPersonRemarkOtherWrap", ".rptPersonRemarkOther");
     }
@@ -1864,54 +1919,86 @@
   }
 
   function bindImageRow(node) {
-    const fileInput = node.querySelector(".rptImageFile");
-    const preview = node.querySelector(".rptImagePreview");
-    const previewEmpty = node.querySelector(".rptImagePreviewEmpty");
-    const meta = node.querySelector(".rptImageMeta");
+  const input = node.querySelector(".rptImageFile");
+  const editBtn = node.querySelector(".rptEditImageBtn");
+  const tools = getUploadImageTools();
 
-    fileInput?.addEventListener("change", () => {
-      const file = fileInput.files && fileInput.files[0] ? fileInput.files[0] : null;
-      if (!file) {
-        if (preview && preview.dataset.objectUrl) {
-          try { URL.revokeObjectURL(preview.dataset.objectUrl); } catch (_) {}
-        }
-        if (preview) {
-          preview.removeAttribute("src");
-          preview.dataset.objectUrl = "";
-          preview.classList.add("hidden");
-        }
-        previewEmpty?.classList.remove("hidden");
-        if (meta) meta.textContent = "";
-        return;
-      }
+  if (!input) return;
 
-      if (!/^image\//i.test(file.type || "")) {
-        fileInput.value = "";
-        Swal.fire({
-          icon: "warning",
-          title: "ไฟล์ไม่ถูกต้อง",
-          text: "กรุณาเลือกไฟล์รูปภาพเท่านั้น"
-        });
-        return;
-      }
+  input.addEventListener("change", async () => {
+    const f = input.files && input.files[0] ? input.files[0] : null;
 
-      if (preview && preview.dataset.objectUrl) {
-        try { URL.revokeObjectURL(preview.dataset.objectUrl); } catch (_) {}
-      }
+    if (typeof tools.clearEditedUploadFile === "function") {
+      tools.clearEditedUploadFile(input);
+    }
 
-      const url = URL.createObjectURL(file);
-      if (preview) {
-        preview.src = url;
-        preview.dataset.objectUrl = url;
-        preview.classList.remove("hidden");
-      }
-      previewEmpty?.classList.add("hidden");
+    if (!f) {
+      setReportImagePreview(node, null, "ยังไม่เลือกรูปภาพ", false);
+      return;
+    }
 
-      const mb = file.size / (1024 * 1024);
-      if (meta) meta.textContent = `ไฟล์: ${file.name} (${mb.toFixed(2)} MB)`;
+    if (!/^image\//i.test(f.type || "")) {
+      input.value = "";
+      setReportImagePreview(node, null, "ไฟล์ไม่ถูกต้อง (ต้องเป็นรูปภาพเท่านั้น)", false);
+      await Swal.fire({
+        icon: "warning",
+        title: "ไฟล์ไม่ถูกต้อง",
+        text: "กรุณาเลือกไฟล์รูปภาพเท่านั้น"
+      });
+      return;
+    }
+
+    setReportImagePreview(node, f, `เลือกรูปแล้ว: ${f.name}`, false);
+  });
+
+  editBtn?.addEventListener("click", async () => {
+    const sourceFile =
+      typeof tools.getPickedOrEditedFile === "function"
+        ? tools.getPickedOrEditedFile(input)
+        : (input.files && input.files[0] ? input.files[0] : null);
+
+    if (!sourceFile) {
+      await Swal.fire({
+        icon: "info",
+        title: "ยังไม่มีรูปภาพ",
+        text: "กรุณาเลือกรูปภาพก่อนแล้วจึงกดแก้ไข"
+      });
+      return;
+    }
+
+    if (!window.ImageEditorX || typeof window.ImageEditorX.open !== "function") {
+      await Swal.fire({
+        icon: "error",
+        title: "ยังไม่พร้อมใช้งาน",
+        text: "ไม่พบ image-editor.js หรือยังไม่ได้โหลด modal ของ image editor"
+      });
+      return;
+    }
+
+    const result = await window.ImageEditorX.open(sourceFile, {
+      strokeColor: "#dc2626",
+      strokeWidth: 3
     });
-  }
 
+    if (!result?.ok || !result.file) return;
+
+    if (typeof tools.setEditedUploadFile === "function") {
+      tools.setEditedUploadFile(input, result.file, {
+        filename: result.filename || result.file.name,
+        dataUrl: result.dataUrl || ""
+      });
+    }
+
+    const badgeText =
+      typeof tools.buildEditedImageBadgeHtml === "function"
+        ? tools.buildEditedImageBadgeHtml(result.file)
+        : `ไฟล์แก้ไขแล้ว: ${result.file.name}`;
+
+    setReportImagePreview(node, result.file, badgeText, true);
+  });
+
+  setReportImagePreview(node, null, "ยังไม่เลือกรูปภาพ", false);
+}
   function refreshRowIndex(listId) {
     const root = $(listId);
     if (!root) return;
@@ -2053,33 +2140,36 @@
     });
   }
 
-  async function collectImages() {
-    const rows = Array.from(document.querySelectorAll("#rptImageList .rptRepeatCard"));
-    const out = [];
+ async function collectImages() {
+  const rows = Array.from(document.querySelectorAll("#rptImageList .rptRepeatCard"));
+  const out = [];
+  const tools = getUploadImageTools();
 
-    for (let i = 0; i < rows.length; i++) {
-      const row = rows[i];
-      const fileInput = row.querySelector(".rptImageFile");
-      const file = fileInput?.files && fileInput.files[0] ? fileInput.files[0] : null;
-      const caption = norm(row.querySelector(".rptImageCaption")?.value);
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i];
+    const fileInput = row.querySelector(".rptImageFile");
 
-      if (!file && !caption) continue;
-      if (!file) throw new Error(`รูปภาพรายการที่ ${i + 1} ยังไม่ได้เลือกไฟล์`);
-      if (!/^image\//i.test(file.type || "")) {
-        throw new Error(`ไฟล์รูปภาพรายการที่ ${i + 1} ไม่ถูกต้อง`);
-      }
+    const file =
+      typeof tools.getPickedOrEditedFile === "function"
+        ? tools.getPickedOrEditedFile(fileInput)
+        : (fileInput?.files && fileInput.files[0] ? fileInput.files[0] : null);
 
-      const base64 = await fileToBase64(file);
-      out.push({
-        filename: file.name,
-        mimeType: file.type || "application/octet-stream",
-        base64,
-        caption
-      });
-    }
+    const caption = norm(row.querySelector(".rptImageCaption")?.value);
 
-    return out;
+    if (!file) continue;
+
+    out.push({
+      name: file.name || `report500-image-${i + 1}.jpg`,
+      filename: file.name || `report500-image-${i + 1}.jpg`,
+      type: file.type || "image/jpeg",
+      size: Number(file.size || 0),
+      caption,
+      base64: await fileToBase64(file)
+    });
   }
+
+  return out;
+}
 
   function collectEmailRecipients() {
     const checked = Array.from(document.querySelectorAll(".rptEmailChk:checked"))
