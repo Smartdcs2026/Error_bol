@@ -2311,7 +2311,7 @@
       <div class="swalSummary">
         <div class="swalHero">
           <div class="swalHeroTitle">ตรวจสอบข้อมูลก่อนบันทึก</div>
-          <div class="swalHeroSub">Report500</div>
+          <div class="swalHeroSub">Report</div>
         </div>
 
         <div class="swalSection">
@@ -2431,7 +2431,7 @@
       await (window.sleepMs ? window.sleepMs(120) : new Promise((r) => setTimeout(r, 120)));
       Progress?.markDone("upload", 44, `เตรียมรูปภาพเรียบร้อย (${images.length} รูป)`);
 
-      Progress?.activateOnly("save", 56, "กำลังบันทึกข้อมูล Report500");
+      Progress?.activateOnly("save", 56, "กำลังบันทึกข้อมูล Report");
 
       const res = await fetch(apiUrl("/report500/submit"), {
         method: "POST",
@@ -2580,7 +2580,7 @@
 
       await Swal.fire({
         icon: "error",
-        title: "บันทึก Report500 ไม่สำเร็จ",
+        title: "บันทึก Report ไม่สำเร็จ",
         text: err?.message || String(err)
       });
 
@@ -2740,7 +2740,7 @@
       } catch (_) {}
 
       if (!res.ok || !json.ok) {
-        throw new Error(json?.error || `โหลดตัวเลือก Report500 ไม่สำเร็จ (HTTP ${res.status})`);
+        throw new Error(json?.error || `โหลดตัวเลือก Report ไม่สำเร็จ (HTTP ${res.status})`);
       }
 
       state.options = (json && json.data) ? json.data : {};
