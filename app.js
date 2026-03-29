@@ -8457,6 +8457,8 @@ async function handlePickedImageForUpload(input, box) {
 
   if (!/^image\//i.test(f.type || "")) {
     input.value = "";
+    EDITED_UPLOAD_STORE.delete(input);
+
     await Swal.fire({
       icon: "warning",
       title: "ไฟล์ไม่ถูกต้อง",
@@ -8464,6 +8466,21 @@ async function handlePickedImageForUpload(input, box) {
     });
     return;
   }
+
+  // ล้างสถานะไฟล์ที่เคยแก้ไขไว้ของ input นี้ก่อน
+  EDITED_UPLOAD_STORE.delete(input);
+
+  // สร้างปุ่มแก้ไขภาพเหมือนเดิม แต่ยังไม่เปิด editor ทันที
+  ensureEditButtonForUploadBox(box, input.id);
+
+  // แสดง preview ไฟล์ดิบก่อน เพื่อหลีกเลี่ยงการเปิด modal/canvas ทันทีบนมือถือ
+  updateUploadPreviewFromFile(
+    input,
+    box,
+    f,
+    `ไฟล์ที่เลือก: ${f.name} (${Math.round((f.size || 0) / 1024)} KB)`
+  );
+}
 
   ensureEditButtonForUploadBox(box, input.id);
   await openEditorForUploadInput(input, box);
