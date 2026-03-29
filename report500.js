@@ -1348,7 +1348,111 @@
     buttonsBound: false,
     options: null
   };
+  const RPT_EDITED_IMAGE_STORE = new WeakMap();
 
+  function buildRptEditedImageMeta(file, isEdited = false) {
+    if (!file) return "";
+    const sizeKb = Math.round((file.size || 0) / 1024);
+    return isEdited
+      ? `ไฟล์แก้ไขแล้ว: ${file.name || "edited-image.jpg"} (${sizeKb} KB)`
+      : `ไฟล์ที่เลือก: ${file.name || "image.jpg"} (${sizeKb} KB)`;
+  }
+
+  function updateRptImagePreview(row, file, metaText) {
+    if (!row || !file) return;
+
+    const meta = row.querySelector(".rptImageMeta");
+    const img = row.querySelector(".rptImagePreview");
+    const empty = row.querySelector(".rptImagePreviewEmpty");
+
+    if (meta) {
+      meta.textContent = metaText || buildRptEditedImageMeta(file, false);
+    }
+
+    if (img) {
+      if (img.dataset.objectUrl) {
+        try { URL.revokeObjectURL(img.dataset.objectUrl); } catch (_) {}
+      }
+
+      const url = URL.createObjectURL(file);
+      img.src = url;
+      img.dataset.objectUrl = url;
+      img.classList.remove("hidden");
+    }
+
+    empty?.classList.add("hidden");
+  }
+
+  function clearRptEditedImageState(row) {
+    const fileInput = row?.querySelector(".rptImageFile");
+    const img = row?.querySelector(".rptImagePreview");
+    const empty = row?.querySelector(".rptImagePreviewEmpty");
+    const meta = row?.querySelector(".rptImageMeta");
+
+    if (fileInput) {
+      RPT_EDITED_IMAGE_STORE.delete(fileInput);
+    }
+
+    if (img?.dataset.objectUrl) {
+      try { URL.revokeObjectURL(img.dataset.objectUrl); } catch (_) {}
+    }
+
+    if (img) {
+      img.removeAttribute("src");
+      delete img.dataset.objectUrl;
+      img.classList.add("hidden");
+    }
+
+    empty?.classList.remove("hidden");
+    if (meta) meta.textContent = "";
+  }
+
+  async function openRptImageEditor(row) {
+    if (!window.ImageEditorX || typeof window.ImageEditorX.open !== "function") {
+      await Swal.fire({
+        icon: "error",
+        title: "ยังไม่พร้อมใช้งาน",
+        text: "ไม่พบ image-editor.js หรือยังไม่ได้โหลด modal ของ image editor"
+      });
+      return;
+    }
+
+    const fileInput = row?.querySelector(".rptImageFile");
+    if (!fileInput) return;
+
+    const edited = RPT_EDITED_IMAGE_STORE.get(fileInput)?.file || null;
+    const raw = fileInput.files && fileInput.files[0] ? fileInput.files[0] : null;
+    const sourceFile = edited || raw;
+
+    if (!sourceFile) {
+      await Swal.fire({
+        icon: "info",
+        title: "ยังไม่มีรูปภาพ",
+        text: "กรุณาเลือกรูปภาพก่อนแล้วจึงกดแก้ไข"
+      });
+      return;
+    }
+
+    const result = await window.ImageEditorX.open(sourceFile, {
+      strokeColor: "#dc2626",
+      strokeWidth: 3
+    });
+
+    if (!result?.ok || !result.file) return;
+
+    RPT_EDITED_IMAGE_STORE.set(fileInput, {
+      edited: true,
+      file: result.file,
+      filename: result.filename || result.file.name,
+      dataUrl: result.dataUrl || ""
+    });
+
+    updateRptImagePreview(
+      row,
+      result.file,
+      buildRptEditedImageMeta(result.file, true)
+    );
+  }
   function norm(v) {
     return String(v == null ? "" : v).trim();
   }
@@ -1722,7 +1826,7 @@
     `;
   }
 
-  function createImageRowHtml(index) {
+    function createImageRowHtml(index) {
     return `
       <div class="rptRepeatCard" data-type="image">
         <div class="rptCardHead" style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid #e7eef8">
@@ -1751,6 +1855,7 @@
         </div>
 
         <div class="panelActions" style="justify-content:flex-end;margin-top:10px">
+          <button type="button" class="btn ghost rptEditImageBtn">แก้ไขภาพ</button>
           <button type="button" class="btn ghost rptRemoveRow">ลบแถว</button>
         </div>
       </div>
@@ -1772,13 +1877,19 @@
   function bindDynamicRow(node) {
     if (!node) return;
 
-    node.querySelector(".rptRemoveRow")?.addEventListener("click", () => {
-      const img = node.querySelector(".rptImagePreview");
-      if (img && img.dataset.objectUrl) {
-        try { URL.revokeObjectURL(img.dataset.objectUrl); } catch (_) {}
+        node.querySelector(".rptRemoveRow")?.addEventListener("click", () => {
+      if (node.getAttribute("data-type") === "image") {
+        clearRptEditedImageState(node);
+      } else {
+        const img = node.querySelector(".rptImagePreview");
+        if (img && img.dataset.objectUrl) {
+          try { URL.revokeObjectURL(img.dataset.objectUrl); } catch (_) {}
+        }
       }
+
       const parentId = node.parentElement?.id || "";
       node.remove();
+
       if (parentId) {
         refreshRowIndex(parentId);
         toggleEmptyState(parentId, emptyStateLabelFor(parentId));
@@ -1863,31 +1974,25 @@
     syncType();
   }
 
-  function bindImageRow(node) {
+    function bindImageRow(node) {
     const fileInput = node.querySelector(".rptImageFile");
-    const preview = node.querySelector(".rptImagePreview");
-    const previewEmpty = node.querySelector(".rptImagePreviewEmpty");
-    const meta = node.querySelector(".rptImageMeta");
+    const editBtn = node.querySelector(".rptEditImageBtn");
 
-    fileInput?.addEventListener("change", () => {
+    if (!fileInput) return;
+
+    fileInput.addEventListener("change", async () => {
       const file = fileInput.files && fileInput.files[0] ? fileInput.files[0] : null;
+
       if (!file) {
-        if (preview && preview.dataset.objectUrl) {
-          try { URL.revokeObjectURL(preview.dataset.objectUrl); } catch (_) {}
-        }
-        if (preview) {
-          preview.removeAttribute("src");
-          preview.dataset.objectUrl = "";
-          preview.classList.add("hidden");
-        }
-        previewEmpty?.classList.remove("hidden");
-        if (meta) meta.textContent = "";
+        clearRptEditedImageState(node);
         return;
       }
 
       if (!/^image\//i.test(file.type || "")) {
         fileInput.value = "";
-        Swal.fire({
+        clearRptEditedImageState(node);
+
+        await Swal.fire({
           icon: "warning",
           title: "ไฟล์ไม่ถูกต้อง",
           text: "กรุณาเลือกไฟล์รูปภาพเท่านั้น"
@@ -1895,20 +2000,19 @@
         return;
       }
 
-      if (preview && preview.dataset.objectUrl) {
-        try { URL.revokeObjectURL(preview.dataset.objectUrl); } catch (_) {}
-      }
+      // เปลี่ยนรูปใหม่ = ล้างสถานะไฟล์แก้ไขเก่าก่อน
+      RPT_EDITED_IMAGE_STORE.delete(fileInput);
 
-      const url = URL.createObjectURL(file);
-      if (preview) {
-        preview.src = url;
-        preview.dataset.objectUrl = url;
-        preview.classList.remove("hidden");
-      }
-      previewEmpty?.classList.add("hidden");
+      // แสดง preview ก่อน ไม่เปิด editor ทันที
+      updateRptImagePreview(
+        node,
+        file,
+        buildRptEditedImageMeta(file, false)
+      );
+    });
 
-      const mb = file.size / (1024 * 1024);
-      if (meta) meta.textContent = `ไฟล์: ${file.name} (${mb.toFixed(2)} MB)`;
+    editBtn?.addEventListener("click", async () => {
+      await openRptImageEditor(node);
     });
   }
 
@@ -2053,14 +2157,16 @@
     });
   }
 
-  async function collectImages() {
+    async function collectImages() {
     const rows = Array.from(document.querySelectorAll("#rptImageList .rptRepeatCard"));
     const out = [];
 
     for (let i = 0; i < rows.length; i++) {
       const row = rows[i];
       const fileInput = row.querySelector(".rptImageFile");
-      const file = fileInput?.files && fileInput.files[0] ? fileInput.files[0] : null;
+      const edited = fileInput ? (RPT_EDITED_IMAGE_STORE.get(fileInput)?.file || null) : null;
+      const raw = fileInput?.files && fileInput.files[0] ? fileInput.files[0] : null;
+      const file = edited || raw;
       const caption = norm(row.querySelector(".rptImageCaption")?.value);
 
       if (!file && !caption) continue;
@@ -2529,6 +2635,9 @@
     if ($("rptCauseList")) $("rptCauseList").innerHTML = "";
     if ($("rptPreventionList")) $("rptPreventionList").innerHTML = "";
     if ($("rptLearningList")) $("rptLearningList").innerHTML = "";
+        document.querySelectorAll("#rptImageList .rptRepeatCard").forEach((row) => {
+      clearRptEditedImageState(row);
+    });
     if ($("rptImageList")) $("rptImageList").innerHTML = "";
 
     toggleEmptyState("rptPersonList", "ผู้เกี่ยวข้อง");
