@@ -1638,6 +1638,11 @@ body.progress-lock{
   height:min(calc(100dvh - 16px),980px);
   max-height:min(calc(100dvh - 16px),980px);
   display:grid;
+  grid-template-areas:
+    "header"
+    "toolbar"
+    "body"
+    "footer";
   grid-template-rows:auto auto minmax(0,1fr) auto;
   background:linear-gradient(180deg,#ffffff 0%,#fbfdff 100%);
   border:1px solid #dbe6f3;
@@ -1650,6 +1655,7 @@ body.progress-lock{
    HEADER
 ========================= */
 .imgEditorHeader{
+  grid-area:header;
   display:grid;
   grid-template-columns:minmax(0,1fr) auto;
   gap:12px;
@@ -1692,12 +1698,14 @@ body.progress-lock{
    TOOLBAR AREA
 ========================= */
 .imgEditorToolbarWrap{
+  grid-area:toolbar;
   width:100%;
   display:block;
   padding:10px;
   border-bottom:1px solid #e5edf8;
   background:linear-gradient(180deg,#fbfdff 0%,#f4f8ff 100%);
-  overflow:visible;
+  overflow:auto;
+  max-height:42vh;
 }
 
 .imgEditorToolbar{
@@ -1705,7 +1713,6 @@ body.progress-lock{
   display:block !important;
 }
 
-/* รองรับ layout ที่ image-editor.js สร้างใหม่ */
 .imgEditorToolbarGrid,
 .ieToolbarGridEnhanced{
   width:100%;
@@ -1763,7 +1770,6 @@ body.progress-lock{
   grid-template-columns:1fr;
 }
 
-/* divider เก่า ถ้ายังมี */
 .ieDivider{
   grid-column:1 / -1;
   height:1px;
@@ -1772,7 +1778,6 @@ body.progress-lock{
   border-radius:999px;
 }
 
-/* ปุ่มทั้งหมดใน editor */
 .imgEditorToolbar .btn,
 .ieToolbarSection .btn{
   width:100%;
@@ -1893,6 +1898,7 @@ body.progress-lock{
    BODY / CANVAS
 ========================= */
 .imgEditorBody{
+  grid-area:body;
   min-height:0;
   padding:12px;
   background:linear-gradient(180deg,#f8fbff 0%,#f1f6ff 100%);
@@ -1931,6 +1937,7 @@ body.progress-lock{
    FOOTER
 ========================= */
 .imgEditorFooter{
+  grid-area:footer;
   display:grid;
   grid-template-columns:minmax(0,1fr) auto;
   gap:12px;
@@ -1997,6 +2004,12 @@ body.progress-lock{
     height:calc(100dvh - 12px);
     max-height:calc(100dvh - 12px);
     border-radius:18px;
+    grid-template-areas:
+      "header"
+      "body"
+      "toolbar"
+      "footer";
+    grid-template-rows:auto minmax(0,1fr) auto auto;
   }
 
   .imgEditorHeader{
@@ -2021,8 +2034,21 @@ body.progress-lock{
     font-size:12px;
   }
 
+  .imgEditorBody{
+    padding:8px;
+  }
+
+  .imgEditorCanvasWrap{
+    min-height:0;
+    height:100%;
+    border-radius:14px;
+  }
+
   .imgEditorToolbarWrap{
     padding:8px;
+    max-height:30vh;
+    border-top:1px solid #e5edf8;
+    border-bottom:none;
   }
 
   .imgEditorToolbarGrid,
@@ -2070,17 +2096,6 @@ body.progress-lock{
     min-height:28px;
   }
 
-  .imgEditorBody{
-    min-height:0;
-    padding:8px;
-  }
-
-  .imgEditorCanvasWrap{
-    min-height:38vh;
-    height:38vh;
-    border-radius:14px;
-  }
-
   .imgEditorFooter{
     grid-template-columns:1fr;
     gap:10px;
@@ -2123,8 +2138,13 @@ body.progress-lock{
     display:none;
   }
 
+  .imgEditorBody{
+    padding:6px;
+  }
+
   .imgEditorToolbarWrap{
     padding:6px;
+    max-height:28vh;
   }
 
   .imgEditorToolbarGrid,
@@ -2166,16 +2186,6 @@ body.progress-lock{
     border-radius:11px;
     font-size:10.5px;
     gap:6px;
-  }
-
-  .imgEditorBody{
-    padding:6px;
-  }
-
-  .imgEditorCanvasWrap{
-    min-height:34vh;
-    height:34vh;
-    border-radius:12px;
   }
 
   .imgEditorFooter{
@@ -2221,11 +2231,6 @@ body.progress-lock{
     border-radius:10px;
     font-size:10px;
     grid-template-columns:40px minmax(0,1fr);
-  }
-
-  .imgEditorCanvasWrap{
-    min-height:190px;
-    height:190px;
   }
 
   .imgEditorActions{
