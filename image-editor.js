@@ -4622,7 +4622,6 @@
 // })();
 
 
-
 (function () {
   const editorState = {
     modal: null,
@@ -4655,6 +4654,36 @@
 
   const $ = (id) => document.getElementById(id);
 
+  const TOOL_ICONS = {
+    ieSelectBtn: "⌖",
+    iePanBtn: "✥",
+    ieTextBtn: "T",
+    ieCropToolBtn: "◫",
+
+    ieLineBtn: "／",
+    ieArrowBtn: "➜",
+    ieRectBtn: "▭",
+    ieCircleBtn: "◯",
+
+    ieBlurRectBtn: "◫",
+    ieBlurCircleBtn: "◌",
+    ieMosaicRectBtn: "▦",
+    ieMosaicCircleBtn: "◍",
+
+    ieZoomOutBtn: "－",
+    ieZoomResetBtn: "◎",
+    ieZoomInBtn: "＋",
+    ieFitBtn: "⤢",
+
+    ieUndoBtn: "↶",
+    ieRedoBtn: "↷",
+    ieDeleteBtn: "⌫",
+    ieApplyCropBtn: "✓",
+
+    ieRotateLeftBtn: "↺",
+    ieRotateRightBtn: "↻"
+  };
+
   function showMessage(type, title, text) {
     if (window.Swal) {
       return Swal.fire({
@@ -4669,15 +4698,12 @@
   }
 
   function ensureFabricReady() {
-    if (!window.fabric) {
-      throw new Error("ยังไม่พบ Fabric.js");
-    }
+    if (!window.fabric) throw new Error("ยังไม่พบ Fabric.js");
   }
 
   function ensureModal() {
     editorState.modal = $("imgEditorModal");
     editorState.canvasEl = $("imgEditorCanvas");
-
     if (!editorState.modal || !editorState.canvasEl) {
       throw new Error("ยังไม่พบโครง modal ของ image editor");
     }
@@ -4692,9 +4718,7 @@
 
   function destroyCanvas() {
     if (editorState.canvas) {
-      try {
-        editorState.canvas.dispose();
-      } catch (_) {}
+      try { editorState.canvas.dispose(); } catch (_) {}
       editorState.canvas = null;
     }
     editorState.baseImage = null;
@@ -4754,7 +4778,6 @@
 
   function setObjectEditableState(obj, editable) {
     if (!obj || obj === editorState.baseImage) return;
-
     obj.selectable = !!editable;
     obj.evented = true;
     obj.hasControls = true;
@@ -4804,7 +4827,6 @@
   function resetViewport() {
     const canvas = editorState.canvas;
     if (!canvas) return;
-
     editorState.zoom = 1;
     canvas.setViewportTransform([1, 0, 0, 1, 0, 0]);
     canvas.requestRenderAll();
@@ -4817,20 +4839,11 @@
 
     editorState.zoom = Math.max(0.2, Math.min(5, Number(nextZoom) || 1));
 
-    let center;
-    if (typeof canvas.getCenter === "function") {
-      center = canvas.getCenter();
-    } else {
-      center = {
-        left: canvas.getWidth() / 2,
-        top: canvas.getHeight() / 2
-      };
-    }
+    const center = typeof canvas.getCenter === "function"
+      ? canvas.getCenter()
+      : { left: canvas.getWidth() / 2, top: canvas.getHeight() / 2 };
 
-    canvas.zoomToPoint(
-      new fabric.Point(center.left, center.top),
-      editorState.zoom
-    );
+    canvas.zoomToPoint(new fabric.Point(center.left, center.top), editorState.zoom);
     canvas.requestRenderAll();
     setZoomLabel();
   }
@@ -4838,7 +4851,6 @@
   function rotateBaseImage(delta) {
     const canvas = editorState.canvas;
     if (!canvas || !editorState.baseImage) return;
-
     editorState.baseImage.rotate((editorState.baseImage.angle || 0) + delta);
     canvas.requestRenderAll();
     pushHistorySnapshot();
@@ -4850,9 +4862,7 @@
     if (!canvas || !baseImage || !fabric.filters || !fabric.filters.Brightness) return;
 
     editorState.brightness = Number(value || 0);
-    baseImage.filters = [
-      new fabric.filters.Brightness({ brightness: editorState.brightness })
-    ];
+    baseImage.filters = [new fabric.filters.Brightness({ brightness: editorState.brightness })];
     baseImage.applyFilters();
     canvas.requestRenderAll();
   }
@@ -4889,11 +4899,8 @@
   function deleteSelectedObject() {
     const canvas = editorState.canvas;
     if (!canvas) return;
-
     const active = canvas.getActiveObject();
-    if (!active) return;
-    if (active === editorState.baseImage) return;
-    if (active === editorState.cropRect) return;
+    if (!active || active === editorState.baseImage || active === editorState.cropRect) return;
 
     canvas.remove(active);
     canvas.discardActiveObject();
@@ -4973,10 +4980,7 @@
   function removeCropRect() {
     const canvas = editorState.canvas;
     if (!canvas || !editorState.cropRect) return;
-
-    try {
-      canvas.remove(editorState.cropRect);
-    } catch (_) {}
+    try { canvas.remove(editorState.cropRect); } catch (_) {}
     editorState.cropRect = null;
     canvas.requestRenderAll();
   }
@@ -4991,19 +4995,12 @@
     const bstr = atob(arr[1]);
     let n = bstr.length;
     const u8arr = new Uint8Array(n);
-
-    while (n--) {
-      u8arr[n] = bstr.charCodeAt(n);
-    }
-
+    while (n--) u8arr[n] = bstr.charCodeAt(n);
     return new Blob([u8arr], { type: mime });
   }
 
   async function blobToFile(blob, filename, mimeType = "image/jpeg") {
-    return new File([blob], filename, {
-      type: mimeType,
-      lastModified: Date.now()
-    });
+    return new File([blob], filename, { type: mimeType, lastModified: Date.now() });
   }
 
   function isEffectOverlay(obj) {
@@ -5012,8 +5009,7 @@
 
   function getEffectShapeType(obj) {
     const tool = String(obj?.toolType || "");
-    if (/Circle$/i.test(tool)) return "circle";
-    return "rect";
+    return /Circle$/i.test(tool) ? "circle" : "rect";
   }
 
   function getCanvasSnapshotDataUrl(options = {}) {
@@ -5042,9 +5038,7 @@
 
     if (Array.isArray(options.hideObjects)) {
       options.hideObjects.forEach((obj) => {
-        if (obj && canvas.getObjects().includes(obj)) {
-          rememberHidden(obj);
-        }
+        if (obj && canvas.getObjects().includes(obj)) rememberHidden(obj);
       });
     }
 
@@ -5057,9 +5051,7 @@
       enableRetinaScaling: false
     });
 
-    hidden.forEach(({ obj, visible }) => {
-      obj.visible = visible;
-    });
+    hidden.forEach(({ obj, visible }) => { obj.visible = visible; });
     canvas.requestRenderAll();
 
     return dataUrl;
@@ -5289,11 +5281,7 @@
     try {
       editorState.isApplyingCrop = true;
 
-      const dataUrl = getCanvasSnapshotDataUrl({
-        format: "png",
-        multiplier: 1
-      });
-
+      const dataUrl = getCanvasSnapshotDataUrl({ format: "png", multiplier: 1 });
       const img = await loadImageFromDataUrl(dataUrl);
 
       const left = clamp(Math.round(crop.left), 0, img.width - 1);
@@ -5406,9 +5394,7 @@
 
     const serialized = JSON.stringify(snapshot);
     const last = editorState.history[editorState.historyIndex];
-    if (!force && last && JSON.stringify(last) === serialized) {
-      return;
-    }
+    if (!force && last && JSON.stringify(last) === serialized) return;
 
     if (editorState.historyIndex < editorState.history.length - 1) {
       editorState.history = editorState.history.slice(0, editorState.historyIndex + 1);
@@ -5454,11 +5440,8 @@
       if (brightEl) brightEl.value = String(editorState.brightness);
 
       resetViewport();
-      if (editorState.zoom !== 1) {
-        setZoom(editorState.zoom);
-      } else {
-        setZoomLabel();
-      }
+      if (editorState.zoom !== 1) setZoom(editorState.zoom);
+      else setZoomLabel();
 
       if (editorState.canvas) {
         editorState.canvas.calcOffset();
@@ -5485,7 +5468,6 @@
   function updateUndoRedoState() {
     const undoBtn = $("ieUndoBtn");
     const redoBtn = $("ieRedoBtn");
-
     if (undoBtn) undoBtn.disabled = !(editorState.historyIndex > 0);
     if (redoBtn) redoBtn.disabled = !(editorState.historyIndex < editorState.history.length - 1);
   }
@@ -5510,14 +5492,9 @@
   }
 
   function getPointerFromEvent(canvas, evt) {
-    if (typeof canvas.getPointer === "function") {
-      return canvas.getPointer(evt);
-    }
+    if (typeof canvas.getPointer === "function") return canvas.getPointer(evt);
     const rect = canvas.upperCanvasEl.getBoundingClientRect();
-    return {
-      x: evt.clientX - rect.left,
-      y: evt.clientY - rect.top
-    };
+    return { x: evt.clientX - rect.left, y: evt.clientY - rect.top };
   }
 
   function bindPointerDrawing() {
@@ -5554,7 +5531,6 @@
       const pointer = getPointerFromEvent(canvas, evt);
       startX = pointer.x;
       startY = pointer.y;
-
       const tool = editorState.activeTool;
 
       if (tool === "line" || tool === "arrow") {
@@ -5671,9 +5647,7 @@
 
       const draft = editorState.tempDraft;
       const tool = editorState.activeTool;
-
       if (!draft) return;
-
       editorState.tempDraft = null;
 
       if (tool === "arrow") {
@@ -5723,7 +5697,6 @@
       if (tool === "mosaicCircle") {
         canvas.setActiveObject(draft);
         await applyAreaEffect("mosaic", "circle");
-        return;
       }
     });
 
@@ -5775,10 +5748,7 @@
 
     const imgW = imgEl.naturalWidth || imgEl.width;
     const imgH = imgEl.naturalHeight || imgEl.height;
-
-    if (!imgW || !imgH) {
-      throw new Error("ไม่สามารถอ่านขนาดรูปภาพได้");
-    }
+    if (!imgW || !imgH) throw new Error("ไม่สามารถอ่านขนาดรูปภาพได้");
 
     const scale = Math.min(maxW / imgW, maxH / imgH, 1);
     const canvasW = Math.max(320, Math.round(imgW * scale));
@@ -5798,12 +5768,10 @@
       canvas.lowerCanvasEl.style.width = canvasW + "px";
       canvas.lowerCanvasEl.style.height = canvasH + "px";
     }
-
     if (canvas.upperCanvasEl) {
       canvas.upperCanvasEl.style.width = canvasW + "px";
       canvas.upperCanvasEl.style.height = canvasH + "px";
     }
-
     if (canvas.wrapperEl) {
       canvas.wrapperEl.style.width = canvasW + "px";
       canvas.wrapperEl.style.height = canvasH + "px";
@@ -5821,7 +5789,6 @@
 
     baseImage.scaleX = scale;
     baseImage.scaleY = scale;
-
     editorState.baseImage = baseImage;
 
     canvas.clear();
@@ -5839,17 +5806,13 @@
     bindPointerDrawing();
 
     resetViewport();
-    if (typeof canvas.calcOffset === "function") {
-      canvas.calcOffset();
-    }
+    if (typeof canvas.calcOffset === "function") canvas.calcOffset();
     canvas.requestRenderAll();
   }
 
   async function exportEditedFile() {
     const canvas = editorState.canvas;
-    if (!canvas) {
-      throw new Error("ยังไม่มี canvas สำหรับ export");
-    }
+    if (!canvas) throw new Error("ยังไม่มี canvas สำหรับ export");
 
     removeCropRect();
 
@@ -5905,9 +5868,9 @@
   }
 
   function ensureFloatingToolUi() {
-    const wrap = document.querySelector(".imgEditorCanvasWrap");
-    const toolbar = document.querySelector(".imgEditorToolbarWrap");
-    if (!wrap || !toolbar) return;
+    const canvasWrap = document.querySelector(".imgEditorCanvasWrap");
+    const toolbarWrap = document.querySelector(".imgEditorToolbarWrap");
+    if (!canvasWrap || !toolbarWrap) return;
 
     if (!editorState.floatingToggleBtn) {
       const btn = document.createElement("button");
@@ -5918,10 +5881,11 @@
       btn.setAttribute("aria-label", "เปิดเครื่องมือแก้ไขภาพ");
       btn.setAttribute("aria-expanded", "false");
       btn.title = "แสดงเครื่องมือแก้ไขภาพ";
-      wrap.appendChild(btn);
+      canvasWrap.appendChild(btn);
       editorState.floatingToggleBtn = btn;
 
-      btn.addEventListener("click", () => {
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
         toggleFloatingPanel();
       });
     }
@@ -5930,12 +5894,26 @@
       const panel = document.createElement("div");
       panel.id = "ieFloatingToolPanel";
       panel.className = "ieFloatingPanel hidden";
-      wrap.appendChild(panel);
+      canvasWrap.appendChild(panel);
       editorState.floatingToolPanel = panel;
+
+      panel.addEventListener("click", (e) => e.stopPropagation());
     }
 
-    if (toolbar.parentElement !== editorState.floatingToolPanel) {
-      editorState.floatingToolPanel.appendChild(toolbar);
+    if (toolbarWrap.parentElement !== editorState.floatingToolPanel) {
+      editorState.floatingToolPanel.appendChild(toolbarWrap);
+    }
+
+    if (!canvasWrap.__ieOutsidePanelBind) {
+      canvasWrap.__ieOutsidePanelBind = true;
+      document.addEventListener("click", (e) => {
+        if (!editorState.modal || editorState.modal.classList.contains("hidden")) return;
+        const panel = editorState.floatingToolPanel;
+        const btn = editorState.floatingToggleBtn;
+        if (!panel || !btn) return;
+        if (panel.contains(e.target) || btn.contains(e.target)) return;
+        setFloatingPanelOpen(false);
+      });
     }
   }
 
@@ -5943,6 +5921,115 @@
     if (window.matchMedia("(max-width: 950px)").matches) {
       setFloatingPanelOpen(false);
     }
+  }
+
+  function getToolButton(toolName) {
+    return document.querySelector(`.ie-tool[data-tool="${toolName}"]`);
+  }
+
+  function getFieldByInputId(inputId) {
+    const input = $(inputId);
+    return input ? input.closest(".ieField") : null;
+  }
+
+  function ensureBtn(container, id, text, className = "btn ghost", attrs = {}) {
+    let btn = $(id);
+    if (btn) {
+      if (text != null) btn.textContent = text;
+      if (className) btn.className = className;
+      Object.keys(attrs || {}).forEach((k) => btn.setAttribute(k, attrs[k]));
+      return btn;
+    }
+
+    btn = document.createElement("button");
+    btn.type = "button";
+    btn.id = id;
+    btn.className = className;
+    btn.textContent = text || "";
+    Object.keys(attrs || {}).forEach((k) => btn.setAttribute(k, attrs[k]));
+    container.appendChild(btn);
+    return btn;
+  }
+
+  function ensureToolBtn(container, id, text, toolName) {
+    const btn = ensureBtn(container, id, text, "btn ghost ie-tool", { "data-tool": toolName });
+    btn.classList.add("ie-tool");
+    btn.setAttribute("data-tool", toolName);
+    return btn;
+  }
+
+  function setButtonIcon(id, fallbackIcon) {
+    const el = $(id);
+    if (el) el.setAttribute("data-icon", TOOL_ICONS[id] || fallbackIcon || "•");
+  }
+
+  function applyIconsToToolbar() {
+    Object.keys(TOOL_ICONS).forEach((id) => setButtonIcon(id, TOOL_ICONS[id]));
+  }
+
+  function createToolbarSection(title, extraClass = "") {
+    const section = document.createElement("section");
+    section.className = `ieToolbarSection ${extraClass}`.trim();
+
+    const head = document.createElement("div");
+    head.className = "ieToolbarTitle";
+    head.textContent = title;
+
+    const grid = document.createElement("div");
+    grid.className = "ieButtonGrid";
+
+    section.appendChild(head);
+    section.appendChild(grid);
+
+    return { section, grid };
+  }
+
+  function appendNodes(container, nodes) {
+    (Array.isArray(nodes) ? nodes : []).forEach((node) => {
+      if (node) container.appendChild(node);
+    });
+  }
+
+  function ensureToolbarResponsiveLabels() {
+    const compact = window.matchMedia("(max-width: 560px)").matches;
+    const compact2 = window.matchMedia("(max-width: 390px)").matches;
+
+    const labels = {
+      ieSelectBtn: "เลือก",
+      iePanBtn: compact2 ? "เลื่อน" : (compact ? "เลื่อน" : "เลื่อนภาพ"),
+      ieTextBtn: "ข้อความ",
+      ieCropToolBtn: "ครอป",
+
+      ieLineBtn: compact2 ? "เส้น" : "เส้น",
+      ieArrowBtn: "ลูกศร",
+      ieRectBtn: compact2 ? "กรอบ" : "สี่เหลี่ยม",
+      ieCircleBtn: compact2 ? "วง" : "วงกลม",
+
+      ieBlurRectBtn: compact2 ? "เบลอสี่" : "เบลอสี่",
+      ieBlurCircleBtn: compact2 ? "เบลอวง" : "เบลอวง",
+      ieMosaicRectBtn: compact2 ? "โมเสกสี่" : "โมเสกสี่",
+      ieMosaicCircleBtn: compact2 ? "โมเสกวง" : "โมเสกวง",
+
+      ieZoomOutBtn: "ซูม-",
+      ieZoomResetBtn: "100%",
+      ieZoomInBtn: "ซูม+",
+      ieFitBtn: "พอดี",
+
+      ieRotateLeftBtn: "ซ้าย",
+      ieRotateRightBtn: "ขวา",
+
+      ieUndoBtn: "ย้อน",
+      ieRedoBtn: "ทำซ้ำ",
+      ieDeleteBtn: "ลบ",
+      ieApplyCropBtn: "ใช้"
+    };
+
+    Object.keys(labels).forEach((id) => {
+      const el = $(id);
+      if (el) el.textContent = labels[id];
+    });
+
+    applyIconsToToolbar();
   }
 
   function rebuildToolbarLayoutInWrap(toolbarWrap) {
@@ -5955,8 +6042,6 @@
       toolbarWrap.innerHTML = "";
       toolbarWrap.appendChild(toolbar);
     }
-
-    removeLegacyToolbarDividers(toolbar);
 
     const selectBtn = getToolButton("select");
     const panBtn = getToolButton("pan");
@@ -6042,8 +6127,7 @@
   function ensureFooterControls() {
     const footerActions = document.querySelector(".imgEditorActions");
     if (!footerActions) return;
-
-    ensureBtn(footerActions, "ieFitBtn", "พอดีจอ");
+    ensureBtn(footerActions, "ieFitBtn", "พอดี");
   }
 
   function ensureCoreEditorButtons() {
@@ -6057,17 +6141,17 @@
       toolbarWrap.appendChild(toolbar);
     }
 
-    ensureBtn(toolbar, "ieUndoBtn", "ย้อนกลับ");
+    ensureBtn(toolbar, "ieUndoBtn", "ย้อน");
     ensureBtn(toolbar, "ieRedoBtn", "ทำซ้ำ");
-    ensureBtn(toolbar, "ieDeleteBtn", "ลบที่เลือก");
+    ensureBtn(toolbar, "ieDeleteBtn", "ลบ");
 
     ensureToolBtn(toolbar, "ieCropToolBtn", "ครอป", "crop");
-    ensureBtn(toolbar, "ieApplyCropBtn", "ใช้ครอป");
+    ensureBtn(toolbar, "ieApplyCropBtn", "ใช้");
 
-    ensureToolBtn(toolbar, "ieBlurRectBtn", "เบลอสี่เหลี่ยม", "blurRect");
-    ensureToolBtn(toolbar, "ieBlurCircleBtn", "เบลอวงกลม", "blurCircle");
-    ensureToolBtn(toolbar, "ieMosaicRectBtn", "โมเสกสี่เหลี่ยม", "mosaicRect");
-    ensureToolBtn(toolbar, "ieMosaicCircleBtn", "โมเสกวงกลม", "mosaicCircle");
+    ensureToolBtn(toolbar, "ieBlurRectBtn", "เบลอสี่", "blurRect");
+    ensureToolBtn(toolbar, "ieBlurCircleBtn", "เบลอวง", "blurCircle");
+    ensureToolBtn(toolbar, "ieMosaicRectBtn", "โมเสกสี่", "mosaicRect");
+    ensureToolBtn(toolbar, "ieMosaicCircleBtn", "โมเสกวง", "mosaicCircle");
   }
 
   function ensureExtraControls() {
@@ -6089,17 +6173,12 @@
     const mq2 = window.matchMedia("(max-width: 390px)");
 
     const apply = () => {
-      try {
-        ensureToolbarResponsiveLabels();
-      } catch (_) {}
+      try { ensureToolbarResponsiveLabels(); } catch (_) {}
     };
 
     [mq1, mq2].forEach((mq) => {
-      if (typeof mq.addEventListener === "function") {
-        mq.addEventListener("change", apply);
-      } else if (typeof mq.addListener === "function") {
-        mq.addListener(apply);
-      }
+      if (typeof mq.addEventListener === "function") mq.addEventListener("change", apply);
+      else if (typeof mq.addListener === "function") mq.addListener(apply);
     });
 
     window.addEventListener("resize", apply, { passive: true });
