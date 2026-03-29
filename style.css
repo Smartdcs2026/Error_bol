@@ -1634,16 +1634,15 @@ body.progress-lock{
 .imgEditorDialog{
   position:relative;
   z-index:1;
-  width:min(1400px,100%);
+  width:min(1380px,100%);
   height:min(calc(100dvh - 16px),980px);
   max-height:min(calc(100dvh - 16px),980px);
   display:grid;
   grid-template-areas:
     "header"
-    "toolbar"
     "body"
     "footer";
-  grid-template-rows:auto auto minmax(0,1fr) auto;
+  grid-template-rows:auto minmax(0,1fr) auto;
   background:linear-gradient(180deg,#ffffff 0%,#fbfdff 100%);
   border:1px solid #dbe6f3;
   border-radius:24px;
@@ -1695,38 +1694,129 @@ body.progress-lock{
 }
 
 /* =========================
-   TOP TOOLBAR
+   BODY / CANVAS
 ========================= */
-.imgEditorToolbarWrap{
-  grid-area:toolbar;
+.imgEditorBody{
+  grid-area:body;
+  min-height:0;
+  padding:12px;
+  background:linear-gradient(180deg,#f8fbff 0%,#f1f6ff 100%);
+  overflow:hidden;
+}
+
+.imgEditorCanvasWrap{
+  position:relative;
   width:100%;
-  padding:8px 10px 10px;
-  border-bottom:1px solid #e5edf8;
-  background:linear-gradient(180deg,#fbfdff 0%,#f4f8ff 100%);
-  overflow-x:auto;
-  overflow-y:hidden;
-  -webkit-overflow-scrolling:touch;
-  scrollbar-width:thin;
+  height:100%;
+  min-height:320px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  overflow:hidden;
+  border:1.5px dashed #bfd1e6;
+  border-radius:18px;
+  background:
+    linear-gradient(45deg,#f8fafc 25%,#eef4fb 25%,#eef4fb 50%,#f8fafc 50%,#f8fafc 75%,#eef4fb 75%,#eef4fb 100%);
+  background-size:24px 24px;
+}
+
+.imgEditorCanvasWrap canvas{
+  display:block;
+  margin:auto;
+}
+
+.imgEditorCanvasWrap .canvas-container{
+  margin:auto !important;
+  max-width:100%;
+  max-height:100%;
+  flex:0 0 auto;
+}
+
+/* =========================
+   FLOATING EDIT BUTTON
+========================= */
+.ieFloatingToggle{
+  position:absolute;
+  top:12px;
+  right:12px;
+  z-index:40;
+  width:48px;
+  height:48px;
+  border:none;
+  border-radius:999px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:linear-gradient(180deg,#2563eb 0%,#1d4ed8 100%);
+  color:#fff;
+  box-shadow:0 14px 28px rgba(37,99,235,.28);
+  cursor:pointer;
+  transition:transform .16s ease, box-shadow .16s ease, opacity .16s ease;
+}
+
+.ieFloatingToggle:hover{
+  transform:translateY(-1px);
+  box-shadow:0 18px 32px rgba(37,99,235,.32);
+}
+
+.ieFloatingToggle:active{
+  transform:translateY(0);
+}
+
+.ieFloatingToggle svg{
+  width:22px;
+  height:22px;
+  display:block;
+}
+
+/* =========================
+   FLOATING TOOL PANEL
+========================= */
+.ieFloatingPanel{
+  position:absolute;
+  top:68px;
+  right:12px;
+  z-index:39;
+  width:min(980px,calc(100% - 24px));
+  max-height:min(44vh,340px);
+  overflow:auto;
+  padding:10px;
+  border:1px solid #dbe6f3;
+  border-radius:18px;
+  background:rgba(255,255,255,.97);
+  backdrop-filter:blur(10px);
+  box-shadow:0 24px 50px rgba(15,23,42,.18);
+}
+
+.ieFloatingPanel.hidden{
+  display:none !important;
+}
+
+/* wrapper เดิมจาก HTML */
+.imgEditorToolbarWrap{
+  width:100%;
+  padding:0;
+  border:none;
+  background:transparent;
+  overflow:visible;
 }
 
 .imgEditorToolbar{
   width:100%;
-  display:block !important;
+  display:block;
 }
 
 .imgEditorToolbarGrid,
 .ieToolbarGridEnhanced{
-  width:max-content;
-  min-width:100%;
+  width:100%;
+  min-width:0;
   display:grid !important;
-  grid-auto-flow:column;
-  grid-auto-columns:minmax(220px, 24vw);
-  grid-template-columns:none !important;
+  grid-template-columns:repeat(4,minmax(0,1fr));
   gap:10px;
   align-items:start;
 }
 
-/* card แต่ละหมวด */
+/* card ของแต่ละหมวด */
 .ieToolbarSection{
   min-width:0;
   width:100%;
@@ -1747,6 +1837,7 @@ body.progress-lock{
   white-space:nowrap;
 }
 
+/* grids */
 .ieToolbarSection .ieButtonGrid,
 .ieToolbarSection .ieControlGrid,
 .ieButtonGrid,
@@ -1780,19 +1871,19 @@ body.progress-lock{
   display:none !important;
 }
 
-/* ปุ่มทั้งหมด */
+/* ปุ่มใน panel */
 .imgEditorToolbar .btn,
 .ieToolbarSection .btn{
   width:100%;
   min-width:0;
-  min-height:40px;
-  height:40px;
-  padding:6px 6px;
+  min-height:38px;
+  height:38px;
+  padding:5px 6px;
   display:flex;
   align-items:center;
   justify-content:center;
   text-align:center;
-  border-radius:13px;
+  border-radius:12px;
   font-size:11px;
   font-weight:900;
   line-height:1.05;
@@ -1846,21 +1937,19 @@ body.progress-lock{
   box-shadow:0 10px 20px rgba(15,23,42,.18);
 }
 
-/* =========================
-   CONTROL FIELDS
-========================= */
+/* fields */
 .imgEditorToolbarWrap .ieField,
 .ieField{
   width:100%;
   min-width:0;
   display:grid;
-  grid-template-columns:48px minmax(0,1fr);
+  grid-template-columns:46px minmax(0,1fr);
   align-items:center;
   gap:8px;
-  min-height:40px;
-  padding:7px 8px;
+  min-height:38px;
+  padding:6px 8px;
   border:1.2px solid #d9e4f1;
-  border-radius:13px;
+  border-radius:12px;
   background:linear-gradient(180deg,#ffffff 0%,#fbfdff 100%);
   font-size:11px;
   font-weight:800;
@@ -1876,8 +1965,8 @@ body.progress-lock{
 .imgEditorToolbarWrap .ieField input[type="color"],
 .ieField input[type="color"]{
   width:100%;
-  height:26px;
-  min-height:26px;
+  height:24px;
+  min-height:24px;
   padding:0;
   border:none;
   background:transparent;
@@ -1895,45 +1984,6 @@ body.progress-lock{
   border:none;
   background:transparent;
   box-shadow:none;
-}
-
-/* =========================
-   BODY / CANVAS
-========================= */
-.imgEditorBody{
-  grid-area:body;
-  min-height:0;
-  padding:10px;
-  background:linear-gradient(180deg,#f8fbff 0%,#f1f6ff 100%);
-  overflow:hidden;
-}
-
-.imgEditorCanvasWrap{
-  position:relative;
-  width:100%;
-  height:100%;
-  min-height:340px;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  overflow:hidden;
-  border:1.5px dashed #bfd1e6;
-  border-radius:18px;
-  background:
-    linear-gradient(45deg,#f8fafc 25%,#eef4fb 25%,#eef4fb 50%,#f8fafc 50%,#f8fafc 75%,#eef4fb 75%,#eef4fb 100%);
-  background-size:24px 24px;
-}
-
-.imgEditorCanvasWrap canvas{
-  display:block;
-  margin:auto;
-}
-
-.imgEditorCanvasWrap .canvas-container{
-  margin:auto !important;
-  max-width:100%;
-  max-height:100%;
-  flex:0 0 auto;
 }
 
 /* =========================
@@ -1968,7 +2018,7 @@ body.progress-lock{
 
 .imgEditorActions{
   display:grid;
-  grid-template-columns:repeat(3,minmax(0,auto));
+  grid-template-columns:repeat(4,minmax(0,auto));
   gap:8px;
   align-items:center;
   justify-content:end;
@@ -1988,14 +2038,18 @@ body.progress-lock{
    TABLET
 ========================= */
 @media (max-width:1180px){
+  .ieFloatingPanel{
+    width:min(860px,calc(100% - 24px));
+  }
+
   .imgEditorToolbarGrid,
   .ieToolbarGridEnhanced{
-    grid-auto-columns:minmax(210px, 30vw);
+    grid-template-columns:repeat(3,minmax(0,1fr));
   }
 }
 
 /* =========================
-   MOBILE PORTRAIT / LANDSCAPE
+   MOBILE / TABLET
 ========================= */
 @media (max-width:950px){
   .imgEditorModal{
@@ -2031,13 +2085,36 @@ body.progress-lock{
     font-size:12px;
   }
 
-  .imgEditorToolbarWrap{
-    padding:6px 8px 8px;
+  .imgEditorBody{
+    padding:8px;
+  }
+
+  .imgEditorCanvasWrap{
+    min-height:0;
+    height:100%;
+    border-radius:14px;
+  }
+
+  .ieFloatingToggle{
+    top:10px;
+    right:10px;
+    width:44px;
+    height:44px;
+  }
+
+  .ieFloatingPanel{
+    top:62px;
+    right:10px;
+    left:10px;
+    width:auto;
+    max-height:min(42vh,300px);
+    padding:8px;
+    border-radius:16px;
   }
 
   .imgEditorToolbarGrid,
   .ieToolbarGridEnhanced{
-    grid-auto-columns:minmax(200px, 72vw);
+    grid-template-columns:1fr !important;
     gap:8px;
   }
 
@@ -2079,7 +2156,7 @@ body.progress-lock{
 
   .imgEditorToolbarWrap .ieField,
   .ieField{
-    grid-template-columns:40px minmax(0,1fr);
+    grid-template-columns:38px minmax(0,1fr);
     min-height:34px;
     padding:5px 6px;
     border-radius:11px;
@@ -2091,16 +2168,6 @@ body.progress-lock{
   .ieField input[type="color"]{
     height:22px;
     min-height:22px;
-  }
-
-  .imgEditorBody{
-    padding:8px;
-  }
-
-  .imgEditorCanvasWrap{
-    min-height:0;
-    height:100%;
-    border-radius:14px;
   }
 
   .imgEditorFooter{
@@ -2130,7 +2197,7 @@ body.progress-lock{
 }
 
 /* =========================
-   VERY SMALL
+   SMALL MOBILE
 ========================= */
 @media (max-width:560px){
   .imgEditorHeader{
@@ -2145,10 +2212,24 @@ body.progress-lock{
     display:none;
   }
 
-  .imgEditorToolbarGrid,
-  .ieToolbarGridEnhanced{
-    grid-auto-columns:minmax(190px, 78vw);
-    gap:7px;
+  .imgEditorBody{
+    padding:6px;
+  }
+
+  .ieFloatingToggle{
+    width:40px;
+    height:40px;
+    top:8px;
+    right:8px;
+  }
+
+  .ieFloatingPanel{
+    top:52px;
+    left:8px;
+    right:8px;
+    max-height:min(40vh,260px);
+    padding:7px;
+    border-radius:14px;
   }
 
   .ieToolbarSection{
@@ -2160,7 +2241,7 @@ body.progress-lock{
   .ieToolbarSection .btn{
     min-height:32px;
     height:32px;
-    padding:3px 3px;
+    padding:3px 4px;
     border-radius:10px;
     font-size:9.5px;
     font-weight:900;
@@ -2168,7 +2249,7 @@ body.progress-lock{
 
   .imgEditorToolbarWrap .ieField,
   .ieField{
-    grid-template-columns:36px minmax(0,1fr);
+    grid-template-columns:34px minmax(0,1fr);
     min-height:32px;
     padding:4px 5px;
     border-radius:10px;
@@ -2180,10 +2261,6 @@ body.progress-lock{
   .ieField input[type="color"]{
     height:20px;
     min-height:20px;
-  }
-
-  .imgEditorBody{
-    padding:6px;
   }
 
   .imgEditorActions{
@@ -2213,196 +2290,5 @@ body.progress-lock{
     padding:7px 12px;
     border-radius:11px;
     font-size:11px;
-  }
-}
-/* =========================
-   IMAGE EDITOR FLOATING TOOL TOGGLE
-========================= */
-.imgEditorCanvasWrap{
-  position:relative;
-}
-
-.ieFloatingToggle{
-  position:absolute;
-  top:12px;
-  right:12px;
-  z-index:30;
-  width:46px;
-  height:46px;
-  border:none;
-  border-radius:999px;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  background:linear-gradient(180deg,#2563eb 0%,#1d4ed8 100%);
-  color:#fff;
-  box-shadow:0 14px 28px rgba(37,99,235,.28);
-  cursor:pointer;
-}
-
-.ieFloatingToggle:hover{
-  transform:translateY(-1px);
-}
-
-.ieFloatingToggle svg{
-  width:22px;
-  height:22px;
-  display:block;
-}
-
-.ieFloatingPanel{
-  position:absolute;
-  top:12px;
-  right:68px;
-  z-index:29;
-  width:min(980px,calc(100% - 92px));
-  max-height:min(42vh,320px);
-  overflow:auto;
-  padding:10px;
-  border:1px solid #dbe6f3;
-  border-radius:18px;
-  background:rgba(255,255,255,.96);
-  backdrop-filter:blur(10px);
-  box-shadow:0 22px 50px rgba(15,23,42,.18);
-}
-
-.ieFloatingPanel.hidden{
-  display:none !important;
-}
-
-.ieFloatingPanel .imgEditorToolbarGrid,
-.ieFloatingPanel .ieToolbarGridEnhanced{
-  width:100%;
-  min-width:0;
-  display:grid !important;
-  grid-template-columns:repeat(4,minmax(0,1fr));
-  gap:10px;
-  align-items:start;
-}
-
-.ieFloatingPanel .ieToolbarSection{
-  padding:10px;
-  border-radius:16px;
-}
-
-.ieFloatingPanel .ieToolbarTitle{
-  margin-bottom:6px;
-  font-size:10px;
-}
-
-.ieFloatingPanel .ieButtonGridTools{
-  grid-template-columns:repeat(4,minmax(0,1fr));
-}
-
-.ieFloatingPanel .ieButtonGridEffects,
-.ieFloatingPanel .ieButtonGridView{
-  grid-template-columns:repeat(2,minmax(0,1fr));
-}
-
-.ieFloatingPanel .ieSectionManage .ieButtonGridView{
-  grid-template-columns:repeat(2,minmax(0,1fr));
-}
-
-.ieFloatingPanel .btn{
-  min-height:36px;
-  height:36px;
-  padding:4px 5px;
-  border-radius:11px;
-  font-size:10px;
-  line-height:1;
-}
-
-.ieFloatingPanel .ieField{
-  min-height:36px;
-  grid-template-columns:42px minmax(0,1fr);
-  padding:5px 6px;
-  border-radius:11px;
-  font-size:10px;
-}
-
-.ieFloatingPanel .ieField input[type="color"]{
-  height:22px;
-  min-height:22px;
-}
-
-@media (max-width:1180px){
-  .ieFloatingPanel{
-    width:min(860px,calc(100% - 92px));
-  }
-
-  .ieFloatingPanel .imgEditorToolbarGrid,
-  .ieFloatingPanel .ieToolbarGridEnhanced{
-    grid-template-columns:repeat(3,minmax(0,1fr));
-  }
-}
-
-@media (max-width:860px){
-  .ieFloatingToggle{
-    top:10px;
-    right:10px;
-    width:42px;
-    height:42px;
-  }
-
-  .ieFloatingPanel{
-    top:58px;
-    right:10px;
-    left:10px;
-    width:auto;
-    max-height:min(40vh,280px);
-    padding:8px;
-    border-radius:16px;
-  }
-
-  .ieFloatingPanel .imgEditorToolbarGrid,
-  .ieFloatingPanel .ieToolbarGridEnhanced{
-    grid-template-columns:1fr !important;
-    gap:8px;
-  }
-
-  .ieFloatingPanel .ieToolbarSection{
-    padding:8px;
-    border-radius:14px;
-  }
-
-  .ieFloatingPanel .btn{
-    min-height:34px;
-    height:34px;
-    font-size:10px;
-  }
-
-  .ieFloatingPanel .ieField{
-    min-height:34px;
-    font-size:10px;
-    grid-template-columns:38px minmax(0,1fr);
-  }
-}
-
-@media (max-width:560px){
-  .ieFloatingToggle{
-    width:40px;
-    height:40px;
-  }
-
-  .ieFloatingPanel{
-    top:54px;
-    left:8px;
-    right:8px;
-    max-height:min(38vh,250px);
-    padding:7px;
-    border-radius:14px;
-  }
-
-  .ieFloatingPanel .btn{
-    min-height:32px;
-    height:32px;
-    font-size:9.5px;
-    padding:3px 4px;
-  }
-
-  .ieFloatingPanel .ieField{
-    min-height:32px;
-    font-size:9.5px;
-    grid-template-columns:34px minmax(0,1fr);
   }
 }
