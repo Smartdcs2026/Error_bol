@@ -2382,3 +2382,82 @@ body.img-editor-lock{
     padding:10px 12px;
   }
 }
+/* ===== Image Editor Toolbar Tone ===== */
+.ieToolbarGridEnhanced .ieToolbarSection{
+  border:1px solid #dbe7f5;
+  border-radius:16px;
+  background:linear-gradient(180deg,#ffffff 0%,#f8fbff 100%);
+}
+
+.ieToolbarGridEnhanced .ieSectionPrimary{
+  background:linear-gradient(180deg,#f8fbff 0%,#eef5ff 100%);
+  border-color:#d9e6fb;
+}
+
+.ieToolbarGridEnhanced .ieSectionDraw{
+  background:linear-gradient(180deg,#fdfcff 0%,#f5f3ff 100%);
+  border-color:#e7defe;
+}
+
+.ieToolbarGridEnhanced .ieSectionMask{
+  background:linear-gradient(180deg,#fffdf8 0%,#fff7ed 100%);
+  border-color:#fde7c7;
+}
+
+.ieToolbarGridEnhanced .ieSectionView{
+  background:linear-gradient(180deg,#f8fffb 0%,#ecfdf5 100%);
+  border-color:#cfeedd;
+}
+
+.ieToolbarGridEnhanced .ieSectionManage{
+  background:linear-gradient(180deg,#fcfcfd 0%,#f8fafc 100%);
+  border-color:#dbe3ee;
+}
+
+.ieToolbarGridEnhanced .ieSectionControl{
+  background:linear-gradient(180deg,#fffafb 0%,#fff1f2 100%);
+  border-color:#ffe0e6;
+}
+
+.ieToolbarGridEnhanced .ieToolbarTitle{
+  color:#334155;
+  font-weight:900;
+}
+
+.ie-tool[data-tool="select"].active,
+.ie-tool[data-tool="pan"].active,
+.ie-tool[data-tool="text"].active,
+.ie-tool[data-tool="crop"].active{
+  background:#2563eb;
+  border-color:#2563eb;
+  color:#fff;
+}
+
+.ieSectionDraw .ie-tool.active{
+  background:#7c3aed;
+  border-color:#7c3aed;
+  color:#fff;
+}
+
+.ieSectionMask .ie-tool.active{
+  background:#ea580c;
+  border-color:#ea580c;
+  color:#fff;
+}
+
+.ieSectionView .btn.active,
+.ieSectionManage .btn.active{
+  background:#0f766e;
+  border-color:#0f766e;
+  color:#fff;
+}
+
+#ieDeleteBtn{
+  border-color:#fecaca;
+  color:#b91c1c;
+  background:#fff5f5;
+}
+
+#ieDeleteBtn:hover{
+  background:#fee2e2;
+}
