@@ -1612,7 +1612,7 @@ body.progress-lock{
    IMAGE EDITOR
 ========================= */
 /* =========================
-   IMAGE EDITOR
+   IMAGE EDITOR - ICON + SHORT LABEL PRO
 ========================= */
 .imgEditorModal{
   position:fixed;
@@ -1740,8 +1740,8 @@ body.progress-lock{
   top:12px;
   right:12px;
   z-index:40;
-  width:48px;
-  height:48px;
+  width:50px;
+  height:50px;
   border:none;
   border-radius:999px;
   display:flex;
@@ -1749,14 +1749,14 @@ body.progress-lock{
   justify-content:center;
   background:linear-gradient(180deg,#2563eb 0%,#1d4ed8 100%);
   color:#fff;
-  box-shadow:0 14px 28px rgba(37,99,235,.28);
+  box-shadow:0 16px 30px rgba(37,99,235,.30);
   cursor:pointer;
   transition:transform .16s ease, box-shadow .16s ease, opacity .16s ease;
 }
 
 .ieFloatingToggle:hover{
   transform:translateY(-1px);
-  box-shadow:0 18px 32px rgba(37,99,235,.32);
+  box-shadow:0 18px 34px rgba(37,99,235,.34);
 }
 
 .ieFloatingToggle:active{
@@ -1774,15 +1774,15 @@ body.progress-lock{
 ========================= */
 .ieFloatingPanel{
   position:absolute;
-  top:68px;
+  top:72px;
   right:12px;
   z-index:39;
   width:min(980px,calc(100% - 24px));
-  max-height:min(44vh,340px);
+  max-height:min(44vh,350px);
   overflow:auto;
   padding:10px;
   border:1px solid #dbe6f3;
-  border-radius:18px;
+  border-radius:20px;
   background:rgba(255,255,255,.97);
   backdrop-filter:blur(10px);
   box-shadow:0 24px 50px rgba(15,23,42,.18);
@@ -1790,6 +1790,19 @@ body.progress-lock{
 
 .ieFloatingPanel.hidden{
   display:none !important;
+}
+
+/* scrollbar */
+.ieFloatingPanel::-webkit-scrollbar{
+  width:10px;
+  height:10px;
+}
+.ieFloatingPanel::-webkit-scrollbar-thumb{
+  background:#c9d8eb;
+  border-radius:999px;
+}
+.ieFloatingPanel::-webkit-scrollbar-track{
+  background:transparent;
 }
 
 /* wrapper เดิมจาก HTML */
@@ -1816,7 +1829,7 @@ body.progress-lock{
   align-items:start;
 }
 
-/* card ของแต่ละหมวด */
+/* section card */
 .ieToolbarSection{
   min-width:0;
   width:100%;
@@ -1824,16 +1837,18 @@ body.progress-lock{
   padding:10px;
   border:1px solid #e2ebf7;
   border-radius:16px;
-  background:#fff;
+  background:linear-gradient(180deg,#ffffff 0%,#fbfdff 100%);
   box-shadow:0 6px 18px rgba(15,23,42,.05);
 }
 
 .ieToolbarTitle{
   margin:0 0 8px;
-  font-size:11px;
+  font-size:10px;
   font-weight:900;
   color:#64748b;
   line-height:1.2;
+  text-transform:uppercase;
+  letter-spacing:.35px;
   white-space:nowrap;
 }
 
@@ -1871,22 +1886,26 @@ body.progress-lock{
   display:none !important;
 }
 
-/* ปุ่มใน panel */
+/* =========================
+   BUTTONS: ICON + SHORT LABEL
+========================= */
 .imgEditorToolbar .btn,
 .ieToolbarSection .btn{
   width:100%;
   min-width:0;
-  min-height:38px;
-  height:38px;
-  padding:5px 6px;
+  min-height:54px;
+  height:54px;
+  padding:6px 6px 5px;
   display:flex;
+  flex-direction:column;
   align-items:center;
   justify-content:center;
+  gap:3px;
   text-align:center;
-  border-radius:12px;
-  font-size:11px;
+  border-radius:13px;
+  font-size:10px;
   font-weight:900;
-  line-height:1.05;
+  line-height:1;
   white-space:normal;
   word-break:break-word;
   writing-mode:horizontal-tb !important;
@@ -1901,6 +1920,16 @@ body.progress-lock{
     box-shadow .18s ease,
     background .18s ease,
     color .18s ease;
+}
+
+.imgEditorToolbar .btn::before,
+.ieToolbarSection .btn::before{
+  content:"";
+  display:block;
+  font-size:16px;
+  line-height:1;
+  font-weight:700;
+  margin-bottom:1px;
 }
 
 .imgEditorToolbar .btn:hover,
@@ -1937,21 +1966,52 @@ body.progress-lock{
   box-shadow:0 10px 20px rgba(15,23,42,.18);
 }
 
-/* fields */
+/* ไอคอนมาตรฐานแบบ CSS */
+#ieSelectBtn::before{ content:"⌖"; }
+#iePanBtn::before{ content:"✥"; }
+#ieTextBtn::before{ content:"T"; font-size:17px; }
+#ieCropToolBtn::before{ content:"◫"; }
+
+#ieLineBtn::before{ content:"／"; }
+#ieArrowBtn::before{ content:"➜"; }
+#ieRectBtn::before{ content:"▭"; }
+#ieCircleBtn::before{ content:"◯"; }
+
+#ieBlurRectBtn::before{ content:"◫"; }
+#ieBlurCircleBtn::before{ content:"◌"; }
+#ieMosaicRectBtn::before{ content:"▦"; }
+#ieMosaicCircleBtn::before{ content:"◍"; }
+
+#ieZoomOutBtn::before{ content:"－"; }
+#ieZoomResetBtn::before{ content:"◎"; }
+#ieZoomInBtn::before{ content:"＋"; }
+#ieFitBtn::before{ content:"⤢"; }
+
+#ieUndoBtn::before{ content:"↶"; }
+#ieRedoBtn::before{ content:"↷"; }
+#ieDeleteBtn::before{ content:"⌫"; }
+#ieApplyCropBtn::before{ content:"✓"; }
+
+#ieRotateLeftBtn::before{ content:"↺"; }
+#ieRotateRightBtn::before{ content:"↻"; }
+
+/* =========================
+   FIELDS
+========================= */
 .imgEditorToolbarWrap .ieField,
 .ieField{
   width:100%;
   min-width:0;
   display:grid;
-  grid-template-columns:46px minmax(0,1fr);
+  grid-template-columns:40px minmax(0,1fr);
   align-items:center;
   gap:8px;
-  min-height:38px;
+  min-height:40px;
   padding:6px 8px;
   border:1.2px solid #d9e4f1;
   border-radius:12px;
   background:linear-gradient(180deg,#ffffff 0%,#fbfdff 100%);
-  font-size:11px;
+  font-size:10px;
   font-weight:800;
   color:#334155;
 }
@@ -1960,6 +2020,8 @@ body.progress-lock{
 .ieField span{
   line-height:1.1;
   writing-mode:horizontal-tb !important;
+  text-transform:uppercase;
+  letter-spacing:.2px;
 }
 
 .imgEditorToolbarWrap .ieField input[type="color"],
@@ -2146,12 +2208,16 @@ body.progress-lock{
 
   .imgEditorToolbar .btn,
   .ieToolbarSection .btn{
-    min-height:34px;
-    height:34px;
-    padding:4px 4px;
+    min-height:48px;
+    height:48px;
+    padding:5px 4px 4px;
     border-radius:11px;
-    font-size:10px;
-    line-height:1;
+    font-size:9.5px;
+  }
+
+  .imgEditorToolbar .btn::before,
+  .ieToolbarSection .btn::before{
+    font-size:15px;
   }
 
   .imgEditorToolbarWrap .ieField,
@@ -2239,12 +2305,17 @@ body.progress-lock{
 
   .imgEditorToolbar .btn,
   .ieToolbarSection .btn{
-    min-height:32px;
-    height:32px;
-    padding:3px 4px;
+    min-height:46px;
+    height:46px;
+    padding:4px 3px;
     border-radius:10px;
-    font-size:9.5px;
+    font-size:9px;
     font-weight:900;
+  }
+
+  .imgEditorToolbar .btn::before,
+  .ieToolbarSection .btn::before{
+    font-size:14px;
   }
 
   .imgEditorToolbarWrap .ieField,
