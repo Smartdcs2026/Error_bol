@@ -8470,18 +8470,14 @@ async function handlePickedImageForUpload(input, box) {
   // เปลี่ยนรูปใหม่ ให้ล้างสถานะไฟล์ที่เคยแก้ไว้ก่อน
   EDITED_UPLOAD_STORE.delete(input);
 
-  // คงปุ่มแก้ไขภาพไว้เหมือนเดิม
   ensureEditButtonForUploadBox(box, input.id);
-
-  // แสดง preview ก่อน และไม่เปิด editor ทันที
-  updateUploadPreviewFromFile(
-    input,
-    box,
-    f,
-    `ไฟล์ที่เลือก: ${f.name} (${Math.round((f.size || 0) / 1024)} KB)`
-  );
+updateUploadPreviewFromFile(
+  input,
+  box,
+  f,
+  `ไฟล์ที่เลือก: ${f.name} (${Math.round((f.size || 0) / 1024)} KB)`
+);
 }
-
 const $ = (id) => document.getElementById(id);
 
 /** ==========================
