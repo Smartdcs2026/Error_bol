@@ -4908,32 +4908,51 @@
     pushHistorySnapshot();
   }
 
+  function buildArrowHeadMetrics(strokeWidth) {
+    const sw = Math.max(1, Number(strokeWidth) || 1);
+    return {
+      width: 18 + sw,
+      height: 24 + sw
+    };
+  }
+
+  function setArrowPartProps(obj) {
+    if (!obj) return;
+    obj.selectable = false;
+    obj.evented = false;
+    obj.objectCaching = false;
+  }
+
   function createArrowGroup(x1, y1, x2, y2) {
     const line = new fabric.Line([x1, y1, x2, y2], {
       stroke: editorState.strokeColor,
       strokeWidth: editorState.strokeWidth,
-      selectable: true,
-      evented: true,
+      selectable: false,
+      evented: false,
       objectCaching: false
     });
 
     const angle = Math.atan2(y2 - y1, x2 - x1) * 180 / Math.PI;
+    const headSize = buildArrowHeadMetrics(editorState.strokeWidth);
 
     const head = new fabric.Triangle({
       left: x2,
       top: y2,
       originX: "center",
       originY: "center",
-      width: 18 + editorState.strokeWidth,
-      height: 24 + editorState.strokeWidth,
+      width: headSize.width,
+      height: headSize.height,
       fill: editorState.strokeColor,
       angle: angle + 90,
-      selectable: true,
-      evented: true,
+      selectable: false,
+      evented: false,
       objectCaching: false
     });
 
-    return new fabric.Group([line, head], {
+    setArrowPartProps(line);
+    setArrowPartProps(head);
+
+    const group = new fabric.Group([line, head], {
       selectable: true,
       evented: true,
       objectCaching: false,
@@ -4941,193 +4960,139 @@
       hasBorders: true,
       lockRotation: false
     });
+
+    group.set({
+      toolType: "arrow",
+      arrowStroke: editorState.strokeColor,
+      arrowStrokeWidth: editorState.strokeWidth,
+      arrowX1: x1,
+      arrowY1: y1,
+      arrowX2: x2,
+      arrowY2: y2
+    });
+
+    return group;
   }
 
-  function buildArrowHeadMetrics(strokeWidth) {
-  const sw = Math.max(1, Number(strokeWidth) || 1);
-  return {
-    width: 18 + sw,
-    height: 24 + sw
-  };
-}
-
-function setArrowPartProps(obj) {
-  if (!obj) return;
-  obj.selectable = false;
-  obj.evented = false;
-  obj.objectCaching = false;
-}
-
-function createArrowGroup(x1, y1, x2, y2) {
-  const line = new fabric.Line([x1, y1, x2, y2], {
-    stroke: editorState.strokeColor,
-    strokeWidth: editorState.strokeWidth,
-    selectable: false,
-    evented: false,
-    objectCaching: false
-  });
-
-  const angle = Math.atan2(y2 - y1, x2 - x1) * 180 / Math.PI;
-  const headSize = buildArrowHeadMetrics(editorState.strokeWidth);
-
-  const head = new fabric.Triangle({
-    left: x2,
-    top: y2,
-    originX: "center",
-    originY: "center",
-    width: headSize.width,
-    height: headSize.height,
-    fill: editorState.strokeColor,
-    angle: angle + 90,
-    selectable: false,
-    evented: false,
-    objectCaching: false
-  });
-
-  setArrowPartProps(line);
-  setArrowPartProps(head);
-
-  const group = new fabric.Group([line, head], {
-    selectable: true,
-    evented: true,
-    objectCaching: false,
-    hasControls: true,
-    hasBorders: true,
-    lockRotation: false
-  });
-
-  group.set({
-    toolType: "arrow",
-    arrowStroke: editorState.strokeColor,
-    arrowStrokeWidth: editorState.strokeWidth,
-    arrowX1: x1,
-    arrowY1: y1,
-    arrowX2: x2,
-    arrowY2: y2
-  });
-
-  return group;
-}
-
-function isArrowGroup(obj) {
-  return !!(obj && obj.type === "group" && obj.toolType === "arrow");
-}
-
-function syncArrowGeometry(group) {
-  if (!isArrowGroup(group)) return;
-
-  const items = typeof group.getObjects === "function" ? group.getObjects() : [];
-  const line = items[0];
-  const head = items[1];
-  if (!line || !head) return;
-
-  const x1 = Number(group.arrowX1 ?? line.x1 ?? 0);
-  const y1 = Number(group.arrowY1 ?? line.y1 ?? 0);
-  const x2 = Number(group.arrowX2 ?? line.x2 ?? 0);
-  const y2 = Number(group.arrowY2 ?? line.y2 ?? 0);
-  const stroke = group.arrowStroke || line.stroke || editorState.strokeColor;
-  const strokeWidth = Math.max(1, Number(group.arrowStrokeWidth || line.strokeWidth || editorState.strokeWidth || 1));
-  const angle = Math.atan2(y2 - y1, x2 - x1) * 180 / Math.PI;
-  const headSize = buildArrowHeadMetrics(strokeWidth);
-
-  line.set({
-    x1, y1, x2, y2,
-    stroke,
-    strokeWidth
-  });
-
-  head.set({
-    left: x2,
-    top: y2,
-    angle: angle + 90,
-    width: headSize.width,
-    height: headSize.height,
-    fill: stroke
-  });
-
-  setArrowPartProps(line);
-  setArrowPartProps(head);
-
-  if (typeof group.addWithUpdate === "function") {
-    group.addWithUpdate();
-  } else {
-    group._calcBounds?.();
-    group._updateObjectsCoords?.();
-    group.setCoords?.();
+  function isArrowGroup(obj) {
+    return !!(obj && obj.type === "group" && obj.toolType === "arrow");
   }
-}
 
-function refreshArrowFromGroupTransform(group) {
-  if (!isArrowGroup(group)) return;
+  function syncArrowGeometry(group) {
+    if (!isArrowGroup(group)) return;
 
-  const items = typeof group.getObjects === "function" ? group.getObjects() : [];
-  const line = items[0];
-  if (!line) return;
+    const items = typeof group.getObjects === "function" ? group.getObjects() : [];
+    const line = items[0];
+    const head = items[1];
+    if (!line || !head) return;
 
-  const p1 = fabric.util.transformPoint(
-    new fabric.Point(line.x1, line.y1),
-    group.calcTransformMatrix()
-  );
-  const p2 = fabric.util.transformPoint(
-    new fabric.Point(line.x2, line.y2),
-    group.calcTransformMatrix()
-  );
+    const x1 = Number(group.arrowX1 ?? line.x1 ?? 0);
+    const y1 = Number(group.arrowY1 ?? line.y1 ?? 0);
+    const x2 = Number(group.arrowX2 ?? line.x2 ?? 0);
+    const y2 = Number(group.arrowY2 ?? line.y2 ?? 0);
+    const stroke = group.arrowStroke || line.stroke || editorState.strokeColor;
+    const strokeWidth = Math.max(1, Number(group.arrowStrokeWidth || line.strokeWidth || editorState.strokeWidth || 1));
+    const angle = Math.atan2(y2 - y1, x2 - x1) * 180 / Math.PI;
+    const headSize = buildArrowHeadMetrics(strokeWidth);
 
-  const stroke = group.arrowStroke || line.stroke || editorState.strokeColor;
-  const strokeWidth = Math.max(
-    1,
-    Number((group.arrowStrokeWidth || line.strokeWidth || editorState.strokeWidth || 1) * Math.max(group.scaleX || 1, group.scaleY || 1))
-  );
+    line.set({
+      x1, y1, x2, y2,
+      stroke,
+      strokeWidth
+    });
 
-  group._restoreObjectsState?.();
-  group.destroy?.();
+    head.set({
+      left: x2,
+      top: y2,
+      angle: angle + 90,
+      width: headSize.width,
+      height: headSize.height,
+      fill: stroke
+    });
 
-  group.set({
-    scaleX: 1,
-    scaleY: 1,
-    angle: 0,
-    flipX: false,
-    flipY: false
-  });
+    setArrowPartProps(line);
+    setArrowPartProps(head);
 
-  group.arrowX1 = p1.x;
-  group.arrowY1 = p1.y;
-  group.arrowX2 = p2.x;
-  group.arrowY2 = p2.y;
-  group.arrowStroke = stroke;
-  group.arrowStrokeWidth = strokeWidth;
+    if (typeof group.addWithUpdate === "function") {
+      group.addWithUpdate();
+    } else {
+      group._calcBounds?.();
+      group._updateObjectsCoords?.();
+      group.setCoords?.();
+    }
+  }
 
-  const newLine = new fabric.Line([p1.x, p1.y, p2.x, p2.y], {
-    stroke,
-    strokeWidth,
-    selectable: false,
-    evented: false,
-    objectCaching: false
-  });
+  function refreshArrowFromGroupTransform(group) {
+    if (!isArrowGroup(group)) return;
 
-  const angle = Math.atan2(p2.y - p1.y, p2.x - p1.x) * 180 / Math.PI;
-  const headSize = buildArrowHeadMetrics(strokeWidth);
+    const items = typeof group.getObjects === "function" ? group.getObjects() : [];
+    const line = items[0];
+    if (!line) return;
 
-  const newHead = new fabric.Triangle({
-    left: p2.x,
-    top: p2.y,
-    originX: "center",
-    originY: "center",
-    width: headSize.width,
-    height: headSize.height,
-    fill: stroke,
-    angle: angle + 90,
-    selectable: false,
-    evented: false,
-    objectCaching: false
-  });
+    const p1 = fabric.util.transformPoint(
+      new fabric.Point(line.x1, line.y1),
+      group.calcTransformMatrix()
+    );
+    const p2 = fabric.util.transformPoint(
+      new fabric.Point(line.x2, line.y2),
+      group.calcTransformMatrix()
+    );
 
-  setArrowPartProps(newLine);
-  setArrowPartProps(newHead);
+    const stroke = group.arrowStroke || line.stroke || editorState.strokeColor;
+    const strokeWidth = Math.max(
+      1,
+      Number((group.arrowStrokeWidth || line.strokeWidth || editorState.strokeWidth || 1) * Math.max(group.scaleX || 1, group.scaleY || 1))
+    );
 
-  group._objects = [newLine, newHead];
-  syncArrowGeometry(group);
-}
+    group._restoreObjectsState?.();
+    group.destroy?.();
+
+    group.set({
+      scaleX: 1,
+      scaleY: 1,
+      angle: 0,
+      flipX: false,
+      flipY: false
+    });
+
+    group.arrowX1 = p1.x;
+    group.arrowY1 = p1.y;
+    group.arrowX2 = p2.x;
+    group.arrowY2 = p2.y;
+    group.arrowStroke = stroke;
+    group.arrowStrokeWidth = strokeWidth;
+
+    const newLine = new fabric.Line([p1.x, p1.y, p2.x, p2.y], {
+      stroke,
+      strokeWidth,
+      selectable: false,
+      evented: false,
+      objectCaching: false
+    });
+
+    const angle = Math.atan2(p2.y - p1.y, p2.x - p1.x) * 180 / Math.PI;
+    const headSize = buildArrowHeadMetrics(strokeWidth);
+
+    const newHead = new fabric.Triangle({
+      left: p2.x,
+      top: p2.y,
+      originX: "center",
+      originY: "center",
+      width: headSize.width,
+      height: headSize.height,
+      fill: stroke,
+      angle: angle + 90,
+      selectable: false,
+      evented: false,
+      objectCaching: false
+    });
+
+    setArrowPartProps(newLine);
+    setArrowPartProps(newHead);
+
+    group._objects = [newLine, newHead];
+    syncArrowGeometry(group);
+  }
 
   function ensureCropRect() {
     const canvas = editorState.canvas;
@@ -5557,7 +5522,7 @@ function refreshArrowFromGroupTransform(group) {
       canvas.requestRenderAll();
     }
 
-    const json = canvas.toDatalessJSON(["toolType", "effectType"]);
+    const json = canvas.toDatalessJSON(["toolType", "effectType", "arrowStroke", "arrowStrokeWidth", "arrowX1", "arrowY1", "arrowX2", "arrowY2"]);
 
     if (editorState.cropRect) {
       editorState.cropRect.visible = cropWasVisible;
@@ -5617,29 +5582,33 @@ function refreshArrowFromGroupTransform(group) {
       });
 
       const objs = canvas.getObjects();
-  editorState.baseImage = objs.length ? objs[0] : null;
-editorState.historyIndex = index;
-editorState.zoom = snapshot.zoom || 1;
-editorState.brightness = Number(snapshot.brightness || 0);
+      editorState.baseImage = objs.length ? objs[0] : null;
+      editorState.historyIndex = index;
+      editorState.zoom = snapshot.zoom || 1;
+      editorState.brightness = Number(snapshot.brightness || 0);
 
-const brightEl = $("ieBrightness");
-if (brightEl) brightEl.value = String(editorState.brightness);
+      const brightEl = $("ieBrightness");
+      if (brightEl) brightEl.value = String(editorState.brightness);
 
-if (editorState.baseImage) {
-  applyBrightness(editorState.brightness);
-}
+      if (editorState.baseImage) {
+        applyBrightness(editorState.brightness);
+      }
 
-resetViewport();
-if (editorState.zoom !== 1) setZoom(editorState.zoom);
-else setZoomLabel();
+      resetViewport();
+      if (editorState.zoom !== 1) setZoom(editorState.zoom);
+      else setZoomLabel();
 
-if (editorState.canvas) {
-  editorState.canvas.calcOffset();
-  editorState.canvas.requestRenderAll();
-}
+      if (editorState.canvas) {
+        editorState.canvas.calcOffset();
+        editorState.canvas.requestRenderAll();
+      }
 
-setActiveTool("select");
-updateUndoRedoState();
+      setActiveTool("select");
+      updateUndoRedoState();
+    } finally {
+      editorState.restoringHistory = false;
+    }
+  }
 
   function undoHistory() {
     if (editorState.historyIndex <= 0) return;
@@ -5659,25 +5628,29 @@ updateUndoRedoState();
   }
 
   function bindObjectEvents() {
-   canvas.on("object:modified", async (evt) => {
-  if (editorState.restoringHistory) return;
-  const obj = evt?.target;
-  if (!obj) return;
+    const canvas = editorState.canvas;
+    if (!canvas || canvas.__imgEditorObjectEventsBound) return;
+    canvas.__imgEditorObjectEventsBound = true;
 
-  if (isEffectOverlay(obj)) {
-    await regenerateEffectOverlayObject(obj, true);
-    return;
-  }
+    canvas.on("object:modified", async (evt) => {
+      if (editorState.restoringHistory) return;
+      const obj = evt?.target;
+      if (!obj) return;
 
-  if (isArrowGroup(obj)) {
-    refreshArrowFromGroupTransform(obj);
-    canvas.requestRenderAll();
-    pushHistorySnapshot(true);
-    return;
-  }
+      if (isEffectOverlay(obj)) {
+        await regenerateEffectOverlayObject(obj, true);
+        return;
+      }
 
-  pushHistorySnapshot();
-});
+      if (isArrowGroup(obj)) {
+        refreshArrowFromGroupTransform(obj);
+        canvas.requestRenderAll();
+        pushHistorySnapshot(true);
+        return;
+      }
+
+      pushHistorySnapshot();
+    });
   }
 
   function getPointerFromEvent(canvas, evt) {
@@ -6407,20 +6380,20 @@ updateUndoRedoState();
     });
 
     $("ieZoomInBtn")?.addEventListener("click", () => {
-  setZoom(editorState.zoom + 0.1);
-});
+      setZoom(editorState.zoom + 0.1);
+    });
 
-$("ieZoomOutBtn")?.addEventListener("click", () => {
-  setZoom(editorState.zoom - 0.1);
-});
+    $("ieZoomOutBtn")?.addEventListener("click", () => {
+      setZoom(editorState.zoom - 0.1);
+    });
 
-$("ieZoomResetBtn")?.addEventListener("click", () => {
-  resetViewport();
-});
+    $("ieZoomResetBtn")?.addEventListener("click", () => {
+      resetViewport();
+    });
 
-$("ieFitBtn")?.addEventListener("click", () => {
-  resetViewport();
-});
+    $("ieFitBtn")?.addEventListener("click", () => {
+      resetViewport();
+    });
 
     $("ieRotateLeftBtn")?.addEventListener("click", () => {
       rotateBaseImage(-90);
