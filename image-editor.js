@@ -8483,7 +8483,8 @@
     restoringHistory: false,
 
     floatingToggleBtn: null,
-    floatingToolPanel: null
+    floatingToolPanel: null,
+    uiPrepared: false
   };
 
   const $ = (id) => document.getElementById(id);
@@ -8561,27 +8562,12 @@
     editorState.isRefreshingEffect = false;
   }
 
-  function lockPageForEditor() {
-    document.documentElement.classList.add("img-editor-lock");
-    document.body.classList.add("img-editor-lock");
-  }
-
-  function unlockPageForEditor() {
-    document.documentElement.classList.remove("img-editor-lock");
-    document.body.classList.remove("img-editor-lock");
-  }
-
-  function nextFrame() {
-    return new Promise((resolve) => requestAnimationFrame(() => resolve()));
-  }
-
   function closeEditor(result = { ok: false }) {
     setEditorPreparing(false);
 
     editorState.modal?.classList.add("hidden");
     editorState.modal?.setAttribute("aria-hidden", "true");
-
-    unlockPageForEditor();
+    document.body.classList.remove("img-editor-lock");
 
     destroyCanvas();
     revokeOriginalUrl();
@@ -8763,1348 +8749,728 @@
     const sw = Math.max(2, Number(strokeWidth) || 2);
     const dx = x2 - x1;
     const dy = y2 - y1;
-    const len = Math.sqrt(dx * dx + dy * dy) || 1;
+    const angle = Math.atan2(dy, dx);
+    const headLen = Math.max(12, sw * 4);
 
-    const ux = dx / len;
-    const uy = dy / len;
-    const px = -uy;
-    const py = ux;
+    const x3 = x2 - headLen * Math.cos(angle - Math.PI / 6);
+    const y3 = y2 - headLen * Math.sin(angle - Math.PI / 6);
+    const x4 = x2 - headLen * Math.cos(angle + Math.PI / 6);
+    const y4 = y2 - headLen * Math.sin(angle + Math.PI / 6);
 
-    const headLen = Math.max(18, sw * 5.5);
-    const headHalf = Math.max(8, sw * 2.6);
-    const shaftHalf = Math.max(1.2, sw * 0.5);
-
-    const usableHeadLen = Math.min(headLen, Math.max(10, len * 0.45));
-    const bx = x2 - ux * usableHeadLen;
-    const by = y2 - uy * usableHeadLen;
-
-    const s1x = x1 + px * shaftHalf;
-    const s1y = y1 + py * shaftHalf;
-
-    const s2x = bx + px * shaftHalf;
-    const s2y = by + py * shaftHalf;
-
-    const h1x = bx + px * headHalf;
-    const h1y = by + py * headHalf;
-
-    const h2x = bx - px * headHalf;
-    const h2y = by - py * headHalf;
-
-    const s3x = bx - px * shaftHalf;
-    const s3y = by - py * shaftHalf;
-
-    const s4x = x1 - px * shaftHalf;
-    const s4y = y1 - py * shaftHalf;
-
-    return [
-      `M ${s1x} ${s1y}`,
-      `L ${s2x} ${s2y}`,
-      `L ${h1x} ${h1y}`,
-      `L ${x2} ${y2}`,
-      `L ${h2x} ${h2y}`,
-      `L ${s3x} ${s3y}`,
-      `L ${s4x} ${s4y}`,
-      "Z"
-    ].join(" ");
+    return `M ${x1} ${y1} L ${x2} ${y2} M ${x3} ${y3} L ${x2} ${y2} L ${x4} ${y4}`;
   }
 
-  function createArrowGroup(x1, y1, x2, y2) {
-    const pathData = buildArrowPathData(x1, y1, x2, y2, editorState.strokeWidth);
-
-    const arrow = new fabric.Path(pathData, {
-      fill: editorState.strokeColor,
-      stroke: null,
-      selectable: true,
-      evented: true,
-      objectCaching: false,
-      hasControls: true,
-      hasBorders: true,
-      lockRotation: false
-    });
-
-    arrow.set({
-      toolType: "arrow"
-    });
-
-    arrow.setCoords();
-    return arrow;
-  }
-
-  function ensureCropRect() {
-    const canvas = editorState.canvas;
-    if (!canvas || editorState.cropRect) return;
-
-    const w = Math.max(80, Math.round(canvas.getWidth() * 0.7));
-    const h = Math.max(80, Math.round(canvas.getHeight() * 0.7));
-
-    editorState.cropRect = new fabric.Rect({
-      left: Math.round((canvas.getWidth() - w) / 2),
-      top: Math.round((canvas.getHeight() - h) / 2),
-      width: w,
-      height: h,
-      fill: "rgba(37,99,235,0.10)",
-      stroke: "#2563eb",
-      strokeWidth: 2,
-      strokeDashArray: [8, 6],
-      cornerColor: "#2563eb",
-      cornerStyle: "circle",
-      transparentCorners: false,
-      selectable: true,
-      evented: true,
-      hasRotatingPoint: false,
-      lockRotation: true,
+  function createShapeByTool(tool, x1, y1, x2, y2) {
+    const left = Math.min(x1, x2);
+    const top = Math.min(y1, y2);
+    const width = Math.abs(x2 - x1);
+    const height = Math.abs(y2 - y1);
+    const common = {
+      left,
+      top,
+      width: Math.max(1, width),
+      height: Math.max(1, height),
+      fill: "transparent",
+      stroke: editorState.strokeColor,
+      strokeWidth: editorState.strokeWidth,
       objectCaching: false
-    });
-
-    editorState.cropRect.scaleX = 1;
-    editorState.cropRect.scaleY = 1;
-
-    canvas.add(editorState.cropRect);
-    canvas.setActiveObject(editorState.cropRect);
-    canvas.requestRenderAll();
-  }
-
-  function removeCropRect() {
-    const canvas = editorState.canvas;
-    if (!canvas || !editorState.cropRect) return;
-    try { canvas.remove(editorState.cropRect); } catch (_) {}
-    editorState.cropRect = null;
-    canvas.requestRenderAll();
-  }
-
-  function clamp(n, min, max) {
-    return Math.max(min, Math.min(max, n));
-  }
-
-  function dataURLToBlob(dataUrl) {
-    const arr = dataUrl.split(",");
-    const mime = arr[0].match(/:(.*?);/)[1];
-    const bstr = atob(arr[1]);
-    let n = bstr.length;
-    const u8arr = new Uint8Array(n);
-    while (n--) u8arr[n] = bstr.charCodeAt(n);
-    return new Blob([u8arr], { type: mime });
-  }
-
-  async function blobToFile(blob, filename, mimeType = "image/jpeg") {
-    return new File([blob], filename, { type: mimeType, lastModified: Date.now() });
-  }
-
-  function isEffectOverlay(obj) {
-    return !!(obj && (obj.effectType === "blur" || obj.effectType === "mosaic"));
-  }
-
-  function getEffectShapeType(obj) {
-    const tool = String(obj?.toolType || "");
-    return /Circle$/i.test(tool) ? "circle" : "rect";
-  }
-
-  function getCanvasSnapshotDataUrl(options = {}) {
-    const canvas = editorState.canvas;
-    if (!canvas) return "";
-
-    const active = canvas.getActiveObject();
-    if (active) canvas.discardActiveObject();
-
-    const hidden = [];
-    const rememberHidden = (obj) => {
-      if (!obj || hidden.some((x) => x.obj === obj)) return;
-      hidden.push({ obj, visible: obj.visible });
-      obj.visible = false;
     };
 
-    if (editorState.cropRect && canvas.getObjects().includes(editorState.cropRect)) {
-      rememberHidden(editorState.cropRect);
-    }
-
-    if (options.excludeEffectObjects) {
-      canvas.getObjects().forEach((obj) => {
-        if (isEffectOverlay(obj)) rememberHidden(obj);
+    if (tool === "line") {
+      return new fabric.Line([x1, y1, x2, y2], {
+        stroke: editorState.strokeColor,
+        strokeWidth: editorState.strokeWidth,
+        objectCaching: false
       });
     }
 
-    if (Array.isArray(options.hideObjects)) {
-      options.hideObjects.forEach((obj) => {
-        if (obj && canvas.getObjects().includes(obj)) rememberHidden(obj);
+    if (tool === "arrow") {
+      return new fabric.Path(buildArrowPathData(x1, y1, x2, y2, editorState.strokeWidth), {
+        stroke: editorState.strokeColor,
+        strokeWidth: editorState.strokeWidth,
+        fill: "",
+        objectCaching: false
       });
     }
 
-    canvas.requestRenderAll();
-
-    const dataUrl = canvas.toDataURL({
-      format: options.format || "png",
-      quality: options.quality == null ? 1 : options.quality,
-      multiplier: options.multiplier || 1,
-      enableRetinaScaling: false
-    });
-
-    hidden.forEach(({ obj, visible }) => { obj.visible = visible; });
-    canvas.requestRenderAll();
-
-    return dataUrl;
-  }
-
-  function createOffscreenCanvas(width, height) {
-    const c = document.createElement("canvas");
-    c.width = Math.max(1, Math.round(width));
-    c.height = Math.max(1, Math.round(height));
-    return c;
-  }
-
-  function applyMosaicToCanvasRegion(ctx, width, height, blockSize) {
-    const size = Math.max(4, Math.round(blockSize || 12));
-    const imageData = ctx.getImageData(0, 0, width, height);
-    const data = imageData.data;
-
-    for (let y = 0; y < height; y += size) {
-      for (let x = 0; x < width; x += size) {
-        let r = 0, g = 0, b = 0, a = 0, count = 0;
-
-        for (let yy = y; yy < Math.min(y + size, height); yy++) {
-          for (let xx = x; xx < Math.min(x + size, width); xx++) {
-            const idx = (yy * width + xx) * 4;
-            r += data[idx];
-            g += data[idx + 1];
-            b += data[idx + 2];
-            a += data[idx + 3];
-            count++;
-          }
-        }
-
-        if (!count) continue;
-
-        r = Math.round(r / count);
-        g = Math.round(g / count);
-        b = Math.round(b / count);
-        a = Math.round(a / count);
-
-        for (let yy = y; yy < Math.min(y + size, height); yy++) {
-          for (let xx = x; xx < Math.min(x + size, width); xx++) {
-            const idx = (yy * width + xx) * 4;
-            data[idx] = r;
-            data[idx + 1] = g;
-            data[idx + 2] = b;
-            data[idx + 3] = a;
-          }
-        }
-      }
+    if (tool === "rect") {
+      return new fabric.Rect({
+        ...common,
+        rx: 6,
+        ry: 6
+      });
     }
 
-    ctx.putImageData(imageData, 0, 0);
-  }
-
-  function maskCanvasToEllipse(ctx, width, height) {
-    ctx.save();
-    ctx.globalCompositeOperation = "destination-in";
-    ctx.beginPath();
-    ctx.ellipse(width / 2, height / 2, width / 2, height / 2, 0, 0, Math.PI * 2);
-    ctx.closePath();
-    ctx.fill();
-    ctx.restore();
-  }
-
-  function normalizeRegionBounds(x, y, w, h) {
-    return {
-      sx: Math.round(x),
-      sy: Math.round(y),
-      sw: Math.max(1, Math.round(w)),
-      sh: Math.max(1, Math.round(h))
-    };
-  }
-
-  async function loadImageFromDataUrl(dataUrl) {
-    return new Promise((resolve, reject) => {
-      const im = new Image();
-      im.onload = () => resolve(im);
-      im.onerror = reject;
-      im.src = dataUrl;
-    });
-  }
-
-  async function buildEffectOverlayFromRegion(shapeType, effectType, x, y, w, h, opts = {}) {
-    const snapshotUrl = getCanvasSnapshotDataUrl({
-      format: "png",
-      multiplier: 1,
-      excludeEffectObjects: true,
-      hideObjects: Array.isArray(opts.hideObjects) ? opts.hideObjects : []
-    });
-
-    if (!snapshotUrl) return null;
-
-    const img = await loadImageFromDataUrl(snapshotUrl);
-
-    const sx = clamp(Math.round(x), 0, img.width);
-    const sy = clamp(Math.round(y), 0, img.height);
-    const sw = clamp(Math.round(w), 1, img.width - sx);
-    const sh = clamp(Math.round(h), 1, img.height - sy);
-
-    const off = createOffscreenCanvas(sw, sh);
-    const offCtx = off.getContext("2d");
-
-    if (effectType === "blur") {
-      offCtx.filter = "blur(10px)";
-      offCtx.drawImage(img, sx, sy, sw, sh, 0, 0, sw, sh);
-      offCtx.filter = "none";
-    } else {
-      offCtx.drawImage(img, sx, sy, sw, sh, 0, 0, sw, sh);
-      applyMosaicToCanvasRegion(offCtx, sw, sh, 12);
+    if (tool === "circle") {
+      return new fabric.Ellipse({
+        left,
+        top,
+        rx: Math.max(1, width / 2),
+        ry: Math.max(1, height / 2),
+        fill: "transparent",
+        stroke: editorState.strokeColor,
+        strokeWidth: editorState.strokeWidth,
+        objectCaching: false
+      });
     }
 
-    if (shapeType === "circle") {
-      maskCanvasToEllipse(offCtx, sw, sh);
+    if (tool === "blurRect" || tool === "mosaicRect") {
+      return new fabric.Rect({
+        ...common,
+        fill: tool === "blurRect" ? "rgba(255,255,255,0.35)" : "rgba(0,0,0,0.18)",
+        strokeDashArray: [6, 4]
+      });
     }
 
-    const regionUrl = off.toDataURL("image/png");
-    const regionImg = await loadImageFromDataUrl(regionUrl);
-
-    const overlay = new fabric.Image(regionImg, {
-      left: sx,
-      top: sy,
-      originX: "left",
-      originY: "top",
-      selectable: true,
-      evented: true,
-      objectCaching: false
-    });
-
-    overlay.set({
-      effectType,
-      toolType: shapeType === "circle"
-        ? (effectType === "blur" ? "blurCircle" : "mosaicCircle")
-        : (effectType === "blur" ? "blurRect" : "mosaicRect"),
-      hasControls: true,
-      hasBorders: true,
-      lockRotation: true
-    });
-
-    overlay.scaleX = 1;
-    overlay.scaleY = 1;
-
-    return overlay;
-  }
-
-  function getObjectBounds(obj) {
-    if (!obj) return null;
-
-    if (obj.type === "rect") {
-      return normalizeRegionBounds(
-        obj.left,
-        obj.top,
-        obj.width * obj.scaleX,
-        obj.height * obj.scaleY
-      );
-    }
-
-    if (obj.type === "ellipse") {
-      const rx = (obj.rx || 0) * (obj.scaleX || 1);
-      const ry = (obj.ry || 0) * (obj.scaleY || 1);
-      return normalizeRegionBounds(
-        (obj.left || 0) - rx,
-        (obj.top || 0) - ry,
-        rx * 2,
-        ry * 2
-      );
-    }
-
-    if (isEffectOverlay(obj)) {
-      return normalizeRegionBounds(
-        obj.left || 0,
-        obj.top || 0,
-        (obj.width || 1) * (obj.scaleX || 1),
-        (obj.height || 1) * (obj.scaleY || 1)
-      );
+    if (tool === "blurCircle" || tool === "mosaicCircle") {
+      return new fabric.Ellipse({
+        left,
+        top,
+        rx: Math.max(1, width / 2),
+        ry: Math.max(1, height / 2),
+        fill: tool === "blurCircle" ? "rgba(255,255,255,0.35)" : "rgba(0,0,0,0.18)",
+        stroke: editorState.strokeColor,
+        strokeWidth: editorState.strokeWidth,
+        strokeDashArray: [6, 4],
+        objectCaching: false
+      });
     }
 
     return null;
   }
 
-  async function regenerateEffectOverlayObject(overlay, pushHistoryAfter = true) {
-    const canvas = editorState.canvas;
-    if (!canvas || !overlay || !isEffectOverlay(overlay) || editorState.isRefreshingEffect) return;
+  function updateTempShapeByTool(obj, tool, x1, y1, x2, y2) {
+    if (!obj) return;
+    const left = Math.min(x1, x2);
+    const top = Math.min(y1, y2);
+    const width = Math.abs(x2 - x1);
+    const height = Math.abs(y2 - y1);
 
-    const bounds = getObjectBounds(overlay);
-    if (!bounds) return;
-
-    const shapeType = getEffectShapeType(overlay);
-    const effectType = overlay.effectType || "blur";
-    const idx = canvas.getObjects().indexOf(overlay);
-
-    try {
-      editorState.isRefreshingEffect = true;
-
-      const replacement = await buildEffectOverlayFromRegion(
-        shapeType,
-        effectType,
-        bounds.sx,
-        bounds.sy,
-        bounds.sw,
-        bounds.sh,
-        { hideObjects: [overlay] }
-      );
-
-      if (!replacement) return;
-
-      canvas.remove(overlay);
-      if (idx >= 0 && typeof canvas.insertAt === "function") {
-        canvas.insertAt(replacement, idx, false);
-      } else {
-        canvas.add(replacement);
-      }
-
-      canvas.setActiveObject(replacement);
-      canvas.requestRenderAll();
-
-      if (pushHistoryAfter) pushHistorySnapshot();
-    } finally {
-      editorState.isRefreshingEffect = false;
-    }
-  }
-
-  async function applyCrop() {
-    const canvas = editorState.canvas;
-    const crop = editorState.cropRect;
-    if (!canvas || !crop || editorState.isApplyingCrop) return;
-
-    try {
-      editorState.isApplyingCrop = true;
-
-      const dataUrl = getCanvasSnapshotDataUrl({ format: "png", multiplier: 1 });
-      const img = await loadImageFromDataUrl(dataUrl);
-
-      const left = clamp(Math.round(crop.left), 0, img.width - 1);
-      const top = clamp(Math.round(crop.top), 0, img.height - 1);
-      const width = clamp(Math.round(crop.width * crop.scaleX), 1, img.width - left);
-      const height = clamp(Math.round(crop.height * crop.scaleY), 1, img.height - top);
-
-      const off = createOffscreenCanvas(width, height);
-      const ctx = off.getContext("2d");
-      ctx.drawImage(img, left, top, width, height, 0, 0, width, height);
-
-      const blob = dataURLToBlob(off.toDataURL("image/png"));
-      const baseName = (editorState.originalFile?.name || "edited-image").replace(/\.[^.]+$/, "");
-      const croppedFile = await blobToFile(blob, `${baseName}_cropped.png`, "image/png");
-
-      editorState.originalFile = croppedFile;
-
-      destroyCanvas();
-      revokeOriginalUrl();
-      await loadImageToCanvas(croppedFile);
-
-      resetViewport();
-      if (editorState.canvas) {
-        editorState.canvas.calcOffset();
-        editorState.canvas.requestRenderAll();
-      }
-
-      setActiveTool("select");
-      pushHistorySnapshot(true);
-    } catch (err) {
-      console.error(err);
-      await showMessage("error", "ครอปภาพไม่สำเร็จ", err?.message || String(err));
-    } finally {
-      editorState.isApplyingCrop = false;
-    }
-  }
-
-  async function applyAreaEffect(effectType, shapeType) {
-    const canvas = editorState.canvas;
-    if (!canvas) return;
-
-    const active = canvas.getActiveObject();
-    if (!active || active === editorState.baseImage) {
-      await showMessage("info", "ยังไม่ได้เลือกพื้นที่", "กรุณาวาดพื้นที่ก่อน แล้วจึงกดใช้เอฟเฟกต์");
+    if (tool === "line") {
+      obj.set({ x1, y1, x2, y2 });
       return;
     }
 
-    const bounds = getObjectBounds(active);
-    if (!bounds) {
-      await showMessage("warning", "รูปทรงไม่ถูกต้อง", "กรุณาเลือกสี่เหลี่ยมหรือวงกลมสำหรับใช้เอฟเฟกต์นี้");
+    if (tool === "arrow") {
+      obj.set({ path: fabric.Path.parsePath(buildArrowPathData(x1, y1, x2, y2, editorState.strokeWidth)) });
       return;
     }
 
-    try {
-      const overlay = await buildEffectOverlayFromRegion(
-        shapeType,
-        effectType,
-        bounds.sx,
-        bounds.sy,
-        bounds.sw,
-        bounds.sh,
-        { hideObjects: [active] }
+    if (tool === "rect" || tool === "blurRect" || tool === "mosaicRect") {
+      obj.set({
+        left,
+        top,
+        width: Math.max(1, width),
+        height: Math.max(1, height)
+      });
+      return;
+    }
+
+    if (tool === "circle" || tool === "blurCircle" || tool === "mosaicCircle") {
+      obj.set({
+        left,
+        top,
+        rx: Math.max(1, width / 2),
+        ry: Math.max(1, height / 2)
+      });
+    }
+  }
+
+  function bindPointerDrawing() {
+    const canvas = editorState.canvas;
+    if (!canvas || canvas.__editorPointerBound) return;
+    canvas.__editorPointerBound = true;
+
+    let start = null;
+
+    canvas.on("mouse:down", (opt) => {
+      if (!canvas) return;
+
+      if (editorState.activeTool === "pan") {
+        editorState.isPanning = true;
+        canvas.defaultCursor = "grabbing";
+        start = { x: opt.e.clientX, y: opt.e.clientY };
+        return;
+      }
+
+      const drawTools = [
+        "line", "arrow", "rect", "circle",
+        "blurRect", "blurCircle", "mosaicRect", "mosaicCircle"
+      ];
+
+      if (!drawTools.includes(editorState.activeTool)) return;
+
+      const pointer = canvas.getPointer(opt.e);
+      start = pointer;
+
+      const obj = createShapeByTool(
+        editorState.activeTool,
+        pointer.x,
+        pointer.y,
+        pointer.x,
+        pointer.y
       );
 
-      if (!overlay) throw new Error("สร้างเอฟเฟกต์ไม่สำเร็จ");
-
-      canvas.remove(active);
-      canvas.add(overlay);
-      canvas.setActiveObject(overlay);
+      if (!obj) return;
+      editorState.tempDraft = obj;
+      canvas.add(obj);
+      canvas.setActiveObject(obj);
       canvas.requestRenderAll();
+    });
+
+    canvas.on("mouse:move", (opt) => {
+      if (!canvas || !start) return;
+
+      if (editorState.activeTool === "pan" && editorState.isPanning) {
+        const e = opt.e;
+        const vpt = canvas.viewportTransform || [1, 0, 0, 1, 0, 0];
+        vpt[4] += e.clientX - start.x;
+        vpt[5] += e.clientY - start.y;
+        canvas.setViewportTransform(vpt);
+        start = { x: e.clientX, y: e.clientY };
+        canvas.requestRenderAll();
+        return;
+      }
+
+      if (!editorState.tempDraft) return;
+
+      const pointer = canvas.getPointer(opt.e);
+      updateTempShapeByTool(
+        editorState.tempDraft,
+        editorState.activeTool,
+        start.x,
+        start.y,
+        pointer.x,
+        pointer.y
+      );
+      canvas.requestRenderAll();
+    });
+
+    canvas.on("mouse:up", () => {
+      if (!canvas) return;
+
+      if (editorState.activeTool === "pan") {
+        editorState.isPanning = false;
+        canvas.defaultCursor = "grab";
+        start = null;
+        return;
+      }
+
+      if (editorState.tempDraft) {
+        editorState.tempDraft.setCoords();
+        editorState.tempDraft = null;
+        pushHistorySnapshot();
+      }
+      start = null;
+    });
+  }
+
+  function bindObjectEvents() {
+    const canvas = editorState.canvas;
+    if (!canvas || canvas.__editorObjectBound) return;
+    canvas.__editorObjectBound = true;
+
+    canvas.on("object:modified", () => {
+      if (editorState.restoringHistory) return;
       pushHistorySnapshot();
+    });
 
-      setActiveTool("select");
-    } catch (err) {
-      console.error(err);
-      await showMessage("error", "ใช้เอฟเฟกต์ไม่สำเร็จ", err?.message || String(err));
-    }
+    canvas.on("selection:created", updateUndoRedoState);
+    canvas.on("selection:updated", updateUndoRedoState);
+    canvas.on("selection:cleared", updateUndoRedoState);
   }
 
-  function collectCanvasState() {
+  function serializeCanvasState() {
     const canvas = editorState.canvas;
     if (!canvas) return null;
+    return JSON.stringify(canvas.toJSON(["selectable", "evented", "hasControls", "hasBorders", "lockRotation"]));
+  }
 
-    const cropWasVisible = !!(editorState.cropRect && editorState.cropRect.visible);
-    if (editorState.cropRect) {
-      editorState.cropRect.visible = false;
-      canvas.requestRenderAll();
-    }
+  function restoreCanvasState(json) {
+    const canvas = editorState.canvas;
+    if (!canvas || !json) return;
 
-    const json = canvas.toDatalessJSON([
-      "toolType",
-      "effectType"
-    ]);
+    editorState.restoringHistory = true;
 
-    if (editorState.cropRect) {
-      editorState.cropRect.visible = cropWasVisible;
-      canvas.requestRenderAll();
-    }
+    canvas.loadFromJSON(json, () => {
+      const objects = canvas.getObjects();
+      editorState.baseImage = objects[0] || null;
 
-    return {
-      json,
-      zoom: editorState.zoom,
-      brightness: editorState.brightness
-    };
+      canvas.forEachObject((obj, index) => {
+        if (index === 0) {
+          obj.selectable = false;
+          obj.evented = false;
+        } else {
+          obj.selectable = true;
+          obj.evented = true;
+        }
+      });
+
+      canvas.renderAll();
+      editorState.restoringHistory = false;
+      setCanvasInteractivityForTool(editorState.activeTool);
+      updateUndoRedoState();
+    });
   }
 
   function pushHistorySnapshot(force = false) {
-    const canvas = editorState.canvas;
-    if (!canvas || editorState.restoringHistory || editorState.isRefreshingEffect) return;
+    const snap = serializeCanvasState();
+    if (!snap) return;
 
-    const snapshot = collectCanvasState();
-    if (!snapshot) return;
+    const current = editorState.history[editorState.historyIndex];
+    if (!force && current === snap) return;
 
-    const serialized = JSON.stringify(snapshot);
-    const last = editorState.history[editorState.historyIndex];
-    if (!force && last && JSON.stringify(last) === serialized) return;
+    editorState.history = editorState.history.slice(0, editorState.historyIndex + 1);
+    editorState.history.push(snap);
 
-    if (editorState.historyIndex < editorState.history.length - 1) {
-      editorState.history = editorState.history.slice(0, editorState.historyIndex + 1);
-    }
-
-    editorState.history.push(snapshot);
-    editorState.historyIndex = editorState.history.length - 1;
-
-    if (editorState.history.length > 40) {
+    if (editorState.history.length > 30) {
       editorState.history.shift();
-      editorState.historyIndex = editorState.history.length - 1;
     }
 
+    editorState.historyIndex = editorState.history.length - 1;
     updateUndoRedoState();
-  }
-
-  async function restoreHistoryAt(index) {
-    const canvas = editorState.canvas;
-    if (!canvas) return;
-    if (index < 0 || index >= editorState.history.length) return;
-
-    const snapshot = editorState.history[index];
-    if (!snapshot) return;
-
-    editorState.restoringHistory = true;
-    try {
-      removeCropRect();
-
-      await new Promise((resolve) => {
-        canvas.loadFromJSON(snapshot.json, () => {
-          canvas.renderAll();
-          resolve();
-        });
-      });
-
-      const objs = canvas.getObjects();
-      editorState.baseImage = objs.length ? objs[0] : null;
-      editorState.historyIndex = index;
-      editorState.zoom = snapshot.zoom || 1;
-      editorState.brightness = Number(snapshot.brightness || 0);
-
-      const brightEl = $("ieBrightness");
-      if (brightEl) brightEl.value = String(editorState.brightness);
-
-      if (editorState.baseImage) {
-        applyBrightness(editorState.brightness);
-      }
-
-      resetViewport();
-      if (editorState.zoom !== 1) setZoom(editorState.zoom);
-      else setZoomLabel();
-
-      if (editorState.canvas) {
-        editorState.canvas.calcOffset();
-        editorState.canvas.requestRenderAll();
-      }
-
-      setActiveTool("select");
-      updateUndoRedoState();
-    } finally {
-      editorState.restoringHistory = false;
-    }
   }
 
   function undoHistory() {
     if (editorState.historyIndex <= 0) return;
-    restoreHistoryAt(editorState.historyIndex - 1);
+    editorState.historyIndex -= 1;
+    restoreCanvasState(editorState.history[editorState.historyIndex]);
   }
 
   function redoHistory() {
     if (editorState.historyIndex >= editorState.history.length - 1) return;
-    restoreHistoryAt(editorState.historyIndex + 1);
+    editorState.historyIndex += 1;
+    restoreCanvasState(editorState.history[editorState.historyIndex]);
   }
 
   function updateUndoRedoState() {
     const undoBtn = $("ieUndoBtn");
     const redoBtn = $("ieRedoBtn");
-    if (undoBtn) undoBtn.disabled = !(editorState.historyIndex > 0);
-    if (redoBtn) redoBtn.disabled = !(editorState.historyIndex < editorState.history.length - 1);
+    const delBtn = $("ieDeleteBtn");
+    const cropBtn = $("ieApplyCropBtn");
+
+    if (undoBtn) undoBtn.disabled = editorState.historyIndex <= 0;
+    if (redoBtn) redoBtn.disabled = editorState.historyIndex >= editorState.history.length - 1;
+
+    const active = editorState.canvas?.getActiveObject?.();
+    if (delBtn) delBtn.disabled = !active || active === editorState.baseImage || active === editorState.cropRect;
+    if (cropBtn) cropBtn.disabled = !editorState.cropRect;
   }
 
-  function bindObjectEvents() {
+  function ensureCropRect() {
     const canvas = editorState.canvas;
-    if (!canvas || canvas.__imgEditorObjectEventsBound) return;
-    canvas.__imgEditorObjectEventsBound = true;
+    if (!canvas) return;
 
-    canvas.on("object:modified", async (evt) => {
-      if (editorState.restoringHistory) return;
-      const obj = evt?.target;
-      if (!obj) return;
-
-      if (isEffectOverlay(obj)) {
-        await regenerateEffectOverlayObject(obj, true);
-        return;
-      }
-
-      pushHistorySnapshot();
-    });
-  }
-
-  function getPointerFromEvent(canvas, evt) {
-    if (typeof canvas.getPointer === "function") return canvas.getPointer(evt);
-    const rect = canvas.upperCanvasEl.getBoundingClientRect();
-    return { x: evt.clientX - rect.left, y: evt.clientY - rect.top };
-  }
-
-  function bindPointerDrawing() {
-    const canvas = editorState.canvas;
-    if (!canvas || canvas.__imgEditorPointerBound) return;
-    canvas.__imgEditorPointerBound = true;
-
-    let startX = 0;
-    let startY = 0;
-    let drawingObject = null;
-
-    canvas.on("mouse:down", function (opt) {
-      const evt = opt.e;
-      if (!evt) return;
-
-      if (editorState.activeTool === "pan") {
-        editorState.isPanning = true;
-        canvas.defaultCursor = "grabbing";
-        this.selection = false;
-        this.lastPosX = evt.clientX;
-        this.lastPosY = evt.clientY;
-        return;
-      }
-
-      if (editorState.activeTool === "text") {
-        addTextbox();
-        return;
-      }
-
-      if (!["line", "arrow", "rect", "circle", "blurRect", "blurCircle", "mosaicRect", "mosaicCircle"].includes(editorState.activeTool)) {
-        return;
-      }
-
-      const pointer = getPointerFromEvent(canvas, evt);
-      startX = pointer.x;
-      startY = pointer.y;
-      const tool = editorState.activeTool;
-
-      if (tool === "line" || tool === "arrow") {
-        drawingObject = new fabric.Line([startX, startY, startX, startY], {
-          stroke: editorState.strokeColor,
-          strokeWidth: editorState.strokeWidth,
-          selectable: false,
-          evented: false,
-          objectCaching: false,
-          hasControls: true,
-          hasBorders: true,
-          lockRotation: false
-        });
-        editorState.tempDraft = drawingObject;
-        canvas.add(drawingObject);
-      }
-
-      if (tool === "rect" || tool === "blurRect" || tool === "mosaicRect") {
-        drawingObject = new fabric.Rect({
-          left: startX,
-          top: startY,
-          width: 1,
-          height: 1,
-          originX: "left",
-          originY: "top",
-          fill: ["blurRect", "mosaicRect"].includes(tool) ? "rgba(37,99,235,0.08)" : "transparent",
-          stroke: editorState.strokeColor,
-          strokeWidth: editorState.strokeWidth,
-          selectable: false,
-          evented: false,
-          objectCaching: false,
-          hasControls: true,
-          hasBorders: true,
-          lockRotation: false
-        });
-        editorState.tempDraft = drawingObject;
-        canvas.add(drawingObject);
-      }
-
-      if (tool === "circle" || tool === "blurCircle" || tool === "mosaicCircle") {
-        drawingObject = new fabric.Ellipse({
-          left: startX,
-          top: startY,
-          rx: 1,
-          ry: 1,
-          originX: "center",
-          originY: "center",
-          fill: ["blurCircle", "mosaicCircle"].includes(tool) ? "rgba(37,99,235,0.08)" : "transparent",
-          stroke: editorState.strokeColor,
-          strokeWidth: editorState.strokeWidth,
-          selectable: false,
-          evented: false,
-          objectCaching: false,
-          hasControls: true,
-          hasBorders: true,
-          lockRotation: false
-        });
-        editorState.tempDraft = drawingObject;
-        canvas.add(drawingObject);
-      }
-    });
-
-    canvas.on("mouse:move", function (opt) {
-      const evt = opt.e;
-      if (!evt) return;
-
-      if (editorState.activeTool === "pan" && editorState.isPanning) {
-        const vpt = this.viewportTransform;
-        vpt[4] += evt.clientX - this.lastPosX;
-        vpt[5] += evt.clientY - this.lastPosY;
-        this.requestRenderAll();
-        this.lastPosX = evt.clientX;
-        this.lastPosY = evt.clientY;
-        return;
-      }
-
-      const draft = editorState.tempDraft;
-      if (!draft) return;
-
-      const pointer = getPointerFromEvent(canvas, evt);
-      const tool = editorState.activeTool;
-
-      if (tool === "line" || tool === "arrow") {
-        draft.set({ x2: pointer.x, y2: pointer.y });
-      }
-
-      if (tool === "rect" || tool === "blurRect" || tool === "mosaicRect") {
-        draft.set({
-          left: Math.min(startX, pointer.x),
-          top: Math.min(startY, pointer.y),
-          width: Math.abs(pointer.x - startX),
-          height: Math.abs(pointer.y - startY)
-        });
-      }
-
-      if (tool === "circle" || tool === "blurCircle" || tool === "mosaicCircle") {
-        draft.set({
-          left: (startX + pointer.x) / 2,
-          top: (startY + pointer.y) / 2,
-          rx: Math.abs(pointer.x - startX) / 2,
-          ry: Math.abs(pointer.y - startY) / 2
-        });
-      }
-
+    if (editorState.cropRect && canvas.getObjects().includes(editorState.cropRect)) {
+      canvas.setActiveObject(editorState.cropRect);
+      updateUndoRedoState();
       canvas.requestRenderAll();
-    });
-
-    canvas.on("mouse:up", async function () {
-      if (editorState.activeTool === "pan") {
-        editorState.isPanning = false;
-        canvas.defaultCursor = "grab";
-        return;
-      }
-
-      const draft = editorState.tempDraft;
-      const tool = editorState.activeTool;
-      if (!draft) return;
-      editorState.tempDraft = null;
-
-      if (tool === "arrow") {
-        const arrow = createArrowGroup(draft.x1, draft.y1, draft.x2, draft.y2);
-        canvas.remove(draft);
-        canvas.add(arrow);
-        canvas.setActiveObject(arrow);
-        canvas.requestRenderAll();
-        pushHistorySnapshot();
-        setActiveTool("select");
-        return;
-      }
-
-      if (tool === "line" || tool === "rect" || tool === "circle") {
-        draft.set({
-          selectable: true,
-          evented: true,
-          hasControls: true,
-          hasBorders: true,
-          lockRotation: false
-        });
-        canvas.setActiveObject(draft);
-        canvas.requestRenderAll();
-        pushHistorySnapshot();
-        setActiveTool("select");
-        return;
-      }
-
-      if (tool === "blurRect") {
-        canvas.setActiveObject(draft);
-        await applyAreaEffect("blur", "rect");
-        return;
-      }
-
-      if (tool === "blurCircle") {
-        canvas.setActiveObject(draft);
-        await applyAreaEffect("blur", "circle");
-        return;
-      }
-
-      if (tool === "mosaicRect") {
-        canvas.setActiveObject(draft);
-        await applyAreaEffect("mosaic", "rect");
-        return;
-      }
-
-      if (tool === "mosaicCircle") {
-        canvas.setActiveObject(draft);
-        await applyAreaEffect("mosaic", "circle");
-      }
-    });
-
-    canvas.on("mouse:wheel", function (opt) {
-      const evt = opt.e;
-      if (!evt) return;
-      evt.preventDefault();
-      evt.stopPropagation();
-
-      let zoom = canvas.getZoom();
-      zoom *= 0.999 ** evt.deltaY;
-      zoom = Math.max(0.2, Math.min(5, zoom));
-      editorState.zoom = zoom;
-      canvas.zoomToPoint({ x: evt.offsetX, y: evt.offsetY }, zoom);
-      setZoomLabel();
-    });
-  }
-
-  async function preloadImageFile_(file) {
-    const url = URL.createObjectURL(file);
-
-    try {
-      const imgEl = await new Promise((resolve, reject) => {
-        const img = new Image();
-        img.onload = () => resolve(img);
-        img.onerror = () => reject(new Error("โหลดรูปภาพไม่สำเร็จ"));
-        img.decoding = "async";
-        img.src = url;
-      });
-
-      if (typeof imgEl.decode === "function") {
-        try { await imgEl.decode(); } catch (_) {}
-      }
-
-      return { url, imgEl };
-    } catch (err) {
-      try { URL.revokeObjectURL(url); } catch (_) {}
-      throw err;
-    }
-  }
-
-  async function loadImageToCanvas(file, preloaded = null) {
-    const prepared = preloaded || await preloadImageFile_(file);
-    const url = prepared.url;
-    const imgEl = prepared.imgEl;
-
-    editorState.originalUrl = url;
-
-    const wrap = editorState.canvasEl.parentElement;
-    if (!wrap) throw new Error("ไม่พบพื้นที่แสดง canvas");
-
-    const wrapRect = wrap.getBoundingClientRect();
-    const maxW = Math.max(220, Math.floor((wrapRect.width || wrap.clientWidth || 220) - 20));
-    const maxH = Math.max(180, Math.floor((wrapRect.height || wrap.clientHeight || 180) - 20));
-
-    if (editorState.canvas) {
-      try { editorState.canvas.dispose(); } catch (_) {}
-      editorState.canvas = null;
+      return;
     }
 
-    const canvas = new fabric.Canvas(editorState.canvasEl, {
-      preserveObjectStacking: true,
-      selection: true,
-      renderOnAddRemove: true
-    });
+    const width = Math.max(120, canvas.getWidth() * 0.65);
+    const height = Math.max(120, canvas.getHeight() * 0.65);
 
-    editorState.canvas = canvas;
-
-    const imgW = imgEl.naturalWidth || imgEl.width;
-    const imgH = imgEl.naturalHeight || imgEl.height;
-    if (!imgW || !imgH) throw new Error("ไม่สามารถอ่านขนาดรูปภาพได้");
-
-    const scale = Math.min(maxW / imgW, maxH / imgH, 1);
-    const canvasW = Math.max(220, Math.round(imgW * scale));
-    const canvasH = Math.max(180, Math.round(imgH * scale));
-
-    if (typeof canvas.setDimensions === "function") {
-      canvas.setDimensions({ width: canvasW, height: canvasH });
-    } else {
-      canvas.setWidth(canvasW);
-      canvas.setHeight(canvasH);
-    }
-
-    if (canvas.lowerCanvasEl) {
-      canvas.lowerCanvasEl.width = canvasW;
-      canvas.lowerCanvasEl.height = canvasH;
-      canvas.lowerCanvasEl.style.width = canvasW + "px";
-      canvas.lowerCanvasEl.style.height = canvasH + "px";
-    }
-    if (canvas.upperCanvasEl) {
-      canvas.upperCanvasEl.width = canvasW;
-      canvas.upperCanvasEl.height = canvasH;
-      canvas.upperCanvasEl.style.width = canvasW + "px";
-      canvas.upperCanvasEl.style.height = canvasH + "px";
-    }
-    if (canvas.wrapperEl) {
-      canvas.wrapperEl.style.width = canvasW + "px";
-      canvas.wrapperEl.style.height = canvasH + "px";
-    }
-
-    const baseImage = new fabric.Image(imgEl, {
-      left: canvasW / 2,
-      top: canvasH / 2,
-      originX: "center",
-      originY: "center",
-      selectable: false,
-      evented: false,
+    const rect = new fabric.Rect({
+      left: (canvas.getWidth() - width) / 2,
+      top: (canvas.getHeight() - height) / 2,
+      width,
+      height,
+      fill: "rgba(37,99,235,0.08)",
+      stroke: "#2563eb",
+      strokeWidth: 2,
+      strokeDashArray: [8, 6],
+      cornerColor: "#2563eb",
+      borderColor: "#2563eb",
+      transparentCorners: false,
+      lockRotation: true,
       objectCaching: false
     });
 
-    baseImage.scaleX = scale;
-    baseImage.scaleY = scale;
-    editorState.baseImage = baseImage;
+    editorState.cropRect = rect;
+    canvas.add(rect);
+    canvas.setActiveObject(rect);
+    updateUndoRedoState();
+    canvas.requestRenderAll();
+  }
 
-    canvas.clear();
-    canvas.add(baseImage);
-
-    if (typeof baseImage.moveTo === "function") {
-      baseImage.moveTo(0);
-    } else if (typeof canvas.sendToBack === "function") {
-      canvas.sendToBack(baseImage);
-    } else if (typeof canvas.sendObjectToBack === "function") {
-      canvas.sendObjectToBack(baseImage);
+  function removeCropRect() {
+    const canvas = editorState.canvas;
+    if (!canvas || !editorState.cropRect) {
+      editorState.cropRect = null;
+      updateUndoRedoState();
+      return;
     }
 
-    bindObjectEvents();
-    bindPointerDrawing();
-
-    resetViewport();
-    if (typeof canvas.calcOffset === "function") canvas.calcOffset();
+    if (canvas.getObjects().includes(editorState.cropRect)) {
+      canvas.remove(editorState.cropRect);
+    }
+    editorState.cropRect = null;
+    updateUndoRedoState();
     canvas.requestRenderAll();
+  }
+
+  function applyCrop() {
+    const canvas = editorState.canvas;
+    const cropRect = editorState.cropRect;
+    if (!canvas || !cropRect || editorState.isApplyingCrop) return;
+
+    editorState.isApplyingCrop = true;
+
+    try {
+      const bounds = cropRect.getBoundingRect(true, true);
+      const dataUrl = canvas.toDataURL({
+        format: "png",
+        left: Math.max(0, bounds.left),
+        top: Math.max(0, bounds.top),
+        width: Math.max(1, bounds.width),
+        height: Math.max(1, bounds.height),
+        multiplier: 1
+      });
+
+      const img = new Image();
+      img.onload = () => {
+        canvas.clear();
+
+        const fitScale = Math.min(
+          canvas.getWidth() / img.width,
+          canvas.getHeight() / img.height,
+          1
+        );
+
+        const cropped = new fabric.Image(img, {
+          left: canvas.getWidth() / 2,
+          top: canvas.getHeight() / 2,
+          originX: "center",
+          originY: "center",
+          selectable: false,
+          evented: false,
+          objectCaching: false
+        });
+
+        cropped.scaleX = fitScale;
+        cropped.scaleY = fitScale;
+        editorState.baseImage = cropped;
+
+        canvas.add(cropped);
+        removeCropRect();
+        setActiveTool("select");
+        pushHistorySnapshot();
+        editorState.isApplyingCrop = false;
+        canvas.requestRenderAll();
+      };
+
+      img.onerror = () => {
+        editorState.isApplyingCrop = false;
+        showMessage("error", "ครอปภาพไม่สำเร็จ", "ไม่สามารถประมวลผลภาพหลังครอปได้");
+      };
+
+      img.src = dataUrl;
+    } catch (err) {
+      editorState.isApplyingCrop = false;
+      console.error(err);
+      showMessage("error", "ครอปภาพไม่สำเร็จ", err?.message || String(err));
+    }
   }
 
   async function exportEditedFile() {
     const canvas = editorState.canvas;
-    if (!canvas) throw new Error("ยังไม่มี canvas สำหรับ export");
+    if (!canvas) throw new Error("ยังไม่มี canvas สำหรับบันทึก");
 
     removeCropRect();
+    canvas.discardActiveObject();
+    canvas.requestRenderAll();
 
     const dataUrl = canvas.toDataURL({
       format: "jpeg",
       quality: 0.92,
-      multiplier: 1,
-      enableRetinaScaling: false
+      multiplier: 1
     });
 
-    const blob = dataURLToBlob(dataUrl);
-    const filenameBase = (editorState.originalFile?.name || "edited-image").replace(/\.[^.]+$/, "");
-    const outFile = await blobToFile(blob, `${filenameBase}_edited.jpg`, "image/jpeg");
+    const blob = await (await fetch(dataUrl)).blob();
+    const originalName = editorState.originalFile?.name || "edited-image.jpg";
+    const nextName = originalName.replace(/\.(png|webp|jpeg|jpg)$/i, "") + "-edited.jpg";
+    const file = new File([blob], nextName, { type: "image/jpeg" });
 
     return {
       ok: true,
-      file: outFile,
-      blob,
-      dataUrl,
-      filename: outFile.name,
-      mimeType: outFile.type
+      file,
+      filename: nextName,
+      dataUrl
     };
   }
 
-  function getEditIconSvg() {
-    return `
-      <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-        <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25Z" fill="currentColor"></path>
-        <path d="M14.06 4.94l3.75 3.75 1.47-1.47a1.5 1.5 0 0 0 0-2.12l-1.63-1.63a1.5 1.5 0 0 0-2.12 0l-1.47 1.47Z" fill="currentColor"></path>
-      </svg>
+  function setEditorPreparing(isPreparing) {
+    const modal = editorState.modal;
+    if (!modal) return;
+    modal.classList.toggle("is-preparing", !!isPreparing);
+  }
+
+  function setBtnIconAndText(btn, icon, label) {
+    if (!btn) return;
+    btn.dataset.icon = icon || "";
+    btn.dataset.label = label || btn.textContent || "";
+
+    const iconEl = btn.querySelector(".ie-btn-icon");
+    const textEl = btn.querySelector(".ie-btn-text");
+
+    if (iconEl && textEl) {
+      iconEl.textContent = icon || "";
+      textEl.textContent = label || "";
+      return;
+    }
+
+    const text = label || btn.textContent || "";
+    btn.innerHTML = `
+      <span class="ie-btn-icon" aria-hidden="true">${icon || ""}</span>
+      <span class="ie-btn-text">${text}</span>
     `;
+  }
+
+  function ensureCoreEditorButtons() {
+    const map = {
+      ieSelectBtn: "เลือก",
+      iePanBtn: "เลื่อน",
+      ieTextBtn: "ข้อความ",
+      ieCropToolBtn: "ครอป",
+
+      ieLineBtn: "เส้น",
+      ieArrowBtn: "ลูกศร",
+      ieRectBtn: "กรอบ",
+      ieCircleBtn: "วงกลม",
+
+      ieBlurRectBtn: "เบลอเหลี่ยม",
+      ieBlurCircleBtn: "เบลอวงกลม",
+      ieMosaicRectBtn: "โมเสกเหลี่ยม",
+      ieMosaicCircleBtn: "โมเสกวงกลม",
+
+      ieZoomOutBtn: "ย่อ",
+      ieZoomResetBtn: "รีเซ็ต",
+      ieZoomInBtn: "ขยาย",
+      ieFitBtn: "พอดี",
+
+      ieUndoBtn: "ย้อนกลับ",
+      ieRedoBtn: "ทำซ้ำ",
+      ieDeleteBtn: "ลบ",
+      ieApplyCropBtn: "ใช้ครอป",
+
+      ieRotateLeftBtn: "หมุนซ้าย",
+      ieRotateRightBtn: "หมุนขวา"
+    };
+
+    Object.keys(map).forEach((id) => {
+      const btn = $(id);
+      if (!btn) return;
+      setBtnIconAndText(btn, TOOL_ICONS[id] || "", map[id]);
+    });
+  }
+
+  function createToolbarGroup(title, buttonIds) {
+    const group = document.createElement("div");
+    group.className = "ie-toolbar-group";
+
+    const h = document.createElement("div");
+    h.className = "ie-toolbar-group-title";
+    h.textContent = title;
+    group.appendChild(h);
+
+    const row = document.createElement("div");
+    row.className = "ie-toolbar-group-row";
+
+    buttonIds.forEach((id) => {
+      const btn = $(id);
+      if (btn) row.appendChild(btn);
+    });
+
+    group.appendChild(row);
+    return group;
+  }
+
+  function rebuildToolbarLayoutInWrap(toolbarWrap) {
+    const existing = toolbarWrap.querySelector(".imgEditorToolbar");
+    if (existing) existing.remove();
+
+    const toolbar = document.createElement("div");
+    toolbar.className = "imgEditorToolbar";
+
+    toolbar.appendChild(createToolbarGroup("เครื่องมือ", [
+      "ieSelectBtn", "iePanBtn", "ieTextBtn", "ieCropToolBtn"
+    ]));
+
+    toolbar.appendChild(createToolbarGroup("วาด", [
+      "ieLineBtn", "ieArrowBtn", "ieRectBtn", "ieCircleBtn"
+    ]));
+
+    toolbar.appendChild(createToolbarGroup("ปิดทับ", [
+      "ieBlurRectBtn", "ieBlurCircleBtn", "ieMosaicRectBtn", "ieMosaicCircleBtn"
+    ]));
+
+    toolbarWrap.appendChild(toolbar);
+  }
+
+  function ensureFooterControls() {
+    const footer = document.querySelector(".imgEditorFooterActions");
+    if (!footer) return;
+
+    const order = [
+      "ieRotateLeftBtn",
+      "ieRotateRightBtn",
+      "ieZoomOutBtn",
+      "ieZoomResetBtn",
+      "ieZoomInBtn",
+      "ieFitBtn",
+      "ieUndoBtn",
+      "ieRedoBtn",
+      "ieDeleteBtn",
+      "ieApplyCropBtn"
+    ];
+
+    order.forEach((id) => {
+      const btn = $(id);
+      if (btn) footer.appendChild(btn);
+    });
+  }
+
+  function ensureFloatingToolUi() {
+    const dialog = document.querySelector(".imgEditorDialog");
+    if (!dialog) return;
+
+    let toggle = dialog.querySelector(".ieFloatingToggle");
+    let panel = dialog.querySelector(".ieFloatingPanel");
+    const toolbar = dialog.querySelector(".imgEditorToolbar");
+
+    if (!toggle) {
+      toggle = document.createElement("button");
+      toggle.type = "button";
+      toggle.className = "ieFloatingToggle";
+      toggle.id = "ieFloatingToggleBtn";
+      toggle.innerHTML = `
+        <span class="ieFloatingToggleIcon" aria-hidden="true">✦</span>
+        <span class="ieFloatingToggleText">เครื่องมือ</span>
+      `;
+      dialog.appendChild(toggle);
+    }
+
+    if (!panel) {
+      panel = document.createElement("div");
+      panel.className = "ieFloatingPanel";
+      panel.id = "ieFloatingToolPanel";
+      dialog.appendChild(panel);
+    }
+
+    if (toolbar && toolbar.parentElement !== panel) {
+      panel.appendChild(toolbar);
+    }
+
+    editorState.floatingToggleBtn = toggle;
+    editorState.floatingToolPanel = panel;
+
+    if (!toggle.dataset.bound) {
+      toggle.dataset.bound = "1";
+      toggle.addEventListener("click", () => {
+        setFloatingPanelOpen(!panel.classList.contains("open"));
+      });
+    }
+
+    if (!panel.dataset.bound) {
+      panel.dataset.bound = "1";
+      panel.addEventListener("click", (e) => {
+        const clickedBtn = e.target.closest("button");
+        if (!clickedBtn) return;
+
+        if (window.matchMedia("(max-width: 820px)").matches) {
+          setTimeout(() => {
+            if (
+              clickedBtn.classList.contains("ie-tool") ||
+              clickedBtn.id === "ieApplyCropBtn" ||
+              clickedBtn.id === "ieDeleteBtn" ||
+              clickedBtn.id === "ieUndoBtn" ||
+              clickedBtn.id === "ieRedoBtn"
+            ) {
+              setFloatingPanelOpen(false);
+            }
+          }, 0);
+        }
+      });
+    }
   }
 
   function setFloatingPanelOpen(isOpen) {
     const panel = editorState.floatingToolPanel;
-    const btn = editorState.floatingToggleBtn;
-    if (!panel || !btn) return;
+    const toggle = editorState.floatingToggleBtn;
+    if (!panel || !toggle) return;
 
-    panel.classList.toggle("hidden", !isOpen);
-    btn.setAttribute("aria-expanded", isOpen ? "true" : "false");
-    btn.title = isOpen ? "ซ่อนเครื่องมือแก้ไขภาพ" : "แสดงเครื่องมือแก้ไขภาพ";
-  }
-
-  function toggleFloatingPanel(forceState) {
-    const panel = editorState.floatingToolPanel;
-    if (!panel) return;
-
-    const next = typeof forceState === "boolean"
-      ? forceState
-      : panel.classList.contains("hidden");
-
-    setFloatingPanelOpen(next);
-  }
-
-  function ensureFloatingToolUi() {
-    const canvasWrap = document.querySelector(".imgEditorCanvasWrap");
-    const toolbarWrap = document.querySelector(".imgEditorToolbarWrap");
-    if (!canvasWrap || !toolbarWrap) return;
-
-    if (!editorState.floatingToggleBtn) {
-      const btn = document.createElement("button");
-      btn.type = "button";
-      btn.id = "ieFloatingToggleBtn";
-      btn.className = "ieFloatingToggle";
-      btn.innerHTML = getEditIconSvg();
-      btn.setAttribute("aria-label", "เปิดเครื่องมือแก้ไขภาพ");
-      btn.setAttribute("aria-expanded", "false");
-      btn.title = "แสดงเครื่องมือแก้ไขภาพ";
-      canvasWrap.appendChild(btn);
-      editorState.floatingToggleBtn = btn;
-
-      btn.addEventListener("click", (e) => {
-        e.stopPropagation();
-        toggleFloatingPanel();
-      });
-    }
-
-    if (!editorState.floatingToolPanel) {
-      const panel = document.createElement("div");
-      panel.id = "ieFloatingToolPanel";
-      panel.className = "ieFloatingPanel hidden";
-      canvasWrap.appendChild(panel);
-      editorState.floatingToolPanel = panel;
-
-      panel.addEventListener("click", (e) => e.stopPropagation());
-    }
-
-    if (toolbarWrap.parentElement !== editorState.floatingToolPanel) {
-      editorState.floatingToolPanel.appendChild(toolbarWrap);
-    }
-
-    if (!canvasWrap.__ieOutsidePanelBind) {
-      canvasWrap.__ieOutsidePanelBind = true;
-      document.addEventListener("click", (e) => {
-        if (!editorState.modal || editorState.modal.classList.contains("hidden")) return;
-        const panel = editorState.floatingToolPanel;
-        const btn = editorState.floatingToggleBtn;
-        if (!panel || !btn) return;
-        if (panel.contains(e.target) || btn.contains(e.target)) return;
-        setFloatingPanelOpen(false);
-      });
-    }
+    panel.classList.toggle("open", !!isOpen);
+    toggle.classList.toggle("active", !!isOpen);
+    toggle.setAttribute("aria-expanded", isOpen ? "true" : "false");
   }
 
   function collapseFloatingPanelAfterToolPick() {
-    if (window.matchMedia("(max-width: 950px)").matches) {
+    if (window.matchMedia("(max-width: 820px)").matches) {
       setFloatingPanelOpen(false);
     }
   }
 
-  function getToolButton(toolName) {
-    return document.querySelector(`.ie-tool[data-tool="${toolName}"]`);
-  }
-
-  function getFieldByInputId(inputId) {
-    const input = $(inputId);
-    return input ? input.closest(".ieField") : null;
-  }
-
-  function ensureBtn(container, id, text, className = "btn ghost", attrs = {}) {
-    let btn = $(id);
-    if (btn) {
-      if (text != null) btn.textContent = text;
-      if (className) btn.className = className;
-      Object.keys(attrs || {}).forEach((k) => btn.setAttribute(k, attrs[k]));
-      return btn;
-    }
-
-    btn = document.createElement("button");
-    btn.type = "button";
-    btn.id = id;
-    btn.className = className;
-    btn.textContent = text || "";
-    Object.keys(attrs || {}).forEach((k) => btn.setAttribute(k, attrs[k]));
-    container.appendChild(btn);
-    return btn;
-  }
-
-  function ensureToolBtn(container, id, text, toolName) {
-    const btn = ensureBtn(container, id, text, "btn ghost ie-tool", { "data-tool": toolName });
-    btn.classList.add("ie-tool");
-    btn.setAttribute("data-tool", toolName);
-    return btn;
-  }
-
-  function setButtonIcon(id, fallbackIcon) {
-    const el = $(id);
-    if (el) el.setAttribute("data-icon", TOOL_ICONS[id] || fallbackIcon || "•");
-  }
-
-  function applyIconsToToolbar() {
-    Object.keys(TOOL_ICONS).forEach((id) => setButtonIcon(id, TOOL_ICONS[id]));
-  }
-
-  function createToolbarSection(title, extraClass = "") {
-    const section = document.createElement("section");
-    section.className = `ieToolbarSection ${extraClass}`.trim();
-
-    const head = document.createElement("div");
-    head.className = "ieToolbarTitle";
-    head.textContent = title;
-
-    const grid = document.createElement("div");
-    grid.className = "ieButtonGrid";
-
-    section.appendChild(head);
-    section.appendChild(grid);
-
-    return { section, grid };
-  }
-
-  function appendNodes(container, nodes) {
-    (Array.isArray(nodes) ? nodes : []).forEach((node) => {
-      if (node) container.appendChild(node);
-    });
-  }
-
   function ensureToolbarResponsiveLabels() {
-    const compact = window.matchMedia("(max-width: 560px)").matches;
-    const compact2 = window.matchMedia("(max-width: 390px)").matches;
+    const compact = window.matchMedia("(max-width: 640px)").matches;
 
-    const labels = {
-      ieSelectBtn: "เลือก",
-      iePanBtn: compact2 ? "เลื่อน" : (compact ? "เลื่อน" : "เลื่อนภาพ"),
-      ieTextBtn: "ข้อความ",
-      ieCropToolBtn: "ครอป",
-
-      ieLineBtn: compact2 ? "เส้น" : "เส้น",
-      ieArrowBtn: "ลูกศร",
-      ieRectBtn: compact2 ? "กรอบ" : "สี่เหลี่ยม",
-      ieCircleBtn: compact2 ? "วง" : "วงกลม",
-
-      ieBlurRectBtn: compact2 ? "เบลอสี่" : "เบลอสี่",
-      ieBlurCircleBtn: compact2 ? "เบลอวง" : "เบลอวง",
-      ieMosaicRectBtn: compact2 ? "โมเสกสี่" : "โมเสกสี่",
-      ieMosaicCircleBtn: compact2 ? "โมเสกวง" : "โมเสกวง",
-
-      ieZoomOutBtn: "ซูม-",
-      ieZoomResetBtn: "100%",
-      ieZoomInBtn: "ซูม+",
-      ieFitBtn: "พอดี",
-
-      ieRotateLeftBtn: "ซ้าย",
-      ieRotateRightBtn: "ขวา",
-
-      ieUndoBtn: "ย้อน",
-      ieRedoBtn: "ทำซ้ำ",
-      ieDeleteBtn: "ลบ",
-      ieApplyCropBtn: "ใช้"
-    };
-
-    Object.keys(labels).forEach((id) => {
-      const el = $(id);
-      if (el) el.textContent = labels[id];
+    document.querySelectorAll(".ie-btn-text").forEach((el) => {
+      el.classList.toggle("compact", compact);
     });
-
-    applyIconsToToolbar();
-  }
-
-  function rebuildToolbarLayoutInWrap(toolbarWrap) {
-    if (!toolbarWrap) return;
-
-    let toolbar = toolbarWrap.querySelector(".imgEditorToolbar");
-    if (!toolbar) {
-      toolbar = document.createElement("div");
-      toolbar.className = "imgEditorToolbar";
-      toolbarWrap.innerHTML = "";
-      toolbarWrap.appendChild(toolbar);
-    }
-
-    const selectBtn = getToolButton("select");
-    const panBtn = getToolButton("pan");
-    const textBtn = getToolButton("text");
-    const cropBtn = $("ieCropToolBtn");
-
-    const lineBtn = getToolButton("line");
-    const arrowBtn = getToolButton("arrow");
-    const rectBtn = getToolButton("rect");
-    const circleBtn = getToolButton("circle");
-
-    const blurRectBtn = $("ieBlurRectBtn");
-    const blurCircleBtn = $("ieBlurCircleBtn");
-    const mosaicRectBtn = $("ieMosaicRectBtn");
-    const mosaicCircleBtn = $("ieMosaicCircleBtn");
-
-    const zoomOutBtn = $("ieZoomOutBtn");
-    const zoomResetBtn = $("ieZoomResetBtn");
-    const zoomInBtn = $("ieZoomInBtn");
-    const fitBtn = $("ieFitBtn");
-
-    const rotateLeftBtn = $("ieRotateLeftBtn");
-    const rotateRightBtn = $("ieRotateRightBtn");
-
-    const undoBtn = $("ieUndoBtn");
-    const redoBtn = $("ieRedoBtn");
-    const deleteBtn = $("ieDeleteBtn");
-    const applyCropBtn = $("ieApplyCropBtn");
-
-    const colorField = getFieldByInputId("ieColorPicker");
-    const strokeField = getFieldByInputId("ieStrokeWidth");
-    const brightnessField = getFieldByInputId("ieBrightness");
-
-    if (selectBtn) selectBtn.id = "ieSelectBtn";
-    if (panBtn) panBtn.id = "iePanBtn";
-    if (textBtn) textBtn.id = "ieTextBtn";
-    if (lineBtn) lineBtn.id = "ieLineBtn";
-    if (arrowBtn) arrowBtn.id = "ieArrowBtn";
-    if (rectBtn) rectBtn.id = "ieRectBtn";
-    if (circleBtn) circleBtn.id = "ieCircleBtn";
-
-    toolbar.innerHTML = "";
-
-    const gridRoot = document.createElement("div");
-    gridRoot.className = "imgEditorToolbarGrid ieToolbarGridEnhanced";
-
-    const secPrimary = createToolbarSection("หลัก", "ieSectionPrimary");
-    secPrimary.grid.classList.add("ieButtonGridTools");
-    appendNodes(secPrimary.grid, [selectBtn, panBtn, textBtn, cropBtn]);
-
-    const secDraw = createToolbarSection("วาด", "ieSectionDraw");
-    secDraw.grid.classList.add("ieButtonGridTools");
-    appendNodes(secDraw.grid, [lineBtn, arrowBtn, rectBtn, circleBtn]);
-
-    const secMask = createToolbarSection("เบลอ/โมเสก", "ieSectionMask");
-    secMask.grid.classList.add("ieButtonGridEffects");
-    appendNodes(secMask.grid, [blurRectBtn, blurCircleBtn, mosaicRectBtn, mosaicCircleBtn]);
-
-    const secView = createToolbarSection("มุมมอง", "ieSectionView");
-    secView.grid.classList.add("ieButtonGridView");
-    appendNodes(secView.grid, [zoomOutBtn, zoomResetBtn, zoomInBtn, fitBtn]);
-
-    const secManage = createToolbarSection("จัดการ", "ieSectionManage");
-    secManage.grid.classList.add("ieButtonGridView");
-    appendNodes(secManage.grid, [undoBtn, redoBtn, deleteBtn, applyCropBtn, rotateLeftBtn, rotateRightBtn]);
-
-    const secControl = createToolbarSection("ตั้งค่า", "ieSectionControl");
-    secControl.grid.classList.add("ieControlGrid");
-    appendNodes(secControl.grid, [colorField, strokeField, brightnessField]);
-
-    [
-      secPrimary.section,
-      secDraw.section,
-      secMask.section,
-      secView.section,
-      secManage.section,
-      secControl.section
-    ].forEach((section) => gridRoot.appendChild(section));
-
-    toolbar.appendChild(gridRoot);
-  }
-
-  function ensureFooterControls() {
-    const footerActions = document.querySelector(".imgEditorActions");
-    if (!footerActions) return;
-    ensureBtn(footerActions, "ieFitBtn", "พอดี");
-  }
-
-  function ensureCoreEditorButtons() {
-    const toolbarWrap = document.querySelector(".imgEditorToolbarWrap");
-    if (!toolbarWrap) return;
-
-    let toolbar = toolbarWrap.querySelector(".imgEditorToolbar");
-    if (!toolbar) {
-      toolbar = document.createElement("div");
-      toolbar.className = "imgEditorToolbar";
-      toolbarWrap.appendChild(toolbar);
-    }
-
-    ensureBtn(toolbar, "ieUndoBtn", "ย้อน");
-    ensureBtn(toolbar, "ieRedoBtn", "ทำซ้ำ");
-    ensureBtn(toolbar, "ieDeleteBtn", "ลบ");
-
-    ensureToolBtn(toolbar, "ieCropToolBtn", "ครอป", "crop");
-    ensureBtn(toolbar, "ieApplyCropBtn", "ใช้");
-
-    ensureToolBtn(toolbar, "ieBlurRectBtn", "เบลอสี่", "blurRect");
-    ensureToolBtn(toolbar, "ieBlurCircleBtn", "เบลอวง", "blurCircle");
-    ensureToolBtn(toolbar, "ieMosaicRectBtn", "โมเสกสี่", "mosaicRect");
-    ensureToolBtn(toolbar, "ieMosaicCircleBtn", "โมเสกวง", "mosaicCircle");
-  }
-
-  function ensureExtraControls() {
-    const toolbarWrap = document.querySelector(".imgEditorToolbarWrap");
-    if (!toolbarWrap) return;
-
-    ensureCoreEditorButtons();
-    ensureFooterControls();
-    rebuildToolbarLayoutInWrap(toolbarWrap);
-    ensureToolbarResponsiveLabels();
-    ensureFloatingToolUi();
   }
 
   function bindResponsiveToolbarLabelOnce() {
-    if (window.__imgEditorResponsiveLabelBound) return;
-    window.__imgEditorResponsiveLabelBound = true;
+    if (window.__imgEditorResponsiveBound) return;
+    window.__imgEditorResponsiveBound = true;
 
-    const mq1 = window.matchMedia("(max-width: 560px)");
-    const mq2 = window.matchMedia("(max-width: 390px)");
+    const onResize = () => ensureToolbarResponsiveLabels();
+    window.addEventListener("resize", onResize, { passive: true });
+    window.addEventListener("orientationchange", onResize, { passive: true });
+  }
 
-    const apply = () => {
-      try { ensureToolbarResponsiveLabels(); } catch (_) {}
-    };
+  function ensureExtraControls(force = false) {
+    const toolbarWrap = document.querySelector(".imgEditorToolbarWrap");
+    if (!toolbarWrap) return;
 
-    [mq1, mq2].forEach((mq) => {
-      if (typeof mq.addEventListener === "function") mq.addEventListener("change", apply);
-      else if (typeof mq.addListener === "function") mq.addListener(apply);
-    });
+    if (!editorState.uiPrepared || force) {
+      ensureCoreEditorButtons();
+      ensureFooterControls();
+      rebuildToolbarLayoutInWrap(toolbarWrap);
+      ensureFloatingToolUi();
+      editorState.uiPrepared = true;
+    }
 
-    window.addEventListener("resize", apply, { passive: true });
+    ensureToolbarResponsiveLabels();
   }
 
   function bindToolButtons() {
-    document.querySelectorAll(".ie-tool").forEach((btn) => {
-      if (btn.dataset.boundClick === "1") return;
-      btn.dataset.boundClick = "1";
+    if (window.__imgEditorToolButtonsBound) return;
+    window.__imgEditorToolButtonsBound = true;
 
-      btn.addEventListener("click", () => {
-        const tool = btn.getAttribute("data-tool") || "select";
+    const toolMap = {
+      ieSelectBtn: "select",
+      iePanBtn: "pan",
+      ieTextBtn: "text",
+      ieCropToolBtn: "crop",
+
+      ieLineBtn: "line",
+      ieArrowBtn: "arrow",
+      ieRectBtn: "rect",
+      ieCircleBtn: "circle",
+
+      ieBlurRectBtn: "blurRect",
+      ieBlurCircleBtn: "blurCircle",
+      ieMosaicRectBtn: "mosaicRect",
+      ieMosaicCircleBtn: "mosaicCircle"
+    };
+
+    Object.entries(toolMap).forEach(([id, tool]) => {
+      $(id)?.addEventListener("click", () => {
+        if (tool === "text") {
+          addTextbox();
+          collapseFloatingPanelAfterToolPick();
+          return;
+        }
         setActiveTool(tool);
         collapseFloatingPanelAfterToolPick();
       });
@@ -10115,7 +9481,7 @@
     if (window.__imgEditorBoundOnce) return;
     window.__imgEditorBoundOnce = true;
 
-    ensureExtraControls();
+    ensureExtraControls(true);
     bindResponsiveToolbarLabelOnce();
 
     $("imgEditorCloseBtn")?.addEventListener("click", () => closeEditor({ ok: false }));
@@ -10131,21 +9497,10 @@
       }
     });
 
-    $("ieZoomInBtn")?.addEventListener("click", () => {
-      setZoom(editorState.zoom + 0.1);
-    });
-
-    $("ieZoomOutBtn")?.addEventListener("click", () => {
-      setZoom(editorState.zoom - 0.1);
-    });
-
-    $("ieZoomResetBtn")?.addEventListener("click", () => {
-      resetViewport();
-    });
-
-    $("ieFitBtn")?.addEventListener("click", () => {
-      resetViewport();
-    });
+    $("ieZoomInBtn")?.addEventListener("click", () => setZoom(editorState.zoom + 0.1));
+    $("ieZoomOutBtn")?.addEventListener("click", () => setZoom(editorState.zoom - 0.1));
+    $("ieZoomResetBtn")?.addEventListener("click", () => resetViewport());
+    $("ieFitBtn")?.addEventListener("click", () => resetViewport());
 
     $("ieRotateLeftBtn")?.addEventListener("click", () => {
       rotateBaseImage(-90);
@@ -10182,8 +9537,6 @@
         editorState.zoom = 1;
         editorState.brightness = 0;
         if ($("ieBrightness")) $("ieBrightness").value = "0";
-        ensureExtraControls();
-        bindToolButtons();
         setActiveTool("select");
         pushHistorySnapshot(true);
       } catch (err) {
@@ -10215,10 +9568,105 @@
     bindToolButtons();
   }
 
-  function setEditorPreparing(isPreparing) {
-    const modal = editorState.modal;
-    if (!modal) return;
-    modal.classList.toggle("is-preparing", !!isPreparing);
+  async function loadImageToCanvas(file) {
+    const url = URL.createObjectURL(file);
+    editorState.originalUrl = url;
+
+    const wrap = editorState.canvasEl.parentElement;
+    if (!wrap) throw new Error("ไม่พบพื้นที่แสดง canvas");
+
+    const wrapRect = wrap.getBoundingClientRect();
+    const availableW = Math.max(220, Math.floor(wrapRect.width - 12));
+    const availableH = Math.max(220, Math.floor(wrapRect.height - 12));
+
+    if (editorState.canvas) {
+      try { editorState.canvas.dispose(); } catch (_) {}
+      editorState.canvas = null;
+    }
+
+    const imgEl = await new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = async () => {
+        try {
+          if (typeof img.decode === "function") {
+            await img.decode();
+          }
+        } catch (_) {}
+        resolve(img);
+      };
+      img.onerror = () => reject(new Error("โหลดรูปภาพไม่สำเร็จ"));
+      img.decoding = "async";
+      img.src = url;
+    });
+
+    const imgW = imgEl.naturalWidth || imgEl.width;
+    const imgH = imgEl.naturalHeight || imgEl.height;
+    if (!imgW || !imgH) throw new Error("ไม่สามารถอ่านขนาดรูปภาพได้");
+
+    const scale = Math.min(availableW / imgW, availableH / imgH, 1);
+    const canvasW = Math.max(220, Math.round(imgW * scale));
+    const canvasH = Math.max(220, Math.round(imgH * scale));
+
+    editorState.canvasEl.width = canvasW;
+    editorState.canvasEl.height = canvasH;
+    editorState.canvasEl.style.width = `${canvasW}px`;
+    editorState.canvasEl.style.height = `${canvasH}px`;
+
+    const canvas = new fabric.Canvas(editorState.canvasEl, {
+      preserveObjectStacking: true,
+      selection: true,
+      renderOnAddRemove: true,
+      enableRetinaScaling: false
+    });
+
+    editorState.canvas = canvas;
+    canvas.setWidth(canvasW);
+    canvas.setHeight(canvasH);
+
+    if (canvas.lowerCanvasEl) {
+      canvas.lowerCanvasEl.style.width = `${canvasW}px`;
+      canvas.lowerCanvasEl.style.height = `${canvasH}px`;
+    }
+    if (canvas.upperCanvasEl) {
+      canvas.upperCanvasEl.style.width = `${canvasW}px`;
+      canvas.upperCanvasEl.style.height = `${canvasH}px`;
+    }
+    if (canvas.wrapperEl) {
+      canvas.wrapperEl.style.width = `${canvasW}px`;
+      canvas.wrapperEl.style.height = `${canvasH}px`;
+    }
+
+    const baseImage = new fabric.Image(imgEl, {
+      left: canvasW / 2,
+      top: canvasH / 2,
+      originX: "center",
+      originY: "center",
+      selectable: false,
+      evented: false,
+      objectCaching: false
+    });
+
+    baseImage.scaleX = scale;
+    baseImage.scaleY = scale;
+    editorState.baseImage = baseImage;
+
+    canvas.clear();
+    canvas.add(baseImage);
+
+    if (typeof baseImage.moveTo === "function") {
+      baseImage.moveTo(0);
+    } else if (typeof canvas.sendToBack === "function") {
+      canvas.sendToBack(baseImage);
+    } else if (typeof canvas.sendObjectToBack === "function") {
+      canvas.sendObjectToBack(baseImage);
+    }
+
+    bindObjectEvents();
+    bindPointerDrawing();
+
+    resetViewport();
+    if (typeof canvas.calcOffset === "function") canvas.calcOffset();
+    canvas.requestRenderAll();
   }
 
   async function openImageEditor(file, options = {}) {
@@ -10247,28 +9695,22 @@
     destroyCanvas();
     revokeOriginalUrl();
 
-    let prepared = null;
+    editorState.modal.classList.remove("hidden");
+    editorState.modal.setAttribute("aria-hidden", "false");
+    setEditorPreparing(true);
+    document.body.classList.add("img-editor-lock");
 
     try {
-      prepared = await preloadImageFile_(file);
-
-      editorState.modal.classList.remove("hidden");
-      editorState.modal.setAttribute("aria-hidden", "false");
-      setEditorPreparing(true);
-      lockPageForEditor();
-
-      await nextFrame();
-
-      await loadImageToCanvas(file, prepared);
-
-      if (editorState.canvas) {
-        if (typeof editorState.canvas.calcOffset === "function") {
-          editorState.canvas.calcOffset();
-        }
-        editorState.canvas.requestRenderAll();
-      }
-
+      await new Promise((resolve) => requestAnimationFrame(() => resolve()));
       ensureExtraControls();
+
+      await loadImageToCanvas(file);
+
+      if (editorState.canvas && typeof editorState.canvas.calcOffset === "function") {
+        editorState.canvas.calcOffset();
+      }
+      editorState.canvas?.requestRenderAll();
+
       bindToolButtons();
       setFloatingPanelOpen(false);
       setActiveTool("select");
@@ -10277,9 +9719,7 @@
       pushHistorySnapshot(true);
       updateUndoRedoState();
 
-      await nextFrame();
-      await nextFrame();
-
+      await new Promise((resolve) => requestAnimationFrame(() => resolve()));
       setEditorPreparing(false);
     } catch (err) {
       console.error("openImageEditor error:", err);
@@ -10294,6 +9734,7 @@
   }
 
   window.ImageEditorX = {
-    open: openImageEditor
+    open: openImageEditor,
+    close: closeEditor
   };
 })();
