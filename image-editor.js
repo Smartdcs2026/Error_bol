@@ -8562,23 +8562,25 @@
   }
 
   function closeEditor(result = { ok: false }) {
-    editorState.modal?.classList.add("hidden");
-    editorState.modal?.setAttribute("aria-hidden", "true");
-    document.body.classList.remove("progress-lock");
+  setEditorPreparing(false);
 
-    destroyCanvas();
-    revokeOriginalUrl();
+  editorState.modal?.classList.add("hidden");
+  editorState.modal?.setAttribute("aria-hidden", "true");
+  document.body.classList.remove("progress-lock");
 
-    editorState.originalFile = null;
-    editorState.history = [];
-    editorState.historyIndex = -1;
-    editorState.restoringHistory = false;
-    editorState.isApplyingCrop = false;
+  destroyCanvas();
+  revokeOriginalUrl();
 
-    const resolve = editorState.resultResolve;
-    editorState.resultResolve = null;
-    if (resolve) resolve(result);
-  }
+  editorState.originalFile = null;
+  editorState.history = [];
+  editorState.historyIndex = -1;
+  editorState.restoringHistory = false;
+  editorState.isApplyingCrop = false;
+
+  const resolve = editorState.resultResolve;
+  editorState.resultResolve = null;
+  if (resolve) resolve(result);
+}
 
   function setZoomLabel() {
     const el = $("ieZoomLabel");
@@ -10181,45 +10183,57 @@
 
     bindToolButtons();
   }
+function setEditorPreparing(isPreparing) {
+  const modal = editorState.modal;
+  if (!modal) return;
 
+  if (isPreparing) {
+    modal.style.visibility = "hidden";
+    modal.style.opacity = "0";
+    modal.style.pointerEvents = "none";
+  } else {
+    modal.style.visibility = "";
+    modal.style.opacity = "";
+    modal.style.pointerEvents = "";
+  }
+}
   async function openImageEditor(file, options = {}) {
-    ensureFabricReady();
-    ensureModal();
-    bindUiOnce();
+  ensureFabricReady();
+  ensureModal();
+  bindUiOnce();
 
-    if (!file || !/^image\//i.test(file.type || "")) {
-      throw new Error("ไฟล์ที่ส่งเข้า editor ต้องเป็นรูปภาพ");
-    }
+  if (!file || !/^image\//i.test(file.type || "")) {
+    throw new Error("ไฟล์ที่ส่งเข้า editor ต้องเป็นรูปภาพ");
+  }
 
-    editorState.originalFile = file;
-    editorState.zoom = 1;
-    editorState.strokeColor = options.strokeColor || "#dc2626";
-    editorState.strokeWidth = Number(options.strokeWidth || 3);
-    editorState.brightness = 0;
-    editorState.history = [];
-    editorState.historyIndex = -1;
-    editorState.restoringHistory = false;
-    editorState.isRefreshingEffect = false;
+  editorState.originalFile = file;
+  editorState.zoom = 1;
+  editorState.strokeColor = options.strokeColor || "#dc2626";
+  editorState.strokeWidth = Number(options.strokeWidth || 3);
+  editorState.brightness = 0;
+  editorState.history = [];
+  editorState.historyIndex = -1;
+  editorState.restoringHistory = false;
+  editorState.isRefreshingEffect = false;
 
-    if ($("ieColorPicker")) $("ieColorPicker").value = editorState.strokeColor;
-    if ($("ieStrokeWidth")) $("ieStrokeWidth").value = String(editorState.strokeWidth);
-    if ($("ieBrightness")) $("ieBrightness").value = "0";
+  if ($("ieColorPicker")) $("ieColorPicker").value = editorState.strokeColor;
+  if ($("ieStrokeWidth")) $("ieStrokeWidth").value = String(editorState.strokeWidth);
+  if ($("ieBrightness")) $("ieBrightness").value = "0";
 
-    editorState.modal.classList.remove("hidden");
-    editorState.modal.setAttribute("aria-hidden", "false");
-    document.body.classList.add("progress-lock");
+  // เปิด modal แบบซ่อนไว้ก่อน เพื่อให้ layout พร้อม แต่ผู้ใช้ยังไม่เห็นช่วงกระพริบ
+  editorState.modal.classList.remove("hidden");
+  editorState.modal.setAttribute("aria-hidden", "false");
+  setEditorPreparing(true);
+  document.body.classList.add("progress-lock");
 
-    destroyCanvas();
-    revokeOriginalUrl();
+  destroyCanvas();
+  revokeOriginalUrl();
 
-    try {
-      await loadImageToCanvas(file);
-    } catch (err) {
-      console.error("loadImageToCanvas error:", err);
-      closeEditor({ ok: false });
-      await showMessage("error", "เปิดภาพไม่สำเร็จ", err?.message || String(err));
-      return Promise.resolve({ ok: false });
-    }
+  try {
+    // รอ 1 frame ให้ browser จัด layout ของ modal ก่อน
+    await new Promise((resolve) => requestAnimationFrame(() => resolve()));
+
+    await loadImageToCanvas(file);
 
     if (editorState.canvas) {
       if (typeof editorState.canvas.calcOffset === "function") {
@@ -10237,10 +10251,21 @@
     pushHistorySnapshot(true);
     updateUndoRedoState();
 
-    return new Promise((resolve) => {
-      editorState.resultResolve = resolve;
-    });
+    // รออีก 1 frame หลัง canvas/toolbar พร้อม แล้วค่อยแสดงจริง
+    await new Promise((resolve) => requestAnimationFrame(() => resolve()));
+    setEditorPreparing(false);
+  } catch (err) {
+    console.error("openImageEditor error:", err);
+    setEditorPreparing(false);
+    closeEditor({ ok: false });
+    await showMessage("error", "เปิดภาพไม่สำเร็จ", err?.message || String(err));
+    return Promise.resolve({ ok: false });
   }
+
+  return new Promise((resolve) => {
+    editorState.resultResolve = resolve;
+  });
+}
 
   window.ImageEditorX = {
     open: openImageEditor
