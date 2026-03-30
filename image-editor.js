@@ -10275,8 +10275,6 @@
 
 
 (function () {
-  "use strict";
-
   const editorState = {
     modal: null,
     canvasEl: null,
@@ -10295,8 +10293,6 @@
     isPanning: false,
     isApplyingCrop: false,
     isRefreshingEffect: false,
-    isUiBound: false,
-    isToolBound: false,
 
     cropRect: null,
     tempDraft: null,
@@ -10349,26 +10345,38 @@
         confirmButtonText: "ตกลง"
       });
     }
-    alert((title ? `${title}\n` : "") + (text || ""));
+    alert((title ? title + "\n" : "") + (text || ""));
     return Promise.resolve();
   }
 
   function ensureFabricReady() {
-    if (!window.fabric) {
-      throw new Error("ยังไม่พบ Fabric.js");
-    }
+    if (!window.fabric) throw new Error("ยังไม่พบ Fabric.js");
   }
 
   function ensureModal() {
     editorState.modal = $("imgEditorModal");
     editorState.canvasEl = $("imgEditorCanvas");
-
     if (!editorState.modal || !editorState.canvasEl) {
       throw new Error("ยังไม่พบโครง modal ของ image editor");
     }
+  }
 
-    editorState.floatingToggleBtn = $("ieFloatingToggleBtn");
-    editorState.floatingToolPanel = $("ieFloatingPanel");
+  function revokeOriginalUrl() {
+    if (editorState.originalUrl) {
+      try { URL.revokeObjectURL(editorState.originalUrl); } catch (_) {}
+      editorState.originalUrl = "";
+    }
+  }
+
+  function destroyCanvas() {
+    if (editorState.canvas) {
+      try { editorState.canvas.dispose(); } catch (_) {}
+      editorState.canvas = null;
+    }
+    editorState.baseImage = null;
+    editorState.cropRect = null;
+    editorState.tempDraft = null;
+    editorState.isRefreshingEffect = false;
   }
 
   function lockEditorViewport(locked) {
@@ -10376,19 +10384,6 @@
     if (!body) return;
     body.classList.toggle("img-editor-lock", !!locked);
     body.classList.toggle("progress-lock", !!locked);
-  }
-
-  function setEditorPreparing(isPreparing) {
-    const modal = editorState.modal;
-    if (!modal) return;
-
-    if (isPreparing) {
-      modal.setAttribute("data-preparing", "1");
-      modal.setAttribute("aria-busy", "true");
-    } else {
-      modal.removeAttribute("data-preparing");
-      modal.removeAttribute("aria-busy");
-    }
   }
 
   function showModalShell() {
@@ -10405,34 +10400,6 @@
     modal.setAttribute("aria-hidden", "true");
   }
 
-  async function nextFrame(count = 1) {
-    while (count-- > 0) {
-      await new Promise((resolve) => requestAnimationFrame(resolve));
-    }
-  }
-
-  function revokeOriginalUrl() {
-    if (editorState.originalUrl) {
-      try {
-        URL.revokeObjectURL(editorState.originalUrl);
-      } catch (_) {}
-      editorState.originalUrl = "";
-    }
-  }
-
-  function destroyCanvas() {
-    if (editorState.canvas) {
-      try {
-        editorState.canvas.dispose();
-      } catch (_) {}
-      editorState.canvas = null;
-    }
-    editorState.baseImage = null;
-    editorState.cropRect = null;
-    editorState.tempDraft = null;
-    editorState.isRefreshingEffect = false;
-  }
-
   function closeEditor(result = { ok: false }) {
     setEditorPreparing(false);
     hideModalShell();
@@ -10446,9 +10413,6 @@
     editorState.historyIndex = -1;
     editorState.restoringHistory = false;
     editorState.isApplyingCrop = false;
-    editorState.activeTool = "select";
-    editorState.zoom = 1;
-    editorState.brightness = 0;
 
     const resolve = editorState.resultResolve;
     editorState.resultResolve = null;
@@ -10457,9 +10421,7 @@
 
   function setZoomLabel() {
     const el = $("ieZoomLabel");
-    if (el) {
-      el.textContent = `${Math.round(editorState.zoom * 100)}%`;
-    }
+    if (el) el.textContent = `${Math.round(editorState.zoom * 100)}%`;
   }
 
   function setToolLabel() {
@@ -10478,9 +10440,7 @@
       mosaicCircle: "โมเสกวงกลม"
     };
     const el = $("ieToolLabel");
-    if (el) {
-      el.textContent = map[editorState.activeTool] || editorState.activeTool;
-    }
+    if (el) el.textContent = map[editorState.activeTool] || editorState.activeTool;
   }
 
   function setActiveButtonByTool(tool) {
@@ -10492,9 +10452,9 @@
   function setObjectEditableState(obj, editable) {
     if (!obj || obj === editorState.baseImage) return;
     obj.selectable = !!editable;
-    obj.evented = !!editable;
-    obj.hasControls = !!editable;
-    obj.hasBorders = !!editable;
+    obj.evented = true;
+    obj.hasControls = true;
+    obj.hasBorders = true;
     obj.lockRotation = false;
   }
 
@@ -10540,35 +10500,8 @@
   function resetViewport() {
     const canvas = editorState.canvas;
     if (!canvas) return;
-
     editorState.zoom = 1;
     canvas.setViewportTransform([1, 0, 0, 1, 0, 0]);
-    canvas.requestRenderAll();
-    setZoomLabel();
-  }
-
-  function fitImageToCanvas() {
-    const canvas = editorState.canvas;
-    const baseImage = editorState.baseImage;
-    if (!canvas || !baseImage) return;
-
-    const cw = canvas.getWidth();
-    const ch = canvas.getHeight();
-    const iw = baseImage.width || 1;
-    const ih = baseImage.height || 1;
-
-    const scale = Math.min(cw / iw, ch / ih);
-    editorState.zoom = Math.max(0.2, Math.min(5, scale || 1));
-
-    const center = canvas.getCenter();
-    canvas.setViewportTransform([editorState.zoom, 0, 0, editorState.zoom, 0, 0]);
-
-    const scaledW = iw * editorState.zoom;
-    const scaledH = ih * editorState.zoom;
-    const tx = center.left - (scaledW / 2);
-    const ty = center.top - (scaledH / 2);
-
-    canvas.setViewportTransform([editorState.zoom, 0, 0, editorState.zoom, tx, ty]);
     canvas.requestRenderAll();
     setZoomLabel();
   }
@@ -10590,11 +10523,8 @@
 
   function rotateBaseImage(delta) {
     const canvas = editorState.canvas;
-    const baseImage = editorState.baseImage;
-    if (!canvas || !baseImage) return;
-
-    baseImage.rotate((baseImage.angle || 0) + delta);
-    baseImage.setCoords();
+    if (!canvas || !editorState.baseImage) return;
+    editorState.baseImage.rotate((editorState.baseImage.angle || 0) + delta);
     canvas.requestRenderAll();
     pushHistorySnapshot();
   }
@@ -10605,9 +10535,7 @@
     if (!canvas || !baseImage || !fabric.filters || !fabric.filters.Brightness) return;
 
     editorState.brightness = Number(value || 0);
-    baseImage.filters = [
-      new fabric.filters.Brightness({ brightness: editorState.brightness })
-    ];
+    baseImage.filters = [new fabric.filters.Brightness({ brightness: editorState.brightness })];
     baseImage.applyFilters();
     canvas.requestRenderAll();
   }
@@ -10644,7 +10572,6 @@
   function deleteSelectedObject() {
     const canvas = editorState.canvas;
     if (!canvas) return;
-
     const active = canvas.getActiveObject();
     if (!active || active === editorState.baseImage || active === editorState.cropRect) return;
 
@@ -10703,7 +10630,11 @@
     ].join(" ");
   }
 
-  function createArrowObject(x1, y1, x2, y2) {
+  function isArrowObject(obj) {
+    return !!(obj && obj.toolType === "arrow" && obj.type === "path");
+  }
+
+  function createArrowGroup(x1, y1, x2, y2) {
     const pathData = buildArrowPathData(x1, y1, x2, y2, editorState.strokeWidth);
 
     const arrow = new fabric.Path(pathData, {
@@ -10717,7 +10648,10 @@
       lockRotation: false
     });
 
-    arrow.set({ toolType: "arrow" });
+    arrow.set({
+      toolType: "arrow"
+    });
+
     arrow.setCoords();
     return arrow;
   }
@@ -10736,20 +10670,15 @@
       height: h,
       fill: "rgba(37,99,235,0.10)",
       stroke: "#2563eb",
-      strokeWidth: 2,
       strokeDashArray: [8, 6],
-      cornerColor: "#2563eb",
-      cornerStyle: "circle",
-      transparentCorners: false,
+      strokeWidth: 2,
       selectable: true,
       evented: true,
-      hasRotatingPoint: false,
+      hasControls: true,
+      hasBorders: true,
       lockRotation: true,
       objectCaching: false
     });
-
-    editorState.cropRect.scaleX = 1;
-    editorState.cropRect.scaleY = 1;
 
     canvas.add(editorState.cropRect);
     canvas.setActiveObject(editorState.cropRect);
@@ -10760,320 +10689,191 @@
     const canvas = editorState.canvas;
     if (!canvas || !editorState.cropRect) return;
 
-    try {
-      canvas.remove(editorState.cropRect);
-    } catch (_) {}
+    try { canvas.remove(editorState.cropRect); } catch (_) {}
     editorState.cropRect = null;
     canvas.requestRenderAll();
-  }
-
-  function clamp(n, min, max) {
-    return Math.max(min, Math.min(max, n));
-  }
-
-  function dataURLToBlob(dataUrl) {
-    const arr = String(dataUrl || "").split(",");
-    const mimeMatch = arr[0].match(/:(.*?);/);
-    const mime = mimeMatch ? mimeMatch[1] : "image/png";
-    const bstr = atob(arr[1] || "");
-    let n = bstr.length;
-    const u8arr = new Uint8Array(n);
-    while (n--) {
-      u8arr[n] = bstr.charCodeAt(n);
-    }
-    return new Blob([u8arr], { type: mime });
-  }
-
-  async function blobToFile(blob, filename, mimeType = "image/jpeg") {
-    return new File([blob], filename, { type: mimeType, lastModified: Date.now() });
-  }
-
-  function isEffectOverlay(obj) {
-    return !!(obj && (obj.effectType === "blur" || obj.effectType === "mosaic"));
-  }
-
-  function getCanvasSnapshotDataUrl(options = {}) {
-    const canvas = editorState.canvas;
-    if (!canvas) return "";
-
-    const active = canvas.getActiveObject();
-    if (active) canvas.discardActiveObject();
-
-    const hidden = [];
-    const rememberHidden = (obj) => {
-      if (!obj || hidden.some((x) => x.obj === obj)) return;
-      hidden.push({ obj, visible: obj.visible });
-      obj.visible = false;
-    };
-
-    if (editorState.cropRect && canvas.getObjects().includes(editorState.cropRect)) {
-      rememberHidden(editorState.cropRect);
-    }
-
-    if (options.excludeEffectObjects) {
-      canvas.getObjects().forEach((obj) => {
-        if (isEffectOverlay(obj)) rememberHidden(obj);
-      });
-    }
-
-    if (Array.isArray(options.hideObjects)) {
-      options.hideObjects.forEach((obj) => {
-        if (obj && canvas.getObjects().includes(obj)) rememberHidden(obj);
-      });
-    }
-
-    canvas.requestRenderAll();
-
-    const dataUrl = canvas.toDataURL({
-      format: options.format || "png",
-      quality: options.quality == null ? 1 : options.quality,
-      multiplier: options.multiplier || 1,
-      enableRetinaScaling: false
-    });
-
-    hidden.forEach(({ obj, visible }) => {
-      obj.visible = visible;
-    });
-    canvas.requestRenderAll();
-
-    return dataUrl;
-  }
-
-  function createOffscreenCanvas(width, height) {
-    const c = document.createElement("canvas");
-    c.width = Math.max(1, Math.round(width));
-    c.height = Math.max(1, Math.round(height));
-    return c;
-  }
-
-  function applyMosaicToCanvasRegion(ctx, width, height, blockSize) {
-    const size = Math.max(4, Math.round(blockSize || 12));
-    const imageData = ctx.getImageData(0, 0, width, height);
-    const data = imageData.data;
-
-    for (let y = 0; y < height; y += size) {
-      for (let x = 0; x < width; x += size) {
-        let r = 0, g = 0, b = 0, a = 0, count = 0;
-
-        for (let yy = y; yy < Math.min(y + size, height); yy++) {
-          for (let xx = x; xx < Math.min(x + size, width); xx++) {
-            const idx = (yy * width + xx) * 4;
-            r += data[idx];
-            g += data[idx + 1];
-            b += data[idx + 2];
-            a += data[idx + 3];
-            count++;
-          }
-        }
-
-        if (!count) continue;
-
-        r = Math.round(r / count);
-        g = Math.round(g / count);
-        b = Math.round(b / count);
-        a = Math.round(a / count);
-
-        for (let yy = y; yy < Math.min(y + size, height); yy++) {
-          for (let xx = x; xx < Math.min(x + size, width); xx++) {
-            const idx = (yy * width + xx) * 4;
-            data[idx] = r;
-            data[idx + 1] = g;
-            data[idx + 2] = b;
-            data[idx + 3] = a;
-          }
-        }
-      }
-    }
-
-    ctx.putImageData(imageData, 0, 0);
-  }
-
-  function applySimpleBlur(ctx, width, height) {
-    const temp = createOffscreenCanvas(width, height);
-    const tctx = temp.getContext("2d");
-    tctx.filter = "blur(8px)";
-    tctx.drawImage(ctx.canvas, 0, 0, width, height);
-    ctx.clearRect(0, 0, width, height);
-    ctx.drawImage(temp, 0, 0);
-  }
-
-  function maskCanvasToEllipse(ctx, width, height) {
-    ctx.save();
-    ctx.globalCompositeOperation = "destination-in";
-    ctx.beginPath();
-    ctx.ellipse(width / 2, height / 2, width / 2, height / 2, 0, 0, Math.PI * 2);
-    ctx.closePath();
-    ctx.fill();
-    ctx.restore();
-  }
-
-  async function loadImageFromDataUrl(dataUrl) {
-    return new Promise((resolve, reject) => {
-      const im = new Image();
-      im.onload = () => resolve(im);
-      im.onerror = reject;
-      im.src = dataUrl;
-    });
-  }
-
-  function getObjectBounds(obj) {
-    if (!obj) return null;
-
-    const left = Number(obj.left || 0);
-    const top = Number(obj.top || 0);
-    const width = Math.max(1, Math.round((obj.width || 1) * (obj.scaleX || 1)));
-    const height = Math.max(1, Math.round((obj.height || 1) * (obj.scaleY || 1)));
-
-    return {
-      sx: Math.round(left),
-      sy: Math.round(top),
-      sw: width,
-      sh: height
-    };
-  }
-
-  async function buildEffectOverlayFromRegion(shapeType, effectType, x, y, w, h, opts = {}) {
-    const snapshotUrl = getCanvasSnapshotDataUrl({
-      format: "png",
-      multiplier: 1,
-      excludeEffectObjects: true,
-      hideObjects: Array.isArray(opts.hideObjects) ? opts.hideObjects : []
-    });
-
-    const img = await loadImageFromDataUrl(snapshotUrl);
-    const sx = clamp(Math.round(x), 0, img.width - 1);
-    const sy = clamp(Math.round(y), 0, img.height - 1);
-    const sw = clamp(Math.round(w), 1, img.width - sx);
-    const sh = clamp(Math.round(h), 1, img.height - sy);
-
-    const off = createOffscreenCanvas(sw, sh);
-    const ctx = off.getContext("2d");
-    ctx.drawImage(img, sx, sy, sw, sh, 0, 0, sw, sh);
-
-    if (effectType === "mosaic") {
-      applyMosaicToCanvasRegion(ctx, sw, sh, 12);
-    } else {
-      applySimpleBlur(ctx, sw, sh);
-    }
-
-    if (shapeType === "circle") {
-      maskCanvasToEllipse(ctx, sw, sh);
-    }
-
-    const dataUrl = off.toDataURL("image/png");
-    const overlayImg = await new Promise((resolve, reject) => {
-      fabric.Image.fromURL(dataUrl, resolve, { crossOrigin: "anonymous" });
-      setTimeout(() => reject(new Error("โหลด overlay ไม่สำเร็จ")), 10000);
-    });
-
-    overlayImg.set({
-      left: sx,
-      top: sy,
-      selectable: true,
-      evented: true,
-      hasControls: true,
-      hasBorders: true,
-      objectCaching: false,
-      toolType: shapeType === "circle"
-        ? (effectType === "mosaic" ? "mosaicCircle" : "blurCircle")
-        : (effectType === "mosaic" ? "mosaicRect" : "blurRect"),
-      effectType
-    });
-
-    return overlayImg;
-  }
-
-  async function applyAreaEffect(effectType, shapeType) {
-    const canvas = editorState.canvas;
-    if (!canvas) return;
-
-    const active = canvas.getActiveObject();
-    if (!active || active === editorState.baseImage) {
-      await showMessage("info", "ยังไม่ได้เลือกพื้นที่", "กรุณาวาดพื้นที่ก่อน แล้วจึงกดใช้เอฟเฟกต์");
-      return;
-    }
-
-    const bounds = getObjectBounds(active);
-    if (!bounds) {
-      await showMessage("warning", "รูปทรงไม่ถูกต้อง", "กรุณาเลือกสี่เหลี่ยมหรือวงกลมสำหรับใช้เอฟเฟกต์นี้");
-      return;
-    }
-
-    try {
-      const overlay = await buildEffectOverlayFromRegion(
-        shapeType,
-        effectType,
-        bounds.sx,
-        bounds.sy,
-        bounds.sw,
-        bounds.sh,
-        { hideObjects: [active] }
-      );
-
-      if (!overlay) throw new Error("สร้างเอฟเฟกต์ไม่สำเร็จ");
-
-      canvas.remove(active);
-      canvas.add(overlay);
-      canvas.setActiveObject(overlay);
-      canvas.requestRenderAll();
-      pushHistorySnapshot();
-      setActiveTool("select");
-    } catch (err) {
-      console.error(err);
-      await showMessage("error", "ใช้เอฟเฟกต์ไม่สำเร็จ", err?.message || String(err));
-    }
-  }
-
-  function collectCanvasState() {
-    const canvas = editorState.canvas;
-    if (!canvas) return null;
-
-    const cropWasVisible = !!(editorState.cropRect && editorState.cropRect.visible);
-    if (editorState.cropRect) {
-      editorState.cropRect.visible = false;
-      canvas.requestRenderAll();
-    }
-
-    const json = canvas.toDatalessJSON(["toolType", "effectType"]);
-
-    if (editorState.cropRect) {
-      editorState.cropRect.visible = cropWasVisible;
-      canvas.requestRenderAll();
-    }
-
-    return {
-      json,
-      zoom: editorState.zoom,
-      brightness: editorState.brightness
-    };
-  }
-
-  function sameState(a, b) {
-    if (!a || !b) return false;
-    return JSON.stringify(a) === JSON.stringify(b);
   }
 
   function updateUndoRedoState() {
     const undoBtn = $("ieUndoBtn");
     const redoBtn = $("ieRedoBtn");
 
-    if (undoBtn) {
-      undoBtn.disabled = editorState.historyIndex <= 0;
-    }
-    if (redoBtn) {
-      redoBtn.disabled = editorState.historyIndex >= editorState.history.length - 1;
-    }
+    if (undoBtn) undoBtn.disabled = editorState.historyIndex <= 0;
+    if (redoBtn) redoBtn.disabled = editorState.historyIndex >= editorState.history.length - 1;
   }
 
-  function pushHistorySnapshot(force = false) {
-    const canvas = editorState.canvas;
-    if (!canvas || editorState.restoringHistory || editorState.isRefreshingEffect) return;
+  function serializeObject(obj) {
+    if (!obj) return null;
 
-    const snapshot = collectCanvasState();
+    const base = obj.toObject([
+      "toolType",
+      "rx",
+      "ry",
+      "path",
+      "fontFamily",
+      "fontSize",
+      "text",
+      "angle",
+      "scaleX",
+      "scaleY"
+    ]);
+
+    if (isArrowObject(obj)) {
+      base.toolType = "arrow";
+      base.path = obj.path;
+      base.fill = obj.fill;
+    }
+
+    return base;
+  }
+
+  function serializeCanvasState() {
+    const canvas = editorState.canvas;
+    if (!canvas || !editorState.baseImage) return null;
+
+    return {
+      zoom: editorState.zoom,
+      brightness: editorState.brightness,
+      baseImage: {
+        angle: editorState.baseImage.angle || 0,
+        scaleX: editorState.baseImage.scaleX || 1,
+        scaleY: editorState.baseImage.scaleY || 1,
+        left: editorState.baseImage.left,
+        top: editorState.baseImage.top
+      },
+      objects: canvas.getObjects()
+        .filter((obj) => obj !== editorState.baseImage && obj !== editorState.cropRect)
+        .map(serializeObject)
+    };
+  }
+
+  function createObjectFromSnapshot(snapshot) {
+    if (!snapshot || !window.fabric) return null;
+
+    if (snapshot.toolType === "arrow" && snapshot.path) {
+      const arrow = new fabric.Path(snapshot.path, {
+        fill: snapshot.fill || editorState.strokeColor,
+        left: snapshot.left,
+        top: snapshot.top,
+        angle: snapshot.angle || 0,
+        scaleX: snapshot.scaleX || 1,
+        scaleY: snapshot.scaleY || 1,
+        selectable: true,
+        evented: true,
+        objectCaching: false,
+        hasControls: true,
+        hasBorders: true,
+        lockRotation: false
+      });
+      arrow.toolType = "arrow";
+      return arrow;
+    }
+
+    const type = snapshot.type;
+    if (type === "line") {
+      return new fabric.Line([snapshot.x1, snapshot.y1, snapshot.x2, snapshot.y2], {
+        ...snapshot,
+        selectable: true,
+        evented: true,
+        objectCaching: false,
+        hasControls: true,
+        hasBorders: true,
+        lockRotation: false
+      });
+    }
+
+    if (type === "rect") {
+      return new fabric.Rect({
+        ...snapshot,
+        selectable: true,
+        evented: true,
+        objectCaching: false,
+        hasControls: true,
+        hasBorders: true,
+        lockRotation: false
+      });
+    }
+
+    if (type === "ellipse") {
+      return new fabric.Ellipse({
+        ...snapshot,
+        selectable: true,
+        evented: true,
+        objectCaching: false,
+        hasControls: true,
+        hasBorders: true,
+        lockRotation: false
+      });
+    }
+
+    if (type === "i-text" || type === "textbox" || type === "text") {
+      return new fabric.IText(snapshot.text || "ข้อความ", {
+        ...snapshot,
+        selectable: true,
+        evented: true,
+        objectCaching: false,
+        hasControls: true,
+        hasBorders: true,
+        lockRotation: false
+      });
+    }
+
+    return null;
+  }
+
+  function restoreCanvasState(snapshot) {
+    const canvas = editorState.canvas;
+    const baseImage = editorState.baseImage;
+    if (!canvas || !baseImage || !snapshot) return;
+
+    editorState.restoringHistory = true;
+
+    const existing = canvas.getObjects().filter((obj) => obj !== baseImage && obj !== editorState.cropRect);
+    existing.forEach((obj) => canvas.remove(obj));
+
+    editorState.brightness = Number(snapshot.brightness || 0);
+    if ($("ieBrightness")) $("ieBrightness").value = String(editorState.brightness);
+    applyBrightness(editorState.brightness);
+
+    baseImage.set({
+      angle: snapshot.baseImage?.angle || 0,
+      scaleX: snapshot.baseImage?.scaleX || baseImage.scaleX,
+      scaleY: snapshot.baseImage?.scaleY || baseImage.scaleY,
+      left: snapshot.baseImage?.left ?? baseImage.left,
+      top: snapshot.baseImage?.top ?? baseImage.top
+    });
+
+    (snapshot.objects || []).forEach((objSnap) => {
+      const obj = createObjectFromSnapshot(objSnap);
+      if (obj) canvas.add(obj);
+    });
+
+    editorState.zoom = Math.max(0.2, Math.min(5, Number(snapshot.zoom) || 1));
+    const center = typeof canvas.getCenter === "function"
+      ? canvas.getCenter()
+      : { left: canvas.getWidth() / 2, top: canvas.getHeight() / 2 };
+    canvas.setViewportTransform([1, 0, 0, 1, 0, 0]);
+    canvas.zoomToPoint(new fabric.Point(center.left, center.top), editorState.zoom);
+
+    if (editorState.cropRect) {
+      canvas.remove(editorState.cropRect);
+      editorState.cropRect = null;
+    }
+
+    canvas.requestRenderAll();
+    setZoomLabel();
+    setCanvasInteractivityForTool(editorState.activeTool);
+    editorState.restoringHistory = false;
+  }
+
+  function pushHistorySnapshot(forceReplace = false) {
+    if (editorState.restoringHistory) return;
+
+    const snapshot = serializeCanvasState();
     if (!snapshot) return;
 
-    const current = editorState.history[editorState.historyIndex];
-    if (!force && current && sameState(current, snapshot)) {
+    if (forceReplace && editorState.history.length) {
+      editorState.history[editorState.historyIndex] = snapshot;
       updateUndoRedoState();
       return;
     }
@@ -11083,505 +10883,468 @@
     }
 
     editorState.history.push(snapshot);
-    if (editorState.history.length > 40) {
-      editorState.history.shift();
-    }
     editorState.historyIndex = editorState.history.length - 1;
     updateUndoRedoState();
-  }
-
-  async function restoreHistorySnapshot(snapshot) {
-    const canvas = editorState.canvas;
-    if (!canvas || !snapshot) return;
-
-    editorState.restoringHistory = true;
-
-    try {
-      canvas.loadFromJSON(snapshot.json, () => {
-        const objs = canvas.getObjects();
-        editorState.baseImage = objs[0] || null;
-        editorState.cropRect = objs.find((obj) => obj.toolType === "cropRect") || null;
-        editorState.zoom = Number(snapshot.zoom || 1);
-        editorState.brightness = Number(snapshot.brightness || 0);
-
-        canvas.requestRenderAll();
-        setZoomLabel();
-        setToolLabel();
-        setCanvasInteractivityForTool(editorState.activeTool);
-        updateUndoRedoState();
-        editorState.restoringHistory = false;
-      });
-    } catch (err) {
-      editorState.restoringHistory = false;
-      throw err;
-    }
   }
 
   function undoHistory() {
     if (editorState.historyIndex <= 0) return;
     editorState.historyIndex -= 1;
-    restoreHistorySnapshot(editorState.history[editorState.historyIndex]);
+    restoreCanvasState(editorState.history[editorState.historyIndex]);
+    updateUndoRedoState();
   }
 
   function redoHistory() {
     if (editorState.historyIndex >= editorState.history.length - 1) return;
     editorState.historyIndex += 1;
-    restoreHistorySnapshot(editorState.history[editorState.historyIndex]);
+    restoreCanvasState(editorState.history[editorState.historyIndex]);
+    updateUndoRedoState();
   }
 
-  function createShape(tool, x1, y1, x2, y2) {
-    const left = Math.min(x1, x2);
-    const top = Math.min(y1, y2);
-    const width = Math.max(1, Math.abs(x2 - x1));
-    const height = Math.max(1, Math.abs(y2 - y1));
+  function clampRectToCanvas(rect, canvas) {
+    const maxW = canvas.getWidth();
+    const maxH = canvas.getHeight();
 
-    if (tool === "line") {
-      return new fabric.Line([x1, y1, x2, y2], {
-        stroke: editorState.strokeColor,
-        strokeWidth: editorState.strokeWidth,
-        selectable: true,
-        evented: true,
-        hasControls: true,
-        hasBorders: true,
-        objectCaching: false,
-        toolType: "line"
-      });
-    }
+    let left = Math.max(0, rect.left);
+    let top = Math.max(0, rect.top);
+    let width = Math.max(1, rect.width);
+    let height = Math.max(1, rect.height);
 
-    if (tool === "arrow") {
-      return createArrowObject(x1, y1, x2, y2);
-    }
+    if (left + width > maxW) width = maxW - left;
+    if (top + height > maxH) height = maxH - top;
 
-    if (tool === "rect" || tool === "blurRect" || tool === "mosaicRect") {
-      return new fabric.Rect({
-        left,
-        top,
-        width,
-        height,
-        fill: tool === "rect" ? "transparent" : "rgba(37,99,235,0.08)",
-        stroke: editorState.strokeColor,
-        strokeWidth: editorState.strokeWidth,
-        selectable: true,
-        evented: true,
-        hasControls: true,
-        hasBorders: true,
-        objectCaching: false,
-        toolType: tool
-      });
-    }
-
-    if (tool === "circle" || tool === "blurCircle" || tool === "mosaicCircle") {
-      return new fabric.Ellipse({
-        left,
-        top,
-        rx: Math.max(1, width / 2),
-        ry: Math.max(1, height / 2),
-        fill: tool === "circle" ? "transparent" : "rgba(37,99,235,0.08)",
-        stroke: editorState.strokeColor,
-        strokeWidth: editorState.strokeWidth,
-        selectable: true,
-        evented: true,
-        hasControls: true,
-        hasBorders: true,
-        objectCaching: false,
-        toolType: tool
-      });
-    }
-
-    return null;
+    return {
+      left: Math.round(left),
+      top: Math.round(top),
+      width: Math.round(width),
+      height: Math.round(height)
+    };
   }
 
-  function updateTempShape(obj, tool, x1, y1, x2, y2) {
-    if (!obj) return;
+  function createOffscreenCanvas(width, height) {
+    const c = document.createElement("canvas");
+    c.width = Math.max(1, Math.round(width));
+    c.height = Math.max(1, Math.round(height));
+    return c;
+  }
 
-    const left = Math.min(x1, x2);
-    const top = Math.min(y1, y2);
-    const width = Math.max(1, Math.abs(x2 - x1));
-    const height = Math.max(1, Math.abs(y2 - y1));
+  function drawSourceRegionToCanvas(srcCanvasEl, rect) {
+    const off = createOffscreenCanvas(rect.width, rect.height);
+    const ctx = off.getContext("2d", { willReadFrequently: true });
+    ctx.drawImage(
+      srcCanvasEl,
+      rect.left, rect.top, rect.width, rect.height,
+      0, 0, rect.width, rect.height
+    );
+    return off;
+  }
 
-    if (tool === "line") {
-      obj.set({ x1, y1, x2, y2 });
-    } else if (tool === "arrow") {
-      const newArrow = createArrowObject(x1, y1, x2, y2);
-      const canvas = editorState.canvas;
-      const idx = canvas ? canvas.getObjects().indexOf(obj) : -1;
-      if (canvas) {
-        canvas.remove(obj);
-        if (idx >= 0 && typeof canvas.insertAt === "function") {
-          canvas.insertAt(newArrow, idx, false);
-        } else {
-          canvas.add(newArrow);
+  function applySimpleBlur(canvasEl, radius = 8) {
+    const out = createOffscreenCanvas(canvasEl.width, canvasEl.height);
+    const ctx = out.getContext("2d");
+    ctx.filter = `blur(${radius}px)`;
+    ctx.drawImage(canvasEl, 0, 0);
+    ctx.filter = "none";
+    return out;
+  }
+
+  function applyMosaic(canvasEl, pixelSize = 12) {
+    const w = canvasEl.width;
+    const h = canvasEl.height;
+    const out = createOffscreenCanvas(w, h);
+    const ctx = out.getContext("2d", { willReadFrequently: true });
+    const sctx = canvasEl.getContext("2d", { willReadFrequently: true });
+
+    const src = sctx.getImageData(0, 0, w, h);
+    const dst = ctx.createImageData(w, h);
+
+    for (let y = 0; y < h; y += pixelSize) {
+      for (let x = 0; x < w; x += pixelSize) {
+        const sampleX = x;
+        const sampleY = y;
+        const idx = (sampleY * w + sampleX) * 4;
+        const r = src.data[idx];
+        const g = src.data[idx + 1];
+        const b = src.data[idx + 2];
+        const a = src.data[idx + 3];
+
+        for (let yy = y; yy < Math.min(y + pixelSize, h); yy++) {
+          for (let xx = x; xx < Math.min(x + pixelSize, w); xx++) {
+            const di = (yy * w + xx) * 4;
+            dst.data[di] = r;
+            dst.data[di + 1] = g;
+            dst.data[di + 2] = b;
+            dst.data[di + 3] = a;
+          }
         }
-        editorState.tempDraft = newArrow;
       }
-    } else if (tool === "rect" || tool === "blurRect" || tool === "mosaicRect") {
-      obj.set({ left, top, width, height });
-    } else if (tool === "circle" || tool === "blurCircle" || tool === "mosaicCircle") {
-      obj.set({ left, top, rx: Math.max(1, width / 2), ry: Math.max(1, height / 2) });
     }
 
-    obj.setCoords && obj.setCoords();
+    ctx.putImageData(dst, 0, 0);
+    return out;
   }
 
-  function bindCanvasEvents() {
+  function buildMaskCanvas(width, height, shape) {
+    const mask = createOffscreenCanvas(width, height);
+    const ctx = mask.getContext("2d");
+    ctx.fillStyle = "#fff";
+
+    if (shape === "circle") {
+      ctx.beginPath();
+      ctx.ellipse(width / 2, height / 2, width / 2, height / 2, 0, 0, Math.PI * 2);
+      ctx.fill();
+    } else {
+      ctx.fillRect(0, 0, width, height);
+    }
+
+    return mask;
+  }
+
+  async function applyAreaEffect(effectType, shape) {
     const canvas = editorState.canvas;
-    if (!canvas) return;
+    const active = canvas?.getActiveObject();
+    if (!canvas || !active || active === editorState.baseImage) return;
 
-    let startX = 0;
-    let startY = 0;
+    try {
+      editorState.isRefreshingEffect = true;
 
-    canvas.on("mouse:down", (opt) => {
-      const evt = opt.e;
-      const pointer = canvas.getPointer(evt);
-
-      if (editorState.activeTool === "pan") {
-        editorState.isPanning = true;
-        canvas.defaultCursor = "grabbing";
-        startX = evt.clientX;
-        startY = evt.clientY;
+      const bounds = active.getBoundingRect(true, true);
+      const rect = clampRectToCanvas(bounds, canvas);
+      if (rect.width < 4 || rect.height < 4) {
+        canvas.remove(active);
+        canvas.discardActiveObject();
+        canvas.requestRenderAll();
         return;
       }
 
-      const drawTools = ["line", "arrow", "rect", "circle", "blurRect", "blurCircle", "mosaicRect", "mosaicCircle"];
-      if (!drawTools.includes(editorState.activeTool)) return;
+      const srcCanvasEl = canvas.lowerCanvasEl;
+      if (!srcCanvasEl) throw new Error("ไม่พบ canvas ต้นฉบับ");
 
-      startX = pointer.x;
-      startY = pointer.y;
+      const sourceRegion = drawSourceRegionToCanvas(srcCanvasEl, rect);
+      const effected = effectType === "mosaic"
+        ? applyMosaic(sourceRegion, 14)
+        : applySimpleBlur(sourceRegion, 8);
 
-      const shape = createShape(editorState.activeTool, startX, startY, startX + 1, startY + 1);
-      if (!shape) return;
+      const mask = buildMaskCanvas(rect.width, rect.height, shape);
 
-      editorState.tempDraft = shape;
-      canvas.add(shape);
-      canvas.setActiveObject(shape);
+      const out = createOffscreenCanvas(rect.width, rect.height);
+      const outCtx = out.getContext("2d");
+      outCtx.drawImage(effected, 0, 0);
+      outCtx.globalCompositeOperation = "destination-in";
+      outCtx.drawImage(mask, 0, 0);
+      outCtx.globalCompositeOperation = "source-over";
+
+      const dataUrl = out.toDataURL("image/png");
+
+      const imgObj = await new Promise((resolve, reject) => {
+        fabric.Image.fromURL(
+          dataUrl,
+          (img) => {
+            if (!img) reject(new Error("สร้าง effect image ไม่สำเร็จ"));
+            else resolve(img);
+          },
+          { crossOrigin: "anonymous" }
+        );
+      });
+
+      imgObj.set({
+        left: rect.left + rect.width / 2,
+        top: rect.top + rect.height / 2,
+        originX: "center",
+        originY: "center",
+        selectable: true,
+        evented: true,
+        objectCaching: false,
+        hasControls: true,
+        hasBorders: true,
+        lockRotation: false
+      });
+
+      canvas.remove(active);
+      canvas.add(imgObj);
+      canvas.setActiveObject(imgObj);
       canvas.requestRenderAll();
-    });
-
-    canvas.on("mouse:move", (opt) => {
-      const evt = opt.e;
-
-      if (editorState.activeTool === "pan" && editorState.isPanning) {
-        const vpt = canvas.viewportTransform;
-        if (vpt) {
-          vpt[4] += evt.clientX - startX;
-          vpt[5] += evt.clientY - startY;
-          canvas.requestRenderAll();
-          startX = evt.clientX;
-          startY = evt.clientY;
-        }
-        return;
-      }
-
-      if (!editorState.tempDraft) return;
-
-      const pointer = canvas.getPointer(evt);
-      updateTempShape(editorState.tempDraft, editorState.activeTool, startX, startY, pointer.x, pointer.y);
-      canvas.requestRenderAll();
-    });
-
-    canvas.on("mouse:up", async () => {
-      if (editorState.activeTool === "pan") {
-        editorState.isPanning = false;
-        canvas.defaultCursor = "grab";
-        return;
-      }
-
-      if (!editorState.tempDraft) return;
-
-      const finalObj = editorState.tempDraft;
-      editorState.tempDraft = null;
-
-      if (finalObj.toolType === "blurRect") {
-        await applyAreaEffect("blur", "rect");
-      } else if (finalObj.toolType === "blurCircle") {
-        await applyAreaEffect("blur", "circle");
-      } else if (finalObj.toolType === "mosaicRect") {
-        await applyAreaEffect("mosaic", "rect");
-      } else if (finalObj.toolType === "mosaicCircle") {
-        await applyAreaEffect("mosaic", "circle");
-      } else {
-        pushHistorySnapshot();
-        setActiveTool("select");
-      }
-
-      canvas.requestRenderAll();
-    });
-
-    canvas.on("object:modified", () => {
       pushHistorySnapshot();
-    });
-
-    canvas.on("selection:created", () => {
-      updateUndoRedoState();
-    });
-
-    canvas.on("selection:updated", () => {
-      updateUndoRedoState();
-    });
+      setActiveTool("select");
+    } catch (err) {
+      console.error(err);
+      await showMessage("error", "แก้ไขภาพไม่สำเร็จ", err?.message || String(err));
+    } finally {
+      editorState.isRefreshingEffect = false;
+    }
   }
 
-  async function loadImageToCanvas(file) {
-    const wrap = editorState.canvasEl?.parentElement;
-    if (!wrap) {
-      throw new Error("ยังไม่พบพื้นที่ canvas");
+  function getPointerFromEvent(canvas, evt) {
+    const p = canvas.getPointer(evt, true);
+    return {
+      x: p.x,
+      y: p.y
+    };
+  }
+
+  function dataURLToBlob(dataUrl) {
+    const parts = String(dataUrl || "").split(",");
+    const meta = parts[0] || "";
+    const raw = parts[1] || "";
+    const mimeMatch = meta.match(/data:(.*?);base64/);
+    const mime = mimeMatch ? mimeMatch[1] : "image/jpeg";
+
+    const bin = atob(raw);
+    const arr = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+
+    return new Blob([arr], { type: mime });
+  }
+
+  async function blobToFile(blob, filename, mimeType) {
+    if (typeof File === "function") {
+      return new File([blob], filename, {
+        type: mimeType || blob.type || "application/octet-stream",
+        lastModified: Date.now()
+      });
     }
 
-    const wrapRect = wrap.getBoundingClientRect();
-    const width = Math.max(320, Math.floor(wrapRect.width || window.innerWidth || 360));
-    const height = Math.max(320, Math.floor(wrapRect.height || (window.innerHeight * 0.62) || 420));
+    blob.name = filename;
+    blob.lastModified = Date.now();
+    return blob;
+  }
 
-    editorState.originalUrl = URL.createObjectURL(file);
-
-    const fabricCanvas = new fabric.Canvas(editorState.canvasEl, {
-      selection: true,
-      preserveObjectStacking: true,
-      stopContextMenu: true,
-      fireRightClick: false
-    });
-
-    fabricCanvas.setWidth(width);
-    fabricCanvas.setHeight(height);
-
-    const imageObj = await new Promise((resolve, reject) => {
-      fabric.Image.fromURL(editorState.originalUrl, resolve, { crossOrigin: "anonymous" });
-      setTimeout(() => reject(new Error("โหลดรูปภาพไม่สำเร็จ")), 12000);
-    });
-
-    imageObj.set({
-      left: 0,
-      top: 0,
-      selectable: false,
-      evented: false,
-      hasControls: false,
-      hasBorders: false,
-      objectCaching: false
-    });
-
-    editorState.canvas = fabricCanvas;
-    editorState.baseImage = imageObj;
-
-    fabricCanvas.add(imageObj);
-    imageObj.sendToBack();
-    fitImageToCanvas();
-
-    if ($("ieBrightness")) {
-      $("ieBrightness").value = "0";
+  async function nextFrame(count = 1) {
+    while (count-- > 0) {
+      await new Promise((resolve) => requestAnimationFrame(() => resolve()));
     }
-
-    bindCanvasEvents();
-
-    fabricCanvas.calcOffset && fabricCanvas.calcOffset();
-    fabricCanvas.requestRenderAll();
   }
 
-  function collapseFloatingPanelAfterToolPick() {
-    setFloatingPanelOpen(false);
-  }
+  function setEditorPreparing(isPreparing) {
+    const modal = editorState.modal;
+    if (!modal) return;
 
-  function setFloatingPanelOpen(open) {
-    const btn = editorState.floatingToggleBtn;
-    const panel = editorState.floatingToolPanel;
-    if (!btn || !panel) return;
-
-    btn.setAttribute("aria-expanded", open ? "true" : "false");
-    panel.classList.toggle("open", !!open);
-    panel.classList.toggle("hidden", !open);
-  }
-
-  function decorateToolButtons() {
-    Object.entries(TOOL_ICONS).forEach(([id, icon]) => {
-      const btn = $(id);
-      if (!btn) return;
-      if (btn.dataset.iconReady === "1") return;
-
-      const label = btn.textContent ? String(btn.textContent).trim() : "";
-      btn.innerHTML = `
-        <span class="ieBtnIcon" aria-hidden="true">${icon}</span>
-        <span class="ieBtnText">${label}</span>
-      `;
-      btn.dataset.iconReady = "1";
-    });
+    if (isPreparing) {
+      modal.setAttribute("data-preparing", "1");
+      modal.setAttribute("aria-busy", "true");
+    } else {
+      modal.removeAttribute("data-preparing");
+      modal.removeAttribute("aria-busy");
+    }
   }
 
   function ensureExtraControls() {
-    decorateToolButtons();
+    const footer = editorState.modal?.querySelector(".imgEditorFooter");
+    if (!footer) return;
+
+    if (!$("ieResetBtn")) {
+      const resetBtn = document.createElement("button");
+      resetBtn.type = "button";
+      resetBtn.id = "ieResetBtn";
+      resetBtn.className = "btn ghost";
+      resetBtn.textContent = "รีเซ็ต";
+      footer.insertBefore(resetBtn, $("ieCancelBtn") || null);
+
+      resetBtn.addEventListener("click", async () => {
+        if (!editorState.originalFile) return;
+        try {
+          setEditorPreparing(true);
+          await nextFrame(1);
+
+          destroyCanvas();
+          revokeOriginalUrl();
+          await loadImageToCanvas(editorState.originalFile);
+
+          editorState.zoom = 1;
+          editorState.brightness = 0;
+          if ($("ieBrightness")) $("ieBrightness").value = "0";
+
+          ensureExtraControls();
+          bindToolButtons();
+          setActiveTool("select");
+          pushHistorySnapshot(true);
+
+          await nextFrame(1);
+          setEditorPreparing(false);
+        } catch (err) {
+          setEditorPreparing(false);
+          console.error(err);
+          showMessage("error", "รีเซ็ตภาพไม่สำเร็จ", err?.message || String(err));
+        }
+      });
+    }
   }
 
   function bindToolButtons() {
-    if (editorState.isToolBound) return;
-    editorState.isToolBound = true;
-
-    const map = {
+    const btnMap = {
       ieSelectBtn: "select",
       iePanBtn: "pan",
       ieLineBtn: "line",
       ieArrowBtn: "arrow",
       ieRectBtn: "rect",
       ieCircleBtn: "circle",
-      ieCropToolBtn: "crop"
+      ieTextBtn: "text",
+      ieCropToolBtn: "crop",
+      ieBlurRectBtn: "blurRect",
+      ieBlurCircleBtn: "blurCircle",
+      ieMosaicRectBtn: "mosaicRect",
+      ieMosaicCircleBtn: "mosaicCircle"
     };
 
-    Object.entries(map).forEach(([id, tool]) => {
-      $(id)?.addEventListener("click", () => {
-        setActiveTool(tool);
-        collapseFloatingPanelAfterToolPick();
+    Object.entries(btnMap).forEach(([id, tool]) => {
+      const btn = $(id);
+      if (!btn || btn.dataset.bound === "1") return;
+      btn.dataset.bound = "1";
+      btn.addEventListener("click", () => setActiveTool(tool));
+    });
+
+    const zoomOutBtn = $("ieZoomOutBtn");
+    if (zoomOutBtn && zoomOutBtn.dataset.bound !== "1") {
+      zoomOutBtn.dataset.bound = "1";
+      zoomOutBtn.addEventListener("click", () => setZoom(editorState.zoom - 0.1));
+    }
+
+    const zoomInBtn = $("ieZoomInBtn");
+    if (zoomInBtn && zoomInBtn.dataset.bound !== "1") {
+      zoomInBtn.dataset.bound = "1";
+      zoomInBtn.addEventListener("click", () => setZoom(editorState.zoom + 0.1));
+    }
+
+    const zoomResetBtn = $("ieZoomResetBtn");
+    if (zoomResetBtn && zoomResetBtn.dataset.bound !== "1") {
+      zoomResetBtn.dataset.bound = "1";
+      zoomResetBtn.addEventListener("click", () => resetViewport());
+    }
+
+    const fitBtn = $("ieFitBtn");
+    if (fitBtn && fitBtn.dataset.bound !== "1") {
+      fitBtn.dataset.bound = "1";
+      fitBtn.addEventListener("click", () => resetViewport());
+    }
+
+    const undoBtn = $("ieUndoBtn");
+    if (undoBtn && undoBtn.dataset.bound !== "1") {
+      undoBtn.dataset.bound = "1";
+      undoBtn.addEventListener("click", () => undoHistory());
+    }
+
+    const redoBtn = $("ieRedoBtn");
+    if (redoBtn && redoBtn.dataset.bound !== "1") {
+      redoBtn.dataset.bound = "1";
+      redoBtn.addEventListener("click", () => redoHistory());
+    }
+
+    const deleteBtn = $("ieDeleteBtn");
+    if (deleteBtn && deleteBtn.dataset.bound !== "1") {
+      deleteBtn.dataset.bound = "1";
+      deleteBtn.addEventListener("click", () => deleteSelectedObject());
+    }
+
+    const rotateLeftBtn = $("ieRotateLeftBtn");
+    if (rotateLeftBtn && rotateLeftBtn.dataset.bound !== "1") {
+      rotateLeftBtn.dataset.bound = "1";
+      rotateLeftBtn.addEventListener("click", () => rotateBaseImage(-90));
+    }
+
+    const rotateRightBtn = $("ieRotateRightBtn");
+    if (rotateRightBtn && rotateRightBtn.dataset.bound !== "1") {
+      rotateRightBtn.dataset.bound = "1";
+      rotateRightBtn.addEventListener("click", () => rotateBaseImage(90));
+    }
+
+    const colorPicker = $("ieColorPicker");
+    if (colorPicker && colorPicker.dataset.bound !== "1") {
+      colorPicker.dataset.bound = "1";
+      colorPicker.addEventListener("input", (e) => {
+        editorState.strokeColor = e.target.value || "#dc2626";
       });
-    });
+    }
 
-    $("ieTextBtn")?.addEventListener("click", () => {
-      addTextbox();
-      collapseFloatingPanelAfterToolPick();
-    });
+    const strokeWidth = $("ieStrokeWidth");
+    if (strokeWidth && strokeWidth.dataset.bound !== "1") {
+      strokeWidth.dataset.bound = "1";
+      strokeWidth.addEventListener("input", (e) => {
+        editorState.strokeWidth = Math.max(1, Number(e.target.value || 3));
+      });
+    }
 
-    $("ieBlurRectBtn")?.addEventListener("click", () => {
-      setActiveTool("blurRect");
-      collapseFloatingPanelAfterToolPick();
-    });
+    const brightness = $("ieBrightness");
+    if (brightness && brightness.dataset.bound !== "1") {
+      brightness.dataset.bound = "1";
+      brightness.addEventListener("input", (e) => {
+        applyBrightness(e.target.value);
+      });
+      brightness.addEventListener("change", () => {
+        commitBrightnessToHistory();
+      });
+    }
 
-    $("ieBlurCircleBtn")?.addEventListener("click", () => {
-      setActiveTool("blurCircle");
-      collapseFloatingPanelAfterToolPick();
-    });
+    const applyCropBtn = $("ieApplyCropBtn");
+    if (applyCropBtn && applyCropBtn.dataset.bound !== "1") {
+      applyCropBtn.dataset.bound = "1";
+      applyCropBtn.addEventListener("click", async () => {
+        await applyCrop();
+      });
+    }
 
-    $("ieMosaicRectBtn")?.addEventListener("click", () => {
-      setActiveTool("mosaicRect");
-      collapseFloatingPanelAfterToolPick();
-    });
+    const cancelBtn = $("ieCancelBtn");
+    if (cancelBtn && cancelBtn.dataset.bound !== "1") {
+      cancelBtn.dataset.bound = "1";
+      cancelBtn.addEventListener("click", () => closeEditor({ ok: false }));
+    }
 
-    $("ieMosaicCircleBtn")?.addEventListener("click", () => {
-      setActiveTool("mosaicCircle");
-      collapseFloatingPanelAfterToolPick();
-    });
-
-    $("ieZoomInBtn")?.addEventListener("click", () => {
-      setZoom(editorState.zoom + 0.1);
-    });
-
-    $("ieZoomOutBtn")?.addEventListener("click", () => {
-      setZoom(editorState.zoom - 0.1);
-    });
-
-    $("ieZoomResetBtn")?.addEventListener("click", () => {
-      resetViewport();
-    });
-
-    $("ieFitBtn")?.addEventListener("click", () => {
-      fitImageToCanvas();
-    });
-
-    $("ieRotateLeftBtn")?.addEventListener("click", () => {
-      rotateBaseImage(-90);
-      collapseFloatingPanelAfterToolPick();
-    });
-
-    $("ieRotateRightBtn")?.addEventListener("click", () => {
-      rotateBaseImage(90);
-      collapseFloatingPanelAfterToolPick();
-    });
-
-    $("ieColorPicker")?.addEventListener("input", (e) => {
-      editorState.strokeColor = e.target.value || "#dc2626";
-    });
-
-    $("ieStrokeWidth")?.addEventListener("input", (e) => {
-      editorState.strokeWidth = Number(e.target.value || 3);
-    });
-
-    $("ieBrightness")?.addEventListener("input", (e) => {
-      applyBrightness(e.target.value);
-    });
-
-    $("ieBrightness")?.addEventListener("change", () => {
-      commitBrightnessToHistory();
-    });
-
-    $("ieResetBtn")?.addEventListener("click", async () => {
-      if (!editorState.originalFile) return;
-
-      try {
-        setEditorPreparing(true);
-        await nextFrame(1);
-
-        destroyCanvas();
-        revokeOriginalUrl();
-        await loadImageToCanvas(editorState.originalFile);
-
-        editorState.zoom = 1;
-        editorState.brightness = 0;
-        if ($("ieBrightness")) $("ieBrightness").value = "0";
-
-        ensureExtraControls();
-        setActiveTool("select");
-        pushHistorySnapshot(true);
-
-        await nextFrame(1);
-        setEditorPreparing(false);
-      } catch (err) {
-        console.error(err);
-        setEditorPreparing(false);
-        await showMessage("error", "รีเซ็ตภาพไม่สำเร็จ", err?.message || String(err));
-      }
-    });
-
-    $("ieUndoBtn")?.addEventListener("click", () => {
-      undoHistory();
-      collapseFloatingPanelAfterToolPick();
-    });
-
-    $("ieRedoBtn")?.addEventListener("click", () => {
-      redoHistory();
-      collapseFloatingPanelAfterToolPick();
-    });
-
-    $("ieDeleteBtn")?.addEventListener("click", () => {
-      deleteSelectedObject();
-      collapseFloatingPanelAfterToolPick();
-    });
-
-    $("ieApplyCropBtn")?.addEventListener("click", async () => {
-      await applyCrop();
-      collapseFloatingPanelAfterToolPick();
-    });
+    const saveBtn = $("ieSaveBtn");
+    if (saveBtn && saveBtn.dataset.bound !== "1") {
+      saveBtn.dataset.bound = "1";
+      saveBtn.addEventListener("click", async () => {
+        try {
+          const result = await exportEditedFile();
+          closeEditor(result);
+        } catch (err) {
+          console.error(err);
+          showMessage("error", "บันทึกภาพไม่สำเร็จ", err?.message || String(err));
+        }
+      });
+    }
   }
 
   async function applyCrop() {
     const canvas = editorState.canvas;
-    const crop = editorState.cropRect;
+    const cropRect = editorState.cropRect;
+    const baseImage = editorState.baseImage;
 
-    if (!canvas || !crop || editorState.isApplyingCrop) return;
+    if (!canvas || !cropRect || !baseImage || editorState.isApplyingCrop) return;
 
     try {
       editorState.isApplyingCrop = true;
       setEditorPreparing(true);
 
-      const dataUrl = getCanvasSnapshotDataUrl({ format: "png", multiplier: 1 });
-      const img = await loadImageFromDataUrl(dataUrl);
+      const rect = clampRectToCanvas(cropRect.getBoundingRect(true, true), canvas);
+      if (rect.width < 4 || rect.height < 4) {
+        throw new Error("พื้นที่ครอปเล็กเกินไป");
+      }
 
-      const left = clamp(Math.round(crop.left), 0, img.width - 1);
-      const top = clamp(Math.round(crop.top), 0, img.height - 1);
-      const width = clamp(Math.round(crop.width * crop.scaleX), 1, img.width - left);
-      const height = clamp(Math.round(crop.height * crop.scaleY), 1, img.height - top);
+      removeCropRect();
+      canvas.discardActiveObject();
+      canvas.requestRenderAll();
 
-      const off = createOffscreenCanvas(width, height);
+      const srcCanvas = canvas.lowerCanvasEl;
+      const off = createOffscreenCanvas(rect.width, rect.height);
       const ctx = off.getContext("2d");
-      ctx.drawImage(img, left, top, width, height, 0, 0, width, height);
+      ctx.drawImage(
+        srcCanvas,
+        rect.left, rect.top, rect.width, rect.height,
+        0, 0, rect.width, rect.height
+      );
 
-      const blob = dataURLToBlob(off.toDataURL("image/png"));
-      const baseName = (editorState.originalFile?.name || "edited-image").replace(/\.[^.]+$/, "");
-      const croppedFile = await blobToFile(blob, `${baseName}_cropped.png`, "image/png");
+      const dataUrl = off.toDataURL("image/jpeg", 0.92);
+      const blob = dataURLToBlob(dataUrl);
+      const filenameBase = (editorState.originalFile?.name || "cropped-image").replace(/\.[^.]+$/, "");
+      const croppedFile = await blobToFile(blob, `${filenameBase}_crop.jpg`, "image/jpeg");
 
-      editorState.originalFile = croppedFile;
-
-      await nextFrame(1);
       destroyCanvas();
       revokeOriginalUrl();
+      editorState.originalFile = croppedFile;
       await loadImageToCanvas(croppedFile);
 
-      resetViewport();
-      if (editorState.canvas) {
-        editorState.canvas.calcOffset && editorState.canvas.calcOffset();
-        editorState.canvas.requestRenderAll();
-      }
+      editorState.zoom = 1;
+      editorState.brightness = 0;
+      if ($("ieBrightness")) $("ieBrightness").value = "0";
 
       setActiveTool("select");
       pushHistorySnapshot(true);
@@ -11597,115 +11360,500 @@
     }
   }
 
-  async function exportCanvasToFile() {
+  function bindObjectEvents() {
     const canvas = editorState.canvas;
-    if (!canvas) {
-      throw new Error("ยังไม่มี canvas");
+    if (!canvas || canvas.__objectEventsBound) return;
+    canvas.__objectEventsBound = true;
+
+    canvas.on("object:modified", () => {
+      if (!editorState.restoringHistory) pushHistorySnapshot();
+    });
+
+    canvas.on("selection:created", () => {
+      if (editorState.activeTool !== "select" && editorState.activeTool !== "crop") {
+        setActiveTool("select");
+      }
+    });
+  }
+
+  function bindPointerDrawing() {
+    const canvas = editorState.canvas;
+    if (!canvas || canvas.__pointerDrawingBound) return;
+    canvas.__pointerDrawingBound = true;
+
+    let startX = 0;
+    let startY = 0;
+    let drawingObject = null;
+
+    canvas.on("mouse:down", function (opt) {
+      const evt = opt.e;
+      if (!evt) return;
+
+      if (editorState.activeTool === "pan") {
+        editorState.isPanning = true;
+        canvas.defaultCursor = "grabbing";
+        this.lastPosX = evt.clientX;
+        this.lastPosY = evt.clientY;
+        return;
+      }
+
+      if (editorState.activeTool === "text") {
+        addTextbox();
+        return;
+      }
+
+      if (!["line", "arrow", "rect", "circle", "blurRect", "blurCircle", "mosaicRect", "mosaicCircle"].includes(editorState.activeTool)) {
+        return;
+      }
+
+      const pointer = getPointerFromEvent(canvas, evt);
+      startX = pointer.x;
+      startY = pointer.y;
+      const tool = editorState.activeTool;
+
+      if (tool === "line" || tool === "arrow") {
+        drawingObject = new fabric.Line([startX, startY, startX, startY], {
+          stroke: editorState.strokeColor,
+          strokeWidth: editorState.strokeWidth,
+          selectable: false,
+          evented: false,
+          objectCaching: false,
+          hasControls: true,
+          hasBorders: true,
+          lockRotation: false
+        });
+        editorState.tempDraft = drawingObject;
+        canvas.add(drawingObject);
+      }
+
+      if (tool === "rect" || tool === "blurRect" || tool === "mosaicRect") {
+        drawingObject = new fabric.Rect({
+          left: startX,
+          top: startY,
+          width: 1,
+          height: 1,
+          originX: "left",
+          originY: "top",
+          fill: ["blurRect", "mosaicRect"].includes(tool) ? "rgba(37,99,235,0.08)" : "transparent",
+          stroke: editorState.strokeColor,
+          strokeWidth: editorState.strokeWidth,
+          selectable: false,
+          evented: false,
+          objectCaching: false,
+          hasControls: true,
+          hasBorders: true,
+          lockRotation: false
+        });
+        editorState.tempDraft = drawingObject;
+        canvas.add(drawingObject);
+      }
+
+      if (tool === "circle" || tool === "blurCircle" || tool === "mosaicCircle") {
+        drawingObject = new fabric.Ellipse({
+          left: startX,
+          top: startY,
+          rx: 1,
+          ry: 1,
+          originX: "center",
+          originY: "center",
+          fill: ["blurCircle", "mosaicCircle"].includes(tool) ? "rgba(37,99,235,0.08)" : "transparent",
+          stroke: editorState.strokeColor,
+          strokeWidth: editorState.strokeWidth,
+          selectable: false,
+          evented: false,
+          objectCaching: false,
+          hasControls: true,
+          hasBorders: true,
+          lockRotation: false
+        });
+        editorState.tempDraft = drawingObject;
+        canvas.add(drawingObject);
+      }
+    });
+
+    canvas.on("mouse:move", function (opt) {
+      const evt = opt.e;
+      if (!evt) return;
+
+      if (editorState.activeTool === "pan" && editorState.isPanning) {
+        const vpt = this.viewportTransform;
+        vpt[4] += evt.clientX - this.lastPosX;
+        vpt[5] += evt.clientY - this.lastPosY;
+        this.requestRenderAll();
+        this.lastPosX = evt.clientX;
+        this.lastPosY = evt.clientY;
+        return;
+      }
+
+      const draft = editorState.tempDraft;
+      if (!draft) return;
+
+      const pointer = getPointerFromEvent(canvas, evt);
+      const tool = editorState.activeTool;
+
+      if (tool === "line" || tool === "arrow") {
+        draft.set({ x2: pointer.x, y2: pointer.y });
+      }
+
+      if (tool === "rect" || tool === "blurRect" || tool === "mosaicRect") {
+        draft.set({
+          left: Math.min(startX, pointer.x),
+          top: Math.min(startY, pointer.y),
+          width: Math.abs(pointer.x - startX),
+          height: Math.abs(pointer.y - startY)
+        });
+      }
+
+      if (tool === "circle" || tool === "blurCircle" || tool === "mosaicCircle") {
+        draft.set({
+          left: (startX + pointer.x) / 2,
+          top: (startY + pointer.y) / 2,
+          rx: Math.abs(pointer.x - startX) / 2,
+          ry: Math.abs(pointer.y - startY) / 2
+        });
+      }
+
+      canvas.requestRenderAll();
+    });
+
+    canvas.on("mouse:up", async function () {
+      if (editorState.activeTool === "pan") {
+        editorState.isPanning = false;
+        canvas.defaultCursor = "grab";
+        return;
+      }
+
+      const draft = editorState.tempDraft;
+      const tool = editorState.activeTool;
+      if (!draft) return;
+      editorState.tempDraft = null;
+
+      if (tool === "arrow") {
+        const arrow = createArrowGroup(draft.x1, draft.y1, draft.x2, draft.y2);
+        canvas.remove(draft);
+        canvas.add(arrow);
+        canvas.setActiveObject(arrow);
+        canvas.requestRenderAll();
+        pushHistorySnapshot();
+        setActiveTool("select");
+        return;
+      }
+
+      if (tool === "line" || tool === "rect" || tool === "circle") {
+        draft.set({
+          selectable: true,
+          evented: true,
+          hasControls: true,
+          hasBorders: true,
+          lockRotation: false
+        });
+        canvas.setActiveObject(draft);
+        canvas.requestRenderAll();
+        pushHistorySnapshot();
+        setActiveTool("select");
+        return;
+      }
+
+      if (tool === "blurRect") {
+        canvas.setActiveObject(draft);
+        await applyAreaEffect("blur", "rect");
+        return;
+      }
+
+      if (tool === "blurCircle") {
+        canvas.setActiveObject(draft);
+        await applyAreaEffect("blur", "circle");
+        return;
+      }
+
+      if (tool === "mosaicRect") {
+        canvas.setActiveObject(draft);
+        await applyAreaEffect("mosaic", "rect");
+        return;
+      }
+
+      if (tool === "mosaicCircle") {
+        canvas.setActiveObject(draft);
+        await applyAreaEffect("mosaic", "circle");
+      }
+    });
+
+    canvas.on("mouse:wheel", function (opt) {
+      const evt = opt.e;
+      if (!evt) return;
+      evt.preventDefault();
+      evt.stopPropagation();
+
+      let zoom = canvas.getZoom();
+      zoom *= 0.999 ** evt.deltaY;
+      zoom = Math.max(0.2, Math.min(5, zoom));
+      editorState.zoom = zoom;
+      canvas.zoomToPoint({ x: evt.offsetX, y: evt.offsetY }, zoom);
+      setZoomLabel();
+    });
+  }
+
+  async function loadImageToCanvas(file) {
+    const url = URL.createObjectURL(file);
+    editorState.originalUrl = url;
+
+    const wrap = editorState.canvasEl.parentElement;
+    if (!wrap) throw new Error("ไม่พบพื้นที่แสดง canvas");
+
+    const maxW = Math.max(640, Math.floor(wrap.clientWidth - 20));
+    const maxH = Math.max(420, Math.floor(wrap.clientHeight - 20));
+
+    if (editorState.canvas) {
+      try { editorState.canvas.dispose(); } catch (_) {}
+      editorState.canvas = null;
     }
 
-    const dataUrl = getCanvasSnapshotDataUrl({
+    const canvas = new fabric.Canvas(editorState.canvasEl, {
+      preserveObjectStacking: true,
+      selection: true,
+      renderOnAddRemove: true
+    });
+
+    editorState.canvas = canvas;
+
+    const imgEl = await new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = () => reject(new Error("โหลดรูปภาพไม่สำเร็จ"));
+      img.decoding = "async";
+      img.src = url;
+    });
+
+    const imgW = imgEl.naturalWidth || imgEl.width;
+    const imgH = imgEl.naturalHeight || imgEl.height;
+    if (!imgW || !imgH) throw new Error("ไม่สามารถอ่านขนาดรูปภาพได้");
+
+    const scale = Math.min(maxW / imgW, maxH / imgH, 1);
+    const canvasW = Math.max(320, Math.round(imgW * scale));
+    const canvasH = Math.max(240, Math.round(imgH * scale));
+
+    if (typeof canvas.setWidth === "function" && typeof canvas.setHeight === "function") {
+      canvas.setWidth(canvasW);
+      canvas.setHeight(canvasH);
+    } else if (typeof canvas.setDimensions === "function") {
+      canvas.setDimensions({ width: canvasW, height: canvasH });
+    } else {
+      editorState.canvasEl.width = canvasW;
+      editorState.canvasEl.height = canvasH;
+    }
+
+    if (canvas.lowerCanvasEl) {
+      canvas.lowerCanvasEl.style.width = canvasW + "px";
+      canvas.lowerCanvasEl.style.height = canvasH + "px";
+    }
+    if (canvas.upperCanvasEl) {
+      canvas.upperCanvasEl.style.width = canvasW + "px";
+      canvas.upperCanvasEl.style.height = canvasH + "px";
+    }
+    if (canvas.wrapperEl) {
+      canvas.wrapperEl.style.width = canvasW + "px";
+      canvas.wrapperEl.style.height = canvasH + "px";
+    }
+
+    const baseImage = new fabric.Image(imgEl, {
+      left: canvasW / 2,
+      top: canvasH / 2,
+      originX: "center",
+      originY: "center",
+      selectable: false,
+      evented: false,
+      objectCaching: false
+    });
+
+    baseImage.scaleX = scale;
+    baseImage.scaleY = scale;
+    editorState.baseImage = baseImage;
+
+    canvas.clear();
+    canvas.add(baseImage);
+
+    if (typeof baseImage.moveTo === "function") {
+      baseImage.moveTo(0);
+    } else if (typeof canvas.sendToBack === "function") {
+      canvas.sendToBack(baseImage);
+    } else if (typeof canvas.sendObjectToBack === "function") {
+      canvas.sendObjectToBack(baseImage);
+    }
+
+    bindObjectEvents();
+    bindPointerDrawing();
+
+    resetViewport();
+    if (typeof canvas.calcOffset === "function") canvas.calcOffset();
+    canvas.requestRenderAll();
+  }
+
+  async function exportEditedFile() {
+    const canvas = editorState.canvas;
+    if (!canvas) throw new Error("ยังไม่มี canvas สำหรับ export");
+
+    removeCropRect();
+
+    const dataUrl = canvas.toDataURL({
       format: "jpeg",
       quality: 0.92,
-      multiplier: 1
+      multiplier: 1,
+      enableRetinaScaling: false
     });
 
     const blob = dataURLToBlob(dataUrl);
-    const baseName = (editorState.originalFile?.name || "edited-image").replace(/\.[^.]+$/, "");
-    const file = await blobToFile(blob, `${baseName}_edited.jpg`, "image/jpeg");
+    const filenameBase = (editorState.originalFile?.name || "edited-image").replace(/\.[^.]+$/, "");
+    const outFile = await blobToFile(blob, `${filenameBase}_edited.jpg`, "image/jpeg");
 
     return {
       ok: true,
-      file,
-      filename: file.name,
-      dataUrl
+      file: outFile,
+      blob,
+      dataUrl,
+      filename: outFile.name,
+      mimeType: outFile.type
     };
   }
 
-  function bindUiOnce() {
-    if (editorState.isUiBound) return;
-    editorState.isUiBound = true;
+  function getEditIconSvg() {
+    return `
+      <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25Z" fill="currentColor"></path>
+        <path d="M14.06 4.94l3.75 3.75 1.47-1.47a1.5 1.5 0 0 0 0-2.12l-1.63-1.63a1.5 1.5 0 0 0-2.12 0l-1.47 1.47Z" fill="currentColor"></path>
+      </svg>
+    `;
+  }
 
-    $("ieCancelBtn")?.addEventListener("click", () => {
-      closeEditor({ ok: false });
-    });
+  function setFloatingPanelOpen(isOpen) {
+    const panel = editorState.floatingToolPanel;
+    const btn = editorState.floatingToggleBtn;
+    if (!panel || !btn) return;
 
-    $("ieCloseBtn")?.addEventListener("click", () => {
-      closeEditor({ ok: false });
-    });
+    panel.classList.toggle("open", !!isOpen);
+    btn.classList.toggle("active", !!isOpen);
+    btn.setAttribute("aria-expanded", isOpen ? "true" : "false");
+  }
 
-    editorState.modal?.addEventListener("click", (e) => {
-      if (e.target && e.target.classList.contains("imgEditorBackdrop")) {
-        closeEditor({ ok: false });
-      }
-    });
+  function decorateToolButton(btn, iconText) {
+    if (!btn || btn.dataset.decorated === "1") return;
+    btn.dataset.decorated = "1";
 
-    document.addEventListener("keydown", async (e) => {
-      if (!editorState.modal || editorState.modal.classList.contains("hidden")) return;
+    const label = btn.textContent ? btn.textContent.trim() : "";
+    btn.textContent = "";
+    btn.setAttribute("title", label);
+    btn.setAttribute("aria-label", label);
 
-      if (e.key === "Escape") {
-        e.preventDefault();
-        closeEditor({ ok: false });
-      }
+    const icon = document.createElement("span");
+    icon.className = "ie-btn-icon";
+    icon.textContent = iconText || "•";
 
-      const isMeta = e.ctrlKey || e.metaKey;
-      if (isMeta && e.key.toLowerCase() === "z") {
-        e.preventDefault();
-        if (e.shiftKey) redoHistory();
-        else undoHistory();
-      }
-    });
+    const text = document.createElement("span");
+    text.className = "ie-btn-text";
+    text.textContent = label;
 
-    $("ieSaveBtn")?.addEventListener("click", async () => {
-      try {
-        const result = await exportCanvasToFile();
-        closeEditor(result);
-      } catch (err) {
-        console.error(err);
-        await showMessage("error", "บันทึกภาพไม่สำเร็จ", err?.message || String(err));
-      }
-    });
+    btn.appendChild(icon);
+    btn.appendChild(text);
+  }
 
-    editorState.floatingToggleBtn?.addEventListener("click", () => {
-      const panel = editorState.floatingToolPanel;
-      if (!panel) return;
-      const open = !panel.classList.contains("open");
-      setFloatingPanelOpen(open);
-    });
+  function ensureFloatingToggle() {
+    const dialog = editorState.modal?.querySelector(".imgEditorDialog");
+    const body = editorState.modal?.querySelector(".imgEditorBody");
+    const sidebar = editorState.modal?.querySelector(".imgEditorSidebar");
+    if (!dialog || !body || !sidebar) return;
 
-    document.addEventListener("click", (e) => {
-      const btn = editorState.floatingToggleBtn;
-      const panel = editorState.floatingToolPanel;
-      if (!btn || !panel) return;
-      if (panel.classList.contains("hidden")) return;
+    dialog.classList.add("has-ie-floating");
 
-      const withinPanel = panel.contains(e.target);
-      const withinBtn = btn.contains(e.target);
-      if (!withinPanel && !withinBtn) {
+    let panel = dialog.querySelector(".ieFloatingPanel");
+    if (!panel) {
+      panel = document.createElement("div");
+      panel.className = "ieFloatingPanel";
+      panel.setAttribute("role", "dialog");
+      panel.setAttribute("aria-label", "เครื่องมือแก้ไขภาพ");
+      body.appendChild(panel);
+      panel.appendChild(sidebar);
+    }
+
+    let toggle = dialog.querySelector(".ieFloatingToggle");
+    if (!toggle) {
+      toggle = document.createElement("button");
+      toggle.type = "button";
+      toggle.className = "ieFloatingToggle";
+      toggle.setAttribute("aria-label", "เปิดเมนูเครื่องมือ");
+      toggle.setAttribute("aria-expanded", "false");
+      toggle.innerHTML = `
+        <span class="ieFloatingToggleIcon">${getEditIconSvg()}</span>
+        <span class="ieFloatingToggleText">เครื่องมือ</span>
+      `;
+      body.appendChild(toggle);
+    }
+
+    if (toggle.dataset.bound !== "1") {
+      toggle.dataset.bound = "1";
+      toggle.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const open = !panel.classList.contains("open");
+        setFloatingPanelOpen(open);
+      });
+    }
+
+    if (dialog.dataset.floatBound !== "1") {
+      dialog.dataset.floatBound = "1";
+
+      dialog.addEventListener("click", (e) => {
+        if (!panel.classList.contains("open")) return;
+        if (panel.contains(e.target) || toggle.contains(e.target)) return;
         setFloatingPanelOpen(false);
-      }
+      });
+
+      dialog.addEventListener("keydown", (e) => {
+        if (e.key === "Escape" && panel.classList.contains("open")) {
+          setFloatingPanelOpen(false);
+        }
+      });
+    }
+
+    editorState.floatingToggleBtn = toggle;
+    editorState.floatingToolPanel = panel;
+    setFloatingPanelOpen(false);
+  }
+
+  function decorateButtonsOnce() {
+    Object.entries(TOOL_ICONS).forEach(([id, icon]) => {
+      decorateToolButton($(id), icon);
     });
+  }
 
-    window.addEventListener("resize", () => {
-      const canvas = editorState.canvas;
-      const wrap = editorState.canvasEl?.parentElement;
-      if (!canvas || !wrap) return;
+  function ensureMobileFloatingToolbar() {
+    ensureFloatingToggle();
+    decorateButtonsOnce();
+  }
 
-      const rect = wrap.getBoundingClientRect();
-      const width = Math.max(320, Math.floor(rect.width || window.innerWidth || 360));
-      const height = Math.max(320, Math.floor(rect.height || (window.innerHeight * 0.62) || 420));
+  function bindUiOnce() {
+    if (editorState.modal?.dataset.uiBound === "1") return;
+    if (!editorState.modal) return;
 
-      canvas.setWidth(width);
-      canvas.setHeight(height);
-      canvas.calcOffset && canvas.calcOffset();
-      canvas.requestRenderAll();
-    });
+    editorState.modal.dataset.uiBound = "1";
+
+    ensureMobileFloatingToolbar();
+    bindToolButtons();
+
+    const closeX = editorState.modal.querySelector(".imgEditorClose");
+    if (closeX && closeX.dataset.bound !== "1") {
+      closeX.dataset.bound = "1";
+      closeX.addEventListener("click", () => closeEditor({ ok: false }));
+    }
+
+    const backdrop = editorState.modal.querySelector(".imgEditorBackdrop");
+    if (backdrop && backdrop.dataset.bound !== "1") {
+      backdrop.dataset.bound = "1";
+      backdrop.addEventListener("click", () => closeEditor({ ok: false }));
+    }
   }
 
   async function openImageEditor(file, options = {}) {
     ensureFabricReady();
     ensureModal();
     bindUiOnce();
-    bindToolButtons();
 
     if (!file || !/^image\//i.test(file.type || "")) {
       throw new Error("ไฟล์ที่ส่งเข้า editor ต้องเป็นรูปภาพ");
@@ -11734,9 +11882,11 @@
 
     try {
       await nextFrame(2);
+
       await loadImageToCanvas(file);
 
       ensureExtraControls();
+      bindToolButtons();
       setFloatingPanelOpen(false);
       setActiveTool("select");
       setZoomLabel();
@@ -11745,7 +11895,9 @@
       updateUndoRedoState();
 
       if (editorState.canvas) {
-        editorState.canvas.calcOffset && editorState.canvas.calcOffset();
+        if (typeof editorState.canvas.calcOffset === "function") {
+          editorState.canvas.calcOffset();
+        }
         editorState.canvas.requestRenderAll();
       }
 
