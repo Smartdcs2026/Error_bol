@@ -2273,19 +2273,33 @@ body.progress-lock{
    IMAGE EDITOR - STABILITY PATCH
 ========================= */
 
+html.img-editor-lock,
 body.img-editor-lock{
   overflow:hidden !important;
+}
+
+body.img-editor-lock{
   touch-action:none;
 }
 
 .imgEditorModal{
   overscroll-behavior:contain;
   -webkit-overflow-scrolling:auto;
+  contain:layout paint style;
+  opacity:1;
+  visibility:visible;
+}
+
+.imgEditorModal.is-preparing{
+  opacity:0;
+  visibility:hidden;
+  pointer-events:none;
 }
 
 .imgEditorDialog{
   transform:translateZ(0);
   will-change:transform, opacity;
+  backface-visibility:hidden;
 }
 
 .imgEditorCanvasWrap,
@@ -2293,6 +2307,10 @@ body.img-editor-lock{
 #imgEditorCanvas{
   transform:translateZ(0);
   backface-visibility:hidden;
+}
+
+.imgEditorCanvasWrap{
+  contain:layout paint;
 }
 
 .imgEditorBackdrop{
@@ -2338,19 +2356,101 @@ body.img-editor-lock{
 
 /* ลด repaint บนมือถือ */
 @media (max-width: 768px){
-  .imgEditorModal{
-    padding:0;
-  }
-
   .imgEditorDialog{
     width:100%;
-    height:100dvh;
-    max-height:100dvh;
+    height:100vh;
+    height:100svh;
+    max-height:100vh;
+    max-height:100svh;
+    min-height:100svh;
     border-radius:0;
     border:none;
     box-shadow:none;
   }
 
+  .imgEditorBackdrop{
+    backdrop-filter:none;
+    -webkit-backdrop-filter:none;
+  }
+
+  .ieFloatingPanel{
+    background:#ffffff;
+    backdrop-filter:none;
+    -webkit-backdrop-filter:none;
+    box-shadow:0 16px 32px rgba(15,23,42,.18);
+    max-height:52vh;
+  }
+
+  .rptImageActions .btn{
+    flex:1 1 calc(50% - 8px);
+  }
+}
+
+@media (max-width: 420px){
+  .rptImageActions .btn{
+    flex:1 1 100%;
+  }
+
+  .imgEditorHeader{
+    padding:10px 12px 10px;
+  }
+
+  .imgEditorFooter{
+    padding:10px 12px;
+  }
+}
+
+/* REPORT image row */
+.rptImageActions{
+  display:flex;
+  justify-content:flex-end;
+  gap:8px;
+  margin-top:10px;
+  flex-wrap:wrap;
+}
+
+.rptImagePreviewWrap{
+  margin-top:10px;
+}
+
+.rptImagePreviewEmpty,
+.rptImagePreview{
+  width:100%;
+}
+
+.rptImagePreview{
+  display:block;
+  max-height:260px;
+  object-fit:contain;
+  border-radius:14px;
+  border:1px solid #d9e4f1;
+  background:#fff;
+  padding:6px;
+}
+
+.rptImagePreview.hidden{
+  display:none !important;
+}
+
+.rptImageMeta.is-edited{
+  color:#1d4ed8;
+  font-weight:900;
+}
+
+/* ลด repaint บนมือถือ */
+@media (max-width: 768px){
+  .imgEditorDialog{
+    width:100%;
+    height:100vh;
+    height:100svh;
+    max-height:100vh;
+    max-height:100svh;
+    min-height:100svh;
+    border-radius:0;
+    border:none;
+    box-shadow:none;
+  }
+}
   .imgEditorBackdrop{
     backdrop-filter:none;
     -webkit-backdrop-filter:none;
@@ -2460,4 +2560,12 @@ body.img-editor-lock{
 
 #ieDeleteBtn:hover{
   background:#fee2e2;
+}
+.imgEditorDialog{
+  transform:translateZ(0);
+  backface-visibility:hidden;
+}
+
+.imgEditorCanvasWrap{
+  contain:layout paint;
 }
