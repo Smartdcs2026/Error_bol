@@ -10197,7 +10197,7 @@ function setEditorPreparing(isPreparing) {
     modal.style.pointerEvents = "";
   }
 }
-  async function openImageEditor(file, options = {}) {
+ async function openImageEditor(file, options = {}) {
   ensureFabricReady();
   ensureModal();
   bindUiOnce();
@@ -10267,7 +10267,7 @@ function setEditorPreparing(isPreparing) {
   });
 }
 
-  window.ImageEditorX = {
-    open: openImageEditor
-  };
+window.ImageEditorX = {
+  open: openImageEditor
+};
 })();
