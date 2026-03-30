@@ -8483,8 +8483,7 @@
     restoringHistory: false,
 
     floatingToggleBtn: null,
-    floatingToolPanel: null,
-    scrollY: 0
+    floatingToolPanel: null
   };
 
   const $ = (id) => document.getElementById(id);
@@ -8563,33 +8562,13 @@
   }
 
   function lockPageForEditor() {
-    const scrollY = window.scrollY || window.pageYOffset || 0;
-    editorState.scrollY = scrollY;
-
     document.documentElement.classList.add("img-editor-lock");
     document.body.classList.add("img-editor-lock");
-
-    document.body.style.position = "fixed";
-    document.body.style.top = `-${scrollY}px`;
-    document.body.style.left = "0";
-    document.body.style.right = "0";
-    document.body.style.width = "100%";
   }
 
   function unlockPageForEditor() {
-    const scrollY = Number(editorState.scrollY || 0);
-
     document.documentElement.classList.remove("img-editor-lock");
     document.body.classList.remove("img-editor-lock");
-
-    document.body.style.position = "";
-    document.body.style.top = "";
-    document.body.style.left = "";
-    document.body.style.right = "";
-    document.body.style.width = "";
-
-    window.scrollTo(0, scrollY);
-    editorState.scrollY = 0;
   }
 
   function nextFrame() {
@@ -8827,10 +8806,6 @@
       `L ${s4x} ${s4y}`,
       "Z"
     ].join(" ");
-  }
-
-  function isArrowObject(obj) {
-    return !!(obj && obj.toolType === "arrow" && obj.type === "path");
   }
 
   function createArrowGroup(x1, y1, x2, y2) {
@@ -9634,15 +9609,42 @@
     });
   }
 
-  async function loadImageToCanvas(file) {
+  async function preloadImageFile_(file) {
     const url = URL.createObjectURL(file);
+
+    try {
+      const imgEl = await new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => resolve(img);
+        img.onerror = () => reject(new Error("โหลดรูปภาพไม่สำเร็จ"));
+        img.decoding = "async";
+        img.src = url;
+      });
+
+      if (typeof imgEl.decode === "function") {
+        try { await imgEl.decode(); } catch (_) {}
+      }
+
+      return { url, imgEl };
+    } catch (err) {
+      try { URL.revokeObjectURL(url); } catch (_) {}
+      throw err;
+    }
+  }
+
+  async function loadImageToCanvas(file, preloaded = null) {
+    const prepared = preloaded || await preloadImageFile_(file);
+    const url = prepared.url;
+    const imgEl = prepared.imgEl;
+
     editorState.originalUrl = url;
 
     const wrap = editorState.canvasEl.parentElement;
     if (!wrap) throw new Error("ไม่พบพื้นที่แสดง canvas");
 
-    const maxW = Math.max(640, Math.floor(wrap.clientWidth - 20));
-    const maxH = Math.max(420, Math.floor(wrap.clientHeight - 20));
+    const wrapRect = wrap.getBoundingClientRect();
+    const maxW = Math.max(220, Math.floor((wrapRect.width || wrap.clientWidth || 220) - 20));
+    const maxH = Math.max(180, Math.floor((wrapRect.height || wrap.clientHeight || 180) - 20));
 
     if (editorState.canvas) {
       try { editorState.canvas.dispose(); } catch (_) {}
@@ -9657,37 +9659,30 @@
 
     editorState.canvas = canvas;
 
-    const imgEl = await new Promise((resolve, reject) => {
-      const img = new Image();
-      img.onload = () => resolve(img);
-      img.onerror = () => reject(new Error("โหลดรูปภาพไม่สำเร็จ"));
-      img.decoding = "async";
-      img.src = url;
-    });
-
     const imgW = imgEl.naturalWidth || imgEl.width;
     const imgH = imgEl.naturalHeight || imgEl.height;
     if (!imgW || !imgH) throw new Error("ไม่สามารถอ่านขนาดรูปภาพได้");
 
     const scale = Math.min(maxW / imgW, maxH / imgH, 1);
-    const canvasW = Math.max(320, Math.round(imgW * scale));
-    const canvasH = Math.max(240, Math.round(imgH * scale));
+    const canvasW = Math.max(220, Math.round(imgW * scale));
+    const canvasH = Math.max(180, Math.round(imgH * scale));
 
-    if (typeof canvas.setWidth === "function" && typeof canvas.setHeight === "function") {
-      canvas.setWidth(canvasW);
-      canvas.setHeight(canvasH);
-    } else if (typeof canvas.setDimensions === "function") {
+    if (typeof canvas.setDimensions === "function") {
       canvas.setDimensions({ width: canvasW, height: canvasH });
     } else {
-      editorState.canvasEl.width = canvasW;
-      editorState.canvasEl.height = canvasH;
+      canvas.setWidth(canvasW);
+      canvas.setHeight(canvasH);
     }
 
     if (canvas.lowerCanvasEl) {
+      canvas.lowerCanvasEl.width = canvasW;
+      canvas.lowerCanvasEl.height = canvasH;
       canvas.lowerCanvasEl.style.width = canvasW + "px";
       canvas.lowerCanvasEl.style.height = canvasH + "px";
     }
     if (canvas.upperCanvasEl) {
+      canvas.upperCanvasEl.width = canvasW;
+      canvas.upperCanvasEl.height = canvasH;
       canvas.upperCanvasEl.style.width = canvasW + "px";
       canvas.upperCanvasEl.style.height = canvasH + "px";
     }
@@ -10252,17 +10247,19 @@
     destroyCanvas();
     revokeOriginalUrl();
 
-    editorState.modal.classList.remove("hidden");
-    editorState.modal.setAttribute("aria-hidden", "false");
-    setEditorPreparing(true);
-
-    lockPageForEditor();
+    let prepared = null;
 
     try {
-      await nextFrame();
+      prepared = await preloadImageFile_(file);
+
+      editorState.modal.classList.remove("hidden");
+      editorState.modal.setAttribute("aria-hidden", "false");
+      setEditorPreparing(true);
+      lockPageForEditor();
+
       await nextFrame();
 
-      await loadImageToCanvas(file);
+      await loadImageToCanvas(file, prepared);
 
       if (editorState.canvas) {
         if (typeof editorState.canvas.calcOffset === "function") {
@@ -10281,6 +10278,8 @@
       updateUndoRedoState();
 
       await nextFrame();
+      await nextFrame();
+
       setEditorPreparing(false);
     } catch (err) {
       console.error("openImageEditor error:", err);
