@@ -1613,17 +1613,21 @@ body.progress-lock{
 ========================= */
 /* =========================
    IMAGE EDITOR
+   - sync with patched image-editor.js
+   - anti flicker / anti reflow for mobile
 ========================= */
 
 html.img-editor-lock,
 body.img-editor-lock{
   overflow:hidden !important;
+  overscroll-behavior:none;
 }
 
 body.img-editor-lock{
   touch-action:none;
 }
 
+/* MODAL */
 .imgEditorModal{
   position:fixed;
   inset:0;
@@ -1634,31 +1638,28 @@ body.img-editor-lock{
   padding:8px;
   overscroll-behavior:contain;
   -webkit-overflow-scrolling:auto;
-  contain:layout paint style;
   opacity:1;
   visibility:visible;
 }
 
 .imgEditorModal.is-preparing{
-  opacity:0;
-  visibility:hidden;
-  pointer-events:none;
+  opacity:0 !important;
+  visibility:hidden !important;
+  pointer-events:none !important;
 }
 
 .imgEditorBackdrop{
   position:absolute;
   inset:0;
   background:rgba(15,23,42,.62);
-  backdrop-filter:blur(6px);
-  -webkit-backdrop-filter:blur(6px);
 }
 
 .imgEditorDialog{
   position:relative;
   z-index:1;
   width:min(1380px,100%);
-  height:min(calc(100svh - 16px),980px);
-  max-height:min(calc(100svh - 16px),980px);
+  height:min(calc(100dvh - 16px),980px);
+  max-height:min(calc(100dvh - 16px),980px);
   display:grid;
   grid-template-areas:
     "header"
@@ -1671,8 +1672,8 @@ body.img-editor-lock{
   box-shadow:0 24px 72px rgba(15,23,42,.24);
   overflow:hidden;
   transform:translateZ(0);
-  will-change:transform, opacity;
   backface-visibility:hidden;
+  contain:layout paint;
 }
 
 /* HEADER */
@@ -1741,7 +1742,6 @@ body.img-editor-lock{
   background:
     linear-gradient(45deg,#f8fafc 25%,#eef4fb 25%,#eef4fb 50%,#f8fafc 50%,#f8fafc 75%,#eef4fb 75%,#eef4fb 100%);
   background-size:24px 24px;
-  contain:layout paint;
   transform:translateZ(0);
   backface-visibility:hidden;
 }
@@ -1761,12 +1761,12 @@ body.img-editor-lock{
   flex:0 0 auto;
 }
 
-/* FLOATING PENCIL BUTTON */
+/* FLOAT BUTTON */
 .ieFloatingToggle{
   position:absolute;
   top:12px;
   right:12px;
-  z-index:50;
+  z-index:60;
   width:48px;
   height:48px;
   border:none;
@@ -1778,22 +1778,19 @@ body.img-editor-lock{
   color:#fff;
   box-shadow:0 14px 28px rgba(37,99,235,.28);
   cursor:pointer;
-  transition:transform .16s ease, box-shadow .16s ease, opacity .16s ease;
-}
-
-.ieFloatingToggle:hover{
-  transform:translateY(-1px);
-  box-shadow:0 18px 34px rgba(37,99,235,.34);
 }
 
 .ieFloatingToggle:active{
-  transform:translateY(0);
+  transform:translateY(1px);
 }
 
-.ieFloatingToggle svg{
-  width:22px;
-  height:22px;
-  display:block;
+.ieFloatingToggleIcon{
+  font-size:18px;
+  line-height:1;
+}
+
+.ieFloatingToggleText{
+  display:none;
 }
 
 /* FLOAT PANEL */
@@ -1801,7 +1798,7 @@ body.img-editor-lock{
   position:absolute;
   top:66px;
   right:12px;
-  z-index:49;
+  z-index:59;
   width:320px;
   max-width:calc(100% - 24px);
   max-height:min(54vh,430px);
@@ -1810,9 +1807,19 @@ body.img-editor-lock{
   border:1px solid #dbe6f3;
   border-radius:18px;
   background:rgba(255,255,255,.98);
-  backdrop-filter:blur(10px);
-  -webkit-backdrop-filter:blur(10px);
   box-shadow:0 22px 48px rgba(15,23,42,.18);
+
+  opacity:0;
+  visibility:hidden;
+  pointer-events:none;
+  transform:translateY(-6px) scale(.98);
+}
+
+.ieFloatingPanel.open{
+  opacity:1;
+  visibility:visible;
+  pointer-events:auto;
+  transform:translateY(0) scale(1);
 }
 
 .ieFloatingPanel.hidden{
@@ -1847,59 +1854,23 @@ body.img-editor-lock{
   display:block;
 }
 
-/* GRID */
-.imgEditorToolbarGrid,
-.ieToolbarGridEnhanced{
-  width:100%;
-  min-width:0;
-  display:grid !important;
-  grid-template-columns:1fr;
-  gap:8px;
-  align-items:start;
-}
-
-.ieToolbarSection{
+.ie-toolbar-group{
   min-width:0;
   width:100%;
   display:block;
   padding:8px;
+  margin-bottom:8px;
   border:1px solid #dbe7f5;
   border-radius:16px;
   background:linear-gradient(180deg,#ffffff 0%,#f8fbff 100%);
   box-shadow:0 6px 18px rgba(15,23,42,.05);
 }
 
-.ieSectionPrimary{
-  background:linear-gradient(180deg,#f8fbff 0%,#eef5ff 100%);
-  border-color:#d9e6fb;
+.ie-toolbar-group:last-child{
+  margin-bottom:0;
 }
 
-.ieSectionDraw{
-  background:linear-gradient(180deg,#fdfcff 0%,#f5f3ff 100%);
-  border-color:#e7defe;
-}
-
-.ieSectionMask{
-  background:linear-gradient(180deg,#fffdf8 0%,#fff7ed 100%);
-  border-color:#fde7c7;
-}
-
-.ieSectionView{
-  background:linear-gradient(180deg,#f8fffb 0%,#ecfdf5 100%);
-  border-color:#cfeedd;
-}
-
-.ieSectionManage{
-  background:linear-gradient(180deg,#fcfcfd 0%,#f8fafc 100%);
-  border-color:#dbe3ee;
-}
-
-.ieSectionControl{
-  background:linear-gradient(180deg,#fffafb 0%,#fff1f2 100%);
-  border-color:#ffe0e6;
-}
-
-.ieToolbarTitle{
+.ie-toolbar-group-title{
   margin:0 0 6px;
   font-size:10px;
   font-weight:900;
@@ -1910,42 +1881,16 @@ body.img-editor-lock{
   white-space:nowrap;
 }
 
-.ieToolbarSection .ieButtonGrid,
-.ieToolbarSection .ieControlGrid,
-.ieButtonGrid,
-.ieControlGrid,
-.ieButtonGridTools,
-.ieButtonGridEffects,
-.ieButtonGridView{
+.ie-toolbar-group-row{
   width:100%;
   display:grid;
-  gap:6px;
-}
-
-.ieButtonGridTools{
   grid-template-columns:repeat(4,minmax(0,1fr));
-}
-
-.ieButtonGridEffects,
-.ieButtonGridView{
-  grid-template-columns:repeat(3,minmax(0,1fr));
-}
-
-.ieSectionManage .ieButtonGridView{
-  grid-template-columns:repeat(3,minmax(0,1fr));
-}
-
-.ieControlGrid{
-  grid-template-columns:1fr;
-}
-
-.ieDivider{
-  display:none !important;
+  gap:6px;
 }
 
 /* BUTTONS */
 .imgEditorToolbar .btn,
-.ieToolbarSection .btn{
+.ie-toolbar-group .btn{
   width:100%;
   min-width:0;
   min-height:52px;
@@ -1969,37 +1914,38 @@ body.img-editor-lock{
   background:linear-gradient(180deg,#ffffff 0%,#f9fbff 100%);
   color:#0f172a;
   box-shadow:0 4px 12px rgba(15,23,42,.04);
-  transition:
-    transform .15s ease,
-    border-color .18s ease,
-    box-shadow .18s ease,
-    background .18s ease,
-    color .18s ease;
 }
 
-.imgEditorToolbar .btn::before,
-.ieToolbarSection .btn::before{
-  content:attr(data-icon);
+.ie-btn-icon{
   display:block;
   font-size:16px;
   line-height:1;
   font-weight:700;
-  margin-bottom:1px;
+  margin:0;
+}
+
+.ie-btn-text{
+  display:block;
+  line-height:1.05;
+}
+
+.ie-btn-text.compact{
+  font-size:8.5px;
 }
 
 .imgEditorToolbar .btn:hover,
-.ieToolbarSection .btn:hover{
+.ie-toolbar-group .btn:hover{
   border-color:#b9ceed;
   box-shadow:0 8px 18px rgba(37,99,235,.08);
 }
 
 .imgEditorToolbar .btn:active,
-.ieToolbarSection .btn:active{
+.ie-toolbar-group .btn:active{
   transform:translateY(1px);
 }
 
 .imgEditorToolbar .btn:disabled,
-.ieToolbarSection .btn:disabled{
+.ie-toolbar-group .btn:disabled{
   opacity:.45;
   cursor:not-allowed;
   filter:grayscale(.08);
@@ -2007,39 +1953,11 @@ body.img-editor-lock{
 }
 
 .imgEditorToolbar .ie-tool.active,
-.ieToolbarSection .ie-tool.active{
+.ie-toolbar-group .ie-tool.active{
   background:linear-gradient(180deg,#2563eb 0%,#1d4ed8 100%);
   color:#fff;
   border-color:transparent;
   box-shadow:0 10px 20px rgba(37,99,235,.22);
-}
-
-.ie-tool[data-tool="select"].active,
-.ie-tool[data-tool="pan"].active,
-.ie-tool[data-tool="text"].active,
-.ie-tool[data-tool="crop"].active{
-  background:#2563eb;
-  border-color:#2563eb;
-  color:#fff;
-}
-
-.ieSectionDraw .ie-tool.active{
-  background:#7c3aed;
-  border-color:#7c3aed;
-  color:#fff;
-}
-
-.ieSectionMask .ie-tool.active{
-  background:#ea580c;
-  border-color:#ea580c;
-  color:#fff;
-}
-
-.ieSectionView .btn.active,
-.ieSectionManage .btn.active{
-  background:#0f766e;
-  border-color:#0f766e;
-  color:#fff;
 }
 
 #ieApplyCropBtn{
@@ -2138,15 +2056,17 @@ body.img-editor-lock{
   opacity:.45;
 }
 
-.imgEditorActions{
+.imgEditorActions,
+.imgEditorFooterActions{
   display:grid;
-  grid-template-columns:repeat(4,minmax(0,auto));
+  grid-template-columns:repeat(10,minmax(0,auto));
   gap:8px;
   align-items:center;
   justify-content:end;
 }
 
-.imgEditorActions .btn{
+.imgEditorActions .btn,
+.imgEditorFooterActions .btn{
   min-height:40px;
   height:40px;
   padding:8px 14px;
@@ -2217,8 +2137,8 @@ body.img-editor-lock{
 
   .imgEditorDialog{
     width:100%;
-    height:calc(100svh - 12px);
-    max-height:calc(100svh - 12px);
+    height:calc(100dvh - 12px);
+    max-height:calc(100dvh - 12px);
     border-radius:18px;
   }
 
@@ -2272,21 +2192,14 @@ body.img-editor-lock{
   }
 
   .imgEditorToolbar .btn,
-  .ieToolbarSection .btn{
+  .ie-toolbar-group .btn{
     min-height:48px;
     height:48px;
     font-size:9px;
   }
 
-  .imgEditorToolbar .btn::before,
-  .ieToolbarSection .btn::before{
+  .ie-btn-icon{
     font-size:15px;
-  }
-
-  .ieButtonGridEffects,
-  .ieButtonGridView,
-  .ieSectionManage .ieButtonGridView{
-    grid-template-columns:repeat(3,minmax(0,1fr));
   }
 
   .imgEditorFooter{
@@ -2299,13 +2212,15 @@ body.img-editor-lock{
     font-size:11px;
   }
 
-  .imgEditorActions{
+  .imgEditorActions,
+  .imgEditorFooterActions{
     width:100%;
-    grid-template-columns:repeat(4,minmax(0,1fr));
+    grid-template-columns:repeat(5,minmax(0,1fr));
     gap:6px;
   }
 
-  .imgEditorActions .btn{
+  .imgEditorActions .btn,
+  .imgEditorFooterActions .btn{
     width:100%;
     min-height:38px;
     height:38px;
@@ -2317,27 +2232,29 @@ body.img-editor-lock{
 
 /* SMALL MOBILE */
 @media (max-width:768px){
+  .imgEditorModal{
+    padding:0;
+  }
+
   .imgEditorDialog{
     width:100%;
-    height:100vh;
-    height:100svh;
-    max-height:100vh;
-    max-height:100svh;
-    min-height:100svh;
+    height:100dvh;
+    max-height:100dvh;
+    min-height:100dvh;
     border-radius:0;
     border:none;
     box-shadow:none;
   }
 
   .imgEditorBackdrop{
-    backdrop-filter:none;
-    -webkit-backdrop-filter:none;
+    backdrop-filter:none !important;
+    -webkit-backdrop-filter:none !important;
   }
 
   .ieFloatingPanel{
     background:#ffffff;
-    backdrop-filter:none;
-    -webkit-backdrop-filter:none;
+    backdrop-filter:none !important;
+    -webkit-backdrop-filter:none !important;
     box-shadow:0 16px 32px rgba(15,23,42,.18);
     max-height:52vh;
   }
@@ -2389,13 +2306,17 @@ body.img-editor-lock{
     border-radius:14px;
   }
 
-  .ieToolbarSection{
+  .ie-toolbar-group{
     padding:7px;
     border-radius:13px;
   }
 
+  .ie-toolbar-group-row{
+    grid-template-columns:repeat(4,minmax(0,1fr));
+  }
+
   .imgEditorToolbar .btn,
-  .ieToolbarSection .btn{
+  .ie-toolbar-group .btn{
     min-height:44px;
     height:44px;
     padding:4px 3px;
@@ -2403,15 +2324,8 @@ body.img-editor-lock{
     font-size:8.5px;
   }
 
-  .imgEditorToolbar .btn::before,
-  .ieToolbarSection .btn::before{
+  .ie-btn-icon{
     font-size:14px;
-  }
-
-  .ieButtonGridEffects,
-  .ieButtonGridView,
-  .ieSectionManage .ieButtonGridView{
-    grid-template-columns:repeat(2,minmax(0,1fr));
   }
 
   .imgEditorToolbarWrap .ieField,
@@ -2430,11 +2344,13 @@ body.img-editor-lock{
     min-height:20px;
   }
 
-  .imgEditorActions{
+  .imgEditorActions,
+  .imgEditorFooterActions{
     grid-template-columns:repeat(3,minmax(0,1fr));
   }
 
-  .imgEditorActions .btn{
+  .imgEditorActions .btn,
+  .imgEditorFooterActions .btn{
     min-height:36px;
     height:36px;
     border-radius:10px;
