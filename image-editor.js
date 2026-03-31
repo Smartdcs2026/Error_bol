@@ -8563,10 +8563,10 @@
 
   function closeEditor(result = { ok: false }) {
   setEditorPreparing(false);
-
   editorState.modal?.classList.add("hidden");
   editorState.modal?.setAttribute("aria-hidden", "true");
   document.body.classList.remove("progress-lock");
+  document.body.classList.remove("img-editor-lock");
 
   destroyCanvas();
   revokeOriginalUrl();
@@ -8576,6 +8576,7 @@
   editorState.historyIndex = -1;
   editorState.restoringHistory = false;
   editorState.isApplyingCrop = false;
+  editorState.isRefreshingEffect = false;
 
   const resolve = editorState.resultResolve;
   editorState.resultResolve = null;
@@ -10184,18 +10185,8 @@
     bindToolButtons();
   }
 function setEditorPreparing(isPreparing) {
-  const modal = editorState.modal;
-  if (!modal) return;
-
-  if (isPreparing) {
-    modal.style.visibility = "hidden";
-    modal.style.opacity = "0";
-    modal.style.pointerEvents = "none";
-  } else {
-    modal.style.visibility = "";
-    modal.style.opacity = "";
-    modal.style.pointerEvents = "";
-  }
+  if (!editorState.modal) return;
+  editorState.modal.classList.toggle("is-preparing", !!isPreparing);
 }
  async function openImageEditor(file, options = {}) {
   ensureFabricReady();
@@ -10225,23 +10216,18 @@ function setEditorPreparing(isPreparing) {
   editorState.modal.setAttribute("aria-hidden", "false");
   setEditorPreparing(true);
   document.body.classList.add("progress-lock");
+  document.body.classList.add("img-editor-lock");
 
   destroyCanvas();
   revokeOriginalUrl();
 
   try {
-    // รอ 1 frame ให้ browser จัด layout ของ modal ก่อน
+    // รอให้ browser จัด layout/modal เสร็จก่อน แล้วค่อยสร้าง canvas
     await new Promise((resolve) => requestAnimationFrame(() => resolve()));
 
     await loadImageToCanvas(file);
 
-    if (editorState.canvas) {
-      if (typeof editorState.canvas.calcOffset === "function") {
-        editorState.canvas.calcOffset();
-      }
-      editorState.canvas.requestRenderAll();
-    }
-
+    // อย่า render ซ้ำหลายรอบเกินจำเป็น
     ensureExtraControls();
     bindToolButtons();
     setFloatingPanelOpen(false);
@@ -10251,7 +10237,7 @@ function setEditorPreparing(isPreparing) {
     pushHistorySnapshot(true);
     updateUndoRedoState();
 
-    // รออีก 1 frame หลัง canvas/toolbar พร้อม แล้วค่อยแสดงจริง
+    // รออีก 1 frame หลัง canvas พร้อม แล้วค่อยแสดงจริง
     await new Promise((resolve) => requestAnimationFrame(() => resolve()));
     setEditorPreparing(false);
   } catch (err) {
@@ -10266,7 +10252,6 @@ function setEditorPreparing(isPreparing) {
     editorState.resultResolve = resolve;
   });
 }
-
 window.ImageEditorX = {
   open: openImageEditor
 };
