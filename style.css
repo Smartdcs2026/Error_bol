@@ -1608,26 +1608,17 @@ body.progress-lock{
     border-radius: 12px;
   }
 }
-/* =========================
-   IMAGE EDITOR
-========================= */
-/* =========================
-   IMAGE EDITOR - PRO FLOAT PANEL
-========================= */
 /* =========================================================
-   IMAGE EDITOR STABILITY PATCH
-   ใช้คู่กับ image-editor.js เวอร์ชันล่าสุด
-   แก้อาการวาบ / กระพริบ / repaint หนัก บนมือถือ
+   IMAGE EDITOR FINAL PATCH
+   วางท้ายสุดของ style.css
 ========================================================= */
 
-/* ล็อกหน้าจอเฉพาะตอนเปิด image editor */
 body.img-editor-lock{
   overflow:hidden !important;
   touch-action:none;
   overscroll-behavior:none;
 }
 
-/* root modal */
 #imgEditorModal,
 .imgEditorModal{
   position:fixed;
@@ -1645,13 +1636,11 @@ body.img-editor-lock{
   contain:layout paint style;
 }
 
-/* hidden ต้องชนะเสมอ */
 #imgEditorModal.hidden,
 .imgEditorModal.hidden{
   display:none !important;
 }
 
-/* ช่วงเตรียม modal และช่วงพร้อมแสดง */
 #imgEditorModal.is-opening,
 #imgEditorModal.is-ready,
 .imgEditorModal.is-opening,
@@ -1673,7 +1662,6 @@ body.img-editor-lock{
   transition:opacity .14s ease-out;
 }
 
-/* backdrop */
 #imgEditorModal .imgEditorBackdrop,
 .imgEditorModal .imgEditorBackdrop{
   position:absolute;
@@ -1684,7 +1672,6 @@ body.img-editor-lock{
   will-change:opacity;
 }
 
-/* dialog */
 #imgEditorModal .imgEditorDialog,
 .imgEditorModal .imgEditorDialog{
   position:relative;
@@ -1692,16 +1679,22 @@ body.img-editor-lock{
   width:min(1180px,100%);
   max-width:1180px;
   max-height:min(94dvh,94vh);
+  display:grid;
+  grid-template-rows:auto auto minmax(0,1fr) auto;
   overflow:hidden;
+  background:#fff;
+  border:1px solid #d9e4f1;
+  border-radius:20px;
+  box-shadow:0 24px 60px rgba(15,23,42,.18);
   transform:translate3d(0,8px,0);
   opacity:0;
   will-change:transform,opacity;
   backface-visibility:hidden;
   -webkit-backface-visibility:hidden;
   contain:layout paint;
+  isolation:isolate;
 }
 
-/* พร้อมแสดงแล้วค่อย fade in */
 #imgEditorModal.is-ready .imgEditorBackdrop,
 .imgEditorModal.is-ready .imgEditorBackdrop{
   opacity:1;
@@ -1711,12 +1704,9 @@ body.img-editor-lock{
 .imgEditorModal.is-ready .imgEditorDialog{
   opacity:1;
   transform:translate3d(0,0,0);
-  transition:
-    transform .16s ease-out,
-    opacity .16s ease-out;
+  transition:transform .16s ease-out, opacity .16s ease-out;
 }
 
-/* ระหว่าง preparing ห้ามเห็น dialog/backdrop */
 #imgEditorModal.is-opening .imgEditorBackdrop,
 #imgEditorModal.is-opening .imgEditorDialog,
 .imgEditorModal.is-opening .imgEditorBackdrop,
@@ -1725,80 +1715,247 @@ body.img-editor-lock{
   transition:none !important;
 }
 
-/* เร่งเสถียรภาพการ render ของ canvas */
-#imgEditorModal .imgEditorBody,
-#imgEditorModal .imgEditorCanvasWrap,
-#imgEditorModal .canvas-shell,
-#imgEditorModal .canvas-host,
-#imgEditorModal canvas,
-#imgEditorModal #imgEditorCanvas,
-.imgEditorModal .imgEditorBody,
-.imgEditorModal .imgEditorCanvasWrap,
-.imgEditorModal .canvas-shell,
-.imgEditorModal .canvas-host,
-.imgEditorModal canvas,
-.imgEditorModal #imgEditorCanvas{
-  transform:translateZ(0);
-  backface-visibility:hidden;
-  -webkit-backface-visibility:hidden;
+#imgEditorModal .imgEditorHeader,
+.imgEditorModal .imgEditorHeader{
+  position:relative;
+  z-index:3;
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:12px;
+  padding:12px 16px 10px;
+  background:#fff;
+  border-bottom:1px solid #e5edf8;
+  min-height:64px;
 }
 
-/* กัน browser mobile เรนเดอร์หลุดตอนเปิด */
-#imgEditorModal .imgEditorBody,
-#imgEditorModal .imgEditorDialog,
-.imgEditorModal .imgEditorBody,
-.imgEditorModal .imgEditorDialog{
-  isolation:isolate;
+#imgEditorModal .imgEditorHeaderText,
+.imgEditorModal .imgEditorHeaderText{
+  min-width:0;
+  flex:1 1 auto;
 }
 
-/* ถ้ามี wrapper ของ fabric */
-#imgEditorModal .canvas-container,
-.imgEditorModal .canvas-container{
-  transform:translateZ(0);
-  backface-visibility:hidden;
-  -webkit-backface-visibility:hidden;
+#imgEditorModal .imgEditorTitle,
+.imgEditorModal .imgEditorTitle{
+  min-width:0;
+  font-size:16px;
+  font-weight:900;
+  line-height:1.25;
+  color:#0f172a;
+  word-break:break-word;
 }
 
-/* toolbar / panel ต้องไม่สั่นตาม backdrop */
+#imgEditorModal .imgEditorSub,
+.imgEditorModal .imgEditorSub{
+  margin-top:2px;
+  font-size:12px;
+  line-height:1.4;
+  color:#64748b;
+  word-break:break-word;
+}
+
+#imgEditorModal .imgEditorCloseBtn,
+.imgEditorModal .imgEditorCloseBtn{
+  position:static !important;
+  inset:auto !important;
+  margin:0;
+  flex:0 0 auto;
+  min-width:48px;
+  height:40px;
+  padding:0 14px;
+  border-radius:12px;
+  box-shadow:none;
+}
+
 #imgEditorModal .imgEditorToolbarWrap,
-#imgEditorModal .ieFloatingPanel,
-#imgEditorModal .imgEditorActions,
-.imgEditorModal .imgEditorToolbarWrap,
-.imgEditorModal .ieFloatingPanel,
-.imgEditorModal .imgEditorActions{
+.imgEditorModal .imgEditorToolbarWrap{
+  position:relative;
+  z-index:2;
+  padding:10px 12px 0;
+  background:#fff;
+  display:block !important;
+  visibility:visible !important;
+  opacity:1 !important;
   transform:translateZ(0);
   backface-visibility:hidden;
   -webkit-backface-visibility:hidden;
 }
 
-/* ปุ่ม floating */
+#imgEditorModal .imgEditorToolbar,
+.imgEditorModal .imgEditorToolbar{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  flex-wrap:wrap;
+}
+
+#imgEditorModal .ieDivider,
+.imgEditorModal .ieDivider{
+  width:1px;
+  align-self:stretch;
+  min-height:34px;
+  background:#dbe6f5;
+  border-radius:999px;
+}
+
+#imgEditorModal .imgEditorBody,
+.imgEditorModal .imgEditorBody{
+  min-height:0;
+  display:grid;
+  grid-template-columns:minmax(0,1fr);
+  overflow:hidden;
+  background:#f8fbff;
+  isolation:isolate;
+  transform:translateZ(0);
+  backface-visibility:hidden;
+  -webkit-backface-visibility:hidden;
+}
+
+#imgEditorModal .imgEditorCanvasWrap,
+.imgEditorModal .imgEditorCanvasWrap{
+  position:relative;
+  min-height:0;
+  overflow:auto;
+  padding:12px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:linear-gradient(180deg,#f8fbff 0%,#f3f7fd 100%);
+  transform:translateZ(0);
+  backface-visibility:hidden;
+  -webkit-backface-visibility:hidden;
+}
+
+#imgEditorModal .imgEditorCanvasWrap::before,
+.imgEditorModal .imgEditorCanvasWrap::before{
+  content:"";
+  position:absolute;
+  inset:12px;
+  border:1px solid #dbe6f5;
+  border-radius:16px;
+  background:linear-gradient(180deg,#ffffff 0%,#f9fbff 100%);
+  pointer-events:none;
+}
+
+#imgEditorModal .canvas-container,
+#imgEditorModal #imgEditorCanvas,
+.imgEditorModal .canvas-container,
+.imgEditorModal #imgEditorCanvas{
+  position:relative;
+  z-index:1;
+  max-width:100%;
+  max-height:100%;
+  transform:translateZ(0);
+  backface-visibility:hidden;
+  -webkit-backface-visibility:hidden;
+}
+
+#imgEditorModal .imgEditorFooter,
+.imgEditorModal .imgEditorFooter{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  padding:12px 16px 14px;
+  background:#fff;
+  border-top:1px solid #e5edf8;
+  flex-wrap:wrap;
+}
+
+#imgEditorModal .imgEditorStatus,
+.imgEditorModal .imgEditorStatus{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  min-width:0;
+  color:#334155;
+  font-size:13px;
+  font-weight:800;
+}
+
+#imgEditorModal .ieBullet,
+.imgEditorModal .ieBullet{
+  opacity:.45;
+}
+
+#imgEditorModal .imgEditorActions,
+.imgEditorModal .imgEditorActions{
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  gap:10px;
+  flex-wrap:wrap;
+  transform:translateZ(0);
+  backface-visibility:hidden;
+  -webkit-backface-visibility:hidden;
+}
+
+#imgEditorModal .imgEditorActions .btn,
+.imgEditorModal .imgEditorActions .btn{
+  min-height:42px;
+  padding:0 16px;
+  border-radius:14px;
+}
+
 #ieFloatingToggleBtn,
 .ieFloatingToggle{
+  position:absolute !important;
+  top:12px !important;
+  right:12px !important;
+  z-index:80 !important;
+  display:flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  visibility:visible !important;
+  opacity:1 !important;
+  pointer-events:auto !important;
+  width:46px;
+  height:46px;
+  border-radius:14px;
   -webkit-tap-highlight-color:transparent;
   touch-action:manipulation;
 }
 
-/* panel เครื่องมือแบบนิ่งขึ้น */
+#ieFloatingToolPanel,
 .ieFloatingPanel{
+  position:absolute !important;
+  top:60px !important;
+  right:12px !important;
+  z-index:79 !important;
+  display:block;
+  width:min(360px, calc(100vw - 28px));
+  max-width:min(360px, calc(100vw - 28px));
+  border:1px solid #dbe6f7;
+  border-radius:16px;
+  background:#ffffff;
+  box-shadow:0 20px 40px rgba(15,23,42,.16);
+  overflow:auto;
   will-change:transform,opacity;
   transform-origin:top right;
+  transform:translateZ(0);
+  backface-visibility:hidden;
+  -webkit-backface-visibility:hidden;
 }
 
-/* ถ้ามี hidden class กับ panel */
+#imgEditorModal .ieFloatingPanel.hidden,
 .ieFloatingPanel.hidden{
   display:none !important;
 }
 
-/* ป้องกัน body เด้งเมื่อ modal เปิดบน iOS/Android */
-body.img-editor-lock,
-body.img-editor-lock html{
-  position:relative;
+#imgEditorModal .ieFloatingToggle.is-active,
+.ieFloatingToggle.is-active{
+  box-shadow:0 18px 34px rgba(37,99,235,.34);
+  transform:translateY(-1px);
 }
 
-/* -------------------------
-   Mobile tuning
-------------------------- */
-@media (max-width: 950px){
+#imgEditorModal button,
+#imgEditorModal input,
+#imgEditorModal select,
+#imgEditorModal textarea{
+  transform:translateZ(0);
+}
+
+@media (max-width:950px){
   #imgEditorModal,
   .imgEditorModal{
     padding:0;
@@ -1812,6 +1969,8 @@ body.img-editor-lock html{
     height:100dvh;
     max-height:100dvh;
     border-radius:0 !important;
+    border:none;
+    box-shadow:none;
     transform:none;
   }
 
@@ -1826,24 +1985,67 @@ body.img-editor-lock html{
     -webkit-backdrop-filter:none;
   }
 
+  #imgEditorModal .imgEditorHeader,
+  .imgEditorModal .imgEditorHeader{
+    padding:10px 12px 8px;
+    min-height:58px;
+  }
+
+  #imgEditorModal .imgEditorTitle,
+  .imgEditorModal .imgEditorTitle{
+    font-size:15px;
+    line-height:1.2;
+  }
+
+  #imgEditorModal .imgEditorToolbarWrap,
+  .imgEditorModal .imgEditorToolbarWrap{
+    padding:8px 10px 0;
+  }
+
+  #imgEditorModal .imgEditorCanvasWrap,
+  .imgEditorModal .imgEditorCanvasWrap{
+    padding:10px;
+  }
+
+  #imgEditorModal .imgEditorCanvasWrap::before,
+  .imgEditorModal .imgEditorCanvasWrap::before{
+    inset:10px;
+    border-radius:14px;
+  }
+
+  #imgEditorModal .imgEditorFooter,
+  .imgEditorModal .imgEditorFooter{
+    padding:10px 12px calc(10px + env(safe-area-inset-bottom));
+    gap:8px;
+  }
+
+  #imgEditorModal .imgEditorActions .btn,
+  .imgEditorModal .imgEditorActions .btn{
+    min-width:88px;
+  }
+
+  #ieFloatingToggleBtn,
+  .ieFloatingToggle{
+    top:10px !important;
+    right:10px !important;
+    width:44px !important;
+    height:44px !important;
+  }
+
+  #ieFloatingToolPanel,
   .ieFloatingPanel{
-    background:#ffffff;
+    top:58px !important;
+    right:8px !important;
+    width:min(340px, calc(100vw - 20px)) !important;
+    max-width:min(340px, calc(100vw - 20px)) !important;
+    max-height:56dvh;
+    box-shadow:0 16px 32px rgba(15,23,42,.18);
     backdrop-filter:none;
     -webkit-backdrop-filter:none;
-    box-shadow:0 16px 32px rgba(15,23,42,.18);
-    max-height:52vh;
-    overflow:auto;
   }
 }
 
-@media (max-width: 768px){
-  #imgEditorModal .imgEditorDialog,
-  .imgEditorModal .imgEditorDialog{
-    width:100%;
-    height:100dvh;
-    max-height:100dvh;
-  }
-
+@media (max-width:768px){
   #imgEditorModal .imgEditorBody,
   .imgEditorModal .imgEditorBody{
     min-height:0;
@@ -1853,15 +2055,30 @@ body.img-editor-lock html{
   .imgEditorModal .imgEditorCanvasWrap{
     min-height:0;
     overflow:hidden;
+    padding:8px;
+  }
+
+  #imgEditorModal .imgEditorCanvasWrap::before,
+  .imgEditorModal .imgEditorCanvasWrap::before{
+    inset:8px;
+    border-radius:12px;
   }
 
   #imgEditorModal .imgEditorToolbarWrap,
   .imgEditorModal .imgEditorToolbarWrap{
     contain:layout paint;
   }
+
+  #imgEditorModal .imgEditorCloseBtn,
+  .imgEditorModal .imgEditorCloseBtn{
+    min-width:44px;
+    height:38px;
+    padding:0 12px;
+    border-radius:12px;
+  }
 }
 
-@media (max-width: 560px){
+@media (max-width:560px){
   #imgEditorModal,
   .imgEditorModal{
     padding:0;
@@ -1872,350 +2089,37 @@ body.img-editor-lock html{
     box-shadow:none !important;
   }
 
-  .ieFloatingPanel{
-    right:10px;
-    top:10px;
-    max-width:min(92vw, 360px);
-  }
-}
-
-@media (max-width: 390px){
-  .ieFloatingPanel{
-    max-width:min(94vw, 340px);
-  }
-}
-
-/* -------------------------
-   Reduced motion
-------------------------- */
-@media (prefers-reduced-motion: reduce){
-  #imgEditorModal,
-  #imgEditorModal .imgEditorBackdrop,
-  #imgEditorModal .imgEditorDialog,
-  .imgEditorModal,
-  .imgEditorModal .imgEditorBackdrop,
-  .imgEditorModal .imgEditorDialog,
-  .ieFloatingPanel{
-    transition:none !important;
-    animation:none !important;
-  }
-}
-/* =========================================================
-   IMAGE EDITOR LAYOUT REFINEMENT PATCH
-   แก้จากปัญหาที่เห็นในภาพจริง
-========================================================= */
-
-/* -------------------------
-   โครง dialog หลัก
-------------------------- */
-#imgEditorModal .imgEditorDialog,
-.imgEditorModal .imgEditorDialog{
-  display:grid;
-  grid-template-rows:auto minmax(0,1fr) auto;
-  background:#fff;
-  border-radius:20px;
-  border:1px solid #d9e4f1;
-  box-shadow:0 24px 60px rgba(15,23,42,.18);
-  overflow:hidden;
-}
-
-/* -------------------------
-   Header
-------------------------- */
-#imgEditorModal .imgEditorHeader,
-.imgEditorModal .imgEditorHeader{
-  position:relative;
-  z-index:2;
-  display:flex;
-  align-items:flex-start;
-  justify-content:space-between;
-  gap:12px;
-  padding:12px 16px 10px;
-  background:#ffffff;
-  border-bottom:1px solid #e5edf8;
-  min-height:64px;
-}
-
-#imgEditorModal .imgEditorHeaderTitle,
-#imgEditorModal .imgEditorTitle,
-.imgEditorModal .imgEditorHeaderTitle,
-.imgEditorModal .imgEditorTitle{
-  min-width:0;
-  flex:1 1 auto;
-  font-size:16px;
-  font-weight:900;
-  line-height:1.25;
-  color:#0f172a;
-  word-break:break-word;
-}
-
-#imgEditorModal .imgEditorHeaderSub,
-#imgEditorModal .imgEditorSubTitle,
-.imgEditorModal .imgEditorHeaderSub,
-.imgEditorModal .imgEditorSubTitle{
-  margin-top:2px;
-  font-size:12px;
-  line-height:1.4;
-  color:#64748b;
-}
-
-/* ปุ่มปิดให้กลับเข้าที่ header */
-#imgEditorModal #imgEditorCloseBtn,
-#imgEditorModal .imgEditorCloseBtn,
-.imgEditorModal #imgEditorCloseBtn,
-.imgEditorModal .imgEditorCloseBtn{
-  position:static !important;
-  top:auto !important;
-  left:auto !important;
-  right:auto !important;
-  bottom:auto !important;
-  margin:0;
-  flex:0 0 auto;
-  min-width:48px;
-  height:40px;
-  padding:0 14px;
-  border-radius:12px;
-  border:1px solid #d9e4f1;
-  background:#fff;
-  color:#0f172a;
-  font-weight:900;
-  box-shadow:none;
-}
-
-/* -------------------------
-   Body
-------------------------- */
-#imgEditorModal .imgEditorBody,
-.imgEditorModal .imgEditorBody{
-  min-height:0;
-  display:grid;
-  grid-template-columns:minmax(0,1fr);
-  background:#f8fbff;
-  overflow:hidden;
-}
-
-/* ถ้ามี wrapper ชั้นใน */
-#imgEditorModal .imgEditorMain,
-.imgEditorModal .imgEditorMain{
-  min-height:0;
-  display:grid;
-  grid-template-rows:minmax(0,1fr);
-}
-
-/* -------------------------
-   Preview / Canvas zone
-------------------------- */
-#imgEditorModal .imgEditorCanvasWrap,
-.imgEditorModal .imgEditorCanvasWrap{
-  position:relative;
-  min-height:0;
-  overflow:auto;
-  padding:12px;
-  background:
-    linear-gradient(180deg,#f8fbff 0%,#f3f7fd 100%);
-  display:flex;
-  align-items:center;
-  justify-content:center;
-}
-
-/* กรอบพื้นที่พรีวิวให้นิ่ง */
-#imgEditorModal .canvas-shell,
-#imgEditorModal .canvas-host,
-#imgEditorModal .imgEditorCanvasStage,
-.imgEditorModal .canvas-shell,
-.imgEditorModal .canvas-host,
-.imgEditorModal .imgEditorCanvasStage{
-  width:100%;
-  min-height:clamp(320px, 58vh, 680px);
-  max-height:clamp(320px, 58vh, 680px);
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  border:1px solid #dbe6f5;
-  border-radius:16px;
-  background:
-    linear-gradient(180deg,#ffffff 0%,#f9fbff 100%);
-  overflow:hidden;
-}
-
-/* ตัว canvas/Fabric */
-#imgEditorModal .canvas-container,
-#imgEditorModal #imgEditorCanvas,
-.imgEditorModal .canvas-container,
-.imgEditorModal #imgEditorCanvas{
-  max-width:100%;
-  max-height:100%;
-}
-
-/* ถ้ายังไม่มี shell class ให้คุมตรง wrap โดยตรง */
-#imgEditorModal .imgEditorCanvasWrap > .canvas-container,
-#imgEditorModal .imgEditorCanvasWrap > canvas,
-.imgEditorModal .imgEditorCanvasWrap > .canvas-container,
-.imgEditorModal .imgEditorCanvasWrap > canvas{
-  max-width:100%;
-  max-height:100%;
-}
-
-/* -------------------------
-   Toolbar area
-------------------------- */
-#imgEditorModal .imgEditorToolbarWrap,
-.imgEditorModal .imgEditorToolbarWrap{
-  position:absolute;
-  top:12px;
-  right:12px;
-  z-index:5;
-}
-
-/* floating panel ให้ไม่ใหญ่เกินพื้นที่ */
-.ieFloatingPanel{
-  width:min(360px, calc(100vw - 28px));
-  max-width:min(360px, calc(100vw - 28px));
-  border:1px solid #dbe6f7;
-  border-radius:16px;
-  background:#ffffff;
-  box-shadow:0 20px 40px rgba(15,23,42,.16);
-  overflow:auto;
-}
-
-/* -------------------------
-   Footer / actions
-------------------------- */
-#imgEditorModal .imgEditorActions,
-.imgEditorModal .imgEditorActions{
-  display:flex;
-  align-items:center;
-  justify-content:flex-end;
-  gap:10px;
-  padding:12px 16px 14px;
-  background:#ffffff;
-  border-top:1px solid #e5edf8;
-  flex-wrap:wrap;
-}
-
-/* ปุ่มล่างให้นิ่งและสมดุล */
-#imgEditorModal .imgEditorActions .btn,
-.imgEditorModal .imgEditorActions .btn{
-  min-height:42px;
-  padding:0 16px;
-  border-radius:14px;
-}
-
-/* -------------------------
-   Mobile
-------------------------- */
-@media (max-width: 950px){
-  #imgEditorModal .imgEditorDialog,
-  .imgEditorModal .imgEditorDialog{
-    border-radius:0;
-    border:none;
-    box-shadow:none;
-    height:100dvh;
-    max-height:100dvh;
-  }
-
-  #imgEditorModal .imgEditorHeader,
-  .imgEditorModal .imgEditorHeader{
-    padding:10px 12px 8px;
-    min-height:58px;
-  }
-
-  #imgEditorModal .imgEditorHeaderTitle,
-  #imgEditorModal .imgEditorTitle,
-  .imgEditorModal .imgEditorHeaderTitle,
-  .imgEditorModal .imgEditorTitle{
-    font-size:15px;
-    line-height:1.2;
-  }
-
-  #imgEditorModal .imgEditorCanvasWrap,
-  .imgEditorModal .imgEditorCanvasWrap{
-    padding:10px;
-  }
-
-  #imgEditorModal .canvas-shell,
-  #imgEditorModal .canvas-host,
-  #imgEditorModal .imgEditorCanvasStage,
-  .imgEditorModal .canvas-shell,
-  .imgEditorModal .canvas-host,
-  .imgEditorModal .imgEditorCanvasStage{
-    min-height:clamp(260px, 50dvh, 520px);
-    max-height:clamp(260px, 50dvh, 520px);
-    border-radius:14px;
-  }
-
-  #imgEditorModal .imgEditorActions,
-  .imgEditorModal .imgEditorActions{
-    padding:10px 12px calc(10px + env(safe-area-inset-bottom));
-    gap:8px;
-  }
-
-  #imgEditorModal .imgEditorActions .btn,
-  .imgEditorModal .imgEditorActions .btn{
-    flex:0 0 auto;
-    min-width:88px;
-  }
-
-  .ieFloatingPanel{
-    top:8px;
-    right:8px;
-    width:min(340px, calc(100vw - 20px));
-    max-width:min(340px, calc(100vw - 20px));
-    max-height:56dvh;
-  }
-}
-
-@media (max-width: 768px){
-  #imgEditorModal .imgEditorHeader,
-  .imgEditorModal .imgEditorHeader{
-    gap:10px;
-  }
-
-  #imgEditorModal #imgEditorCloseBtn,
-  #imgEditorModal .imgEditorCloseBtn,
-  .imgEditorModal #imgEditorCloseBtn,
-  .imgEditorModal .imgEditorCloseBtn{
-    min-width:44px;
-    height:38px;
-    padding:0 12px;
-    border-radius:12px;
-  }
-
-  #imgEditorModal .canvas-shell,
-  #imgEditorModal .canvas-host,
-  #imgEditorModal .imgEditorCanvasStage,
-  .imgEditorModal .canvas-shell,
-  .imgEditorModal .canvas-host,
-  .imgEditorModal .imgEditorCanvasStage{
-    min-height:clamp(240px, 46dvh, 460px);
-    max-height:clamp(240px, 46dvh, 460px);
-  }
-}
-
-@media (max-width: 560px){
   #imgEditorModal .imgEditorHeader,
   .imgEditorModal .imgEditorHeader{
     padding:8px 10px 8px;
   }
 
-  #imgEditorModal .imgEditorCanvasWrap,
-  .imgEditorModal .imgEditorCanvasWrap{
-    padding:8px;
+  #imgEditorModal .imgEditorTitle,
+  .imgEditorModal .imgEditorTitle{
+    font-size:14px;
   }
 
-  #imgEditorModal .canvas-shell,
-  #imgEditorModal .canvas-host,
-  #imgEditorModal .imgEditorCanvasStage,
-  .imgEditorModal .canvas-shell,
-  .imgEditorModal .canvas-host,
-  .imgEditorModal .imgEditorCanvasStage{
-    min-height:clamp(220px, 42dvh, 420px);
-    max-height:clamp(220px, 42dvh, 420px);
-    border-radius:12px;
+  #imgEditorModal .imgEditorSub,
+  .imgEditorModal .imgEditorSub{
+    font-size:11px;
+  }
+
+  #imgEditorModal .imgEditorFooter,
+  .imgEditorModal .imgEditorFooter{
+    justify-content:space-between;
+    padding:8px 10px calc(10px + env(safe-area-inset-bottom));
+  }
+
+  #imgEditorModal .imgEditorStatus,
+  .imgEditorModal .imgEditorStatus{
+    width:100%;
+    justify-content:center;
+    font-size:12px;
   }
 
   #imgEditorModal .imgEditorActions,
   .imgEditorModal .imgEditorActions{
+    width:100%;
     justify-content:space-between;
   }
 
@@ -2226,34 +2130,45 @@ body.img-editor-lock html{
     padding:0 10px;
   }
 
+  #ieFloatingToggleBtn,
+  .ieFloatingToggle{
+    top:8px !important;
+    right:8px !important;
+    width:40px !important;
+    height:40px !important;
+  }
+
+  #ieFloatingToolPanel,
   .ieFloatingPanel{
-    width:min(320px, calc(100vw - 16px));
-    max-width:min(320px, calc(100vw - 16px));
-    right:6px;
-    top:6px;
+    top:52px !important;
+    right:8px !important;
+    width:min(280px, calc(100vw - 16px)) !important;
+    max-width:min(280px, calc(100vw - 16px)) !important;
   }
 }
 
-@media (max-width: 390px){
-  #imgEditorModal .imgEditorHeaderTitle,
+@media (max-width:390px){
   #imgEditorModal .imgEditorTitle,
-  .imgEditorModal .imgEditorHeaderTitle,
   .imgEditorModal .imgEditorTitle{
-    font-size:14px;
+    font-size:13px;
   }
 
-  #imgEditorModal .canvas-shell,
-  #imgEditorModal .canvas-host,
-  #imgEditorModal .imgEditorCanvasStage,
-  .imgEditorModal .canvas-shell,
-  .imgEditorModal .canvas-host,
-  .imgEditorModal .imgEditorCanvasStage{
-    min-height:clamp(200px, 40dvh, 380px);
-    max-height:clamp(200px, 40dvh, 380px);
-  }
-
+  #ieFloatingToolPanel,
   .ieFloatingPanel{
     width:min(300px, calc(100vw - 12px));
     max-width:min(300px, calc(100vw - 12px));
+  }
+}
+
+@media (prefers-reduced-motion: reduce){
+  #imgEditorModal,
+  #imgEditorModal .imgEditorBackdrop,
+  #imgEditorModal .imgEditorDialog,
+  .imgEditorModal,
+  .imgEditorModal .imgEditorBackdrop,
+  .imgEditorModal .imgEditorDialog,
+  .ieFloatingPanel{
+    transition:none !important;
+    animation:none !important;
   }
 }
