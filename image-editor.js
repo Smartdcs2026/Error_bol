@@ -10398,7 +10398,6 @@
     modal.classList.add("is-opening");
     modal.setAttribute("aria-hidden", "false");
 
-    // fallback inline style กรณี CSS patch ยังไม่ถูกวางครบ
     modal.style.display = "flex";
     modal.style.visibility = "hidden";
     modal.style.opacity = "0";
@@ -10414,7 +10413,6 @@
     modal.classList.remove("is-opening");
     modal.classList.add("is-ready");
 
-    // fallback inline style
     modal.style.visibility = "";
     modal.style.opacity = "";
     modal.style.pointerEvents = "";
@@ -11611,8 +11609,26 @@
     if (!panel || !btn) return;
 
     panel.classList.toggle("hidden", !isOpen);
+    btn.classList.toggle("is-active", !!isOpen);
     btn.setAttribute("aria-expanded", isOpen ? "true" : "false");
     btn.title = isOpen ? "ซ่อนเครื่องมือแก้ไขภาพ" : "แสดงเครื่องมือแก้ไขภาพ";
+
+    btn.style.display = "flex";
+    btn.style.visibility = "visible";
+    btn.style.opacity = "1";
+    btn.style.pointerEvents = "auto";
+
+    if (isOpen) {
+      panel.style.display = "block";
+      panel.style.visibility = "visible";
+      panel.style.opacity = "1";
+      panel.style.pointerEvents = "auto";
+    } else {
+      panel.style.display = "";
+      panel.style.visibility = "";
+      panel.style.opacity = "";
+      panel.style.pointerEvents = "";
+    }
   }
 
   function toggleFloatingPanel(forceState) {
@@ -11631,6 +11647,10 @@
     const toolbarWrap = document.querySelector(".imgEditorToolbarWrap");
     if (!canvasWrap || !toolbarWrap) return;
 
+    if (!canvasWrap.style.position) {
+      canvasWrap.style.position = "relative";
+    }
+
     if (!editorState.floatingToggleBtn) {
       const btn = document.createElement("button");
       btn.type = "button";
@@ -11644,6 +11664,7 @@
       editorState.floatingToggleBtn = btn;
 
       btn.addEventListener("click", (e) => {
+        e.preventDefault();
         e.stopPropagation();
         toggleFloatingPanel();
       });
@@ -11663,14 +11684,37 @@
       editorState.floatingToolPanel.appendChild(toolbarWrap);
     }
 
+    const btn = editorState.floatingToggleBtn;
+    const panel = editorState.floatingToolPanel;
+
+    if (btn) {
+      btn.style.display = "flex";
+      btn.style.visibility = "visible";
+      btn.style.opacity = "1";
+      btn.style.pointerEvents = "auto";
+      btn.style.position = "absolute";
+      btn.style.top = "12px";
+      btn.style.right = "12px";
+      btn.style.zIndex = "80";
+    }
+
+    if (panel) {
+      panel.style.position = "absolute";
+      panel.style.top = "60px";
+      panel.style.right = "12px";
+      panel.style.zIndex = "79";
+    }
+
+    setFloatingPanelOpen(true);
+
     if (!canvasWrap.__ieOutsidePanelBind) {
       canvasWrap.__ieOutsidePanelBind = true;
       document.addEventListener("click", (e) => {
         if (!editorState.modal || editorState.modal.classList.contains("hidden")) return;
-        const panel = editorState.floatingToolPanel;
-        const btn = editorState.floatingToggleBtn;
-        if (!panel || !btn) return;
-        if (panel.contains(e.target) || btn.contains(e.target)) return;
+        const panelRef = editorState.floatingToolPanel;
+        const btnRef = editorState.floatingToggleBtn;
+        if (!panelRef || !btnRef) return;
+        if (panelRef.contains(e.target) || btnRef.contains(e.target)) return;
         setFloatingPanelOpen(false);
       });
     }
@@ -12106,7 +12150,7 @@
 
       ensureExtraControls();
       bindToolButtons();
-      setFloatingPanelOpen(false);
+      setFloatingPanelOpen(true);
       setActiveTool("select");
       setZoomLabel();
       setToolLabel();
