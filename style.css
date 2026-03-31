@@ -1608,567 +1608,856 @@ body.progress-lock{
     border-radius: 12px;
   }
 }
-/* =========================================================
-   IMAGE EDITOR FINAL PATCH
-   วางท้ายสุดของ style.css
-========================================================= */
-
-body.img-editor-lock{
-  overflow:hidden !important;
-  touch-action:none;
-  overscroll-behavior:none;
-}
-
-#imgEditorModal,
+/* =========================
+   IMAGE EDITOR
+========================= */
+/* =========================
+   IMAGE EDITOR - PRO FLOAT PANEL
+========================= */
 .imgEditorModal{
   position:fixed;
   inset:0;
-  z-index:1200;
+  z-index:3000;
   display:flex;
   align-items:center;
   justify-content:center;
-  padding:16px;
-  opacity:0;
-  visibility:hidden;
-  pointer-events:none;
-  overscroll-behavior:contain;
-  -webkit-overflow-scrolling:auto;
-  contain:layout paint style;
+  padding:8px;
 }
 
-#imgEditorModal.hidden,
-.imgEditorModal.hidden{
-  display:none !important;
-}
-
-#imgEditorModal.is-opening,
-#imgEditorModal.is-ready,
-.imgEditorModal.is-opening,
-.imgEditorModal.is-ready{
-  display:flex;
-  visibility:visible;
-}
-
-#imgEditorModal.is-opening,
-.imgEditorModal.is-opening{
-  opacity:0;
-  pointer-events:none;
-}
-
-#imgEditorModal.is-ready,
-.imgEditorModal.is-ready{
-  opacity:1;
-  pointer-events:auto;
-  transition:opacity .14s ease-out;
-}
-
-#imgEditorModal .imgEditorBackdrop,
-.imgEditorModal .imgEditorBackdrop{
+.imgEditorBackdrop{
   position:absolute;
   inset:0;
-  background:rgba(15,23,42,.62);
-  opacity:0;
-  transition:opacity .14s ease-out;
-  will-change:opacity;
+  background:rgba(15,23,42,.58);
+  backdrop-filter:blur(6px);
 }
 
-#imgEditorModal .imgEditorDialog,
-.imgEditorModal .imgEditorDialog{
+.imgEditorDialog{
   position:relative;
   z-index:1;
-  width:min(1180px,100%);
-  max-width:1180px;
-  max-height:min(94dvh,94vh);
+  width:min(1380px,100%);
+  height:min(calc(100dvh - 16px),980px);
+  max-height:min(calc(100dvh - 16px),980px);
   display:grid;
-  grid-template-rows:auto auto minmax(0,1fr) auto;
+  grid-template-areas:
+    "header"
+    "body"
+    "footer";
+  grid-template-rows:auto minmax(0,1fr) auto;
+  background:linear-gradient(180deg,#ffffff 0%,#fbfdff 100%);
+  border:1px solid #dbe6f3;
+  border-radius:24px;
+  box-shadow:0 24px 72px rgba(15,23,42,.24);
   overflow:hidden;
-  background:#fff;
-  border:1px solid #d9e4f1;
-  border-radius:20px;
-  box-shadow:0 24px 60px rgba(15,23,42,.18);
-  transform:translate3d(0,8px,0);
-  opacity:0;
-  will-change:transform,opacity;
-  backface-visibility:hidden;
-  -webkit-backface-visibility:hidden;
-  contain:layout paint;
-  isolation:isolate;
 }
 
-#imgEditorModal.is-ready .imgEditorBackdrop,
-.imgEditorModal.is-ready .imgEditorBackdrop{
-  opacity:1;
-}
-
-#imgEditorModal.is-ready .imgEditorDialog,
-.imgEditorModal.is-ready .imgEditorDialog{
-  opacity:1;
-  transform:translate3d(0,0,0);
-  transition:transform .16s ease-out, opacity .16s ease-out;
-}
-
-#imgEditorModal.is-opening .imgEditorBackdrop,
-#imgEditorModal.is-opening .imgEditorDialog,
-.imgEditorModal.is-opening .imgEditorBackdrop,
-.imgEditorModal.is-opening .imgEditorDialog{
-  opacity:0 !important;
-  transition:none !important;
-}
-
-#imgEditorModal .imgEditorHeader,
-.imgEditorModal .imgEditorHeader{
-  position:relative;
-  z-index:3;
-  display:flex;
-  align-items:flex-start;
-  justify-content:space-between;
+/* HEADER */
+.imgEditorHeader{
+  grid-area:header;
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto;
   gap:12px;
-  padding:12px 16px 10px;
-  background:#fff;
+  align-items:start;
+  padding:14px 16px 12px;
   border-bottom:1px solid #e5edf8;
-  min-height:64px;
+  background:linear-gradient(180deg,#ffffff 0%,#f7fbff 100%);
 }
 
-#imgEditorModal .imgEditorHeaderText,
-.imgEditorModal .imgEditorHeaderText{
+.imgEditorHeaderText{
   min-width:0;
-  flex:1 1 auto;
 }
 
-#imgEditorModal .imgEditorTitle,
-.imgEditorModal .imgEditorTitle{
-  min-width:0;
-  font-size:16px;
+.imgEditorTitle{
+  font-size:18px;
+  line-height:1.15;
   font-weight:900;
-  line-height:1.25;
   color:#0f172a;
-  word-break:break-word;
+  letter-spacing:-.2px;
 }
 
-#imgEditorModal .imgEditorSub,
-.imgEditorModal .imgEditorSub{
-  margin-top:2px;
+.imgEditorSub{
+  margin-top:4px;
   font-size:12px;
-  line-height:1.4;
+  line-height:1.45;
   color:#64748b;
-  word-break:break-word;
 }
 
-#imgEditorModal .imgEditorCloseBtn,
-.imgEditorModal .imgEditorCloseBtn{
-  position:static !important;
-  inset:auto !important;
-  margin:0;
-  flex:0 0 auto;
-  min-width:48px;
-  height:40px;
-  padding:0 14px;
-  border-radius:12px;
-  box-shadow:none;
+.imgEditorCloseBtn{
+  min-width:68px;
+  min-height:42px;
+  padding:8px 14px;
+  border-radius:14px;
+  font-size:12px;
+  font-weight:900;
+  white-space:nowrap;
 }
 
-#imgEditorModal .imgEditorToolbarWrap,
-.imgEditorModal .imgEditorToolbarWrap{
-  position:relative;
-  z-index:2;
-  padding:10px 12px 0;
-  background:#fff;
-  display:block !important;
-  visibility:visible !important;
-  opacity:1 !important;
-  transform:translateZ(0);
-  backface-visibility:hidden;
-  -webkit-backface-visibility:hidden;
-}
-
-#imgEditorModal .imgEditorToolbar,
-.imgEditorModal .imgEditorToolbar{
-  display:flex;
-  align-items:center;
-  gap:8px;
-  flex-wrap:wrap;
-}
-
-#imgEditorModal .ieDivider,
-.imgEditorModal .ieDivider{
-  width:1px;
-  align-self:stretch;
-  min-height:34px;
-  background:#dbe6f5;
-  border-radius:999px;
-}
-
-#imgEditorModal .imgEditorBody,
-.imgEditorModal .imgEditorBody{
+/* BODY / CANVAS */
+.imgEditorBody{
+  grid-area:body;
   min-height:0;
-  display:grid;
-  grid-template-columns:minmax(0,1fr);
-  overflow:hidden;
-  background:#f8fbff;
-  isolation:isolate;
-  transform:translateZ(0);
-  backface-visibility:hidden;
-  -webkit-backface-visibility:hidden;
-}
-
-#imgEditorModal .imgEditorCanvasWrap,
-.imgEditorModal .imgEditorCanvasWrap{
-  position:relative;
-  min-height:0;
-  overflow:auto;
   padding:12px;
+  background:linear-gradient(180deg,#f8fbff 0%,#f1f6ff 100%);
+  overflow:hidden;
+}
+
+.imgEditorCanvasWrap{
+  position:relative;
+  width:100%;
+  height:100%;
+  min-height:320px;
   display:flex;
   align-items:center;
   justify-content:center;
-  background:linear-gradient(180deg,#f8fbff 0%,#f3f7fd 100%);
-  transform:translateZ(0);
-  backface-visibility:hidden;
-  -webkit-backface-visibility:hidden;
+  overflow:hidden;
+  border:1.5px dashed #bfd1e6;
+  border-radius:18px;
+  background:
+    linear-gradient(45deg,#f8fafc 25%,#eef4fb 25%,#eef4fb 50%,#f8fafc 50%,#f8fafc 75%,#eef4fb 75%,#eef4fb 100%);
+  background-size:24px 24px;
 }
 
-#imgEditorModal .imgEditorCanvasWrap::before,
-.imgEditorModal .imgEditorCanvasWrap::before{
-  content:"";
-  position:absolute;
-  inset:12px;
-  border:1px solid #dbe6f5;
-  border-radius:16px;
-  background:linear-gradient(180deg,#ffffff 0%,#f9fbff 100%);
-  pointer-events:none;
+.imgEditorCanvasWrap canvas{
+  display:block;
+  margin:auto;
 }
 
-#imgEditorModal .canvas-container,
-#imgEditorModal #imgEditorCanvas,
-.imgEditorModal .canvas-container,
-.imgEditorModal #imgEditorCanvas{
-  position:relative;
-  z-index:1;
+.imgEditorCanvasWrap .canvas-container{
+  margin:auto !important;
   max-width:100%;
   max-height:100%;
-  transform:translateZ(0);
-  backface-visibility:hidden;
-  -webkit-backface-visibility:hidden;
+  flex:0 0 auto;
 }
 
-#imgEditorModal .imgEditorFooter,
-.imgEditorModal .imgEditorFooter{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:12px;
-  padding:12px 16px 14px;
-  background:#fff;
-  border-top:1px solid #e5edf8;
-  flex-wrap:wrap;
-}
-
-#imgEditorModal .imgEditorStatus,
-.imgEditorModal .imgEditorStatus{
-  display:flex;
-  align-items:center;
-  gap:8px;
-  min-width:0;
-  color:#334155;
-  font-size:13px;
-  font-weight:800;
-}
-
-#imgEditorModal .ieBullet,
-.imgEditorModal .ieBullet{
-  opacity:.45;
-}
-
-#imgEditorModal .imgEditorActions,
-.imgEditorModal .imgEditorActions{
-  display:flex;
-  align-items:center;
-  justify-content:flex-end;
-  gap:10px;
-  flex-wrap:wrap;
-  transform:translateZ(0);
-  backface-visibility:hidden;
-  -webkit-backface-visibility:hidden;
-}
-
-#imgEditorModal .imgEditorActions .btn,
-.imgEditorModal .imgEditorActions .btn{
-  min-height:42px;
-  padding:0 16px;
-  border-radius:14px;
-}
-
-#ieFloatingToggleBtn,
+/* FLOATING PENCIL BUTTON */
 .ieFloatingToggle{
-  position:absolute !important;
-  top:12px !important;
-  right:12px !important;
-  z-index:80 !important;
-  display:flex !important;
-  align-items:center !important;
-  justify-content:center !important;
-  visibility:visible !important;
-  opacity:1 !important;
-  pointer-events:auto !important;
-  width:46px;
-  height:46px;
-  border-radius:14px;
-  -webkit-tap-highlight-color:transparent;
-  touch-action:manipulation;
+  position:absolute;
+  top:12px;
+  right:12px;
+  z-index:50;
+  width:48px;
+  height:48px;
+  border:none;
+  border-radius:999px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:linear-gradient(180deg,#2563eb 0%,#1d4ed8 100%);
+  color:#fff;
+  box-shadow:0 14px 28px rgba(37,99,235,.28);
+  cursor:pointer;
+  transition:transform .16s ease, box-shadow .16s ease, opacity .16s ease;
 }
 
-#ieFloatingToolPanel,
-.ieFloatingPanel{
-  position:absolute !important;
-  top:60px !important;
-  right:12px !important;
-  z-index:79 !important;
+.ieFloatingToggle:hover{
+  transform:translateY(-1px);
+  box-shadow:0 18px 34px rgba(37,99,235,.34);
+}
+
+.ieFloatingToggle:active{
+  transform:translateY(0);
+}
+
+.ieFloatingToggle svg{
+  width:22px;
+  height:22px;
   display:block;
-  width:min(360px, calc(100vw - 28px));
-  max-width:min(360px, calc(100vw - 28px));
-  border:1px solid #dbe6f7;
-  border-radius:16px;
-  background:#ffffff;
-  box-shadow:0 20px 40px rgba(15,23,42,.16);
-  overflow:auto;
-  will-change:transform,opacity;
-  transform-origin:top right;
-  transform:translateZ(0);
-  backface-visibility:hidden;
-  -webkit-backface-visibility:hidden;
 }
 
-#imgEditorModal .ieFloatingPanel.hidden,
+/* SMALL RIGHT PANEL UNDER BUTTON */
+.ieFloatingPanel{
+  position:absolute;
+  top:66px;
+  right:12px;
+  z-index:49;
+  width:320px;
+  max-width:calc(100% - 24px);
+  max-height:min(54vh,430px);
+  overflow:auto;
+  padding:10px;
+  border:1px solid #dbe6f3;
+  border-radius:18px;
+  background:rgba(255,255,255,.98);
+  backdrop-filter:blur(10px);
+  box-shadow:0 22px 48px rgba(15,23,42,.18);
+}
+
 .ieFloatingPanel.hidden{
   display:none !important;
 }
 
-#imgEditorModal .ieFloatingToggle.is-active,
-.ieFloatingToggle.is-active{
-  box-shadow:0 18px 34px rgba(37,99,235,.34);
-  transform:translateY(-1px);
+.ieFloatingPanel::-webkit-scrollbar{
+  width:10px;
+  height:10px;
+}
+.ieFloatingPanel::-webkit-scrollbar-thumb{
+  background:#c9d8eb;
+  border-radius:999px;
+}
+.ieFloatingPanel::-webkit-scrollbar-track{
+  background:transparent;
 }
 
-#imgEditorModal button,
-#imgEditorModal input,
-#imgEditorModal select,
-#imgEditorModal textarea{
-  transform:translateZ(0);
+/* wrapper เดิม */
+.imgEditorToolbarWrap{
+  width:100%;
+  padding:0;
+  border:none;
+  background:transparent;
+  overflow:visible;
 }
 
-@media (max-width:950px){
-  #imgEditorModal,
-  .imgEditorModal{
-    padding:0;
-    align-items:stretch;
-  }
+.imgEditorToolbar{
+  width:100%;
+  display:block;
+}
 
-  #imgEditorModal .imgEditorDialog,
-  .imgEditorModal .imgEditorDialog{
-    width:100%;
-    max-width:none;
-    height:100dvh;
-    max-height:100dvh;
-    border-radius:0 !important;
-    border:none;
-    box-shadow:none;
-    transform:none;
-  }
+/* vertical compact sections */
+.imgEditorToolbarGrid,
+.ieToolbarGridEnhanced{
+  width:100%;
+  min-width:0;
+  display:grid !important;
+  grid-template-columns:1fr;
+  gap:8px;
+  align-items:start;
+}
 
-  #imgEditorModal.is-ready .imgEditorDialog,
-  .imgEditorModal.is-ready .imgEditorDialog{
-    transform:none;
-  }
+.ieToolbarSection{
+  min-width:0;
+  width:100%;
+  display:block;
+  padding:8px;
+  border:1px solid #e2ebf7;
+  border-radius:14px;
+  background:linear-gradient(180deg,#ffffff 0%,#fbfdff 100%);
+  box-shadow:0 6px 18px rgba(15,23,42,.05);
+}
 
-  #imgEditorModal .imgEditorBackdrop,
-  .imgEditorModal .imgEditorBackdrop{
-    backdrop-filter:none;
-    -webkit-backdrop-filter:none;
-  }
+.ieToolbarTitle{
+  margin:0 0 6px;
+  font-size:10px;
+  font-weight:900;
+  color:#64748b;
+  line-height:1.2;
+  text-transform:uppercase;
+  letter-spacing:.32px;
+  white-space:nowrap;
+}
 
-  #imgEditorModal .imgEditorHeader,
-  .imgEditorModal .imgEditorHeader{
-    padding:10px 12px 8px;
-    min-height:58px;
-  }
+.ieToolbarSection .ieButtonGrid,
+.ieToolbarSection .ieControlGrid,
+.ieButtonGrid,
+.ieControlGrid,
+.ieButtonGridTools,
+.ieButtonGridEffects,
+.ieButtonGridView{
+  width:100%;
+  display:grid;
+  gap:6px;
+}
 
-  #imgEditorModal .imgEditorTitle,
-  .imgEditorModal .imgEditorTitle{
-    font-size:15px;
-    line-height:1.2;
-  }
+.ieButtonGridTools{
+  grid-template-columns:repeat(4,minmax(0,1fr));
+}
 
-  #imgEditorModal .imgEditorToolbarWrap,
-  .imgEditorModal .imgEditorToolbarWrap{
-    padding:8px 10px 0;
-  }
+.ieButtonGridEffects,
+.ieButtonGridView{
+  grid-template-columns:repeat(3,minmax(0,1fr));
+}
 
-  #imgEditorModal .imgEditorCanvasWrap,
-  .imgEditorModal .imgEditorCanvasWrap{
-    padding:10px;
-  }
+.ieSectionManage .ieButtonGridView{
+  grid-template-columns:repeat(3,minmax(0,1fr));
+}
 
-  #imgEditorModal .imgEditorCanvasWrap::before,
-  .imgEditorModal .imgEditorCanvasWrap::before{
-    inset:10px;
-    border-radius:14px;
-  }
+.ieControlGrid{
+  grid-template-columns:1fr;
+}
 
-  #imgEditorModal .imgEditorFooter,
-  .imgEditorModal .imgEditorFooter{
-    padding:10px 12px calc(10px + env(safe-area-inset-bottom));
-    gap:8px;
-  }
+.ieDivider{
+  display:none !important;
+}
 
-  #imgEditorModal .imgEditorActions .btn,
-  .imgEditorModal .imgEditorActions .btn{
-    min-width:88px;
-  }
+/* BUTTONS */
+.imgEditorToolbar .btn,
+.ieToolbarSection .btn{
+  width:100%;
+  min-width:0;
+  min-height:52px;
+  height:52px;
+  padding:5px 4px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:3px;
+  text-align:center;
+  border-radius:12px;
+  font-size:9.5px;
+  font-weight:900;
+  line-height:1;
+  white-space:normal;
+  word-break:break-word;
+  writing-mode:horizontal-tb !important;
+  overflow:hidden;
+  border:1.2px solid #d8e4f4;
+  background:linear-gradient(180deg,#ffffff 0%,#f9fbff 100%);
+  color:#0f172a;
+  box-shadow:0 4px 12px rgba(15,23,42,.04);
+  transition:
+    transform .15s ease,
+    border-color .18s ease,
+    box-shadow .18s ease,
+    background .18s ease,
+    color .18s ease;
+}
 
-  #ieFloatingToggleBtn,
-  .ieFloatingToggle{
-    top:10px !important;
-    right:10px !important;
-    width:44px !important;
-    height:44px !important;
-  }
+.imgEditorToolbar .btn::before,
+.ieToolbarSection .btn::before{
+  content:attr(data-icon);
+  display:block;
+  font-size:16px;
+  line-height:1;
+  font-weight:700;
+  margin-bottom:1px;
+}
 
-  #ieFloatingToolPanel,
+.imgEditorToolbar .btn:hover,
+.ieToolbarSection .btn:hover{
+  border-color:#b9ceed;
+  box-shadow:0 8px 18px rgba(37,99,235,.08);
+}
+
+.imgEditorToolbar .btn:active,
+.ieToolbarSection .btn:active{
+  transform:translateY(1px);
+}
+
+.imgEditorToolbar .btn:disabled,
+.ieToolbarSection .btn:disabled{
+  opacity:.45;
+  cursor:not-allowed;
+  filter:grayscale(.08);
+  box-shadow:none;
+}
+
+.imgEditorToolbar .ie-tool.active,
+.ieToolbarSection .ie-tool.active{
+  background:linear-gradient(180deg,#2563eb 0%,#1d4ed8 100%);
+  color:#fff;
+  border-color:transparent;
+  box-shadow:0 10px 20px rgba(37,99,235,.22);
+}
+
+#ieApplyCropBtn{
+  background:linear-gradient(180deg,#0f172a 0%,#1f2937 100%);
+  color:#fff;
+  border-color:transparent;
+  box-shadow:0 10px 20px rgba(15,23,42,.18);
+}
+
+/* FIELDS */
+.imgEditorToolbarWrap .ieField,
+.ieField{
+  width:100%;
+  min-width:0;
+  display:grid;
+  grid-template-columns:38px minmax(0,1fr);
+  align-items:center;
+  gap:8px;
+  min-height:38px;
+  padding:6px 8px;
+  border:1.2px solid #d9e4f1;
+  border-radius:12px;
+  background:linear-gradient(180deg,#ffffff 0%,#fbfdff 100%);
+  font-size:10px;
+  font-weight:800;
+  color:#334155;
+}
+
+.imgEditorToolbarWrap .ieField span,
+.ieField span{
+  line-height:1.1;
+  writing-mode:horizontal-tb !important;
+  text-transform:uppercase;
+  letter-spacing:.2px;
+}
+
+.imgEditorToolbarWrap .ieField input[type="color"],
+.ieField input[type="color"]{
+  width:100%;
+  height:22px;
+  min-height:22px;
+  padding:0;
+  border:none;
+  background:transparent;
+  box-shadow:none;
+  cursor:pointer;
+  appearance:none;
+  -webkit-appearance:none;
+}
+
+.imgEditorToolbarWrap .ieField input[type="range"],
+.ieField input[type="range"]{
+  width:100%;
+  min-width:0;
+  padding:0;
+  border:none;
+  background:transparent;
+  box-shadow:none;
+}
+
+/* FOOTER */
+.imgEditorFooter{
+  grid-area:footer;
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto;
+  gap:12px;
+  align-items:center;
+  padding:10px 14px 12px;
+  border-top:1px solid #e5edf8;
+  background:#fff;
+}
+
+.imgEditorStatus{
+  min-width:0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  flex-wrap:wrap;
+  color:#334155;
+  font-size:12px;
+  font-weight:900;
+}
+
+.ieBullet{
+  opacity:.45;
+}
+
+.imgEditorActions{
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,auto));
+  gap:8px;
+  align-items:center;
+  justify-content:end;
+}
+
+.imgEditorActions .btn{
+  min-height:40px;
+  height:40px;
+  padding:8px 14px;
+  border-radius:13px;
+  font-size:12px;
+  font-weight:900;
+  white-space:nowrap;
+}
+
+/* TABLET */
+@media (max-width:1180px){
   .ieFloatingPanel{
-    top:58px !important;
-    right:8px !important;
-    width:min(340px, calc(100vw - 20px)) !important;
-    max-width:min(340px, calc(100vw - 20px)) !important;
-    max-height:56dvh;
-    box-shadow:0 16px 32px rgba(15,23,42,.18);
-    backdrop-filter:none;
-    -webkit-backdrop-filter:none;
+    width:310px;
   }
 }
 
-@media (max-width:768px){
-  #imgEditorModal .imgEditorBody,
-  .imgEditorModal .imgEditorBody{
-    min-height:0;
-  }
-
-  #imgEditorModal .imgEditorCanvasWrap,
-  .imgEditorModal .imgEditorCanvasWrap{
-    min-height:0;
-    overflow:hidden;
-    padding:8px;
-  }
-
-  #imgEditorModal .imgEditorCanvasWrap::before,
-  .imgEditorModal .imgEditorCanvasWrap::before{
-    inset:8px;
-    border-radius:12px;
-  }
-
-  #imgEditorModal .imgEditorToolbarWrap,
-  .imgEditorModal .imgEditorToolbarWrap{
-    contain:layout paint;
-  }
-
-  #imgEditorModal .imgEditorCloseBtn,
-  .imgEditorModal .imgEditorCloseBtn{
-    min-width:44px;
-    height:38px;
-    padding:0 12px;
-    border-radius:12px;
-  }
-}
-
-@media (max-width:560px){
-  #imgEditorModal,
+/* MOBILE / TABLET */
+@media (max-width:950px){
   .imgEditorModal{
-    padding:0;
+    padding:6px;
   }
 
-  #imgEditorModal .imgEditorDialog,
-  .imgEditorModal .imgEditorDialog{
-    box-shadow:none !important;
-  }
-
-  #imgEditorModal .imgEditorHeader,
-  .imgEditorModal .imgEditorHeader{
-    padding:8px 10px 8px;
-  }
-
-  #imgEditorModal .imgEditorTitle,
-  .imgEditorModal .imgEditorTitle{
-    font-size:14px;
-  }
-
-  #imgEditorModal .imgEditorSub,
-  .imgEditorModal .imgEditorSub{
-    font-size:11px;
-  }
-
-  #imgEditorModal .imgEditorFooter,
-  .imgEditorModal .imgEditorFooter{
-    justify-content:space-between;
-    padding:8px 10px calc(10px + env(safe-area-inset-bottom));
-  }
-
-  #imgEditorModal .imgEditorStatus,
-  .imgEditorModal .imgEditorStatus{
+  .imgEditorDialog{
     width:100%;
-    justify-content:center;
+    height:calc(100dvh - 12px);
+    max-height:calc(100dvh - 12px);
+    border-radius:18px;
+  }
+
+  .imgEditorHeader{
+    padding:10px 12px 8px;
+    gap:10px;
+  }
+
+  .imgEditorTitle{
+    font-size:16px;
+  }
+
+  .imgEditorSub{
+    font-size:11px;
+    line-height:1.35;
+  }
+
+  .imgEditorCloseBtn{
+    min-width:58px;
+    min-height:38px;
+    padding:7px 12px;
+    border-radius:12px;
     font-size:12px;
   }
 
-  #imgEditorModal .imgEditorActions,
-  .imgEditorModal .imgEditorActions{
-    width:100%;
-    justify-content:space-between;
+  .imgEditorBody{
+    padding:8px;
   }
 
-  #imgEditorModal .imgEditorActions .btn,
-  .imgEditorModal .imgEditorActions .btn{
-    flex:1 1 calc(33.333% - 6px);
-    min-width:0;
-    padding:0 10px;
+  .imgEditorCanvasWrap{
+    min-height:0;
+    height:100%;
+    border-radius:14px;
   }
 
-  #ieFloatingToggleBtn,
   .ieFloatingToggle{
-    top:8px !important;
-    right:8px !important;
-    width:40px !important;
-    height:40px !important;
+    top:10px;
+    right:10px;
+    width:44px;
+    height:44px;
   }
 
-  #ieFloatingToolPanel,
   .ieFloatingPanel{
-    top:52px !important;
-    right:8px !important;
-    width:min(280px, calc(100vw - 16px)) !important;
-    max-width:min(280px, calc(100vw - 16px)) !important;
+    top:58px;
+    right:8px;
+    width:300px;
+    max-width:calc(100% - 16px);
+    max-height:min(50vh,360px);
+    padding:8px;
+    border-radius:16px;
+  }
+
+  .imgEditorToolbar .btn,
+  .ieToolbarSection .btn{
+    min-height:48px;
+    height:48px;
+    font-size:9px;
+  }
+
+  .imgEditorToolbar .btn::before,
+  .ieToolbarSection .btn::before{
+    font-size:15px;
+  }
+
+  .ieButtonGridEffects,
+  .ieButtonGridView,
+  .ieSectionManage .ieButtonGridView{
+    grid-template-columns:repeat(3,minmax(0,1fr));
+  }
+
+  .imgEditorFooter{
+    grid-template-columns:1fr;
+    gap:8px;
+    padding:8px 10px 10px;
+  }
+
+  .imgEditorStatus{
+    font-size:11px;
+  }
+
+  .imgEditorActions{
+    width:100%;
+    grid-template-columns:repeat(4,minmax(0,1fr));
+    gap:6px;
+  }
+
+  .imgEditorActions .btn{
+    width:100%;
+    min-height:38px;
+    height:38px;
+    padding:7px 8px;
+    border-radius:11px;
+    font-size:11px;
   }
 }
 
-@media (max-width:390px){
-  #imgEditorModal .imgEditorTitle,
-  .imgEditorModal .imgEditorTitle{
-    font-size:13px;
+/* SMALL MOBILE */
+@media (max-width:560px){
+  .imgEditorHeader{
+    padding:9px 10px 7px;
   }
 
-  #ieFloatingToolPanel,
+  .imgEditorTitle{
+    font-size:15px;
+  }
+
+  .imgEditorSub{
+    display:none;
+  }
+
+  .imgEditorBody{
+    padding:6px;
+  }
+
+  .ieFloatingToggle{
+    width:40px;
+    height:40px;
+    top:8px;
+    right:8px;
+  }
+
   .ieFloatingPanel{
-    width:min(300px, calc(100vw - 12px));
-    max-width:min(300px, calc(100vw - 12px));
+    top:52px;
+    right:8px;
+    width:min(280px,calc(100vw - 16px));
+    max-height:min(48vh,320px);
+    padding:7px;
+    border-radius:14px;
+  }
+
+  .ieToolbarSection{
+    padding:7px;
+    border-radius:13px;
+  }
+
+  .imgEditorToolbar .btn,
+  .ieToolbarSection .btn{
+    min-height:44px;
+    height:44px;
+    padding:4px 3px;
+    border-radius:10px;
+    font-size:8.5px;
+  }
+
+  .imgEditorToolbar .btn::before,
+  .ieToolbarSection .btn::before{
+    font-size:14px;
+  }
+
+  .ieButtonGridEffects,
+  .ieButtonGridView,
+  .ieSectionManage .ieButtonGridView{
+    grid-template-columns:repeat(2,minmax(0,1fr));
+  }
+
+  .imgEditorToolbarWrap .ieField,
+  .ieField{
+    grid-template-columns:34px minmax(0,1fr);
+    min-height:32px;
+    padding:4px 5px;
+    border-radius:10px;
+    font-size:9px;
+    gap:5px;
+  }
+
+  .imgEditorToolbarWrap .ieField input[type="color"],
+  .ieField input[type="color"]{
+    height:20px;
+    min-height:20px;
+  }
+
+  .imgEditorActions{
+    grid-template-columns:repeat(3,minmax(0,1fr));
+  }
+
+  .imgEditorActions .btn{
+    min-height:36px;
+    height:36px;
+    border-radius:10px;
+    font-size:10.5px;
   }
 }
 
-@media (prefers-reduced-motion: reduce){
-  #imgEditorModal,
-  #imgEditorModal .imgEditorBackdrop,
-  #imgEditorModal .imgEditorDialog,
-  .imgEditorModal,
-  .imgEditorModal .imgEditorBackdrop,
-  .imgEditorModal .imgEditorDialog,
-  .ieFloatingPanel{
-    transition:none !important;
-    animation:none !important;
+.btnEditImage{
+  min-height:38px;
+  padding:8px 14px;
+  border-radius:12px;
+  font-size:12px;
+  font-weight:900;
+  white-space:nowrap;
+}
+
+@media (max-width:640px){
+  .btnEditImage{
+    min-height:36px;
+    padding:7px 12px;
+    border-radius:11px;
+    font-size:11px;
   }
+}
+/* =========================
+   IMAGE EDITOR - STABILITY PATCH
+========================= */
+
+body.img-editor-lock{
+  overflow:hidden !important;
+  touch-action:none;
+}
+
+.imgEditorModal{
+  overscroll-behavior:contain;
+  -webkit-overflow-scrolling:auto;
+}
+
+.imgEditorDialog{
+  transform:translateZ(0);
+  will-change:transform, opacity;
+}
+
+.imgEditorCanvasWrap,
+.imgEditorBody,
+#imgEditorCanvas{
+  transform:translateZ(0);
+  backface-visibility:hidden;
+}
+
+.imgEditorBackdrop{
+  background:rgba(15,23,42,.62);
+}
+
+/* REPORT image row */
+.rptImageActions{
+  display:flex;
+  justify-content:flex-end;
+  gap:8px;
+  margin-top:10px;
+  flex-wrap:wrap;
+}
+
+.rptImagePreviewWrap{
+  margin-top:10px;
+}
+
+.rptImagePreviewEmpty,
+.rptImagePreview{
+  width:100%;
+}
+
+.rptImagePreview{
+  display:block;
+  max-height:260px;
+  object-fit:contain;
+  border-radius:14px;
+  border:1px solid #d9e4f1;
+  background:#fff;
+  padding:6px;
+}
+
+.rptImagePreview.hidden{
+  display:none !important;
+}
+
+.rptImageMeta.is-edited{
+  color:#1d4ed8;
+  font-weight:900;
+}
+
+/* ลด repaint บนมือถือ */
+@media (max-width: 768px){
+  .imgEditorModal{
+    padding:0;
+  }
+
+  .imgEditorDialog{
+    width:100%;
+    height:100dvh;
+    max-height:100dvh;
+    border-radius:0;
+    border:none;
+    box-shadow:none;
+  }
+
+  .imgEditorBackdrop{
+    backdrop-filter:none;
+    -webkit-backdrop-filter:none;
+  }
+
+  .ieFloatingPanel{
+    background:#ffffff;
+    backdrop-filter:none;
+    -webkit-backdrop-filter:none;
+    box-shadow:0 16px 32px rgba(15,23,42,.18);
+    max-height:52vh;
+  }
+
+  .rptImageActions .btn{
+    flex:1 1 calc(50% - 8px);
+  }
+}
+
+@media (max-width: 420px){
+  .rptImageActions .btn{
+    flex:1 1 100%;
+  }
+
+  .imgEditorHeader{
+    padding:10px 12px 10px;
+  }
+
+  .imgEditorFooter{
+    padding:10px 12px;
+  }
+}
+/* ===== Image Editor Toolbar Tone ===== */
+.ieToolbarGridEnhanced .ieToolbarSection{
+  border:1px solid #dbe7f5;
+  border-radius:16px;
+  background:linear-gradient(180deg,#ffffff 0%,#f8fbff 100%);
+}
+
+.ieToolbarGridEnhanced .ieSectionPrimary{
+  background:linear-gradient(180deg,#f8fbff 0%,#eef5ff 100%);
+  border-color:#d9e6fb;
+}
+
+.ieToolbarGridEnhanced .ieSectionDraw{
+  background:linear-gradient(180deg,#fdfcff 0%,#f5f3ff 100%);
+  border-color:#e7defe;
+}
+
+.ieToolbarGridEnhanced .ieSectionMask{
+  background:linear-gradient(180deg,#fffdf8 0%,#fff7ed 100%);
+  border-color:#fde7c7;
+}
+
+.ieToolbarGridEnhanced .ieSectionView{
+  background:linear-gradient(180deg,#f8fffb 0%,#ecfdf5 100%);
+  border-color:#cfeedd;
+}
+
+.ieToolbarGridEnhanced .ieSectionManage{
+  background:linear-gradient(180deg,#fcfcfd 0%,#f8fafc 100%);
+  border-color:#dbe3ee;
+}
+
+.ieToolbarGridEnhanced .ieSectionControl{
+  background:linear-gradient(180deg,#fffafb 0%,#fff1f2 100%);
+  border-color:#ffe0e6;
+}
+
+.ieToolbarGridEnhanced .ieToolbarTitle{
+  color:#334155;
+  font-weight:900;
+}
+
+.ie-tool[data-tool="select"].active,
+.ie-tool[data-tool="pan"].active,
+.ie-tool[data-tool="text"].active,
+.ie-tool[data-tool="crop"].active{
+  background:#2563eb;
+  border-color:#2563eb;
+  color:#fff;
+}
+
+.ieSectionDraw .ie-tool.active{
+  background:#7c3aed;
+  border-color:#7c3aed;
+  color:#fff;
+}
+
+.ieSectionMask .ie-tool.active{
+  background:#ea580c;
+  border-color:#ea580c;
+  color:#fff;
+}
+
+.ieSectionView .btn.active,
+.ieSectionManage .btn.active{
+  background:#0f766e;
+  border-color:#0f766e;
+  color:#fff;
+}
+
+#ieDeleteBtn{
+  border-color:#fecaca;
+  color:#b91c1c;
+  background:#fff5f5;
+}
+
+#ieDeleteBtn:hover{
+  background:#fee2e2;
 }
