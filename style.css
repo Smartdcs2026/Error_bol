@@ -2273,9 +2273,11 @@ body.progress-lock{
    IMAGE EDITOR - STABILITY PATCH
 ========================= */
 
+body.progress-lock,
 body.img-editor-lock{
   overflow:hidden !important;
   touch-action:none;
+  overscroll-behavior:none;
 }
 
 .imgEditorModal{
@@ -2297,6 +2299,38 @@ body.img-editor-lock{
 
 .imgEditorBackdrop{
   background:rgba(15,23,42,.62);
+}
+
+/* ซ่อนช่วงกำลังเตรียม canvas เพื่อตัดอาการวาบ */
+.imgEditorModal.is-preparing .imgEditorDialog{
+  opacity:0;
+  pointer-events:none;
+}
+
+@media (max-width: 768px){
+  .imgEditorModal{
+    padding:0;
+  }
+
+  .imgEditorDialog{
+    width:100%;
+    height:100dvh;
+    max-height:100dvh;
+    border-radius:0;
+    border:none;
+    box-shadow:none;
+  }
+
+  .imgEditorBackdrop{
+    backdrop-filter:none;
+    -webkit-backdrop-filter:none;
+  }
+
+  .ieFloatingPanel{
+    background:#ffffff;
+    backdrop-filter:none;
+    -webkit-backdrop-filter:none;
+  }
 }
 
 /* REPORT image row */
