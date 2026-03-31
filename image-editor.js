@@ -9599,101 +9599,109 @@
     });
   }
 
-  async function loadImageToCanvas(file) {
-    const url = URL.createObjectURL(file);
-    editorState.originalUrl = url;
+ async function loadImageToCanvas(file) {
+  const url = URL.createObjectURL(file);
+  editorState.originalUrl = url;
 
-    const wrap = editorState.canvasEl.parentElement;
-    if (!wrap) throw new Error("ไม่พบพื้นที่แสดง canvas");
+  const wrap = editorState.canvasEl.parentElement;
+  if (!wrap) throw new Error("ไม่พบพื้นที่แสดง canvas");
 
-    const maxW = Math.max(640, Math.floor(wrap.clientWidth - 20));
-    const maxH = Math.max(420, Math.floor(wrap.clientHeight - 20));
+  // อ่านขนาดหลัง modal เปิดแล้วจริง เพื่อลดอาการวาบ/เด้งบนมือถือ
+  const wrapRect = wrap.getBoundingClientRect();
+  const safeWrapW = Math.max(320, Math.floor(wrapRect.width || wrap.clientWidth || 0));
+  const safeWrapH = Math.max(240, Math.floor(wrapRect.height || wrap.clientHeight || 0));
 
-    if (editorState.canvas) {
-      try { editorState.canvas.dispose(); } catch (_) {}
-      editorState.canvas = null;
-    }
+  const maxW = Math.max(320, safeWrapW - 20);
+  const maxH = Math.max(240, safeWrapH - 20);
 
-    const canvas = new fabric.Canvas(editorState.canvasEl, {
-      preserveObjectStacking: true,
-      selection: true,
-      renderOnAddRemove: true
-    });
-
-    editorState.canvas = canvas;
-
-    const imgEl = await new Promise((resolve, reject) => {
-      const img = new Image();
-      img.onload = () => resolve(img);
-      img.onerror = () => reject(new Error("โหลดรูปภาพไม่สำเร็จ"));
-      img.decoding = "async";
-      img.src = url;
-    });
-
-    const imgW = imgEl.naturalWidth || imgEl.width;
-    const imgH = imgEl.naturalHeight || imgEl.height;
-    if (!imgW || !imgH) throw new Error("ไม่สามารถอ่านขนาดรูปภาพได้");
-
-    const scale = Math.min(maxW / imgW, maxH / imgH, 1);
-    const canvasW = Math.max(320, Math.round(imgW * scale));
-    const canvasH = Math.max(240, Math.round(imgH * scale));
-
-    if (typeof canvas.setWidth === "function" && typeof canvas.setHeight === "function") {
-      canvas.setWidth(canvasW);
-      canvas.setHeight(canvasH);
-    } else if (typeof canvas.setDimensions === "function") {
-      canvas.setDimensions({ width: canvasW, height: canvasH });
-    } else {
-      editorState.canvasEl.width = canvasW;
-      editorState.canvasEl.height = canvasH;
-    }
-
-    if (canvas.lowerCanvasEl) {
-      canvas.lowerCanvasEl.style.width = canvasW + "px";
-      canvas.lowerCanvasEl.style.height = canvasH + "px";
-    }
-    if (canvas.upperCanvasEl) {
-      canvas.upperCanvasEl.style.width = canvasW + "px";
-      canvas.upperCanvasEl.style.height = canvasH + "px";
-    }
-    if (canvas.wrapperEl) {
-      canvas.wrapperEl.style.width = canvasW + "px";
-      canvas.wrapperEl.style.height = canvasH + "px";
-    }
-
-    const baseImage = new fabric.Image(imgEl, {
-      left: canvasW / 2,
-      top: canvasH / 2,
-      originX: "center",
-      originY: "center",
-      selectable: false,
-      evented: false,
-      objectCaching: false
-    });
-
-    baseImage.scaleX = scale;
-    baseImage.scaleY = scale;
-    editorState.baseImage = baseImage;
-
-    canvas.clear();
-    canvas.add(baseImage);
-
-    if (typeof baseImage.moveTo === "function") {
-      baseImage.moveTo(0);
-    } else if (typeof canvas.sendToBack === "function") {
-      canvas.sendToBack(baseImage);
-    } else if (typeof canvas.sendObjectToBack === "function") {
-      canvas.sendObjectToBack(baseImage);
-    }
-
-    bindObjectEvents();
-    bindPointerDrawing();
-
-    resetViewport();
-    if (typeof canvas.calcOffset === "function") canvas.calcOffset();
-    canvas.requestRenderAll();
+  if (editorState.canvas) {
+    try { editorState.canvas.dispose(); } catch (_) {}
+    editorState.canvas = null;
   }
 
+  const canvas = new fabric.Canvas(editorState.canvasEl, {
+    preserveObjectStacking: true,
+    selection: true,
+    renderOnAddRemove: true
+  });
+
+  editorState.canvas = canvas;
+
+  const imgEl = await new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = () => reject(new Error("โหลดรูปภาพไม่สำเร็จ"));
+    img.decoding = "async";
+    img.src = url;
+  });
+
+  const imgW = imgEl.naturalWidth || imgEl.width;
+  const imgH = imgEl.naturalHeight || imgEl.height;
+  if (!imgW || !imgH) throw new Error("ไม่สามารถอ่านขนาดรูปภาพได้");
+
+  const scale = Math.min(maxW / imgW, maxH / imgH, 1);
+  const canvasW = Math.max(320, Math.round(imgW * scale));
+  const canvasH = Math.max(240, Math.round(imgH * scale));
+
+  if (typeof canvas.setDimensions === "function") {
+    canvas.setDimensions({ width: canvasW, height: canvasH });
+  } else if (typeof canvas.setWidth === "function" && typeof canvas.setHeight === "function") {
+    canvas.setWidth(canvasW);
+    canvas.setHeight(canvasH);
+  } else {
+    editorState.canvasEl.width = canvasW;
+    editorState.canvasEl.height = canvasH;
+  }
+
+  if (canvas.lowerCanvasEl) {
+    canvas.lowerCanvasEl.style.width = canvasW + "px";
+    canvas.lowerCanvasEl.style.height = canvasH + "px";
+  }
+  if (canvas.upperCanvasEl) {
+    canvas.upperCanvasEl.style.width = canvasW + "px";
+    canvas.upperCanvasEl.style.height = canvasH + "px";
+  }
+  if (canvas.wrapperEl) {
+    canvas.wrapperEl.style.width = canvasW + "px";
+    canvas.wrapperEl.style.height = canvasH + "px";
+  }
+
+  const baseImage = new fabric.Image(imgEl, {
+    left: canvasW / 2,
+    top: canvasH / 2,
+    originX: "center",
+    originY: "center",
+    selectable: false,
+    evented: false,
+    objectCaching: false
+  });
+
+  baseImage.scaleX = scale;
+  baseImage.scaleY = scale;
+  editorState.baseImage = baseImage;
+
+  canvas.clear();
+  canvas.add(baseImage);
+
+  if (typeof baseImage.moveTo === "function") {
+    baseImage.moveTo(0);
+  } else if (typeof canvas.sendToBack === "function") {
+    canvas.sendToBack(baseImage);
+  } else if (typeof canvas.sendObjectToBack === "function") {
+    canvas.sendObjectToBack(baseImage);
+  }
+
+  bindObjectEvents();
+  bindPointerDrawing();
+
+  resetViewport();
+  if (typeof canvas.calcOffset === "function") {
+    canvas.calcOffset();
+  }
+
+  // render รอบเดียวพอ ลดอาการกระพริบบนมือถือ
+  canvas.renderAll();
+}
   async function exportEditedFile() {
     const canvas = editorState.canvas;
     if (!canvas) throw new Error("ยังไม่มี canvas สำหรับ export");
