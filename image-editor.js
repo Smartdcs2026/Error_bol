@@ -10276,45 +10276,20 @@
 
   const $ = (id) => document.getElementById(id);
 
-  const state = {
+  const editorState = {
+    ready: false,
+    isOpen: false,
+    isOpening: false,
     modal: null,
-    backdrop: null,
     dialog: null,
+    backdrop: null,
     body: null,
     wrap: null,
     canvasEl: null,
-
-    closeBtn: null,
-    cancelBtn: null,
-    saveBtn: null,
-    resetBtn: null,
-
-    zoomOutBtn: null,
-    zoomInBtn: null,
-    zoomResetBtn: null,
-    rotateLeftBtn: null,
-    rotateRightBtn: null,
-
-    colorPicker: null,
-    strokeWidthInput: null,
-    brightnessInput: null,
-    zoomLabel: null,
-    toolLabel: null,
-
-    toolButtons: [],
     fabricCanvas: null,
-    baseImage: null,
-    openResolver: null,
-
     originalFile: null,
-    originalImageEl: null,
-    workingImageEl: null,
-
-    naturalWidth: 0,
-    naturalHeight: 0,
-    displayWidth: 0,
-    displayHeight: 0,
-
+    currentImageEl: null,
+    baseImageObj: null,
     zoom: 1,
     minZoom: 0.25,
     maxZoom: 4,
@@ -10322,20 +10297,16 @@
     strokeWidth: 3,
     brightness: 0,
     activeTool: "select",
-
-    isOpen: false,
-    isPreparing: false,
-    buttonsBound: false,
-
-    isPanning: false,
-    isDrawing: false,
-    drawStart: null,
-    workingShape: null,
-
-    savedScrollY: 0,
+    resolve: null,
+    reject: null,
+    lastViewportHeight: 0,
+    rafOpenToken: 0,
     resizeTimer: null,
     viewportTimer: null,
-    openedAt: 0
+    justOpenedUntil: 0,
+    pointerDown: null,
+    tempShape: null,
+    isPanning: false
   };
 
   function ensureFabricReady() {
@@ -10344,125 +10315,94 @@
     }
   }
 
-  function ensureElements() {
-    if (state.modal) return;
+  function ensureModal() {
+    if (editorState.ready) return;
 
-    state.modal = $("imgEditorModal");
-    state.backdrop = state.modal?.querySelector(".imgEditorBackdrop") || null;
-    state.dialog = state.modal?.querySelector(".imgEditorDialog") || null;
-    state.body = state.modal?.querySelector(".imgEditorBody") || null;
-    state.wrap = state.modal?.querySelector(".imgEditorCanvasWrap") || null;
-    state.canvasEl = $("imgEditorCanvas");
+    editorState.modal = $("imgEditorModal");
+    editorState.dialog = editorState.modal?.querySelector(".imgEditorDialog") || null;
+    editorState.backdrop = editorState.modal?.querySelector(".imgEditorBackdrop") || null;
+    editorState.body = editorState.modal?.querySelector(".imgEditorBody") || null;
+    editorState.wrap = editorState.modal?.querySelector(".imgEditorCanvasWrap") || null;
+    editorState.canvasEl = $("imgEditorCanvas");
 
-    state.closeBtn = $("imgEditorCloseBtn");
-    state.cancelBtn = $("ieCancelBtn");
-    state.saveBtn = $("ieSaveBtn");
-    state.resetBtn = $("ieResetBtn");
-
-    state.zoomOutBtn = $("ieZoomOutBtn");
-    state.zoomInBtn = $("ieZoomInBtn");
-    state.zoomResetBtn = $("ieZoomResetBtn");
-    state.rotateLeftBtn = $("ieRotateLeftBtn");
-    state.rotateRightBtn = $("ieRotateRightBtn");
-
-    state.colorPicker = $("ieColorPicker");
-    state.strokeWidthInput = $("ieStrokeWidth");
-    state.brightnessInput = $("ieBrightness");
-    state.zoomLabel = $("ieZoomLabel");
-    state.toolLabel = $("ieToolLabel");
-
-    state.toolButtons = Array.from(document.querySelectorAll(".ie-tool"));
-
-    if (!state.modal || !state.dialog || !state.wrap || !state.canvasEl) {
-      throw new Error("ไม่พบองค์ประกอบของ image editor modal");
+    if (
+      !editorState.modal ||
+      !editorState.dialog ||
+      !editorState.backdrop ||
+      !editorState.body ||
+      !editorState.wrap ||
+      !editorState.canvasEl
+    ) {
+      throw new Error("ไม่พบโครงสร้าง modal ของ image editor");
     }
+
+    initFabricCanvas();
+    bindUiOnce();
+    editorState.ready = true;
+  }
+
+  function initFabricCanvas() {
+    if (editorState.fabricCanvas) return;
+
+    const canvas = new fabric.Canvas(editorState.canvasEl, {
+      selection: true,
+      preserveObjectStacking: true
+    });
+
+    canvas.on("mouse:down", onCanvasMouseDown);
+    canvas.on("mouse:move", onCanvasMouseMove);
+    canvas.on("mouse:up", onCanvasMouseUp);
+    canvas.on("selection:created", syncControlsFromSelectedObject);
+    canvas.on("selection:updated", syncControlsFromSelectedObject);
+
+    editorState.fabricCanvas = canvas;
   }
 
   function bindUiOnce() {
-    if (state.buttonsBound) return;
-    state.buttonsBound = true;
+    if (editorState.modal.dataset.bound === "1") return;
+    editorState.modal.dataset.bound = "1";
 
-    state.closeBtn?.addEventListener("click", () => closeEditor({ ok: false }));
-    state.cancelBtn?.addEventListener("click", () => closeEditor({ ok: false }));
-    state.backdrop?.addEventListener("click", () => closeEditor({ ok: false }));
+    $("imgEditorCloseBtn")?.addEventListener("click", () => closeEditor({ ok: false }));
+    $("ieCancelBtn")?.addEventListener("click", () => closeEditor({ ok: false }));
+    $("ieResetBtn")?.addEventListener("click", onResetClick);
+    $("ieSaveBtn")?.addEventListener("click", onSaveClick);
+
+    $("ieZoomOutBtn")?.addEventListener("click", () => zoomRelative(0.9));
+    $("ieZoomInBtn")?.addEventListener("click", () => zoomRelative(1.1));
+    $("ieZoomResetBtn")?.addEventListener("click", () => resetZoom());
+
+    $("ieRotateLeftBtn")?.addEventListener("click", () => rotateImage(-90));
+    $("ieRotateRightBtn")?.addEventListener("click", () => rotateImage(90));
+
+    $("ieColorPicker")?.addEventListener("input", (e) => {
+      editorState.strokeColor = String(e.target?.value || "#dc2626");
+      applyStyleToActiveObject();
+    });
+
+    $("ieStrokeWidth")?.addEventListener("input", (e) => {
+      editorState.strokeWidth = Math.max(1, Math.min(16, Number(e.target?.value || 3)));
+      applyStyleToActiveObject();
+    });
+
+    $("ieBrightness")?.addEventListener("input", async (e) => {
+      editorState.brightness = Math.max(-1, Math.min(1, Number(e.target?.value || 0)));
+      applyBrightnessFilter();
+    });
+
+    editorState.backdrop?.addEventListener("click", () => closeEditor({ ok: false }));
+
+    document.querySelectorAll(".ie-tool").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        setTool(btn.dataset.tool || "select");
+      });
+    });
 
     document.addEventListener("keydown", (ev) => {
-      if (!state.isOpen) return;
-
+      if (!editorState.isOpen) return;
       if (ev.key === "Escape") {
         ev.preventDefault();
         closeEditor({ ok: false });
-        return;
       }
-
-      if ((ev.key === "Delete" || ev.key === "Backspace") && !isTypingTarget(ev.target)) {
-        const obj = state.fabricCanvas?.getActiveObject();
-        if (obj && obj !== state.baseImage) {
-          ev.preventDefault();
-          state.fabricCanvas.remove(obj);
-          state.fabricCanvas.discardActiveObject();
-          state.fabricCanvas.requestRenderAll();
-        }
-      }
-    });
-
-    state.saveBtn?.addEventListener("click", async () => {
-      try {
-        const out = await exportEditedFile();
-        closeEditor(out);
-      } catch (err) {
-        alertError(err);
-      }
-    });
-
-    state.resetBtn?.addEventListener("click", async () => {
-      try {
-        await resetToOriginal();
-      } catch (err) {
-        alertError(err);
-      }
-    });
-
-    state.zoomOutBtn?.addEventListener("click", () => applyZoom(state.zoom * 0.85));
-    state.zoomInBtn?.addEventListener("click", () => applyZoom(state.zoom * 1.15));
-    state.zoomResetBtn?.addEventListener("click", () => resetViewport());
-
-    state.rotateLeftBtn?.addEventListener("click", async () => {
-      try {
-        await rotateWorkingImage(-90);
-      } catch (err) {
-        alertError(err);
-      }
-    });
-
-    state.rotateRightBtn?.addEventListener("click", async () => {
-      try {
-        await rotateWorkingImage(90);
-      } catch (err) {
-        alertError(err);
-      }
-    });
-
-    state.colorPicker?.addEventListener("input", () => {
-      state.strokeColor = String(state.colorPicker.value || "#dc2626");
-      syncActiveObjectStyle();
-    });
-
-    state.strokeWidthInput?.addEventListener("input", () => {
-      state.strokeWidth = clamp(Number(state.strokeWidthInput.value || 3), 1, 16);
-      syncActiveObjectStyle();
-    });
-
-    state.brightnessInput?.addEventListener("input", () => {
-      state.brightness = clamp(Number(state.brightnessInput.value || 0), -1, 1);
-      applyBrightnessToBaseImage();
-    });
-
-    state.toolButtons.forEach((btn) => {
-      btn.addEventListener("click", () => {
-        const tool = String(btn.dataset.tool || "select").trim();
-        setTool(tool);
-      });
     });
 
     window.addEventListener("resize", scheduleStableResize, { passive: true });
@@ -10473,70 +10413,117 @@
     }
   }
 
-  function isTypingTarget(target) {
-    if (!target) return false;
-    const tag = String(target.tagName || "").toLowerCase();
-    return tag === "input" || tag === "textarea" || target.isContentEditable === true;
-  }
-
   function scheduleStableResize() {
-    if (!state.isOpen) return;
+    if (!editorState.isOpen) return;
 
     const now = Date.now();
-    if (now - state.openedAt < 380) return;
+    if (now < editorState.justOpenedUntil) return;
 
-    clearTimeout(state.resizeTimer);
-    clearTimeout(state.viewportTimer);
+    clearTimeout(editorState.resizeTimer);
+    clearTimeout(editorState.viewportTimer);
 
-    state.viewportTimer = setTimeout(() => {
-      setLockedViewportHeight();
-    }, 60);
+    editorState.viewportTimer = setTimeout(() => {
+      updateViewportCssVar();
+    }, 50);
 
-    state.resizeTimer = setTimeout(async () => {
-      try {
-        await refitCanvasPreserveView();
-      } catch (_) {}
-    }, 140);
+    editorState.resizeTimer = setTimeout(() => {
+      fitCanvasToViewport();
+    }, 120);
   }
 
-  function lockBodyScroll() {
-    state.savedScrollY = window.scrollY || window.pageYOffset || 0;
-    document.documentElement.classList.add("img-editor-lock");
-    document.body.classList.add("img-editor-lock");
-    document.body.style.top = `-${state.savedScrollY}px`;
-  }
-
-  function unlockBodyScroll() {
-    document.documentElement.classList.remove("img-editor-lock");
-    document.body.classList.remove("img-editor-lock");
-    document.body.style.top = "";
-    window.scrollTo(0, state.savedScrollY || 0);
-  }
-
-  function setLockedViewportHeight() {
-    const vh = Math.max(
-      window.innerHeight || 0,
-      window.visualViewport ? Math.round(window.visualViewport.height) : 0,
-      320
+  function updateViewportCssVar() {
+    const vv = window.visualViewport;
+    const h = Math.max(
+      320,
+      Math.round(vv?.height || 0),
+      Math.round(window.innerHeight || 0)
     );
-    document.documentElement.style.setProperty("--ie-safe-vh", `${vh}px`);
-  }
-
-  function waitFrame() {
-    return new Promise((resolve) => requestAnimationFrame(() => resolve()));
-  }
-
-  async function waitFrames(count = 1) {
-    for (let i = 0; i < count; i++) {
-      await waitFrame();
+    if (h !== editorState.lastViewportHeight) {
+      editorState.lastViewportHeight = h;
+      document.documentElement.style.setProperty("--img-editor-vh", `${h}px`);
     }
   }
 
-  function clamp(n, min, max) {
-    return Math.max(min, Math.min(max, n));
+  function lockBodyForEditor() {
+    const scrollY = window.scrollY || window.pageYOffset || 0;
+    document.body.dataset.imgEditorScrollY = String(scrollY);
+    document.body.classList.add("img-editor-lock");
+    document.body.style.top = `-${scrollY}px`;
   }
 
-  function toolLabelText(tool) {
+  function unlockBodyForEditor() {
+    const scrollY = Number(document.body.dataset.imgEditorScrollY || 0);
+    document.body.classList.remove("img-editor-lock");
+    document.body.style.top = "";
+    delete document.body.dataset.imgEditorScrollY;
+    window.scrollTo(0, scrollY);
+  }
+
+  function waitNextFrame() {
+    return new Promise((resolve) => requestAnimationFrame(() => resolve()));
+  }
+
+  async function waitFrames(n = 1) {
+    for (let i = 0; i < n; i++) {
+      await waitNextFrame();
+    }
+  }
+
+  function clearCanvasObjects() {
+    const canvas = editorState.fabricCanvas;
+    if (!canvas) return;
+    canvas.clear();
+    editorState.baseImageObj = null;
+    editorState.tempShape = null;
+    editorState.pointerDown = null;
+    editorState.isPanning = false;
+  }
+
+  function setTool(tool) {
+    editorState.activeTool = String(tool || "select");
+
+    document.querySelectorAll(".ie-tool").forEach((btn) => {
+      btn.classList.toggle("active", btn.dataset.tool === editorState.activeTool);
+    });
+
+    const toolLabel = $("ieToolLabel");
+    if (toolLabel) {
+      toolLabel.textContent = getToolLabel(editorState.activeTool);
+    }
+
+    const canvas = editorState.fabricCanvas;
+    if (!canvas) return;
+
+    canvas.isDrawingMode = false;
+    canvas.selection = editorState.activeTool === "select";
+
+    const all = canvas.getObjects();
+    all.forEach((obj) => {
+      if (obj === editorState.baseImageObj) {
+        obj.selectable = false;
+        obj.evented = false;
+        return;
+      }
+      const canSelect = editorState.activeTool === "select";
+      obj.selectable = canSelect;
+      obj.evented = canSelect;
+    });
+
+    if (editorState.activeTool === "pan") {
+      canvas.defaultCursor = "grab";
+    } else if (editorState.activeTool === "select") {
+      canvas.defaultCursor = "default";
+    } else if (editorState.activeTool === "text") {
+      canvas.defaultCursor = "text";
+    } else {
+      canvas.defaultCursor = "crosshair";
+    }
+
+    canvas.discardActiveObject();
+    canvas.requestRenderAll();
+  }
+
+  function getToolLabel(tool) {
     const map = {
       select: "เลือก",
       pan: "เลื่อนภาพ",
@@ -10549,861 +10536,628 @@
     return map[tool] || "เลือก";
   }
 
-  function updateStatusLabels() {
-    if (state.zoomLabel) {
-      state.zoomLabel.textContent = `${Math.round(state.zoom * 100)}%`;
-    }
-    if (state.toolLabel) {
-      state.toolLabel.textContent = toolLabelText(state.activeTool);
-    }
-    state.toolButtons.forEach((btn) => {
-      const tool = String(btn.dataset.tool || "");
-      btn.classList.toggle("active", tool === state.activeTool);
-    });
-  }
+  function fitCanvasToViewport() {
+    const canvas = editorState.fabricCanvas;
+    const img = editorState.currentImageEl;
+    const wrap = editorState.wrap;
+    if (!canvas || !img || !wrap) return;
 
-  function setTool(tool) {
-    state.activeTool = tool || "select";
-    updateStatusLabels();
+    const rect = wrap.getBoundingClientRect();
+    const maxW = Math.max(200, Math.floor(rect.width - 8));
+    const maxH = Math.max(200, Math.floor(rect.height - 8));
 
-    const canvas = state.fabricCanvas;
-    if (!canvas) return;
+    const iw = img.naturalWidth || img.width || 1;
+    const ih = img.naturalHeight || img.height || 1;
 
-    canvas.defaultCursor = "default";
-    canvas.selection = state.activeTool === "select";
+    const ratio = Math.min(maxW / iw, maxH / ih);
+    const w = Math.max(1, Math.round(iw * ratio));
+    const h = Math.max(1, Math.round(ih * ratio));
 
-    const objects = canvas.getObjects();
-    objects.forEach((obj) => {
-      if (obj === state.baseImage) return;
-      const selectable = state.activeTool === "select";
-      obj.selectable = selectable;
-      obj.evented = selectable;
-    });
+    canvas.setWidth(w);
+    canvas.setHeight(h);
 
-    if (state.activeTool === "pan") {
-      canvas.defaultCursor = "grab";
-      canvas.discardActiveObject();
-    } else if (state.activeTool === "text") {
-      canvas.defaultCursor = "text";
-      canvas.discardActiveObject();
-    } else if (state.activeTool !== "select") {
-      canvas.defaultCursor = "crosshair";
-      canvas.discardActiveObject();
-    }
-
-    canvas.requestRenderAll();
-  }
-
-  function initFabricOnce() {
-    if (state.fabricCanvas) return;
-
-    const canvas = new fabric.Canvas(state.canvasEl, {
-      selection: true,
-      preserveObjectStacking: true,
-      backgroundColor: "#ffffff"
-    });
-
-    canvas.on("mouse:wheel", (opt) => {
-      if (!state.isOpen) return;
-      opt.e.preventDefault();
-      opt.e.stopPropagation();
-
-      const delta = opt.e.deltaY;
-      const factor = delta > 0 ? 0.92 : 1.08;
-      applyZoom(state.zoom * factor, {
-        x: opt.e.offsetX || canvas.getWidth() / 2,
-        y: opt.e.offsetY || canvas.getHeight() / 2
-      });
-    });
-
-    canvas.on("mouse:down", handleMouseDown);
-    canvas.on("mouse:move", handleMouseMove);
-    canvas.on("mouse:up", handleMouseUp);
-
-    canvas.on("selection:created", syncStyleFromActiveObject);
-    canvas.on("selection:updated", syncStyleFromActiveObject);
-
-    state.fabricCanvas = canvas;
-  }
-
-  function handleMouseDown(opt) {
-    const canvas = state.fabricCanvas;
-    if (!canvas || !state.isOpen) return;
-
-    const evt = opt.e || {};
-
-    if (state.activeTool === "pan") {
-      state.isPanning = true;
-      state.drawStart = { x: evt.clientX || 0, y: evt.clientY || 0 };
-      canvas.defaultCursor = "grabbing";
-      return;
-    }
-
-    if (state.activeTool === "text") {
-      const pointer = canvas.getPointer(evt, false);
-      const text = new fabric.IText("ข้อความ", {
-        left: pointer.x,
-        top: pointer.y,
+    if (editorState.baseImageObj) {
+      editorState.baseImageObj.set({
+        left: w / 2,
+        top: h / 2,
         originX: "center",
         originY: "center",
-        fill: state.strokeColor,
-        fontSize: 24,
-        fontFamily: "Kanit, Arial, sans-serif",
-        editable: true
+        scaleX: w / iw,
+        scaleY: h / ih
       });
-      canvas.add(text);
-      canvas.setActiveObject(text);
-      text.enterEditing();
-      canvas.requestRenderAll();
-      return;
+      editorState.baseImageObj.setCoords();
+      canvas.sendToBack(editorState.baseImageObj);
     }
 
-    if (!["line", "arrow", "rect", "circle"].includes(state.activeTool)) return;
-
-    state.isDrawing = true;
-    const pointer = canvas.getPointer(evt, false);
-    state.drawStart = pointer;
-
-    if (state.activeTool === "line") {
-      const line = new fabric.Line([pointer.x, pointer.y, pointer.x, pointer.y], {
-        stroke: state.strokeColor,
-        strokeWidth: state.strokeWidth,
-        selectable: false,
-        evented: false,
-        originX: "center",
-        originY: "center"
-      });
-      state.workingShape = line;
-      canvas.add(line);
-      return;
-    }
-
-    if (state.activeTool === "rect") {
-      const rect = new fabric.Rect({
-        left: pointer.x,
-        top: pointer.y,
-        width: 1,
-        height: 1,
-        originX: "left",
-        originY: "top",
-        fill: "rgba(0,0,0,0)",
-        stroke: state.strokeColor,
-        strokeWidth: state.strokeWidth,
-        selectable: false,
-        evented: false
-      });
-      state.workingShape = rect;
-      canvas.add(rect);
-      return;
-    }
-
-    if (state.activeTool === "circle") {
-      const circle = new fabric.Ellipse({
-        left: pointer.x,
-        top: pointer.y,
-        rx: 1,
-        ry: 1,
-        originX: "left",
-        originY: "top",
-        fill: "rgba(0,0,0,0)",
-        stroke: state.strokeColor,
-        strokeWidth: state.strokeWidth,
-        selectable: false,
-        evented: false
-      });
-      state.workingShape = circle;
-      canvas.add(circle);
-      return;
-    }
-
-    if (state.activeTool === "arrow") {
-      const line = new fabric.Line([pointer.x, pointer.y, pointer.x, pointer.y], {
-        stroke: state.strokeColor,
-        strokeWidth: state.strokeWidth,
-        selectable: false,
-        evented: false,
-        originX: "center",
-        originY: "center"
-      });
-      state.workingShape = line;
-      canvas.add(line);
-    }
+    resetZoom(false);
+    canvas.requestRenderAll();
   }
 
-  function handleMouseMove(opt) {
-    const canvas = state.fabricCanvas;
-    if (!canvas || !state.isOpen) return;
-
-    const evt = opt.e || {};
-
-    if (state.isPanning && state.activeTool === "pan") {
-      const vpt = canvas.viewportTransform;
-      if (!vpt) return;
-
-      const currentX = evt.clientX || 0;
-      const currentY = evt.clientY || 0;
-      const dx = currentX - (state.drawStart?.x || currentX);
-      const dy = currentY - (state.drawStart?.y || currentY);
-
-      vpt[4] += dx;
-      vpt[5] += dy;
-      canvas.requestRenderAll();
-
-      state.drawStart = { x: currentX, y: currentY };
-      return;
-    }
-
-    if (!state.isDrawing || !state.drawStart || !state.workingShape) return;
-
-    const pointer = canvas.getPointer(evt, false);
-    const start = state.drawStart;
-
-    if (state.activeTool === "line" || state.activeTool === "arrow") {
-      state.workingShape.set({
-        x1: start.x,
-        y1: start.y,
-        x2: pointer.x,
-        y2: pointer.y
-      });
-      state.workingShape.setCoords();
-      canvas.requestRenderAll();
-      return;
-    }
-
-    if (state.activeTool === "rect") {
-      const left = Math.min(start.x, pointer.x);
-      const top = Math.min(start.y, pointer.y);
-      const width = Math.abs(pointer.x - start.x);
-      const height = Math.abs(pointer.y - start.y);
-
-      state.workingShape.set({
-        left,
-        top,
-        width: Math.max(1, width),
-        height: Math.max(1, height)
-      });
-      state.workingShape.setCoords();
-      canvas.requestRenderAll();
-      return;
-    }
-
-    if (state.activeTool === "circle") {
-      const left = Math.min(start.x, pointer.x);
-      const top = Math.min(start.y, pointer.y);
-      const rx = Math.abs(pointer.x - start.x) / 2;
-      const ry = Math.abs(pointer.y - start.y) / 2;
-
-      state.workingShape.set({
-        left,
-        top,
-        rx: Math.max(1, rx),
-        ry: Math.max(1, ry)
-      });
-      state.workingShape.setCoords();
-      canvas.requestRenderAll();
-    }
+  function resetZoom(updateLabel = true) {
+    const canvas = editorState.fabricCanvas;
+    if (!canvas) return;
+    editorState.zoom = 1;
+    canvas.setViewportTransform([1, 0, 0, 1, 0, 0]);
+    if (updateLabel) updateZoomLabel();
+    else updateZoomLabel();
+    canvas.requestRenderAll();
   }
 
-  function buildArrowFromLine(line) {
-    if (!line) return null;
-
-    const x1 = Number(line.x1 || 0);
-    const y1 = Number(line.y1 || 0);
-    const x2 = Number(line.x2 || 0);
-    const y2 = Number(line.y2 || 0);
-
-    const dx = x2 - x1;
-    const dy = y2 - y1;
-    const angle = Math.atan2(dy, dx) * 180 / Math.PI;
-    const head = Math.max(10, Number(line.strokeWidth || 2) * 4);
-
-    const shaft = new fabric.Line([x1, y1, x2, y2], {
-      stroke: line.stroke || state.strokeColor,
-      strokeWidth: line.strokeWidth || state.strokeWidth,
-      selectable: true,
-      evented: true,
-      originX: "center",
-      originY: "center"
-    });
-
-    const tip = new fabric.Triangle({
-      left: x2,
-      top: y2,
-      originX: "center",
-      originY: "center",
-      width: head,
-      height: head,
-      fill: line.stroke || state.strokeColor,
-      angle: angle + 90,
-      selectable: true,
-      evented: true
-    });
-
-    return new fabric.Group([shaft, tip], {
-      selectable: true,
-      evented: true
-    });
-  }
-
-  function handleMouseUp() {
-    const canvas = state.fabricCanvas;
+  function zoomRelative(multiplier) {
+    const canvas = editorState.fabricCanvas;
     if (!canvas) return;
 
-    if (state.isPanning) {
-      state.isPanning = false;
-      canvas.defaultCursor = "grab";
-    }
-
-    if (state.isDrawing && state.activeTool === "arrow" && state.workingShape) {
-      const line = state.workingShape;
-      canvas.remove(line);
-      const arrow = buildArrowFromLine(line);
-      if (arrow) canvas.add(arrow);
-    }
-
-    if (state.workingShape && state.activeTool !== "select" && state.activeTool !== "pan") {
-      if (state.activeTool !== "arrow") {
-        state.workingShape.selectable = false;
-        state.workingShape.evented = false;
-      }
-      state.workingShape.setCoords?.();
-    }
-
-    state.isDrawing = false;
-    state.drawStart = null;
-    state.workingShape = null;
-    canvas.requestRenderAll();
-  }
-
-  function syncStyleFromActiveObject() {
-    const obj = state.fabricCanvas?.getActiveObject();
-    if (!obj || obj === state.baseImage) return;
-
-    if ("stroke" in obj && obj.stroke) {
-      state.strokeColor = String(obj.stroke || state.strokeColor);
-      if (state.colorPicker) state.colorPicker.value = normalizeColor(state.strokeColor);
-    } else if ("fill" in obj && obj.fill) {
-      state.strokeColor = String(obj.fill || state.strokeColor);
-      if (state.colorPicker) state.colorPicker.value = normalizeColor(state.strokeColor);
-    }
-
-    if ("strokeWidth" in obj && obj.strokeWidth != null) {
-      state.strokeWidth = clamp(Number(obj.strokeWidth || 3), 1, 16);
-      if (state.strokeWidthInput) state.strokeWidthInput.value = String(state.strokeWidth);
-    }
-  }
-
-  function normalizeColor(color) {
-    const s = String(color || "").trim();
-    if (/^#[0-9a-f]{6}$/i.test(s)) return s;
-    return "#dc2626";
-  }
-
-  function syncActiveObjectStyle() {
-    const canvas = state.fabricCanvas;
-    const obj = canvas?.getActiveObject();
-    if (!obj || obj === state.baseImage) return;
-
-    if ("stroke" in obj) obj.set("stroke", state.strokeColor);
-    if ("fill" in obj && obj.type === "i-text") obj.set("fill", state.strokeColor);
-    if ("fill" in obj && obj.type !== "i-text" && obj.type !== "group" && String(obj.fill || "").startsWith("rgba")) {
-      obj.set("stroke", state.strokeColor);
-    }
-    if ("strokeWidth" in obj) obj.set("strokeWidth", state.strokeWidth);
-
-    if (obj.type === "group") {
-      obj.getObjects().forEach((child) => {
-        if ("stroke" in child) child.set("stroke", state.strokeColor);
-        if ("fill" in child && child.type === "triangle") child.set("fill", state.strokeColor);
-        if ("strokeWidth" in child) child.set("strokeWidth", state.strokeWidth);
-      });
-    }
-
-    canvas.requestRenderAll();
-  }
-
-  function getWrapSize() {
-    const rect = state.wrap.getBoundingClientRect();
-    const width = Math.max(240, Math.floor(rect.width));
-    const height = Math.max(220, Math.floor(rect.height));
-    return { width, height };
-  }
-
-  function calculateFit(naturalW, naturalH, maxW, maxH) {
-    const ratio = Math.min(maxW / naturalW, maxH / naturalH, 1);
-    return {
-      width: Math.max(1, Math.round(naturalW * ratio)),
-      height: Math.max(1, Math.round(naturalH * ratio)),
-      ratio
-    };
-  }
-
-  async function rebuildCanvasFromWorkingImage() {
-    const canvas = state.fabricCanvas;
-    if (!canvas || !state.workingImageEl) return;
-
-    const wrapSize = getWrapSize();
-    const fit = calculateFit(
-      state.naturalWidth,
-      state.naturalHeight,
-      Math.max(220, wrapSize.width - 8),
-      Math.max(220, wrapSize.height - 8)
+    const nextZoom = Math.max(
+      editorState.minZoom,
+      Math.min(editorState.maxZoom, editorState.zoom * multiplier)
     );
 
-    state.displayWidth = fit.width;
-    state.displayHeight = fit.height;
+    editorState.zoom = nextZoom;
+    const center = new fabric.Point(canvas.getWidth() / 2, canvas.getHeight() / 2);
+    canvas.zoomToPoint(center, nextZoom);
+    updateZoomLabel();
+    canvas.requestRenderAll();
+  }
 
-    const oldAnnotations = canvas.getObjects().filter((obj) => obj !== state.baseImage);
+  function updateZoomLabel() {
+    const el = $("ieZoomLabel");
+    if (el) el.textContent = `${Math.round(editorState.zoom * 100)}%`;
+  }
 
-    canvas.clear();
-    canvas.setWidth(state.displayWidth);
-    canvas.setHeight(state.displayHeight);
+  function loadFileAsDataUrl(file) {
+    return new Promise((resolve, reject) => {
+      const fr = new FileReader();
+      fr.onload = () => resolve(String(fr.result || ""));
+      fr.onerror = () => reject(fr.error || new Error("อ่านไฟล์ไม่สำเร็จ"));
+      fr.readAsDataURL(file);
+    });
+  }
 
-    const base = new fabric.Image(state.workingImageEl, {
-      left: state.displayWidth / 2,
-      top: state.displayHeight / 2,
+  function loadImageEl(src) {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = () => reject(new Error("โหลดรูปภาพไม่สำเร็จ"));
+      img.src = src;
+    });
+  }
+
+  async function buildBaseImageFromFile(file) {
+    const dataUrl = await loadFileAsDataUrl(file);
+    const img = await loadImageEl(dataUrl);
+    editorState.currentImageEl = img;
+  }
+
+  async function mountImageOnCanvas() {
+    const canvas = editorState.fabricCanvas;
+    const img = editorState.currentImageEl;
+    if (!canvas || !img) return;
+
+    clearCanvasObjects();
+
+    const rect = editorState.wrap.getBoundingClientRect();
+    const maxW = Math.max(200, Math.floor(rect.width - 8));
+    const maxH = Math.max(200, Math.floor(rect.height - 8));
+    const iw = img.naturalWidth || img.width || 1;
+    const ih = img.naturalHeight || img.height || 1;
+    const ratio = Math.min(maxW / iw, maxH / ih);
+    const w = Math.max(1, Math.round(iw * ratio));
+    const h = Math.max(1, Math.round(ih * ratio));
+
+    canvas.setWidth(w);
+    canvas.setHeight(h);
+
+    const base = new fabric.Image(img, {
+      left: w / 2,
+      top: h / 2,
       originX: "center",
       originY: "center",
       selectable: false,
       evented: false,
       hasControls: false,
       hasBorders: false,
-      scaleX: state.displayWidth / state.naturalWidth,
-      scaleY: state.displayHeight / state.naturalHeight
+      scaleX: w / iw,
+      scaleY: h / ih
     });
 
-    state.baseImage = base;
+    editorState.baseImageObj = base;
     canvas.add(base);
-    base.sendToBack();
+    canvas.sendToBack(base);
 
-    oldAnnotations.forEach((obj) => {
-      canvas.add(obj);
-    });
-
-    applyBrightnessToBaseImage(true);
-    resetViewport();
-    setTool(state.activeTool || "select");
-    canvas.requestRenderAll();
-
-    await waitFrames(1);
+    await applyBrightnessFilter(true);
+    setTool("select");
+    resetZoom();
   }
 
-  async function refitCanvasPreserveView() {
-    if (!state.fabricCanvas || !state.workingImageEl || !state.isOpen) return;
-
-    const prevZoom = state.zoom;
-    const prevVpt = state.fabricCanvas.viewportTransform
-      ? state.fabricCanvas.viewportTransform.slice()
-      : [1, 0, 0, 1, 0, 0];
-
-    const prevW = Math.max(1, state.displayWidth || state.fabricCanvas.getWidth() || 1);
-    const prevH = Math.max(1, state.displayHeight || state.fabricCanvas.getHeight() || 1);
-
-    await rebuildCanvasFromWorkingImage();
-
-    const canvas = state.fabricCanvas;
-    const newW = Math.max(1, state.displayWidth || canvas.getWidth() || 1);
-    const newH = Math.max(1, state.displayHeight || canvas.getHeight() || 1);
-
-    const scaleX = newW / prevW;
-    const scaleY = newH / prevH;
-
-    const vpt = canvas.viewportTransform.slice();
-    vpt[0] = prevZoom;
-    vpt[3] = prevZoom;
-    vpt[4] = (prevVpt[4] || 0) * scaleX;
-    vpt[5] = (prevVpt[5] || 0) * scaleY;
-    canvas.setViewportTransform(vpt);
-
-    state.zoom = clamp(prevZoom, state.minZoom, state.maxZoom);
-    updateStatusLabels();
-    canvas.requestRenderAll();
-  }
-
-  function applyBrightnessToBaseImage(skipRender) {
-    if (!state.baseImage) return;
-
-    const brightness = clamp(Number(state.brightness || 0), -1, 1);
-    state.baseImage.filters = [
-      new fabric.Image.filters.Brightness({
-        brightness
-      })
-    ];
-    state.baseImage.applyFilters();
-
-    if (!skipRender) {
-      state.fabricCanvas?.requestRenderAll();
-    }
-  }
-
-  function resetViewport() {
-    const canvas = state.fabricCanvas;
-    if (!canvas) return;
-
-    state.zoom = 1;
-    canvas.setViewportTransform([1, 0, 0, 1, 0, 0]);
-    updateStatusLabels();
-    canvas.requestRenderAll();
-  }
-
-  function applyZoom(nextZoom, point) {
-    const canvas = state.fabricCanvas;
-    if (!canvas) return;
-
-    const zoom = clamp(Number(nextZoom || 1), state.minZoom, state.maxZoom);
-    state.zoom = zoom;
-
-    const center = point || {
-      x: canvas.getWidth() / 2,
-      y: canvas.getHeight() / 2
-    };
-
-    canvas.zoomToPoint(new fabric.Point(center.x, center.y), zoom);
-    updateStatusLabels();
-    canvas.requestRenderAll();
-  }
-
-  function readFileAsDataURL(file) {
-    return new Promise((resolve, reject) => {
-      const fr = new FileReader();
-      fr.onload = () => resolve(String(fr.result || ""));
-      fr.onerror = () => reject(fr.error || new Error("อ่านไฟล์รูปภาพไม่สำเร็จ"));
-      fr.readAsDataURL(file);
-    });
-  }
-
-  function dataUrlToImage(dataUrl) {
-    return new Promise((resolve, reject) => {
-      const img = new Image();
-      img.onload = async () => {
-        try {
-          if (img.decode) {
-            await img.decode().catch(() => {});
-          }
-        } catch (_) {}
-        resolve(img);
-      };
-      img.onerror = () => reject(new Error("โหลดรูปภาพไม่สำเร็จ"));
-      img.src = dataUrl;
-    });
-  }
-
-  async function fileToImage(file) {
-    const dataUrl = await readFileAsDataURL(file);
-    return dataUrlToImage(dataUrl);
-  }
-
-  async function resetToOriginal() {
-    if (!state.originalFile) return;
-
-    state.zoom = 1;
-    state.brightness = 0;
-    state.strokeColor = "#dc2626";
-    state.strokeWidth = 3;
-
-    if (state.colorPicker) state.colorPicker.value = state.strokeColor;
-    if (state.strokeWidthInput) state.strokeWidthInput.value = String(state.strokeWidth);
-    if (state.brightnessInput) state.brightnessInput.value = "0";
-
-    const img = await fileToImage(state.originalFile);
-
-    state.originalImageEl = img;
-    state.workingImageEl = img;
-    state.naturalWidth = img.naturalWidth || img.width;
-    state.naturalHeight = img.naturalHeight || img.height;
-
-    await rebuildCanvasFromWorkingImage();
-  }
-
-  async function buildMergedNaturalCanvas() {
-    const canvas = state.fabricCanvas;
-    if (!canvas || !state.workingImageEl) {
-      throw new Error("ยังไม่พร้อมสำหรับการประมวลผลภาพ");
-    }
-
-    const exportCanvas = new fabric.StaticCanvas(null, {
-      width: state.naturalWidth,
-      height: state.naturalHeight,
-      backgroundColor: "#ffffff"
-    });
-
-    const base = new fabric.Image(state.workingImageEl, {
-      left: state.naturalWidth / 2,
-      top: state.naturalHeight / 2,
-      originX: "center",
-      originY: "center",
-      selectable: false,
-      evented: false,
-      scaleX: 1,
-      scaleY: 1
-    });
+  async function applyBrightnessFilter(skipRender = false) {
+    const base = editorState.baseImageObj;
+    if (!base) return;
 
     base.filters = [
       new fabric.Image.filters.Brightness({
-        brightness: clamp(Number(state.brightness || 0), -1, 1)
+        brightness: Number(editorState.brightness || 0)
       })
     ];
     base.applyFilters();
-    exportCanvas.add(base);
 
-    const annotations = canvas.getObjects().filter((obj) => obj !== state.baseImage);
-    const ratioX = state.naturalWidth / Math.max(1, state.displayWidth);
-    const ratioY = state.naturalHeight / Math.max(1, state.displayHeight);
-
-    for (const obj of annotations) {
-      const clone = await cloneFabricObject(obj);
-      scaleObjectForExport(clone, ratioX, ratioY);
-      exportCanvas.add(clone);
+    if (!skipRender) {
+      editorState.fabricCanvas?.requestRenderAll();
     }
-
-    exportCanvas.renderAll();
-    return exportCanvas;
   }
 
-  function scaleObjectForExport(obj, ratioX, ratioY) {
-    if (!obj) return;
+  function syncControlsFromSelectedObject() {
+    const canvas = editorState.fabricCanvas;
+    const obj = canvas?.getActiveObject();
+    if (!obj || obj === editorState.baseImageObj) return;
 
-    obj.left = Number(obj.left || 0) * ratioX;
-    obj.top = Number(obj.top || 0) * ratioY;
-    obj.scaleX = Number(obj.scaleX == null ? 1 : obj.scaleX) * ratioX;
-    obj.scaleY = Number(obj.scaleY == null ? 1 : obj.scaleY) * ratioY;
-
-    if (typeof obj.strokeWidth === "number") {
-      obj.strokeWidth = obj.strokeWidth * ((ratioX + ratioY) / 2);
+    if (typeof obj.stroke === "string" && $("ieColorPicker")) {
+      $("ieColorPicker").value = normalizeHex(obj.stroke, editorState.strokeColor);
+    } else if (typeof obj.fill === "string" && $("ieColorPicker")) {
+      $("ieColorPicker").value = normalizeHex(obj.fill, editorState.strokeColor);
     }
 
-    if (obj.type === "line") {
-      obj.set({
-        x1: Number(obj.x1 || 0) * ratioX,
-        y1: Number(obj.y1 || 0) * ratioY,
-        x2: Number(obj.x2 || 0) * ratioX,
-        y2: Number(obj.y2 || 0) * ratioY
-      });
+    if (typeof obj.strokeWidth === "number" && $("ieStrokeWidth")) {
+      $("ieStrokeWidth").value = String(obj.strokeWidth);
+    }
+  }
+
+  function normalizeHex(value, fallback) {
+    const v = String(value || "").trim();
+    return /^#[0-9a-fA-F]{6}$/.test(v) ? v : fallback;
+  }
+
+  function applyStyleToActiveObject() {
+    const canvas = editorState.fabricCanvas;
+    const obj = canvas?.getActiveObject();
+    if (!obj || obj === editorState.baseImageObj) return;
+
+    if ("stroke" in obj) obj.set("stroke", editorState.strokeColor);
+    if ("strokeWidth" in obj) obj.set("strokeWidth", editorState.strokeWidth);
+    if (obj.type === "i-text" || obj.type === "textbox") {
+      obj.set("fill", editorState.strokeColor);
     }
 
-    if (obj.type === "group") {
+    if (obj.type === "group" && typeof obj.getObjects === "function") {
       obj.getObjects().forEach((child) => {
-        if ("strokeWidth" in child && typeof child.strokeWidth === "number") {
-          child.strokeWidth = child.strokeWidth * ((ratioX + ratioY) / 2);
-        }
-        if (child.type === "line") {
-          child.set({
-            x1: Number(child.x1 || 0) * ratioX,
-            y1: Number(child.y1 || 0) * ratioY,
-            x2: Number(child.x2 || 0) * ratioX,
-            y2: Number(child.y2 || 0) * ratioY
-          });
-        }
+        if ("stroke" in child) child.set("stroke", editorState.strokeColor);
+        if ("strokeWidth" in child) child.set("strokeWidth", editorState.strokeWidth);
+        if (child.type === "triangle") child.set("fill", editorState.strokeColor);
       });
     }
 
     obj.setCoords?.();
+    canvas.requestRenderAll();
   }
 
-  function cloneFabricObject(obj) {
-    return new Promise((resolve) => {
-      obj.clone((cloned) => resolve(cloned));
-    });
+  function onCanvasMouseDown(opt) {
+    const canvas = editorState.fabricCanvas;
+    if (!canvas || !editorState.isOpen) return;
+
+    const e = opt.e;
+    const pointer = canvas.getPointer(e);
+
+    if (editorState.activeTool === "pan") {
+      editorState.isPanning = true;
+      editorState.pointerDown = { x: e.clientX, y: e.clientY };
+      canvas.defaultCursor = "grabbing";
+      return;
+    }
+
+    if (editorState.activeTool === "text") {
+      const text = new fabric.IText("ข้อความ", {
+        left: pointer.x,
+        top: pointer.y,
+        fontSize: 24,
+        fill: editorState.strokeColor,
+        fontFamily: "Kanit, Arial, sans-serif"
+      });
+      canvas.add(text);
+      canvas.setActiveObject(text);
+      canvas.requestRenderAll();
+      return;
+    }
+
+    editorState.pointerDown = { x: pointer.x, y: pointer.y };
+
+    if (editorState.activeTool === "line") {
+      editorState.tempShape = new fabric.Line(
+        [pointer.x, pointer.y, pointer.x, pointer.y],
+        {
+          stroke: editorState.strokeColor,
+          strokeWidth: editorState.strokeWidth,
+          selectable: false,
+          evented: false
+        }
+      );
+      canvas.add(editorState.tempShape);
+      return;
+    }
+
+    if (editorState.activeTool === "rect") {
+      editorState.tempShape = new fabric.Rect({
+        left: pointer.x,
+        top: pointer.y,
+        width: 1,
+        height: 1,
+        fill: "transparent",
+        stroke: editorState.strokeColor,
+        strokeWidth: editorState.strokeWidth,
+        selectable: false,
+        evented: false
+      });
+      canvas.add(editorState.tempShape);
+      return;
+    }
+
+    if (editorState.activeTool === "circle") {
+      editorState.tempShape = new fabric.Ellipse({
+        left: pointer.x,
+        top: pointer.y,
+        rx: 1,
+        ry: 1,
+        fill: "transparent",
+        stroke: editorState.strokeColor,
+        strokeWidth: editorState.strokeWidth,
+        selectable: false,
+        evented: false
+      });
+      canvas.add(editorState.tempShape);
+      return;
+    }
+
+    if (editorState.activeTool === "arrow") {
+      editorState.tempShape = new fabric.Line(
+        [pointer.x, pointer.y, pointer.x, pointer.y],
+        {
+          stroke: editorState.strokeColor,
+          strokeWidth: editorState.strokeWidth,
+          selectable: false,
+          evented: false
+        }
+      );
+      canvas.add(editorState.tempShape);
+    }
   }
 
-  function offscreenRotateCanvas(sourceCanvasEl, deg) {
-    const srcW = sourceCanvasEl.width;
-    const srcH = sourceCanvasEl.height;
+  function onCanvasMouseMove(opt) {
+    const canvas = editorState.fabricCanvas;
+    if (!canvas || !editorState.isOpen) return;
+
+    const e = opt.e;
+
+    if (editorState.isPanning && editorState.activeTool === "pan") {
+      const vpt = canvas.viewportTransform;
+      if (!vpt || !editorState.pointerDown) return;
+      const dx = e.clientX - editorState.pointerDown.x;
+      const dy = e.clientY - editorState.pointerDown.y;
+      vpt[4] += dx;
+      vpt[5] += dy;
+      editorState.pointerDown = { x: e.clientX, y: e.clientY };
+      canvas.requestRenderAll();
+      return;
+    }
+
+    if (!editorState.tempShape || !editorState.pointerDown) return;
+
+    const p = canvas.getPointer(e);
+    const start = editorState.pointerDown;
+
+    if (editorState.activeTool === "line" || editorState.activeTool === "arrow") {
+      editorState.tempShape.set({ x2: p.x, y2: p.y });
+      canvas.requestRenderAll();
+      return;
+    }
+
+    if (editorState.activeTool === "rect") {
+      const left = Math.min(start.x, p.x);
+      const top = Math.min(start.y, p.y);
+      const width = Math.abs(p.x - start.x);
+      const height = Math.abs(p.y - start.y);
+      editorState.tempShape.set({ left, top, width, height });
+      canvas.requestRenderAll();
+      return;
+    }
+
+    if (editorState.activeTool === "circle") {
+      const rx = Math.abs(p.x - start.x) / 2;
+      const ry = Math.abs(p.y - start.y) / 2;
+      const left = Math.min(start.x, p.x);
+      const top = Math.min(start.y, p.y);
+      editorState.tempShape.set({ left, top, rx, ry });
+      canvas.requestRenderAll();
+    }
+  }
+
+  function onCanvasMouseUp() {
+    const canvas = editorState.fabricCanvas;
+    if (!canvas) return;
+
+    if (editorState.isPanning) {
+      editorState.isPanning = false;
+      canvas.defaultCursor = "grab";
+      return;
+    }
+
+    if (
+      editorState.activeTool === "arrow" &&
+      editorState.tempShape &&
+      typeof editorState.tempShape.x1 === "number"
+    ) {
+      const line = editorState.tempShape;
+      canvas.remove(line);
+
+      const dx = line.x2 - line.x1;
+      const dy = line.y2 - line.y1;
+      const angle = Math.atan2(dy, dx) * 180 / Math.PI;
+
+      const shaft = new fabric.Line([line.x1, line.y1, line.x2, line.y2], {
+        stroke: editorState.strokeColor,
+        strokeWidth: editorState.strokeWidth
+      });
+
+      const head = new fabric.Triangle({
+        left: line.x2,
+        top: line.y2,
+        originX: "center",
+        originY: "center",
+        width: Math.max(14, editorState.strokeWidth * 5),
+        height: Math.max(14, editorState.strokeWidth * 5),
+        angle: angle + 90,
+        fill: editorState.strokeColor
+      });
+
+      const group = new fabric.Group([shaft, head], {});
+      canvas.add(group);
+    } else if (editorState.tempShape) {
+      editorState.tempShape.selectable = false;
+      editorState.tempShape.evented = false;
+    }
+
+    editorState.tempShape = null;
+    editorState.pointerDown = null;
+    canvas.requestRenderAll();
+  }
+
+  async function onResetClick() {
+    if (!editorState.originalFile) return;
+    editorState.strokeColor = "#dc2626";
+    editorState.strokeWidth = 3;
+    editorState.brightness = 0;
+    editorState.zoom = 1;
+
+    if ($("ieColorPicker")) $("ieColorPicker").value = editorState.strokeColor;
+    if ($("ieStrokeWidth")) $("ieStrokeWidth").value = String(editorState.strokeWidth);
+    if ($("ieBrightness")) $("ieBrightness").value = "0";
+
+    await buildBaseImageFromFile(editorState.originalFile);
+    await mountImageOnCanvas();
+  }
+
+  async function rotateImage(deg) {
+    const exportData = await exportCanvasAsDataUrl("image/png", 1);
+    const img = await loadImageEl(exportData);
+
+    const srcCanvas = document.createElement("canvas");
+    srcCanvas.width = img.naturalWidth || img.width;
+    srcCanvas.height = img.naturalHeight || img.height;
+
+    const sctx = srcCanvas.getContext("2d");
+    sctx.drawImage(img, 0, 0);
 
     const swap = Math.abs(deg) % 180 === 90;
     const out = document.createElement("canvas");
-    out.width = swap ? srcH : srcW;
-    out.height = swap ? srcW : srcH;
+    out.width = swap ? srcCanvas.height : srcCanvas.width;
+    out.height = swap ? srcCanvas.width : srcCanvas.height;
 
     const ctx = out.getContext("2d");
-    if (!ctx) throw new Error("ไม่สามารถหมุนภาพได้");
-
-    ctx.save();
     ctx.translate(out.width / 2, out.height / 2);
     ctx.rotate((deg * Math.PI) / 180);
-    ctx.drawImage(sourceCanvasEl, -srcW / 2, -srcH / 2);
-    ctx.restore();
+    ctx.drawImage(srcCanvas, -srcCanvas.width / 2, -srcCanvas.height / 2);
 
-    return out;
+    const rotatedUrl = out.toDataURL("image/png", 1);
+    editorState.currentImageEl = await loadImageEl(rotatedUrl);
+    editorState.brightness = 0;
+    if ($("ieBrightness")) $("ieBrightness").value = "0";
+    await mountImageOnCanvas();
   }
 
-  async function rotateWorkingImage(deg) {
-    const merged = await buildMergedNaturalCanvas();
-    const sourceEl = merged.lowerCanvasEl || merged.getElement?.() || merged.toCanvasElement?.();
-    const rotatedCanvas = offscreenRotateCanvas(sourceEl, deg);
-    const rotatedDataUrl = rotatedCanvas.toDataURL("image/png", 1);
-    const rotatedImg = await dataUrlToImage(rotatedDataUrl);
+  async function exportCanvasAsDataUrl(format = "image/jpeg", quality = 0.92) {
+    const canvas = editorState.fabricCanvas;
+    const base = editorState.baseImageObj;
+    const img = editorState.currentImageEl;
 
-    state.workingImageEl = rotatedImg;
-    state.naturalWidth = rotatedImg.naturalWidth || rotatedImg.width;
-    state.naturalHeight = rotatedImg.naturalHeight || rotatedImg.height;
+    if (!canvas || !base || !img) {
+      throw new Error("ยังไม่สามารถบันทึกภาพได้");
+    }
 
-    state.brightness = 0;
-    if (state.brightnessInput) state.brightnessInput.value = "0";
+    const naturalW = img.naturalWidth || img.width || canvas.getWidth();
+    const naturalH = img.naturalHeight || img.height || canvas.getHeight();
+    const displayW = canvas.getWidth() || 1;
+    const displayH = canvas.getHeight() || 1;
+    const ratioX = naturalW / displayW;
+    const ratioY = naturalH / displayH;
 
-    await rebuildCanvasFromWorkingImage();
-  }
-
-  async function exportEditedFile() {
-    const mergedCanvas = await buildMergedNaturalCanvas();
-
-    const ext = detectOutputExtension(state.originalFile);
-    const mime = ext === "png" ? "image/png" : "image/jpeg";
-    const quality = mime === "image/jpeg" ? 0.92 : 1;
-    const dataUrl = mergedCanvas.toDataURL({
-      format: ext,
-      quality,
-      multiplier: 1
+    const out = new fabric.StaticCanvas(null, {
+      width: naturalW,
+      height: naturalH,
+      backgroundColor: "#ffffff"
     });
 
-    const blob = await dataUrlToBlob(dataUrl);
-    const filename = buildEditedFilename(state.originalFile?.name || "edited-image.jpg", ext);
-    const file = new File([blob], filename, {
-      type: mime,
-      lastModified: Date.now()
+    const clonedImg = await new Promise((resolve) => {
+      base.clone((cloned) => resolve(cloned));
     });
 
-    return {
-      ok: true,
-      file,
-      filename,
-      dataUrl
-    };
-  }
+    clonedImg.set({
+      left: naturalW / 2,
+      top: naturalH / 2,
+      originX: "center",
+      originY: "center",
+      scaleX: naturalW / (img.naturalWidth || img.width || naturalW),
+      scaleY: naturalH / (img.naturalHeight || img.height || naturalH)
+    });
 
-  function detectOutputExtension(file) {
-    const type = String(file?.type || "").toLowerCase();
-    if (type.includes("png")) return "png";
-    return "jpeg";
-  }
+    out.add(clonedImg);
 
-  function buildEditedFilename(name, ext) {
-    const raw = String(name || "edited-image").trim();
-    const dot = raw.lastIndexOf(".");
-    const base = dot > 0 ? raw.slice(0, dot) : raw;
-    const cleanBase = base || "edited-image";
-    return `${cleanBase}-edited.${ext === "png" ? "png" : "jpg"}`;
-  }
+    const others = canvas.getObjects().filter((obj) => obj !== base);
 
-  function dataUrlToBlob(dataUrl) {
-    return fetch(dataUrl).then((r) => r.blob());
-  }
-
-  function alertError(err) {
-    const msg = String(err && err.message ? err.message : err || "เกิดข้อผิดพลาด");
-    if (window.Swal && typeof window.Swal.fire === "function") {
-      window.Swal.fire({
-        icon: "error",
-        title: "เกิดข้อผิดพลาด",
-        text: msg
+    for (const obj of others) {
+      const cloned = await new Promise((resolve) => {
+        obj.clone((result) => resolve(result));
       });
-      return;
+
+      if ("left" in cloned) cloned.left = Number(cloned.left || 0) * ratioX;
+      if ("top" in cloned) cloned.top = Number(cloned.top || 0) * ratioY;
+      if ("scaleX" in cloned) cloned.scaleX = Number(cloned.scaleX || 1) * ratioX;
+      if ("scaleY" in cloned) cloned.scaleY = Number(cloned.scaleY || 1) * ratioY;
+      if ("strokeWidth" in cloned && typeof cloned.strokeWidth === "number") {
+        cloned.strokeWidth *= (ratioX + ratioY) / 2;
+      }
+      if (cloned.type === "line") {
+        cloned.set({
+          x1: Number(cloned.x1 || 0) * ratioX,
+          y1: Number(cloned.y1 || 0) * ratioY,
+          x2: Number(cloned.x2 || 0) * ratioX,
+          y2: Number(cloned.y2 || 0) * ratioY
+        });
+      }
+      if (cloned.type === "group" && typeof cloned.getObjects === "function") {
+        cloned.getObjects().forEach((child) => {
+          if ("strokeWidth" in child && typeof child.strokeWidth === "number") {
+            child.strokeWidth *= (ratioX + ratioY) / 2;
+          }
+          if (child.type === "line") {
+            child.set({
+              x1: Number(child.x1 || 0) * ratioX,
+              y1: Number(child.y1 || 0) * ratioY,
+              x2: Number(child.x2 || 0) * ratioX,
+              y2: Number(child.y2 || 0) * ratioY
+            });
+          }
+        });
+      }
+
+      out.add(cloned);
     }
-    window.alert(msg);
+
+    out.renderAll();
+    return out.toDataURL({
+      format: format === "image/png" ? "png" : "jpeg",
+      quality
+    });
   }
 
-  function cleanupCanvasTransientState() {
-    state.isDrawing = false;
-    state.isPanning = false;
-    state.drawStart = null;
-    state.workingShape = null;
-  }
+  async function onSaveClick() {
+    try {
+      const usePng = /png/i.test(editorState.originalFile?.type || "");
+      const mime = usePng ? "image/png" : "image/jpeg";
+      const ext = usePng ? "png" : "jpg";
+      const dataUrl = await exportCanvasAsDataUrl(mime, usePng ? 1 : 0.92);
+      const blob = await fetch(dataUrl).then((r) => r.blob());
 
-  function closeEditor(result) {
-    if (!state.isOpen && !state.isPreparing) return;
+      const originalName = String(editorState.originalFile?.name || "image").trim();
+      const baseName = originalName.replace(/\.[^.]+$/, "") || "image";
+      const file = new File([blob], `${baseName}-edited.${ext}`, {
+        type: mime,
+        lastModified: Date.now()
+      });
 
-    cleanupCanvasTransientState();
-
-    state.isOpen = false;
-    state.isPreparing = false;
-
-    clearTimeout(state.resizeTimer);
-    clearTimeout(state.viewportTimer);
-
-    state.modal.classList.add("hidden");
-    state.modal.classList.remove("is-preparing");
-    state.modal.setAttribute("aria-hidden", "true");
-
-    unlockBodyScroll();
-
-    if (state.fabricCanvas) {
-      state.fabricCanvas.discardActiveObject();
-      state.fabricCanvas.requestRenderAll();
+      closeEditor({
+        ok: true,
+        file,
+        filename: file.name,
+        dataUrl
+      });
+    } catch (err) {
+      if (window.Swal?.fire) {
+        await Swal.fire({
+          icon: "error",
+          title: "บันทึกภาพไม่สำเร็จ",
+          text: err?.message || String(err)
+        });
+      } else {
+        alert(err?.message || String(err));
+      }
     }
-
-    const resolver = state.openResolver;
-    state.openResolver = null;
-
-    if (resolver) {
-      resolver(result || { ok: false });
-    }
   }
 
-  async function prepareAndShowModal() {
-    setLockedViewportHeight();
-
-    state.modal.classList.remove("hidden");
-    state.modal.classList.add("is-preparing");
-    state.modal.setAttribute("aria-hidden", "false");
-
-    await waitFrames(2);
-
-    lockBodyScroll();
-
-    await waitFrames(1);
-
-    state.modal.classList.remove("is-preparing");
-  }
-
-  async function openEditor(file, options = {}) {
+  async function openImageEditor(file, options = {}) {
     ensureFabricReady();
-    ensureElements();
-    bindUiOnce();
-    initFabricOnce();
+    ensureModal();
 
     if (!file || !/^image\//i.test(file.type || "")) {
       throw new Error("ไฟล์ที่ส่งเข้า editor ต้องเป็นรูปภาพ");
     }
 
-    if (state.isOpen || state.isPreparing) {
-      closeEditor({ ok: false });
-      await waitFrames(1);
+    const openToken = Date.now();
+    editorState.rafOpenToken = openToken;
+    editorState.isOpening = true;
+
+    editorState.originalFile = file;
+    editorState.zoom = 1;
+    editorState.strokeColor = options.strokeColor || "#dc2626";
+    editorState.strokeWidth = Number(options.strokeWidth || 3);
+    editorState.brightness = 0;
+    editorState.justOpenedUntil = Date.now() + 450;
+
+    if ($("ieColorPicker")) $("ieColorPicker").value = editorState.strokeColor;
+    if ($("ieStrokeWidth")) $("ieStrokeWidth").value = String(editorState.strokeWidth);
+    if ($("ieBrightness")) $("ieBrightness").value = "0";
+    if ($("ieZoomLabel")) $("ieZoomLabel").textContent = "100%";
+    if ($("ieToolLabel")) $("ieToolLabel").textContent = "เลือก";
+
+    updateViewportCssVar();
+
+    editorState.modal.classList.remove("hidden");
+    editorState.modal.classList.add("ie-opening");
+    editorState.modal.setAttribute("aria-hidden", "false");
+
+    await waitFrames(2);
+    if (editorState.rafOpenToken !== openToken) {
+      throw new Error("Image editor open cancelled");
     }
 
-    state.originalFile = file;
-    state.strokeColor = String(options.strokeColor || "#dc2626");
-    state.strokeWidth = clamp(Number(options.strokeWidth || 3), 1, 16);
-    state.brightness = 0;
-    state.zoom = 1;
-    state.activeTool = "select";
-    state.openedAt = Date.now();
+    lockBodyForEditor();
+    await buildBaseImageFromFile(file);
+    await waitFrames(1);
+    await mountImageOnCanvas();
+    await waitFrames(1);
 
-    if (state.colorPicker) state.colorPicker.value = normalizeColor(state.strokeColor);
-    if (state.strokeWidthInput) state.strokeWidthInput.value = String(state.strokeWidth);
-    if (state.brightnessInput) state.brightnessInput.value = "0";
+    editorState.modal.classList.remove("ie-opening");
+    editorState.isOpening = false;
+    editorState.isOpen = true;
 
-    state.isPreparing = true;
-
-    const img = await fileToImage(file);
-    state.originalImageEl = img;
-    state.workingImageEl = img;
-    state.naturalWidth = img.naturalWidth || img.width;
-    state.naturalHeight = img.naturalHeight || img.height;
-
-    await prepareAndShowModal();
-    await rebuildCanvasFromWorkingImage();
-
-    state.isPreparing = false;
-    state.isOpen = true;
-    setTool("select");
-    updateStatusLabels();
-
-    return new Promise((resolve) => {
-      state.openResolver = resolve;
+    return new Promise((resolve, reject) => {
+      editorState.resolve = resolve;
+      editorState.reject = reject;
     });
   }
 
+  function closeEditor(result) {
+    clearTimeout(editorState.resizeTimer);
+    clearTimeout(editorState.viewportTimer);
+
+    editorState.isOpen = false;
+    editorState.isOpening = false;
+    editorState.pointerDown = null;
+    editorState.tempShape = null;
+    editorState.isPanning = false;
+
+    editorState.modal?.classList.add("hidden");
+    editorState.modal?.classList.remove("ie-opening");
+    editorState.modal?.setAttribute("aria-hidden", "true");
+
+    unlockBodyForEditor();
+
+    const resolve = editorState.resolve;
+    editorState.resolve = null;
+    editorState.reject = null;
+
+    if (typeof resolve === "function") {
+      resolve(result || { ok: false });
+    }
+  }
+
   window.ImageEditorX = {
-    open: openEditor
+    open: openImageEditor
   };
 })();
