@@ -1078,6 +1078,9 @@ input[type="time"]{
 /* =========================
    RESPONSIVE
 ========================= */
+/* =========================
+   RESPONSIVE
+========================= */
 @media (max-width:1080px){
   .container{
     padding-inline:10px;
