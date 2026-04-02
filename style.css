@@ -1109,7 +1109,7 @@ input[type="time"]{
     gap:8px 10px;
   }
 
-  /* Report500: กลุ่มที่ข้อมูลแน่น ให้คง 1 คอลัมน์บนมือถือ */
+  /* Report500: list ที่ข้อมูลแน่น ให้คง 1 คอลัมน์ */
   #rptPersonList,
   #rptDamageList,
   #rptStepTakenList,
@@ -1118,6 +1118,27 @@ input[type="time"]{
   #rptPreventionList,
   #rptLearningList,
   #rptImageList{
+    grid-template-columns:1fr;
+    gap:10px;
+  }
+
+  /* Report500: ช่องกรอกภายใน card ของ list ข้างต้น ให้เป็นแถวละ 1 ช่อง */
+  #rptPersonList .gridCompact,
+  #rptPersonList .gridEmployee,
+  #rptDamageList .gridCompact,
+  #rptDamageList .gridEmployee,
+  #rptStepTakenList .gridCompact,
+  #rptStepTakenList .gridEmployee,
+  #rptEvidenceList .gridCompact,
+  #rptEvidenceList .gridEmployee,
+  #rptCauseList .gridCompact,
+  #rptCauseList .gridEmployee,
+  #rptPreventionList .gridCompact,
+  #rptPreventionList .gridEmployee,
+  #rptLearningList .gridCompact,
+  #rptLearningList .gridEmployee,
+  #rptImageList .gridCompact,
+  #rptImageList .gridEmployee{
     grid-template-columns:1fr;
     gap:10px;
   }
@@ -1271,7 +1292,7 @@ input[type="time"]{
     gap:8px;
   }
 
-  /* Report500: กลุ่มที่ข้อมูลแน่น ให้คง 1 คอลัมน์บนมือถือ */
+  /* Report500: list ที่ข้อมูลแน่น ให้คง 1 คอลัมน์ */
   #rptPersonList,
   #rptDamageList,
   #rptStepTakenList,
@@ -1280,6 +1301,27 @@ input[type="time"]{
   #rptPreventionList,
   #rptLearningList,
   #rptImageList{
+    grid-template-columns:1fr;
+    gap:10px;
+  }
+
+  /* Report500: ช่องกรอกภายใน card ของ list ข้างต้น ให้เป็นแถวละ 1 ช่อง */
+  #rptPersonList .gridCompact,
+  #rptPersonList .gridEmployee,
+  #rptDamageList .gridCompact,
+  #rptDamageList .gridEmployee,
+  #rptStepTakenList .gridCompact,
+  #rptStepTakenList .gridEmployee,
+  #rptEvidenceList .gridCompact,
+  #rptEvidenceList .gridEmployee,
+  #rptCauseList .gridCompact,
+  #rptCauseList .gridEmployee,
+  #rptPreventionList .gridCompact,
+  #rptPreventionList .gridEmployee,
+  #rptLearningList .gridCompact,
+  #rptLearningList .gridEmployee,
+  #rptImageList .gridCompact,
+  #rptImageList .gridEmployee{
     grid-template-columns:1fr;
     gap:10px;
   }
@@ -1374,7 +1416,7 @@ input[type="time"]{
     gap:7px;
   }
 
-  /* Report500: กลุ่มที่ข้อมูลแน่น ให้คง 1 คอลัมน์บนมือถือ */
+  /* Report500: list ที่ข้อมูลแน่น ให้คง 1 คอลัมน์ */
   #rptPersonList,
   #rptDamageList,
   #rptStepTakenList,
@@ -1383,6 +1425,27 @@ input[type="time"]{
   #rptPreventionList,
   #rptLearningList,
   #rptImageList{
+    grid-template-columns:1fr;
+    gap:10px;
+  }
+
+  /* Report500: ช่องกรอกภายใน card ของ list ข้างต้น ให้เป็นแถวละ 1 ช่อง */
+  #rptPersonList .gridCompact,
+  #rptPersonList .gridEmployee,
+  #rptDamageList .gridCompact,
+  #rptDamageList .gridEmployee,
+  #rptStepTakenList .gridCompact,
+  #rptStepTakenList .gridEmployee,
+  #rptEvidenceList .gridCompact,
+  #rptEvidenceList .gridEmployee,
+  #rptCauseList .gridCompact,
+  #rptCauseList .gridEmployee,
+  #rptPreventionList .gridCompact,
+  #rptPreventionList .gridEmployee,
+  #rptLearningList .gridCompact,
+  #rptLearningList .gridEmployee,
+  #rptImageList .gridCompact,
+  #rptImageList .gridEmployee{
     grid-template-columns:1fr;
     gap:10px;
   }
@@ -1477,7 +1540,23 @@ input[type="time"]{
   #rptCauseList,
   #rptPreventionList,
   #rptLearningList,
-  #rptImageList{
+  #rptImageList,
+  #rptPersonList .gridCompact,
+  #rptPersonList .gridEmployee,
+  #rptDamageList .gridCompact,
+  #rptDamageList .gridEmployee,
+  #rptStepTakenList .gridCompact,
+  #rptStepTakenList .gridEmployee,
+  #rptEvidenceList .gridCompact,
+  #rptEvidenceList .gridEmployee,
+  #rptCauseList .gridCompact,
+  #rptCauseList .gridEmployee,
+  #rptPreventionList .gridCompact,
+  #rptPreventionList .gridEmployee,
+  #rptLearningList .gridCompact,
+  #rptLearningList .gridEmployee,
+  #rptImageList .gridCompact,
+  #rptImageList .gridEmployee{
     grid-template-columns:1fr;
     gap:10px;
   }
