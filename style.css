@@ -1109,6 +1109,19 @@ input[type="time"]{
     gap:8px 10px;
   }
 
+  /* Report500: กลุ่มที่ข้อมูลแน่น ให้คง 1 คอลัมน์บนมือถือ */
+  #rptPersonList,
+  #rptDamageList,
+  #rptStepTakenList,
+  #rptEvidenceList,
+  #rptCauseList,
+  #rptPreventionList,
+  #rptLearningList,
+  #rptImageList{
+    grid-template-columns:1fr;
+    gap:10px;
+  }
+
   .actions{
     grid-template-columns:1fr;
   }
@@ -1169,6 +1182,347 @@ input[type="time"]{
   .field textarea{
     min-height:96px;
   }
+
+  /* ช่องกรอกเพิ่มใต้ตัวเลือก ให้เต็มแถว */
+  .optionChoiceOther,
+  .rptWhereTypeSuffixWrap,
+  .rptWhereTypeRow .field,
+  .rptWhereTypeRow .optionChoiceOther{
+    grid-column:1 / -1;
+    width:100%;
+  }
+}
+
+@media (max-width:640px){
+  :root{
+    --input-h:44px;
+    --radius-card:18px;
+    --radius-panel:15px;
+    --radius-input:13px;
+  }
+
+  .topbar{
+    grid-template-columns:minmax(0,1fr) auto;
+    gap:8px;
+    padding:8px 9px;
+  }
+
+  .brandTextInline{
+    gap:6px;
+  }
+
+  .brandTextInline .subtitle{
+    display:none;
+  }
+
+  .brandTextInline .title{
+    font-size:12px;
+  }
+
+  .tab{
+    min-height:34px;
+    padding:6px 12px;
+    font-size:11px;
+  }
+
+  .container{
+    padding:12px 10px 24px;
+  }
+
+  .card{
+    padding:14px;
+    border-radius:18px;
+  }
+
+  .panel,
+  .emailPanel,
+  .rptPanel{
+    padding:12px;
+    border-radius:15px;
+  }
+
+  .sectionTitle{
+    gap:9px;
+    margin:12px 0 8px;
+    padding-bottom:8px;
+  }
+
+  .sectionMain{
+    font-size:14px;
+  }
+
+  .sectionSub{
+    font-size:10px;
+  }
+
+  /* ยังยืน 2 คอลัมน์ไว้ */
+  .gridCompact,
+  .gridEmployee,
+  .emailSelector,
+  .checkList,
+  .confirmCauseGrid,
+  .uploadGrid,
+  .galGrid,
+  .optionMatrix,
+  .rptRepeaterList,
+  .sigGrid,
+  .swalKvGrid{
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:8px;
+  }
+
+  /* Report500: กลุ่มที่ข้อมูลแน่น ให้คง 1 คอลัมน์บนมือถือ */
+  #rptPersonList,
+  #rptDamageList,
+  #rptStepTakenList,
+  #rptEvidenceList,
+  #rptCauseList,
+  #rptPreventionList,
+  #rptLearningList,
+  #rptImageList{
+    grid-template-columns:1fr;
+    gap:10px;
+  }
+
+  .confirmCauseCard,
+  .optionChoiceCard,
+  .emailItem{
+    min-height:44px;
+    padding:8px 9px;
+  }
+
+  label{
+    font-size:11.5px;
+  }
+
+  .fieldHint,
+  .small,
+  .sectionSub{
+    font-size:10.5px;
+  }
+
+  input,
+  select,
+  textarea{
+    font-size:13px;
+    padding:10px 11px;
+  }
+
+  textarea{
+    min-height:88px;
+  }
+
+  .btn{
+    min-height:40px;
+    font-size:13px;
+    border-radius:13px;
+  }
+
+  .panelActions{
+    gap:6px;
+  }
+
+  .panelActions .btn{
+    flex:1 1 100%;
+  }
+
+  .loginHero{
+    padding:18px 16px 12px;
+    gap:10px;
+  }
+
+  .loginHeroLogo{
+    width:170px;
+    max-width:78%;
+  }
+
+  .loginHero h1{
+    font-size:18px;
+  }
+
+  .loginHero p{
+    font-size:13px;
+    line-height:1.55;
+  }
+
+  .loginForm{
+    padding:14px 16px 16px;
+    gap:10px;
+  }
+
+  .topLoginUserWrap{
+    font-size:10px;
+    min-height:26px;
+    padding:4px 8px;
+  }
+}
+
+@media (max-width:480px){
+  /* มือถือเล็กมาก ยังพยายามคง 2 ช่องไว้ */
+  .gridCompact,
+  .gridEmployee,
+  .emailSelector,
+  .checkList,
+  .confirmCauseGrid,
+  .uploadGrid,
+  .galGrid,
+  .optionMatrix,
+  .rptRepeaterList,
+  .sigGrid,
+  .swalKvGrid{
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:7px;
+  }
+
+  /* Report500: กลุ่มที่ข้อมูลแน่น ให้คง 1 คอลัมน์บนมือถือ */
+  #rptPersonList,
+  #rptDamageList,
+  #rptStepTakenList,
+  #rptEvidenceList,
+  #rptCauseList,
+  #rptPreventionList,
+  #rptLearningList,
+  #rptImageList{
+    grid-template-columns:1fr;
+    gap:10px;
+  }
+
+  .refRow{
+    grid-template-columns:minmax(0,1fr) 14px 82px;
+    gap:6px;
+  }
+
+  .refDash{
+    font-size:22px;
+  }
+
+  .card{
+    padding:10px;
+  }
+
+  .panel,
+  .emailPanel,
+  .rptPanel{
+    padding:10px;
+  }
+
+  .emailItem,
+  .confirmCauseCard,
+  .optionChoiceCard{
+    min-height:42px;
+    padding:8px 8px;
+  }
+
+  .emailText,
+  .confirmCauseText,
+  .optionChoiceText{
+    font-size:10.8px;
+    line-height:1.3;
+  }
+
+  .swalSection{
+    padding:10px;
+  }
+
+  .swalKv,
+  .swalDesc{
+    padding:8px 9px;
+  }
+}
+
+@media (max-width:380px){
+  /* เล็กมากจริง ๆ ค่อยยุบเป็น 1 คอลัมน์ */
+  .topbar{
+    grid-template-columns:1fr;
+    align-items:flex-start;
+  }
+
+  .tabsInline{
+    width:100%;
+    justify-content:flex-start;
+    overflow:auto;
+    padding-bottom:2px;
+  }
+
+  .brandInline{
+    gap:8px;
+  }
+
+  .logo,
+  .brandLogoImg{
+    width:28px;
+    height:28px;
+    flex-basis:28px;
+  }
+
+  .gridCompact,
+  .gridEmployee,
+  .emailSelector,
+  .checkList,
+  .confirmCauseGrid,
+  .uploadGrid,
+  .galGrid,
+  .optionMatrix,
+  .rptRepeaterList,
+  .sigGrid,
+  .swalKvGrid{
+    grid-template-columns:1fr;
+  }
+
+  /* กลุ่ม Report500 ที่กำหนดไว้ ยังคง 1 คอลัมน์ต่อไป */
+  #rptPersonList,
+  #rptDamageList,
+  #rptStepTakenList,
+  #rptEvidenceList,
+  #rptCauseList,
+  #rptPreventionList,
+  #rptLearningList,
+  #rptImageList{
+    grid-template-columns:1fr;
+    gap:10px;
+  }
+
+  .btn{
+    min-height:38px;
+    padding:8px 12px;
+    font-size:12px;
+  }
+
+  .panelActions .btn{
+    flex:1 1 100%;
+  }
+
+  .loginHero{
+    padding:16px 14px 12px;
+  }
+
+  .loginForm{
+    padding:12px 14px 14px;
+  }
+
+  .loginHeroLogo{
+    width:150px;
+    max-width:82%;
+  }
+
+  .loginHero h1{
+    font-size:17px;
+  }
+
+  .loginHero p{
+    font-size:12px;
+  }
+
+  input,
+  select,
+  textarea{
+    font-size:12.5px;
+  }
+
+  textarea{
+    min-height:82px;
+  }
+}
 
   /* ช่องกรอกเพิ่มใต้ตัวเลือก ให้เต็มแถว */
   .optionChoiceOther,
