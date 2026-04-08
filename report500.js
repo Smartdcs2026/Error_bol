@@ -5697,20 +5697,18 @@ function renderItemLookupResult(result) {
     });
   }
 
-  async function openDisciplineLookupPopup() {
+ async function openDisciplineLookupPopup() {
   const initialCode = state.disciplineLookup?.employeeCode || "";
 
   await Swal.fire({
-    customClass: {
-      popup: "rptLookupPopup"
-    },
+    customClass: { popup: "rptLookupPopup" },
     confirmButtonText: "ปิด",
     html: `
       <div class="rptLookupModal">
         <div class="rptLookupModalHead">
           <div class="rptLookupModalBadge">DISCIPLINE LOOKUP</div>
           <div class="rptLookupModalTitle">ค้นหาการดำเนินการทางวินัย</div>
-          <div class="rptLookupModalSub">ค้นหาประวัติการดำเนินการทางวินัยจากรหัสพนักงาน</div>
+          <div class="rptLookupModalSub">ค้นหาประวัติการดำเนินการทางวินัยจากรหัสพนักงาน และเลือกแนบข้อมูลอ้างอิงนี้เข้ากับรายงานได้ทันที</div>
         </div>
 
         <div class="rptLookupToolbar">
@@ -5731,7 +5729,7 @@ function renderItemLookupResult(result) {
               <div class="rptLookupStateInner">
                 <div class="rptLookupStateIcon">⌕</div>
                 <div class="rptLookupStateTitle">พร้อมค้นหาข้อมูลวินัย</div>
-                <div class="rptLookupStateText">กรอกรหัสพนักงานแล้วกดค้นหา</div>
+                <div class="rptLookupStateText">กรอกรหัสพนักงานแล้วกดค้นหา ระบบจะแสดงประวัติการดำเนินการทางวินัยในพื้นที่ด้านล่าง</div>
               </div>
             </div>
           </div>
@@ -5886,15 +5884,7 @@ async function openItemLookupPopup() {
   const initialItem = state.itemLookup?.item || "";
 
   await Swal.fire({
-    customClass: {
-      popup: "rptLookupPopup"
-    },
-    showClass: {
-      popup: "swal2-show"
-    },
-    hideClass: {
-      popup: "swal2-hide"
-    },
+    customClass: { popup: "rptLookupPopup" },
     confirmButtonText: "ปิด",
     html: `
       <div class="rptLookupModal">
@@ -5993,7 +5983,6 @@ async function openItemLookupPopup() {
     }
   });
 }
-
   async function openAttachedDisciplinePreview() {
     const d = state.disciplineLookup || createEmptyDisciplineLookupState();
     if (!d.attached || !d.records.length) {
