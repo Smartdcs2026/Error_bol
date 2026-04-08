@@ -3044,3 +3044,174 @@ body.img-editor-lock{
 #ieDeleteBtn:hover{
   background:#fee2e2;
 }
+/* =========================
+   REPORT500 LOOKUP / DISCIPLINE
+========================= */
+.rptUtilityBar{
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+  align-items:center;
+  justify-content:flex-start;
+}
+
+.rptLookupSummary{
+  margin-top:12px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:14px;
+  padding:14px 16px;
+  border:1.3px solid #d8e5fb;
+  border-radius:16px;
+  background:linear-gradient(180deg,#f8fbff 0%,#eef5ff 100%);
+  box-shadow:0 4px 14px rgba(37,99,235,.05);
+}
+
+.rptLookupSummaryText{
+  min-width:0;
+  display:flex;
+  flex-direction:column;
+  gap:4px;
+}
+
+.rptLookupSummaryTitle{
+  font-size:14px;
+  font-weight:900;
+  line-height:1.2;
+  color:#0f172a;
+}
+
+.rptLookupSummaryMeta{
+  font-size:12px;
+  line-height:1.5;
+  color:#334155;
+  word-break:break-word;
+}
+
+.rptLookupSummaryActions{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  flex-wrap:wrap;
+  justify-content:flex-end;
+}
+
+.btn.danger{
+  background:linear-gradient(180deg,#ef4444,#dc2626);
+  color:#fff;
+  border:1px solid transparent;
+  box-shadow:0 8px 20px rgba(220,38,38,.18);
+}
+
+.btn.danger:hover{
+  transform:translateY(-1px);
+  box-shadow:0 10px 24px rgba(220,38,38,.22);
+}
+
+.rptLookupPanel{
+  display:grid;
+  gap:12px;
+  text-align:left;
+}
+
+.rptLookupActionRow{
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+  align-items:center;
+  justify-content:flex-start;
+}
+
+.rptLookupResult{
+  display:grid;
+  gap:10px;
+}
+
+.rptLookupMeta{
+  font-size:12px;
+  font-weight:800;
+  color:#475569;
+  line-height:1.5;
+}
+
+.rptLookupEmpty{
+  padding:14px 16px;
+  border:1px dashed #c7d7eb;
+  border-radius:14px;
+  background:#f8fbff;
+  color:#64748b;
+  font-size:12px;
+  font-weight:800;
+  line-height:1.6;
+}
+
+.rptLookupTableWrap{
+  width:100%;
+  overflow:auto;
+  border:1px solid #dbe5f2;
+  border-radius:14px;
+  background:#fff;
+}
+
+.rptLookupTable{
+  width:100%;
+  min-width:980px;
+  border-collapse:collapse;
+  font-size:12px;
+  line-height:1.45;
+}
+
+.rptLookupTable thead th{
+  position:sticky;
+  top:0;
+  z-index:1;
+  padding:10px 8px;
+  background:#eff6ff;
+  color:#1e3a8a;
+  text-align:left;
+  font-weight:900;
+  border-bottom:1px solid #dbe5f2;
+  white-space:nowrap;
+}
+
+.rptLookupTable tbody td{
+  padding:9px 8px;
+  border-bottom:1px solid #edf2f7;
+  vertical-align:top;
+  color:#0f172a;
+}
+
+.rptLookupTable tbody tr:nth-child(even){
+  background:#fcfdff;
+}
+
+@media (max-width: 768px){
+  .rptUtilityBar{
+    display:grid;
+    grid-template-columns:1fr;
+    gap:8px;
+  }
+
+  .rptLookupSummary{
+    flex-direction:column;
+    align-items:stretch;
+  }
+
+  .rptLookupSummaryActions{
+    justify-content:stretch;
+  }
+
+  .rptLookupSummaryActions .btn{
+    width:100%;
+  }
+
+  .rptLookupActionRow{
+    display:grid;
+    grid-template-columns:1fr;
+  }
+
+  .rptLookupActionRow .btn{
+    width:100%;
+  }
+}
