@@ -5710,7 +5710,7 @@ function renderItemLookupResult(result) {
         <div class="rptLookupModalHead">
           <div class="rptLookupModalBadge">DISCIPLINE LOOKUP</div>
           <div class="rptLookupModalTitle">ค้นหาการดำเนินการทางวินัย</div>
-          <div class="rptLookupModalSub">ค้นหาประวัติการดำเนินการทางวินัยจากรหัสพนักงาน และเลือกแนบข้อมูลอ้างอิงนี้เข้ากับรายงาน Report500 ได้ทันที</div>
+          <div class="rptLookupModalSub">ค้นหาประวัติการดำเนินการทางวินัยจากรหัสพนักงาน</div>
         </div>
 
         <div class="rptLookupToolbar">
@@ -5731,7 +5731,7 @@ function renderItemLookupResult(result) {
               <div class="rptLookupStateInner">
                 <div class="rptLookupStateIcon">⌕</div>
                 <div class="rptLookupStateTitle">พร้อมค้นหาข้อมูลวินัย</div>
-                <div class="rptLookupStateText">กรอกรหัสพนักงานแล้วกดค้นหา ระบบจะแสดงประวัติการดำเนินการทางวินัยในพื้นที่ด้านล่าง</div>
+                <div class="rptLookupStateText">กรอกรหัสพนักงานแล้วกดค้นหา</div>
               </div>
             </div>
           </div>
