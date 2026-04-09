@@ -3654,3 +3654,134 @@ body.img-editor-lock{
     padding:9px 6px;
   }
 }
+/* =========================
+   DISCIPLINE LOOKUP HYBRID VIEW
+========================= */
+
+.rptLookupDesktopView{
+  display:block;
+}
+
+.rptLookupMobileView{
+  display:none;
+}
+
+.rptLookupRecordList{
+  display:grid;
+  gap:10px;
+}
+
+.rptLookupRecordCard{
+  border:1px solid #dbe5f2;
+  border-radius:14px;
+  background:#fff;
+  box-shadow:0 6px 18px rgba(15,23,42,.04);
+  overflow:hidden;
+}
+
+.rptLookupRecordTop{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  padding:10px 12px;
+  border-bottom:1px solid #e8eef7;
+  background:linear-gradient(180deg,#f8fbff 0%,#f2f7ff 100%);
+}
+
+.rptLookupRecordIndex{
+  display:inline-flex;
+  align-items:center;
+  min-height:28px;
+  padding:0 10px;
+  border-radius:999px;
+  background:#eaf2ff;
+  border:1px solid #d7e5ff;
+  color:#1d4ed8;
+  font-size:11px;
+  font-weight:900;
+}
+
+.rptLookupRecordDate{
+  font-size:12px;
+  font-weight:900;
+  color:#0f172a;
+  white-space:nowrap;
+}
+
+.rptLookupRecordGrid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px;
+  padding:12px;
+}
+
+.rptLookupRecordItem{
+  min-width:0;
+  border:1px solid #edf2fa;
+  border-radius:12px;
+  background:#fbfdff;
+  padding:9px 10px;
+}
+
+.rptLookupRecordItemWide{
+  grid-column:1 / -1;
+}
+
+.rptLookupRecordLabel{
+  color:#64748b;
+  font-size:10.5px;
+  font-weight:800;
+  margin-bottom:4px;
+}
+
+.rptLookupRecordValue{
+  color:#0f172a;
+  font-size:12.5px;
+  font-weight:900;
+  line-height:1.5;
+  word-break:break-word;
+}
+
+@media (max-width: 860px){
+  .rptLookupDesktopView{
+    display:none;
+  }
+
+  .rptLookupMobileView{
+    display:block;
+  }
+}
+
+@media (max-width: 560px){
+  .rptLookupRecordGrid{
+    grid-template-columns:1fr;
+    gap:8px;
+    padding:10px;
+  }
+
+  .rptLookupRecordItemWide{
+    grid-column:auto;
+  }
+
+  .rptLookupRecordTop{
+    padding:9px 10px;
+  }
+
+  .rptLookupRecordDate{
+    font-size:11.5px;
+  }
+
+  .rptLookupRecordItem{
+    padding:8px 9px;
+  }
+
+  .rptLookupRecordLabel{
+    font-size:10px;
+  }
+
+  .rptLookupRecordValue{
+    font-size:12px;
+    line-height:1.45;
+  }
+}
