@@ -3046,7 +3046,7 @@ body.img-editor-lock{
 }
 /* =========================
    REPORT500 LOOKUP / DISCIPLINE
-   ใช้กับ report500.js เวอร์ชันล่าสุด
+   FINAL VERSION - sync with latest report500.js
 ========================= */
 
 .rptUtilityBar{
@@ -3123,7 +3123,8 @@ body.img-editor-lock{
 ========================= */
 
 .swal2-popup.rptLookupPopup{
-  width:min(920px, calc(100vw - 18px)) !important;
+  width:min(920px, calc(100vw - 14px)) !important;
+  max-width:none !important;
   padding:0 !important;
   border-radius:22px !important;
   overflow:hidden !important;
@@ -3143,17 +3144,18 @@ body.img-editor-lock{
 
 .swal2-popup.rptLookupPopup .swal2-actions{
   margin:0 !important;
-  padding:12px 16px 16px !important;
+  padding:10px 14px 14px !important;
   border-top:1px solid #e8eef7;
   background:#fff;
   justify-content:flex-end !important;
 }
 
 .swal2-popup.rptLookupPopup .swal2-confirm{
-  min-height:42px !important;
+  min-height:40px !important;
   padding:10px 16px !important;
-  border-radius:13px !important;
+  border-radius:12px !important;
   font-weight:900 !important;
+  font-size:13px !important;
   background:linear-gradient(180deg,#2563eb,#1d4ed8) !important;
   box-shadow:0 10px 24px rgba(37,99,235,.18) !important;
 }
@@ -3168,7 +3170,7 @@ body.img-editor-lock{
 }
 
 .rptLookupModalHead{
-  padding:16px 18px 12px;
+  padding:14px 16px 10px;
   border-bottom:1px solid #e8eef7;
   background:linear-gradient(180deg,#ffffff 0%,#f7fbff 100%);
 }
@@ -3176,31 +3178,31 @@ body.img-editor-lock{
 .rptLookupModalBadge{
   display:inline-flex;
   align-items:center;
-  min-height:27px;
+  min-height:26px;
   padding:4px 10px;
   border-radius:999px;
   background:#eaf2ff;
   color:#1d4ed8;
   border:1px solid #d6e4ff;
-  font-size:11px;
+  font-size:10.5px;
   font-weight:900;
   letter-spacing:.2px;
 }
 
 .rptLookupModalTitle{
-  margin-top:10px;
-  font-size:18px;
+  margin-top:8px;
+  font-size:17px;
   line-height:1.15;
   font-weight:900;
   color:#0f172a;
 }
 
 .rptLookupModalSub{
-  margin-top:5px;
+  margin-top:4px;
   color:#64748b;
-  font-size:12px;
-  line-height:1.55;
-  max-width:700px;
+  font-size:11.5px;
+  line-height:1.5;
+  max-width:760px;
 }
 
 .rptLookupToolbar,
@@ -3209,7 +3211,7 @@ body.img-editor-lock{
   grid-template-columns:minmax(0,1fr) auto;
   gap:10px;
   align-items:end;
-  padding:12px 18px;
+  padding:10px 16px;
   border-bottom:1px solid #edf3fb;
   background:#fbfdff;
 }
@@ -3290,8 +3292,8 @@ body.img-editor-lock{
 }
 
 .rptLookupBody{
-  padding:12px 18px 16px;
-  min-height:250px;
+  padding:10px 16px 14px;
+  min-height:240px;
   overflow:auto;
   background:linear-gradient(180deg,#fbfdff 0%,#f5f9ff 100%);
 }
@@ -3310,7 +3312,7 @@ body.img-editor-lock{
 .rptLookupState{
   display:grid;
   place-items:center;
-  min-height:180px;
+  min-height:170px;
   padding:18px;
   border:1px dashed #cddced;
   border-radius:18px;
@@ -3323,16 +3325,16 @@ body.img-editor-lock{
 }
 
 .rptLookupStateIcon{
-  width:50px;
-  height:50px;
+  width:48px;
+  height:48px;
   margin:0 auto 12px;
-  border-radius:16px;
+  border-radius:15px;
   display:grid;
   place-items:center;
   background:linear-gradient(180deg,#eef5ff,#e5efff);
   border:1px solid #d9e5f9;
   color:#2563eb;
-  font-size:21px;
+  font-size:20px;
   font-weight:900;
 }
 
@@ -3346,25 +3348,25 @@ body.img-editor-lock{
 .rptLookupStateText{
   margin-top:6px;
   font-size:11.5px;
-  line-height:1.65;
+  line-height:1.6;
   color:#64748b;
 }
 
 .rptLookupMetaCompact{
-  margin-bottom:10px;
+  margin-bottom:8px;
 }
 
 .rptLookupMetaBar{
   display:flex;
   flex-wrap:wrap;
   gap:6px;
-  margin-bottom:10px;
+  margin-bottom:8px;
 }
 
 .rptLookupMetaPill{
   display:inline-flex;
   align-items:center;
-  min-height:28px;
+  min-height:27px;
   padding:4px 9px;
   border-radius:999px;
   border:1px solid #dbe7f7;
@@ -3393,11 +3395,15 @@ body.img-editor-lock{
 }
 
 .rptLookupResultCard{
-  padding:12px;
+  padding:10px;
   border:1px solid #dbe5f2;
   border-radius:16px;
   background:#fff;
   box-shadow:0 10px 26px rgba(15,23,42,.05);
+}
+
+.rptLookupResultCardDiscipline{
+  padding:10px;
 }
 
 .rptLookupResultGrid,
@@ -3486,7 +3492,7 @@ body.img-editor-lock{
 }
 
 .rptLookupTableCompact{
-  min-width:980px;
+  min-width:960px;
 }
 
 .rptLookupTable thead th,
@@ -3494,7 +3500,7 @@ body.img-editor-lock{
   position:sticky;
   top:0;
   z-index:1;
-  padding:10px 8px;
+  padding:9px 8px;
   background:#eff6ff;
   color:#1e3a8a;
   text-align:left;
@@ -3514,6 +3520,220 @@ body.img-editor-lock{
 .rptLookupTable tbody tr:nth-child(even),
 .rptLookupTableCompact tbody tr:nth-child(even){
   background:#fcfdff;
+}
+
+/* table: discipline compact columns */
+.rptLookupTableDiscipline{
+  min-width:960px;
+}
+
+.rptLookupTableDiscipline tbody td:nth-child(2){
+  font-weight:800;
+  line-height:1.55;
+}
+
+/* =========================
+   DISCIPLINE HYBRID VIEW
+========================= */
+
+.rptLookupDesktopView{
+  display:block;
+}
+
+.rptLookupMobileView{
+  display:none;
+}
+
+.rptLookupRecordList,
+.rptLookupRecordListCompact{
+  display:grid;
+  gap:8px;
+}
+
+.rptLookupRecordCard,
+.rptLookupRecordCardCompact{
+  border:1px solid #dbe5f2;
+  border-radius:13px;
+  background:#fff;
+  box-shadow:0 6px 18px rgba(15,23,42,.04);
+  overflow:hidden;
+}
+
+.rptLookupRecordTop{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+  padding:9px 10px;
+  border-bottom:1px solid #e8eef7;
+  background:linear-gradient(180deg,#f8fbff 0%,#f2f7ff 100%);
+}
+
+.rptLookupRecordIndex{
+  display:inline-flex;
+  align-items:center;
+  min-height:26px;
+  padding:0 9px;
+  border-radius:999px;
+  background:#eaf2ff;
+  border:1px solid #d7e5ff;
+  color:#1d4ed8;
+  font-size:10.5px;
+  font-weight:900;
+}
+
+.rptLookupRecordDate{
+  font-size:11.5px;
+  font-weight:900;
+  color:#0f172a;
+  white-space:nowrap;
+}
+
+.rptLookupRecordGrid,
+.rptLookupRecordGridCompact{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:8px;
+  padding:10px;
+}
+
+.rptLookupRecordItem{
+  min-width:0;
+  border:1px solid #edf2fa;
+  border-radius:11px;
+  background:#fbfdff;
+  padding:8px 9px;
+}
+
+.rptLookupRecordItemWide{
+  grid-column:1 / -1;
+}
+
+.rptLookupRecordLabel{
+  color:#64748b;
+  font-size:10px;
+  font-weight:800;
+  margin-bottom:4px;
+}
+
+.rptLookupRecordValue{
+  color:#0f172a;
+  font-size:12px;
+  font-weight:900;
+  line-height:1.45;
+  word-break:break-word;
+}
+
+/* =========================
+   ATTACHED DISCIPLINE PREVIEW
+========================= */
+
+.swal2-popup.rptLookupPreviewPopup{
+  width:min(1320px, calc(100vw - 10px)) !important;
+  max-width:none !important;
+  padding:0 !important;
+  border-radius:20px !important;
+  overflow:hidden !important;
+}
+
+.swal2-popup.rptLookupPreviewPopup .swal2-title.rptLookupPreviewTitle{
+  margin:0 !important;
+  padding:10px 14px 6px !important;
+  font-size:16px !important;
+  line-height:1.15 !important;
+  font-weight:800 !important;
+  text-align:left !important;
+  color:#0f172a !important;
+}
+
+.swal2-popup.rptLookupPreviewPopup .swal2-html-container.rptLookupPreviewHtml{
+  margin:0 !important;
+  padding:0 8px 8px !important;
+  overflow:visible !important;
+}
+
+.swal2-popup.rptLookupPreviewPopup .swal2-actions{
+  margin:0 !important;
+  padding:8px 10px 10px !important;
+  border-top:1px solid #e8eef7;
+  justify-content:flex-end !important;
+}
+
+.swal2-popup.rptLookupPreviewPopup .swal2-confirm{
+  min-height:40px !important;
+  padding:10px 16px !important;
+  border-radius:12px !important;
+  font-size:13px !important;
+  font-weight:900 !important;
+}
+
+.rptLookupPreviewWrap{
+  padding:0;
+}
+
+.rptLookupPreviewWrap .rptLookupResultCard{
+  padding:6px;
+  border:none;
+  border-radius:0;
+  box-shadow:none;
+  background:transparent;
+}
+
+.rptLookupPreviewWrap .rptLookupMetaCompact{
+  margin-bottom:6px;
+}
+
+.rptLookupPreviewWrap .rptLookupMetaBar{
+  margin-bottom:6px;
+  gap:6px;
+}
+
+.rptLookupPreviewWrap .rptLookupMetaPill{
+  min-height:26px;
+  padding:4px 8px;
+  font-size:10px;
+}
+
+.rptLookupPreviewWrap .rptLookupTableWrap,
+.rptLookupPreviewWrap .rptLookupTableWrapCompact{
+  border-radius:13px;
+  max-height:min(68vh, 700px);
+  overflow:auto;
+}
+
+.rptLookupPreviewWrap .rptLookupTable,
+.rptLookupPreviewWrap .rptLookupTableCompact{
+  min-width:960px;
+}
+
+.rptLookupPreviewWrap .rptLookupTable thead th,
+.rptLookupPreviewWrap .rptLookupTableCompact thead th{
+  padding:8px 7px;
+  font-size:11px;
+}
+
+.rptLookupPreviewWrap .rptLookupTable tbody td,
+.rptLookupPreviewWrap .rptLookupTableCompact tbody td{
+  padding:8px 7px;
+  font-size:11px;
+  line-height:1.4;
+}
+
+.rptLookupPreviewWrap .rptLookupRecordList{
+  gap:8px;
+}
+
+.rptLookupPreviewWrap .rptLookupRecordCard{
+  border-radius:12px;
+}
+
+.rptLookupPreviewWrap .rptLookupRecordTop{
+  padding:8px 9px;
+}
+
+.rptLookupPreviewWrap .rptLookupRecordGrid{
+  padding:8px;
+  gap:7px;
 }
 
 /* =========================
@@ -3536,7 +3756,7 @@ body.img-editor-lock{
 
 @media (max-width:860px){
   .swal2-popup.rptLookupPopup{
-    width:min(100vw - 14px, 100%) !important;
+    width:calc(100vw - 10px) !important;
     border-radius:18px !important;
   }
 
@@ -3545,20 +3765,23 @@ body.img-editor-lock{
   }
 
   .rptLookupModalHead{
-    padding:14px 12px 10px;
+    padding:12px 12px 9px;
   }
 
   .rptLookupModalTitle{
-    font-size:16px;
+    font-size:15px;
+    line-height:1.12;
   }
 
   .rptLookupModalSub{
-    font-size:11px;
+    font-size:10.8px;
+    line-height:1.45;
   }
 
   .rptLookupToolbar,
   .rptLookupToolbarCompact{
     grid-template-columns:1fr;
+    gap:8px;
     padding:10px 12px;
   }
 
@@ -3567,6 +3790,12 @@ body.img-editor-lock{
     display:grid;
     grid-template-columns:1fr 1fr;
     gap:8px;
+    width:100%;
+  }
+
+  .rptLookupToolbarActions .rptLookupBtn,
+  .rptLookupToolbarActionsCompact .rptLookupBtn{
+    width:100%;
   }
 
   .rptLookupBody{
@@ -3579,34 +3808,66 @@ body.img-editor-lock{
     grid-template-columns:1fr;
   }
 
-  .rptLookupActionRow,
-  .rptLookupActionRowCompact{
-    grid-template-columns:1fr 1fr;
+  .rptLookupDesktopView{
+    display:none;
+  }
+
+  .rptLookupMobileView{
+    display:block;
+  }
+
+  .swal2-popup.rptLookupPreviewPopup{
+    width:calc(100vw - 8px) !important;
+    border-radius:16px !important;
+  }
+
+  .swal2-popup.rptLookupPreviewPopup .swal2-title.rptLookupPreviewTitle{
+    padding:9px 10px 5px !important;
+    font-size:14px !important;
+    line-height:1.12 !important;
+  }
+
+  .swal2-popup.rptLookupPreviewPopup .swal2-html-container.rptLookupPreviewHtml{
+    padding:0 6px 6px !important;
+  }
+
+  .swal2-popup.rptLookupPreviewPopup .swal2-actions{
+    padding:8px 10px 10px !important;
+  }
+
+  .rptLookupPreviewWrap .rptLookupResultCard{
+    padding:4px;
+  }
+
+  .rptLookupPreviewWrap .rptLookupTableWrap,
+  .rptLookupPreviewWrap .rptLookupTableWrapCompact{
+    max-height:min(64vh, 560px);
   }
 }
 
 @media (max-width:560px){
   .rptLookupBtn{
-    min-height:42px;
+    min-height:40px;
     font-size:12px;
     border-radius:12px;
-    padding:10px 10px;
+    padding:9px 10px;
   }
 
   .rptLookupMetaPill{
-    min-height:26px;
+    min-height:25px;
     padding:4px 8px;
-    font-size:10px;
+    font-size:9.8px;
   }
 
-  .rptLookupResultCard{
-    padding:10px;
-    border-radius:14px;
+  .rptLookupResultCard,
+  .rptLookupResultCardDiscipline{
+    padding:8px;
+    border-radius:13px;
   }
 
   .rptLookupResultBox{
     padding:8px 9px;
-    border-radius:11px;
+    border-radius:10px;
   }
 
   .rptLookupResultLabel{
@@ -3619,7 +3880,7 @@ body.img-editor-lock{
 
   .rptLookupResultTextBlock{
     padding:9px;
-    border-radius:11px;
+    border-radius:10px;
   }
 
   .rptLookupResultTextTitle{
@@ -3638,11 +3899,44 @@ body.img-editor-lock{
     grid-template-columns:1fr;
   }
 
+  .rptLookupRecordGrid,
+  .rptLookupRecordGridCompact{
+    grid-template-columns:1fr;
+    gap:7px;
+    padding:8px;
+  }
+
+  .rptLookupRecordItemWide{
+    grid-column:auto;
+  }
+
+  .rptLookupRecordTop{
+    padding:8px 9px;
+  }
+
+  .rptLookupRecordDate{
+    font-size:11px;
+  }
+
+  .rptLookupRecordItem{
+    padding:8px;
+    border-radius:10px;
+  }
+
+  .rptLookupRecordLabel{
+    font-size:9.8px;
+  }
+
+  .rptLookupRecordValue{
+    font-size:11.5px;
+    line-height:1.4;
+  }
+
   .rptLookupTable thead th,
   .rptLookupTable tbody td,
   .rptLookupTableCompact thead th,
   .rptLookupTableCompact tbody td{
-    padding:9px 8px;
+    padding:8px 7px;
     font-size:11px;
   }
 }
@@ -3653,301 +3947,37 @@ body.img-editor-lock{
     font-size:11.5px;
     padding:9px 6px;
   }
-}
-/* =========================
-   DISCIPLINE LOOKUP HYBRID VIEW
-========================= */
 
-.rptLookupDesktopView{
-  display:block;
-}
-
-.rptLookupMobileView{
-  display:none;
-}
-
-.rptLookupRecordList{
-  display:grid;
-  gap:10px;
-}
-
-.rptLookupRecordCard{
-  border:1px solid #dbe5f2;
-  border-radius:14px;
-  background:#fff;
-  box-shadow:0 6px 18px rgba(15,23,42,.04);
-  overflow:hidden;
-}
-
-.rptLookupRecordTop{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:10px;
-  padding:10px 12px;
-  border-bottom:1px solid #e8eef7;
-  background:linear-gradient(180deg,#f8fbff 0%,#f2f7ff 100%);
-}
-
-.rptLookupRecordIndex{
-  display:inline-flex;
-  align-items:center;
-  min-height:28px;
-  padding:0 10px;
-  border-radius:999px;
-  background:#eaf2ff;
-  border:1px solid #d7e5ff;
-  color:#1d4ed8;
-  font-size:11px;
-  font-weight:900;
-}
-
-.rptLookupRecordDate{
-  font-size:12px;
-  font-weight:900;
-  color:#0f172a;
-  white-space:nowrap;
-}
-
-.rptLookupRecordGrid{
-  display:grid;
-  grid-template-columns:1fr 1fr;
-  gap:10px;
-  padding:12px;
-}
-
-.rptLookupRecordItem{
-  min-width:0;
-  border:1px solid #edf2fa;
-  border-radius:12px;
-  background:#fbfdff;
-  padding:9px 10px;
-}
-
-.rptLookupRecordItemWide{
-  grid-column:1 / -1;
-}
-
-.rptLookupRecordLabel{
-  color:#64748b;
-  font-size:10.5px;
-  font-weight:800;
-  margin-bottom:4px;
-}
-
-.rptLookupRecordValue{
-  color:#0f172a;
-  font-size:12.5px;
-  font-weight:900;
-  line-height:1.5;
-  word-break:break-word;
-}
-
-@media (max-width: 860px){
-  .rptLookupDesktopView{
-    display:none;
+  .swal2-popup.rptLookupPopup{
+    width:calc(100vw - 6px) !important;
   }
 
-  .rptLookupMobileView{
-    display:block;
-  }
-}
-
-@media (max-width: 560px){
-  .rptLookupRecordGrid{
-    grid-template-columns:1fr;
-    gap:8px;
-    padding:10px;
+  .rptLookupModalHead{
+    padding:10px 10px 8px;
   }
 
-  .rptLookupRecordItemWide{
-    grid-column:auto;
-  }
-
-  .rptLookupRecordTop{
-    padding:9px 10px;
-  }
-
-  .rptLookupRecordDate{
-    font-size:11.5px;
-  }
-
-  .rptLookupRecordItem{
-    padding:8px 9px;
-  }
-
-  .rptLookupRecordLabel{
+  .rptLookupModalBadge{
+    min-height:24px;
+    padding:3px 8px;
     font-size:10px;
   }
 
-  .rptLookupRecordValue{
-    font-size:12px;
-    line-height:1.45;
-  }
-}
-/* =========================
-   ATTACHED DISCIPLINE PREVIEW - WIDE MODE
-========================= */
-
-.swal2-popup.rptLookupPreviewPopup{
-  width:min(1320px, calc(100vw - 10px)) !important;
-  max-width:none !important;
-  padding:0 !important;
-  border-radius:20px !important;
-  overflow:hidden !important;
-}
-
-.swal2-popup.rptLookupPreviewPopup .swal2-title.rptLookupPreviewTitle{
-  margin:0 !important;
-  padding:12px 16px 8px !important;
-  font-size:20px !important;
-  line-height:1.15 !important;
-  font-weight:800 !important;
-  text-align:left !important;
-  color:#0f172a !important;
-}
-
-.swal2-popup.rptLookupPreviewPopup .swal2-html-container.rptLookupPreviewHtml{
-  margin:0 !important;
-  padding:0 10px 10px !important;
-  overflow:visible !important;
-}
-
-.swal2-popup.rptLookupPreviewPopup .swal2-actions{
-  margin:0 !important;
-  padding:10px 14px 14px !important;
-  border-top:1px solid #e8eef7;
-  justify-content:flex-end !important;
-}
-
-.swal2-popup.rptLookupPreviewPopup .swal2-confirm{
-  min-height:40px !important;
-  padding:10px 16px !important;
-  border-radius:12px !important;
-  font-size:13px !important;
-  font-weight:900 !important;
-}
-
-.rptLookupPreviewWrap{
-  padding:0;
-}
-
-.rptLookupPreviewWrap .rptLookupResultCard{
-  padding:8px;
-  border:none;
-  border-radius:0;
-  box-shadow:none;
-  background:transparent;
-}
-
-.rptLookupPreviewWrap .rptLookupMetaCompact{
-  margin-bottom:8px;
-}
-
-.rptLookupPreviewWrap .rptLookupMetaBar{
-  margin-bottom:8px;
-  gap:6px;
-}
-
-.rptLookupPreviewWrap .rptLookupMetaPill{
-  min-height:27px;
-  padding:4px 9px;
-  font-size:10.5px;
-}
-
-.rptLookupPreviewWrap .rptLookupTableWrap,
-.rptLookupPreviewWrap .rptLookupTableWrapCompact{
-  border-radius:14px;
-  max-height:min(68vh, 700px);
-  overflow:auto;
-}
-
-.rptLookupPreviewWrap .rptLookupTable,
-.rptLookupPreviewWrap .rptLookupTableCompact{
-  min-width:980px;
-}
-
-.rptLookupPreviewWrap .rptLookupTable thead th,
-.rptLookupPreviewWrap .rptLookupTableCompact thead th{
-  padding:9px 8px;
-  font-size:11.5px;
-}
-
-.rptLookupPreviewWrap .rptLookupTable tbody td,
-.rptLookupPreviewWrap .rptLookupTableCompact tbody td{
-  padding:8px 8px;
-  font-size:11.5px;
-  line-height:1.45;
-}
-
-.rptLookupPreviewWrap .rptLookupRecordList{
-  gap:8px;
-}
-
-.rptLookupPreviewWrap .rptLookupRecordCard{
-  border-radius:12px;
-}
-
-.rptLookupPreviewWrap .rptLookupRecordTop{
-  padding:9px 10px;
-}
-
-.rptLookupPreviewWrap .rptLookupRecordGrid{
-  padding:10px;
-  gap:8px;
-}
-
-@media (max-width: 860px){
-  .swal2-popup.rptLookupPreviewPopup{
-    width:calc(100vw - 8px) !important;
-    border-radius:16px !important;
+  .rptLookupModalTitle{
+    margin-top:7px;
+    font-size:14px;
   }
 
-  .swal2-popup.rptLookupPreviewPopup .swal2-title.rptLookupPreviewTitle{
-    padding:10px 12px 6px !important;
-    font-size:16px !important;
-    line-height:1.15 !important;
-  }
-
-  .swal2-popup.rptLookupPreviewPopup .swal2-html-container.rptLookupPreviewHtml{
-    padding:0 8px 8px !important;
-  }
-
-  .swal2-popup.rptLookupPreviewPopup .swal2-actions{
-    padding:8px 10px 10px !important;
-  }
-
-  .rptLookupPreviewWrap .rptLookupResultCard{
-    padding:6px;
-  }
-
-  .rptLookupPreviewWrap .rptLookupTableWrap,
-  .rptLookupPreviewWrap .rptLookupTableWrapCompact{
-    max-height:min(64vh, 560px);
-  }
-}
-
-@media (max-width: 560px){
-  .swal2-popup.rptLookupPreviewPopup .swal2-title.rptLookupPreviewTitle{
-    font-size:14px !important;
-    padding:9px 10px 5px !important;
-  }
-
-  .swal2-popup.rptLookupPreviewPopup .swal2-html-container.rptLookupPreviewHtml{
-    padding:0 6px 6px !important;
-  }
-
-  .rptLookupPreviewWrap .rptLookupMetaPill{
+  .rptLookupModalSub{
     font-size:10px;
-    min-height:25px;
-    padding:4px 8px;
+    line-height:1.4;
   }
 
-  .rptLookupPreviewWrap .rptLookupTable thead th,
-  .rptLookupPreviewWrap .rptLookupTableCompact thead th,
-  .rptLookupPreviewWrap .rptLookupTable tbody td,
-  .rptLookupPreviewWrap .rptLookupTableCompact tbody td{
-    font-size:11px;
-    padding:8px 7px;
+  .rptLookupToolbar,
+  .rptLookupToolbarCompact{
+    padding:8px 10px;
+  }
+
+  .rptLookupBody{
+    padding:8px 10px 10px;
   }
 }
