@@ -5917,28 +5917,36 @@ async function openItemLookupPopup() {
   });
 }
   async function openAttachedDisciplinePreview() {
-    const d = state.disciplineLookup || createEmptyDisciplineLookupState();
-    if (!d.attached || !d.records.length) {
-      await Swal.fire({
-        icon: "info",
-        title: "ยังไม่มีข้อมูล",
-        text: "ยังไม่ได้แนบข้อมูลวินัยกับรายงานนี้"
-      });
-      return;
-    }
-
+  const d = state.disciplineLookup || createEmptyDisciplineLookupState();
+  if (!d.attached || !d.records.length) {
     await Swal.fire({
-      title: "ข้อมูลวินัยที่แนบกับรายงาน",
-      width: 1100,
-      confirmButtonText: "ปิด",
-      html: renderDisciplineLookupTable(d.records, {
-        count: d.matchCount,
-        employeeCode: d.employeeCode,
-        employeeName: d.employeeName
-      })
+      icon: "info",
+      title: "ยังไม่มีข้อมูล",
+      text: "ยังไม่ได้แนบข้อมูลวินัยกับรายงานนี้"
     });
+    return;
   }
 
+  await Swal.fire({
+    title: "ข้อมูลวินัยที่แนบกับรายงาน",
+    width: 1280,
+    confirmButtonText: "ปิด",
+    customClass: {
+      popup: "rptLookupPopup rptLookupPreviewPopup",
+      title: "rptLookupPreviewTitle",
+      htmlContainer: "rptLookupPreviewHtml"
+    },
+    html: `
+      <div class="rptLookupPreviewWrap">
+        ${renderDisciplineLookupTable(d.records, {
+          count: d.matchCount,
+          employeeCode: d.employeeCode,
+          employeeName: d.employeeName
+        })}
+      </div>
+    `
+  });
+}
   function clearDisciplineLookup() {
     resetDisciplineLookupState();
   }
