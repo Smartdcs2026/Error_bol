@@ -5455,8 +5455,6 @@
   const tableBody = rows.map((row) => `
     <tr>
       <td>${escapeHtml(row.violationDate || "")}</td>
-      <td>${escapeHtml(row.department || "")}</td>
-      <td>${escapeHtml(row.category || "")}</td>
       <td>${escapeHtml(row.subject || "")}</td>
       <td>${escapeHtml(row.docStatus || "")}</td>
       <td>${escapeHtml(row.result || "")}</td>
@@ -5466,23 +5464,13 @@
   `).join("");
 
   const cardBody = rows.map((row, idx) => `
-    <div class="rptLookupRecordCard">
+    <div class="rptLookupRecordCard rptLookupRecordCardCompact">
       <div class="rptLookupRecordTop">
         <div class="rptLookupRecordIndex">รายการ ${idx + 1}</div>
         <div class="rptLookupRecordDate">${escapeHtml(row.violationDate || "-")}</div>
       </div>
 
-      <div class="rptLookupRecordGrid">
-        <div class="rptLookupRecordItem">
-          <div class="rptLookupRecordLabel">แผนก</div>
-          <div class="rptLookupRecordValue">${escapeHtml(row.department || "-")}</div>
-        </div>
-
-        <div class="rptLookupRecordItem">
-          <div class="rptLookupRecordLabel">หมวด</div>
-          <div class="rptLookupRecordValue">${escapeHtml(row.category || "-")}</div>
-        </div>
-
+      <div class="rptLookupRecordGrid rptLookupRecordGridCompact">
         <div class="rptLookupRecordItem rptLookupRecordItemWide">
           <div class="rptLookupRecordLabel">เรื่อง</div>
           <div class="rptLookupRecordValue">${escapeHtml(row.subject || "-")}</div>
@@ -5520,20 +5508,18 @@
       </div>
     </div>
 
-    <div class="rptLookupResultCard">
+    <div class="rptLookupResultCard rptLookupResultCardDiscipline">
       <div class="rptLookupDesktopView">
         <div class="rptLookupTableWrap rptLookupTableWrapCompact">
-          <table class="rptLookupTable rptLookupTableCompact">
+          <table class="rptLookupTable rptLookupTableCompact rptLookupTableDiscipline">
             <thead>
               <tr>
-                <th style="width:96px">วันที่กระทำผิด</th>
-                <th style="width:90px">แผนก</th>
-                <th style="width:90px">หมวด</th>
-                <th style="min-width:240px">เรื่อง</th>
-                <th style="width:120px">สถานะเอกสาร</th>
-                <th style="width:130px">ผลการดำเนินการ</th>
-                <th style="width:120px">ผู้บังคับบัญชา</th>
-                <th style="width:120px">วันที่ดำเนินการลงโทษ</th>
+                <th style="width:100px">วันที่กระทำผิด</th>
+                <th style="min-width:320px">เรื่อง</th>
+                <th style="width:130px">สถานะเอกสาร</th>
+                <th style="width:150px">ผลการดำเนินการ</th>
+                <th style="width:130px">ผู้บังคับบัญชา</th>
+                <th style="width:130px">วันที่ดำเนินการลงโทษ</th>
               </tr>
             </thead>
             <tbody>${tableBody}</tbody>
@@ -5542,14 +5528,13 @@
       </div>
 
       <div class="rptLookupMobileView">
-        <div class="rptLookupRecordList">
+        <div class="rptLookupRecordList rptLookupRecordListCompact">
           ${cardBody}
         </div>
       </div>
     </div>
   `;
 }
-
  
 function renderItemLookupResult(result) {
   const item = escapeHtml(result?.item || "");
