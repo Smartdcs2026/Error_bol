@@ -3186,399 +3186,195 @@ body.img-editor-lock{
   background:#fcfdff;
 }
 
-@media (max-width: 768px){
+/* =========================
+   REPORT500 LOOKUP BAR MOBILE FIX
+========================= */
+.rptUtilityBar{
+  display:grid;
+  grid-template-columns:repeat(2, minmax(0,1fr));
+  gap:10px;
+  align-items:stretch;
+}
+
+.rptUtilityBar .btn{
+  width:100%;
+  min-height:46px;
+  border-radius:16px;
+  font-size:13px;
+  font-weight:900;
+}
+
+@media (max-width:768px){
   .rptUtilityBar{
-    display:grid;
-    grid-template-columns:1fr;
+    grid-template-columns:repeat(2, minmax(0,1fr));
     gap:8px;
   }
 
-  .rptLookupSummary{
-    flex-direction:column;
-    align-items:stretch;
+  .rptUtilityBar .btn{
+    min-height:44px;
+    padding:10px 8px;
+    font-size:12px;
+    letter-spacing:0;
   }
+}
 
-  .rptLookupSummaryActions{
-    justify-content:stretch;
-  }
-
-  .rptLookupSummaryActions .btn{
-    width:100%;
-  }
-
-  .rptLookupActionRow{
-    display:grid;
-    grid-template-columns:1fr;
-  }
-
-  .rptLookupActionRow .btn{
-    width:100%;
+@media (max-width:420px){
+  .rptUtilityBar .btn{
+    min-height:42px;
+    font-size:11.5px;
+    padding:9px 6px;
   }
 }
 /* =========================
-   REPORT500 LOOKUP POPUP PRO
+   REPORT500 LOOKUP POPUP COMPACT PRO
 ========================= */
 .swal2-popup.rptLookupPopup{
-  width:min(980px, calc(100vw - 32px)) !important;
-  padding:0 !important;
-  border-radius:22px !important;
-  overflow:hidden !important;
-  background:#fff !important;
-  box-shadow:0 30px 80px rgba(15,23,42,.24) !important;
-}
-
-.swal2-popup.rptLookupPopup .swal2-title{
-  display:none !important;
-}
-
-.swal2-popup.rptLookupPopup .swal2-html-container{
-  margin:0 !important;
-  padding:0 !important;
-  text-align:left !important;
-}
-
-.swal2-popup.rptLookupPopup .swal2-actions{
-  margin:0 !important;
-  padding:14px 18px 18px !important;
-  border-top:1px solid #e8eef7;
-  background:#fff;
-  justify-content:flex-end !important;
-}
-
-.swal2-popup.rptLookupPopup .swal2-confirm{
-  min-height:42px !important;
-  padding:10px 16px !important;
-  border-radius:13px !important;
-  font-weight:900 !important;
-  background:linear-gradient(180deg,#1f5eff,#1749c7) !important;
-  box-shadow:0 10px 24px rgba(37,99,235,.18) !important;
+  width:min(920px, calc(100vw - 20px)) !important;
+  border-radius:20px !important;
 }
 
 .rptLookupModal{
-  display:grid;
-  grid-template-rows:auto auto 1fr;
-  min-height:min(76vh, 720px);
-  background:
-    radial-gradient(circle at top right, rgba(37,99,235,.06), transparent 24%),
-    linear-gradient(180deg,#ffffff 0%,#f8fbff 100%);
+  min-height:min(72vh, 680px);
 }
 
 .rptLookupModalHead{
-  padding:18px 20px 14px;
-  border-bottom:1px solid #e8eef7;
-  background:linear-gradient(180deg,#ffffff 0%,#f7faff 100%);
-}
-
-.rptLookupModalBadge{
-  display:inline-flex;
-  align-items:center;
-  min-height:27px;
-  padding:4px 10px;
-  border-radius:999px;
-  background:#eaf2ff;
-  color:#1d4ed8;
-  border:1px solid #d6e4ff;
-  font-size:11px;
-  font-weight:900;
-  letter-spacing:.2px;
+  padding:16px 16px 12px;
 }
 
 .rptLookupModalTitle{
-  margin-top:10px;
-  font-size:19px;
-  line-height:1.15;
-  font-weight:900;
-  color:#0f172a;
+  font-size:18px;
 }
 
 .rptLookupModalSub{
-  margin-top:5px;
-  color:#64748b;
-  font-size:12px;
+  font-size:11.5px;
   line-height:1.55;
-  max-width:720px;
+  max-width:640px;
 }
 
 .rptLookupToolbar{
-  display:grid;
   grid-template-columns:minmax(0,1fr) auto;
-  gap:12px;
-  align-items:end;
-  padding:14px 20px;
-  border-bottom:1px solid #edf3fb;
-  background:#fbfdff;
-}
-
-.rptLookupToolbar .field{
-  gap:7px;
-}
-
-.rptLookupToolbar .field label{
-  font-size:12px;
-  font-weight:900;
+  gap:10px;
+  padding:12px 16px;
 }
 
 .rptLookupInput{
-  width:100%;
-  min-height:48px;
-  border:1.3px solid #d9e4f1;
-  border-radius:15px;
-  background:#fff;
-  padding:11px 14px;
-  font-size:14px;
-  outline:none;
-  transition:border-color .18s ease, box-shadow .18s ease;
-}
-
-.rptLookupInput:focus{
-  border-color:#7aa8ff;
-  box-shadow:0 0 0 4px rgba(37,99,235,.08);
+  min-height:44px;
+  border-radius:14px;
 }
 
 .rptLookupToolbarActions{
-  display:flex;
   gap:8px;
-  align-items:center;
-  justify-content:flex-end;
-  flex-wrap:wrap;
 }
 
 .rptLookupBtn{
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-  min-height:44px;
-  padding:10px 14px;
-  border:none;
-  border-radius:13px;
-  cursor:pointer;
-  font-size:13px;
-  font-weight:900;
-  transition:transform .14s ease, opacity .18s ease, box-shadow .18s ease;
-}
-
-.rptLookupBtn:active{
-  transform:translateY(1px);
-}
-
-.rptLookupBtn.primary{
-  color:#fff;
-  background:linear-gradient(180deg,#2563eb,#1d4ed8);
-  box-shadow:0 10px 24px rgba(37,99,235,.18);
-}
-
-.rptLookupBtn.ghost{
-  color:#0f172a;
-  background:#fff;
-  border:1.2px solid #c9d7ea;
-  box-shadow:0 4px 14px rgba(15,23,42,.05);
-}
-
-.rptLookupBtn:disabled{
-  opacity:.55;
-  cursor:not-allowed;
-  box-shadow:none;
+  min-height:42px;
+  border-radius:12px;
+  font-size:12.5px;
+  padding:10px 12px;
 }
 
 .rptLookupBody{
-  padding:16px 20px 18px;
-  min-height:300px;
-  overflow:auto;
-  background:linear-gradient(180deg,#fbfdff 0%,#f5f9ff 100%);
+  padding:12px 16px 16px;
+  min-height:260px;
 }
 
 .rptLookupState{
-  display:grid;
-  place-items:center;
-  min-height:240px;
-  padding:20px;
-  border:1px dashed #cddced;
-  border-radius:18px;
-  background:rgba(255,255,255,.88);
-}
-
-.rptLookupStateInner{
-  width:min(100%, 520px);
-  text-align:center;
+  min-height:180px;
+  border-radius:16px;
 }
 
 .rptLookupStateIcon{
-  width:56px;
-  height:56px;
-  margin:0 auto 12px;
-  border-radius:18px;
-  display:grid;
-  place-items:center;
-  background:linear-gradient(180deg,#eef5ff,#e5efff);
-  border:1px solid #d9e5f9;
-  color:#2563eb;
-  font-size:23px;
-  font-weight:900;
+  width:48px;
+  height:48px;
+  border-radius:15px;
+  font-size:20px;
 }
 
 .rptLookupStateTitle{
-  font-size:16px;
-  font-weight:900;
-  color:#0f172a;
-  line-height:1.2;
+  font-size:15px;
 }
 
 .rptLookupStateText{
-  margin-top:6px;
-  font-size:12px;
-  line-height:1.65;
-  color:#64748b;
+  font-size:11.5px;
 }
 
 .rptLookupMetaBar{
-  display:flex;
-  flex-wrap:wrap;
-  gap:8px;
-  margin-bottom:12px;
+  gap:6px;
+  margin-bottom:10px;
 }
 
 .rptLookupMetaPill{
-  display:inline-flex;
-  align-items:center;
-  min-height:30px;
-  padding:5px 10px;
-  border-radius:999px;
-  border:1px solid #dbe7f7;
-  background:#fff;
-  font-size:11px;
-  font-weight:900;
-  color:#334155;
+  min-height:28px;
+  padding:4px 9px;
+  font-size:10.5px;
 }
 
 .rptLookupResultCard{
-  padding:14px;
-  border:1px solid #dbe5f2;
-  border-radius:18px;
-  background:#fff;
-  box-shadow:0 10px 26px rgba(15,23,42,.05);
+  padding:12px;
+  border-radius:16px;
 }
 
 .rptLookupResultGrid{
-  display:grid;
-  grid-template-columns:repeat(2,minmax(0,1fr));
-  gap:10px;
+  gap:8px;
 }
 
 .rptLookupResultBox{
-  border:1px solid #edf2fa;
-  border-radius:14px;
-  padding:10px 11px;
-  background:#fbfdff;
+  border-radius:12px;
+  padding:9px 10px;
 }
 
 .rptLookupResultLabel{
-  color:#64748b;
-  font-size:11px;
-  font-weight:800;
+  font-size:10.5px;
 }
 
 .rptLookupResultValue{
-  margin-top:3px;
-  font-size:13px;
-  font-weight:900;
-  line-height:1.45;
-  color:#0f172a;
-  word-break:break-word;
+  font-size:12.5px;
 }
 
 .rptLookupResultTextBlock{
-  margin-top:10px;
-  border:1px solid #edf2fa;
-  border-radius:14px;
-  padding:11px 12px;
-  background:#fbfdff;
+  margin-top:8px;
+  border-radius:12px;
+  padding:10px;
 }
 
 .rptLookupResultTextTitle{
-  font-size:12px;
-  font-weight:900;
-  margin-bottom:6px;
-  color:#0f172a;
+  font-size:11.5px;
 }
 
 .rptLookupResultTextValue{
-  font-size:13px;
-  line-height:1.6;
-  color:#1e293b;
-  word-break:break-word;
+  font-size:12.5px;
+  line-height:1.55;
 }
 
 .rptLookupActionRow{
-  display:flex;
   gap:8px;
-  flex-wrap:wrap;
-  align-items:center;
-  justify-content:flex-start;
-  margin-top:12px;
+  margin-top:10px;
 }
 
-.rptLookupMeta{
-  font-size:12px;
-  font-weight:800;
-  color:#475569;
-  line-height:1.5;
-}
-
-.rptLookupEmpty{
-  padding:14px 16px;
-  border:1px dashed #c7d7eb;
-  border-radius:16px;
-  background:#f8fbff;
-  color:#64748b;
-  font-size:12px;
-  font-weight:800;
-  line-height:1.6;
+.rptLookupActionRow .rptLookupBtn{
+  flex:1 1 calc(50% - 8px);
 }
 
 .rptLookupTableWrap{
-  width:100%;
-  overflow:auto;
-  border:1px solid #dbe5f2;
-  border-radius:16px;
-  background:#fff;
-  box-shadow:0 10px 26px rgba(15,23,42,.05);
+  border-radius:14px;
 }
 
 .rptLookupTable{
-  width:100%;
-  min-width:980px;
-  border-collapse:collapse;
-  font-size:12px;
-  line-height:1.45;
+  min-width:900px;
+  font-size:11.5px;
 }
 
 .rptLookupTable thead th{
-  position:sticky;
-  top:0;
-  z-index:1;
-  padding:11px 8px;
-  background:#eff6ff;
-  color:#1e3a8a;
-  text-align:left;
-  font-weight:900;
-  border-bottom:1px solid #dbe5f2;
-  white-space:nowrap;
+  padding:10px 8px;
 }
 
 .rptLookupTable tbody td{
-  padding:9px 8px;
-  border-bottom:1px solid #edf2f7;
-  vertical-align:top;
-  color:#0f172a;
-}
-
-.rptLookupTable tbody tr:nth-child(even){
-  background:#fcfdff;
+  padding:8px;
 }
 
 @media (max-width:860px){
   .swal2-popup.rptLookupPopup{
-    width:min(100vw - 18px, 100%) !important;
+    width:min(100vw - 14px, 100%) !important;
     border-radius:18px !important;
   }
 
@@ -3586,29 +3382,13 @@ body.img-editor-lock{
     min-height:min(84vh, 760px);
   }
 
-  .rptLookupModalHead{
-    padding:15px 14px 12px;
-  }
-
-  .rptLookupModalTitle{
-    font-size:17px;
-  }
-
   .rptLookupToolbar{
     grid-template-columns:1fr;
-    padding:12px 14px;
-  }
-
-  .rptLookupToolbarActions{
-    justify-content:stretch;
-  }
-
-  .rptLookupToolbarActions .rptLookupBtn{
-    flex:1 1 100%;
+    padding:12px 12px;
   }
 
   .rptLookupBody{
-    padding:12px 14px 14px;
+    padding:10px 12px 12px;
   }
 
   .rptLookupResultGrid{
@@ -3617,10 +3397,51 @@ body.img-editor-lock{
 
   .rptLookupActionRow{
     display:grid;
-    grid-template-columns:1fr;
+    grid-template-columns:1fr 1fr;
   }
 
   .rptLookupActionRow .rptLookupBtn{
     width:100%;
+    flex:none;
   }
 }
+
+@media (max-width:520px){
+  .rptLookupModalHead{
+    padding:14px 12px 10px;
+  }
+
+  .rptLookupModalTitle{
+    font-size:16px;
+    line-height:1.2;
+  }
+
+  .rptLookupModalSub{
+    font-size:11px;
+  }
+
+  .rptLookupToolbar{
+    padding:10px 12px;
+  }
+
+  .rptLookupBtn{
+    min-height:40px;
+    font-size:12px;
+    padding:9px 10px;
+  }
+
+  .rptLookupBody{
+    padding:10px 12px 12px;
+    min-height:220px;
+  }
+
+  .rptLookupState{
+    min-height:150px;
+    padding:16px;
+  }
+
+  .rptLookupActionRow{
+    grid-template-columns:1fr;
+  }
+}
+  
