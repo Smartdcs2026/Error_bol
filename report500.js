@@ -5554,16 +5554,15 @@ function renderItemLookupResult(result) {
   return `
     <div class="rptLookupMetaBar">
       <div class="rptLookupMetaPill">${found ? "พบข้อมูลสินค้า" : "ไม่พบในฐานข้อมูล"}</div>
-      ${item ? `<div class="rptLookupMetaPill">Item: ${item}</div>` : ``}
+      <div class="rptLookupMetaPill">Item: ${item || "-"}</div>
     </div>
 
     <div class="rptLookupResultCard">
       <div class="rptLookupResultGrid">
         <div class="rptLookupResultBox">
-          <div class="rptLookupResultLabel">Item</div>
+          <div class="rptLookupResultLabel">รหัสสินค้า</div>
           <div class="rptLookupResultValue">${item || "-"}</div>
         </div>
-
         <div class="rptLookupResultBox">
           <div class="rptLookupResultLabel">ชื่อสินค้า</div>
           <div class="rptLookupResultValue">${description || "-"}</div>
@@ -5577,7 +5576,7 @@ function renderItemLookupResult(result) {
 
       <div class="rptLookupActionRow">
         <button type="button" id="swalRptItemCopyDesc" class="rptLookupBtn ghost">คัดลอกชื่อสินค้า</button>
-        <button type="button" id="swalRptItemCopyFull" class="rptLookupBtn ghost">คัดลอก Item + ชื่อสินค้า</button>
+        <button type="button" id="swalRptItemCopyFull" class="rptLookupBtn ghost">คัดลอกเต็ม</button>
         <button type="button" id="swalRptItemToSubject" class="rptLookupBtn primary">ใส่ในช่องเรื่อง</button>
         <button type="button" id="swalRptItemToWhat" class="rptLookupBtn primary">ใส่ในเหตุที่เกิด</button>
       </div>
@@ -5764,17 +5763,19 @@ function renderItemLookupResult(result) {
 
           const count = Number(json.count || (json.records || []).length || 0);
           resultBox.innerHTML = `
-            <div class="rptLookupMetaBar">
-              <div class="rptLookupMetaPill">พบ ${count} รายการ</div>
-              <div class="rptLookupMetaPill">รหัส: ${escapeHtml(json.employeeCode || json.normalizedEmployeeCode || "-")}</div>
-              ${json.employeeName ? `<div class="rptLookupMetaPill">ชื่อ: ${escapeHtml(json.employeeName)}</div>` : ``}
-            </div>
-            ${renderDisciplineLookupTable(json.records || [], {
-              count,
-              employeeCode: json.employeeCode || json.normalizedEmployeeCode || "",
-              employeeName: json.employeeName || ""
-            })}
-          `;
+  <div class="rptLookupResultCard">
+    <div class="rptLookupMetaBar">
+      <div class="rptLookupMetaPill">พบ ${count} รายการ</div>
+      <div class="rptLookupMetaPill">รหัส: ${escapeHtml(json.employeeCode || json.normalizedEmployeeCode || "-")}</div>
+      ${json.employeeName ? `<div class="rptLookupMetaPill">ชื่อ: ${escapeHtml(json.employeeName)}</div>` : ``}
+    </div>
+    ${renderDisciplineLookupTable(json.records || [], {
+      count,
+      employeeCode: json.employeeCode || json.normalizedEmployeeCode || "",
+      employeeName: json.employeeName || ""
+    })}
+  </div>
+`;
 
           btnUse.disabled = !(json.records && json.records.length);
         } catch (err) {
