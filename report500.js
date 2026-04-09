@@ -5439,60 +5439,62 @@
   }
 
   function renderDisciplineLookupTable(records, meta = {}) {
-    const rows = Array.isArray(records) ? records : [];
-    const count = Number(meta.count || rows.length || 0);
-    const employeeCode = escapeHtml(meta.employeeCode || "");
-    const employeeName = escapeHtml(meta.employeeName || "");
+  const rows = Array.isArray(records) ? records : [];
+  const count = Number(meta.count || rows.length || 0);
+  const employeeCode = escapeHtml(meta.employeeCode || "");
+  const employeeName = escapeHtml(meta.employeeName || "");
 
-    if (!rows.length) {
-      return `
-        <div class="rptLookupEmpty">
-          ไม่พบข้อมูลการดำเนินการทางวินัย
-        </div>
-      `;
-    }
-
-    const body = rows.map((row) => `
-      <tr>
-        <td>${escapeHtml(row.violationDate || "")}</td>
-        <td>${escapeHtml(row.employeeCode || "")}</td>
-        <td>${escapeHtml(row.employeeName || "")}</td>
-        <td>${escapeHtml(row.department || "")}</td>
-        <td>${escapeHtml(row.category || "")}</td>
-        <td>${escapeHtml(row.subject || "")}</td>
-        <td>${escapeHtml(row.docStatus || "")}</td>
-        <td>${escapeHtml(row.result || "")}</td>
-        <td>${escapeHtml(row.supervisor || "")}</td>
-        <td>${escapeHtml(row.actionDate || "")}</td>
-      </tr>
-    `).join("");
-
+  if (!rows.length) {
     return `
-      <div class="rptLookupMeta">
-        รหัสพนักงาน: ${employeeCode || "-"} ${employeeName ? `| ชื่อ: ${employeeName}` : ""} | พบ ${count} รายการ
+      <div class="rptLookupEmpty">
+        ไม่พบข้อมูลการดำเนินการทางวินัย
       </div>
+    `;
+  }
 
-      <div class="rptLookupTableWrap">
-        <table class="rptLookupTable">
+  const body = rows.map((row) => `
+    <tr>
+      <td>${escapeHtml(row.violationDate || "")}</td>
+      <td>${escapeHtml(row.department || "")}</td>
+      <td>${escapeHtml(row.category || "")}</td>
+      <td>${escapeHtml(row.subject || "")}</td>
+      <td>${escapeHtml(row.docStatus || "")}</td>
+      <td>${escapeHtml(row.result || "")}</td>
+      <td>${escapeHtml(row.supervisor || "")}</td>
+      <td>${escapeHtml(row.actionDate || "")}</td>
+    </tr>
+  `).join("");
+
+  return `
+    <div class="rptLookupMetaCompact">
+      <div class="rptLookupMetaBar">
+        <div class="rptLookupMetaPill">รหัส: ${employeeCode || "-"}</div>
+        <div class="rptLookupMetaPill">ชื่อ: ${employeeName || "-"}</div>
+        <div class="rptLookupMetaPill">พบ ${count} รายการ</div>
+      </div>
+    </div>
+
+    <div class="rptLookupResultCard">
+      <div class="rptLookupTableWrap rptLookupTableWrapCompact">
+        <table class="rptLookupTable rptLookupTableCompact">
           <thead>
             <tr>
-              <th>วันที่กระทำผิด</th>
-              <th>รหัสพนักงาน</th>
-              <th>ชื่อพนักงาน</th>
-              <th>แผนก</th>
-              <th>หมวด</th>
-              <th>เรื่อง</th>
-              <th>สถานะเอกสาร</th>
-              <th>ผลการดำเนินการ</th>
-              <th>ผู้บังคับบัญชา</th>
-              <th>วันที่ดำเนินการลงโทษ</th>
+              <th style="width:96px">วันที่กระทำผิด</th>
+              <th style="width:90px">แผนก</th>
+              <th style="width:90px">หมวด</th>
+              <th style="min-width:240px">เรื่อง</th>
+              <th style="width:120px">สถานะเอกสาร</th>
+              <th style="width:130px">ผลการดำเนินการ</th>
+              <th style="width:120px">ผู้บังคับบัญชา</th>
+              <th style="width:120px">วันที่ดำเนินการลงโทษ</th>
             </tr>
           </thead>
           <tbody>${body}</tbody>
         </table>
       </div>
-    `;
-  }
+    </div>
+  `;
+}
 
  
 function renderItemLookupResult(result) {
@@ -5520,11 +5522,12 @@ function renderItemLookupResult(result) {
     </div>
 
     <div class="rptLookupResultCard">
-      <div class="rptLookupResultGrid">
+      <div class="rptLookupResultGrid rptLookupResultGridCompact">
         <div class="rptLookupResultBox">
           <div class="rptLookupResultLabel">รหัสสินค้า</div>
           <div class="rptLookupResultValue">${item || "-"}</div>
         </div>
+
         <div class="rptLookupResultBox">
           <div class="rptLookupResultLabel">ชื่อสินค้า</div>
           <div class="rptLookupResultValue">${description || "-"}</div>
@@ -5536,7 +5539,7 @@ function renderItemLookupResult(result) {
         <div class="rptLookupResultTextValue">${displayText || "-"}</div>
       </div>
 
-      <div class="rptLookupActionRow">
+      <div class="rptLookupActionRow rptLookupActionRowCompact">
         <button type="button" id="swalRptItemCopyDesc" class="rptLookupBtn ghost">คัดลอกชื่อสินค้า</button>
         <button type="button" id="swalRptItemCopyFull" class="rptLookupBtn ghost">คัดลอกเต็ม</button>
         <button type="button" id="swalRptItemToSubject" class="rptLookupBtn primary">ใส่ในช่องเรื่อง</button>
@@ -5659,7 +5662,7 @@ function renderItemLookupResult(result) {
     });
   }
 
- async function openDisciplineLookupPopup() {
+async function openDisciplineLookupPopup() {
   const initialCode = state.disciplineLookup?.employeeCode || "";
 
   await Swal.fire({
@@ -5673,13 +5676,13 @@ function renderItemLookupResult(result) {
           <div class="rptLookupModalSub">ค้นหาประวัติการดำเนินการทางวินัยจากรหัสพนักงาน และเลือกแนบข้อมูลอ้างอิงนี้เข้ากับรายงานได้ทันที</div>
         </div>
 
-        <div class="rptLookupToolbar">
+        <div class="rptLookupToolbar rptLookupToolbarCompact">
           <div class="field">
             <label for="swalRptDisciplineEmployeeCode">รหัสพนักงาน</label>
             <input id="swalRptDisciplineEmployeeCode" class="rptLookupInput" value="${escapeHtml(initialCode)}" placeholder="กรอกรหัสพนักงาน">
           </div>
 
-          <div class="rptLookupToolbarActions">
+          <div class="rptLookupToolbarActions rptLookupToolbarActionsCompact">
             <button type="button" id="swalRptDisciplineSearch" class="rptLookupBtn primary">ค้นหา</button>
             <button type="button" id="swalRptDisciplineUse" class="rptLookupBtn ghost" disabled>ใช้ข้อมูลนี้กับรายงาน</button>
           </div>
@@ -5725,20 +5728,11 @@ function renderItemLookupResult(result) {
           latestResult = json;
 
           const count = Number(json.count || (json.records || []).length || 0);
-          resultBox.innerHTML = `
-            <div class="rptLookupResultCard">
-              <div class="rptLookupMetaBar">
-                <div class="rptLookupMetaPill">พบ ${count} รายการ</div>
-                <div class="rptLookupMetaPill">รหัส: ${escapeHtml(json.employeeCode || json.normalizedEmployeeCode || "-")}</div>
-                ${json.employeeName ? `<div class="rptLookupMetaPill">ชื่อ: ${escapeHtml(json.employeeName)}</div>` : ``}
-              </div>
-              ${renderDisciplineLookupTable(json.records || [], {
-                count,
-                employeeCode: json.employeeCode || json.normalizedEmployeeCode || "",
-                employeeName: json.employeeName || ""
-              })}
-            </div>
-          `;
+          resultBox.innerHTML = renderDisciplineLookupTable(json.records || [], {
+            count,
+            employeeCode: json.employeeCode || json.normalizedEmployeeCode || "",
+            employeeName: json.employeeName || ""
+          });
 
           btnUse.disabled = !(json.records && json.records.length);
         } catch (err) {
@@ -5762,7 +5756,6 @@ function renderItemLookupResult(result) {
     }
   });
 }
-
        
 
   
@@ -5780,13 +5773,13 @@ async function openItemLookupPopup() {
           <div class="rptLookupModalSub">ค้นหา Item เพื่อคัดลอกชื่อสินค้า หรือแทรกข้อความลงในหัวข้อเรื่องและรายละเอียดเหตุการณ์ได้ทันที</div>
         </div>
 
-        <div class="rptLookupToolbar">
+        <div class="rptLookupToolbar rptLookupToolbarCompact">
           <div class="field">
             <label for="swalRptItemCode">Item</label>
             <input id="swalRptItemCode" class="rptLookupInput" value="${escapeHtml(initialItem)}" placeholder="กรอก Item เช่น 170643654">
           </div>
 
-          <div class="rptLookupToolbarActions">
+          <div class="rptLookupToolbarActions rptLookupToolbarActionsCompact">
             <button type="button" id="swalRptItemSearch" class="rptLookupBtn primary">ค้นหา</button>
           </div>
         </div>
