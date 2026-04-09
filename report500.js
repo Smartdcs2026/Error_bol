@@ -5494,45 +5494,7 @@
     `;
   }
 
-  // function renderItemLookupResult(result) {
-  //   const item = escapeHtml(result?.item || "");
-  //   const description = escapeHtml(result?.description || "");
-  //   const displayText = escapeHtml(result?.displayText || "");
-  //   const found = !!result?.found;
-
-  //   if (!result || !result.item) {
-  //     return `<div class="rptLookupEmpty">ยังไม่มีผลการค้นหา</div>`;
-  //   }
-
-  //   return `
-  //     <div class="rptLookupResultCard">
-  //       <div class="rptLookupMeta">${found ? "พบข้อมูลสินค้า" : "ไม่พบข้อมูลสินค้าในฐานข้อมูล"}</div>
-
-  //       <div class="swalKvGrid" style="margin-top:8px">
-  //         <div class="swalKv">
-  //           <div class="swalKvLabel">Item</div>
-  //           <div class="swalKvValue">${item || "-"}</div>
-  //         </div>
-  //         <div class="swalKv">
-  //           <div class="swalKvLabel">ชื่อสินค้า</div>
-  //           <div class="swalKvValue">${description || "-"}</div>
-  //         </div>
-  //       </div>
-
-  //       <div class="swalSection" style="margin-top:10px">
-  //         <div class="swalSectionTitle">ข้อความพร้อมใช้งาน</div>
-  //         <div class="plainTextBox" style="min-height:auto">${displayText || "-"}</div>
-  //       </div>
-
-  //       <div class="rptLookupActionRow" style="margin-top:10px">
-  //         <button type="button" id="swalRptItemCopyDesc" class="btn ghost">คัดลอกชื่อสินค้า</button>
-  //         <button type="button" id="swalRptItemCopyFull" class="btn ghost">คัดลอก Item + ชื่อสินค้า</button>
-  //         <button type="button" id="swalRptItemToSubject" class="btn primary">ใส่ในช่องเรื่อง</button>
-  //         <button type="button" id="swalRptItemToWhat" class="btn primary">ใส่ในเหตุที่เกิด</button>
-  //       </div>
-  //     </div>
-  //   `;
-  // }
+ 
 function renderItemLookupResult(result) {
   const item = escapeHtml(result?.item || "");
   const description = escapeHtml(result?.description || "");
@@ -5583,6 +5545,7 @@ function renderItemLookupResult(result) {
     </div>
   `;
 }
+  
   function attachDisciplineLookupResult(result) {
     const records = Array.isArray(result?.records) ? result.records : [];
     const employeeCode = norm(result?.employeeCode || result?.normalizedEmployeeCode || "");
@@ -5763,19 +5726,19 @@ function renderItemLookupResult(result) {
 
           const count = Number(json.count || (json.records || []).length || 0);
           resultBox.innerHTML = `
-  <div class="rptLookupResultCard">
-    <div class="rptLookupMetaBar">
-      <div class="rptLookupMetaPill">พบ ${count} รายการ</div>
-      <div class="rptLookupMetaPill">รหัส: ${escapeHtml(json.employeeCode || json.normalizedEmployeeCode || "-")}</div>
-      ${json.employeeName ? `<div class="rptLookupMetaPill">ชื่อ: ${escapeHtml(json.employeeName)}</div>` : ``}
-    </div>
-    ${renderDisciplineLookupTable(json.records || [], {
-      count,
-      employeeCode: json.employeeCode || json.normalizedEmployeeCode || "",
-      employeeName: json.employeeName || ""
-    })}
-  </div>
-`;
+            <div class="rptLookupResultCard">
+              <div class="rptLookupMetaBar">
+                <div class="rptLookupMetaPill">พบ ${count} รายการ</div>
+                <div class="rptLookupMetaPill">รหัส: ${escapeHtml(json.employeeCode || json.normalizedEmployeeCode || "-")}</div>
+                ${json.employeeName ? `<div class="rptLookupMetaPill">ชื่อ: ${escapeHtml(json.employeeName)}</div>` : ``}
+              </div>
+              ${renderDisciplineLookupTable(json.records || [], {
+                count,
+                employeeCode: json.employeeCode || json.normalizedEmployeeCode || "",
+                employeeName: json.employeeName || ""
+              })}
+            </div>
+          `;
 
           btnUse.disabled = !(json.records && json.records.length);
         } catch (err) {
@@ -5800,87 +5763,9 @@ function renderItemLookupResult(result) {
   });
 }
 
-  // async function openItemLookupPopup() {
-  //   const initialItem = state.itemLookup?.item || "";
+       
 
-  //   await Swal.fire({
-  //     title: "ค้นหารายการสินค้า",
-  //     width: 980,
-  //     confirmButtonText: "ปิด",
-  //     html: `
-  //       <div class="rptLookupPanel">
-  //         <div class="field">
-  //           <label for="swalRptItemCode">Item</label>
-  //           <input id="swalRptItemCode" class="swal2-input" value="${escapeHtml(initialItem)}" placeholder="กรอก Item">
-  //         </div>
-
-  //         <div class="rptLookupActionRow">
-  //           <button type="button" id="swalRptItemSearch" class="btn primary">ค้นหา</button>
-  //         </div>
-
-  //         <div id="swalRptItemResult" class="rptLookupResult">
-  //           <div class="rptLookupEmpty">กรอก Item แล้วกดค้นหา</div>
-  //         </div>
-  //       </div>
-  //     `,
-  //     didOpen: () => {
-  //       const input = document.getElementById("swalRptItemCode");
-  //       const btnSearch = document.getElementById("swalRptItemSearch");
-  //       const resultBox = document.getElementById("swalRptItemResult");
-
-  //       const bindResultActions = (result) => {
-  //         document.getElementById("swalRptItemCopyDesc")?.addEventListener("click", () => {
-  //           copyTextToClipboard(result.description || "", "คัดลอกชื่อสินค้าเรียบร้อย");
-  //         });
-
-  //         document.getElementById("swalRptItemCopyFull")?.addEventListener("click", () => {
-  //           copyTextToClipboard(result.displayText || "", "คัดลอก Item และชื่อสินค้าเรียบร้อย");
-  //         });
-
-  //         document.getElementById("swalRptItemToSubject")?.addEventListener("click", () => {
-  //           insertItemTextToField("rptSubject", result.displayText || result.description || "", "replace");
-  //         });
-
-  //         document.getElementById("swalRptItemToWhat")?.addEventListener("click", () => {
-  //           insertItemTextToField("rptWhatHappen", result.displayText || result.description || "", "append");
-  //         });
-  //       };
-
-  //       const runSearch = async () => {
-  //         const item = norm(input?.value || "");
-  //         resultBox.innerHTML = `<div class="rptLookupMeta">กำลังค้นหา...</div>`;
-
-  //         try {
-  //           const json = await searchItemLookup(item);
-  //           resultBox.innerHTML = renderItemLookupResult(json);
-  //           bindResultActions(json);
-  //         } catch (err) {
-  //           resultBox.innerHTML = `<div class="rptLookupEmpty">${escapeHtml(err.message || String(err))}</div>`;
-  //         }
-  //       };
-
-  //       btnSearch?.addEventListener("click", runSearch);
-  //       input?.addEventListener("keydown", (ev) => {
-  //         if (ev.key === "Enter") {
-  //           ev.preventDefault();
-  //           runSearch();
-  //         }
-  //       });
-
-  //       if (state.itemLookup?.searched) {
-  //         const existing = {
-  //           item: state.itemLookup.item,
-  //           description: state.itemLookup.description,
-  //           displayText: state.itemLookup.displayText,
-  //           found: state.itemLookup.found
-  //         };
-  //         resultBox.innerHTML = renderItemLookupResult(existing);
-  //         bindResultActions(existing);
-  //       }
-  //     }
-  //   });
-  // }
-
+  
 async function openItemLookupPopup() {
   const initialItem = state.itemLookup?.item || "";
 
