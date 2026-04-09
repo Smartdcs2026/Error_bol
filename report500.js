@@ -5438,7 +5438,7 @@
     return json;
   }
 
-  function renderDisciplineLookupTable(records, meta = {}) {
+ function renderDisciplineLookupTable(records, meta = {}) {
   const rows = Array.isArray(records) ? records : [];
   const count = Number(meta.count || rows.length || 0);
   const employeeCode = escapeHtml(meta.employeeCode || "");
@@ -5452,7 +5452,7 @@
     `;
   }
 
-  const body = rows.map((row) => `
+  const tableBody = rows.map((row) => `
     <tr>
       <td>${escapeHtml(row.violationDate || "")}</td>
       <td>${escapeHtml(row.department || "")}</td>
@@ -5465,6 +5465,52 @@
     </tr>
   `).join("");
 
+  const cardBody = rows.map((row, idx) => `
+    <div class="rptLookupRecordCard">
+      <div class="rptLookupRecordTop">
+        <div class="rptLookupRecordIndex">รายการ ${idx + 1}</div>
+        <div class="rptLookupRecordDate">${escapeHtml(row.violationDate || "-")}</div>
+      </div>
+
+      <div class="rptLookupRecordGrid">
+        <div class="rptLookupRecordItem">
+          <div class="rptLookupRecordLabel">แผนก</div>
+          <div class="rptLookupRecordValue">${escapeHtml(row.department || "-")}</div>
+        </div>
+
+        <div class="rptLookupRecordItem">
+          <div class="rptLookupRecordLabel">หมวด</div>
+          <div class="rptLookupRecordValue">${escapeHtml(row.category || "-")}</div>
+        </div>
+
+        <div class="rptLookupRecordItem rptLookupRecordItemWide">
+          <div class="rptLookupRecordLabel">เรื่อง</div>
+          <div class="rptLookupRecordValue">${escapeHtml(row.subject || "-")}</div>
+        </div>
+
+        <div class="rptLookupRecordItem">
+          <div class="rptLookupRecordLabel">สถานะเอกสาร</div>
+          <div class="rptLookupRecordValue">${escapeHtml(row.docStatus || "-")}</div>
+        </div>
+
+        <div class="rptLookupRecordItem">
+          <div class="rptLookupRecordLabel">ผลการดำเนินการ</div>
+          <div class="rptLookupRecordValue">${escapeHtml(row.result || "-")}</div>
+        </div>
+
+        <div class="rptLookupRecordItem">
+          <div class="rptLookupRecordLabel">ผู้บังคับบัญชา</div>
+          <div class="rptLookupRecordValue">${escapeHtml(row.supervisor || "-")}</div>
+        </div>
+
+        <div class="rptLookupRecordItem">
+          <div class="rptLookupRecordLabel">วันที่ดำเนินการลงโทษ</div>
+          <div class="rptLookupRecordValue">${escapeHtml(row.actionDate || "-")}</div>
+        </div>
+      </div>
+    </div>
+  `).join("");
+
   return `
     <div class="rptLookupMetaCompact">
       <div class="rptLookupMetaBar">
@@ -5475,22 +5521,30 @@
     </div>
 
     <div class="rptLookupResultCard">
-      <div class="rptLookupTableWrap rptLookupTableWrapCompact">
-        <table class="rptLookupTable rptLookupTableCompact">
-          <thead>
-            <tr>
-              <th style="width:96px">วันที่กระทำผิด</th>
-              <th style="width:90px">แผนก</th>
-              <th style="width:90px">หมวด</th>
-              <th style="min-width:240px">เรื่อง</th>
-              <th style="width:120px">สถานะเอกสาร</th>
-              <th style="width:130px">ผลการดำเนินการ</th>
-              <th style="width:120px">ผู้บังคับบัญชา</th>
-              <th style="width:120px">วันที่ดำเนินการลงโทษ</th>
-            </tr>
-          </thead>
-          <tbody>${body}</tbody>
-        </table>
+      <div class="rptLookupDesktopView">
+        <div class="rptLookupTableWrap rptLookupTableWrapCompact">
+          <table class="rptLookupTable rptLookupTableCompact">
+            <thead>
+              <tr>
+                <th style="width:96px">วันที่กระทำผิด</th>
+                <th style="width:90px">แผนก</th>
+                <th style="width:90px">หมวด</th>
+                <th style="min-width:240px">เรื่อง</th>
+                <th style="width:120px">สถานะเอกสาร</th>
+                <th style="width:130px">ผลการดำเนินการ</th>
+                <th style="width:120px">ผู้บังคับบัญชา</th>
+                <th style="width:120px">วันที่ดำเนินการลงโทษ</th>
+              </tr>
+            </thead>
+            <tbody>${tableBody}</tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="rptLookupMobileView">
+        <div class="rptLookupRecordList">
+          ${cardBody}
+        </div>
       </div>
     </div>
   `;
