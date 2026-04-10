@@ -4860,13 +4860,16 @@
     });
   }
 
-   function createSimpleIndexedRowHtml(type, index, titleLabel, detailLabel, titlePlaceholder, detailPlaceholder) {
+  function createSimpleIndexedRowHtml(type, index, titleLabel, detailLabel, titlePlaceholder, detailPlaceholder) {
   return `
     <div class="rptRepeatCard" data-type="${escapeHtml(type)}">
       <div class="rptCardHead">
         <div class="rptCardHeadMain">
           <div class="rptCardTitle">${escapeHtml(titleLabel)} <span class="rptRowIndex">${index}</span></div>
           <div class="rptCardSummary">ยังไม่มีข้อมูล</div>
+        </div>
+        <div class="rptCardHeadActions">
+          <button type="button" class="btn ghost rptCollapseRow">ย่อ</button>
         </div>
       </div>
 
@@ -4884,7 +4887,6 @@
         </div>
 
         <div class="panelActions">
-          <button type="button" class="btn ghost rptCollapseRow">ย่อ</button>
           <button type="button" class="btn ghost rptRemoveRow">ลบแถว</button>
         </div>
       </div>
@@ -4902,6 +4904,9 @@
         <div class="rptCardHeadMain">
           <div class="rptCardTitle">ผู้เกี่ยวข้อง <span class="rptRowIndex">${index}</span></div>
           <div class="rptCardSummary">ยังไม่มีข้อมูล</div>
+        </div>
+        <div class="rptCardHeadActions">
+          <button type="button" class="btn ghost rptCollapseRow">ย่อ</button>
         </div>
       </div>
 
@@ -4944,7 +4949,6 @@
         </div>
 
         <div class="panelActions" style="justify-content:flex-end;margin-top:10px">
-          <button type="button" class="btn ghost rptCollapseRow">ย่อ</button>
           <button type="button" class="btn ghost rptRemoveRow">ลบแถว</button>
         </div>
       </div>
@@ -4961,6 +4965,9 @@
         <div class="rptCardHeadMain">
           <div class="rptCardTitle">การดำเนินการ <span class="rptRowIndex">${index}</span></div>
           <div class="rptCardSummary">ยังไม่มีข้อมูล</div>
+        </div>
+        <div class="rptCardHeadActions">
+          <button type="button" class="btn ghost rptCollapseRow">ย่อ</button>
         </div>
       </div>
 
@@ -5007,7 +5014,6 @@
         </div>
 
         <div class="panelActions" style="justify-content:flex-end;margin-top:10px">
-          <button type="button" class="btn ghost rptCollapseRow">ย่อ</button>
           <button type="button" class="btn ghost rptRemoveRow">ลบแถว</button>
         </div>
       </div>
@@ -5021,6 +5027,9 @@
         <div class="rptCardHeadMain">
           <div class="rptCardTitle">รูปภาพ <span class="rptRowIndex">${index}</span></div>
           <div class="rptCardSummary">ยังไม่มีข้อมูล</div>
+        </div>
+        <div class="rptCardHeadActions">
+          <button type="button" class="btn ghost rptCollapseRow">ย่อ</button>
         </div>
       </div>
 
@@ -5047,7 +5056,6 @@
 
         <div class="panelActions" style="justify-content:flex-end;margin-top:10px">
           <button type="button" class="btn ghost rptEditImageBtn">แก้ไขภาพ</button>
-          <button type="button" class="btn ghost rptCollapseRow">ย่อ</button>
           <button type="button" class="btn ghost rptRemoveRow">ลบแถว</button>
         </div>
       </div>
@@ -5515,10 +5523,12 @@ function bindRowFilledState(node) {
 
   updateRowFilledState(node);
 }
-     function bindDynamicRow(node) {
+    function bindDynamicRow(node) {
   if (!node) return;
 
   const root = getCardRoot(node);
+  const head = root.querySelector(".rptCardHead");
+  const collapseBtn = root.querySelector(".rptCollapseRow");
 
   root.querySelector(".rptRemoveRow")?.addEventListener("click", () => {
     if (root.getAttribute("data-type") === "image") {
@@ -5539,8 +5549,19 @@ function bindRowFilledState(node) {
     }
   });
 
-  root.querySelector(".rptCollapseRow")?.addEventListener("click", () => {
+  collapseBtn?.addEventListener("click", (ev) => {
+    ev.preventDefault();
+    ev.stopPropagation();
     toggleRowCollapse(root);
+  });
+
+  head?.addEventListener("click", (ev) => {
+    const clickedControl = ev.target.closest("button, input, select, textarea, label, a");
+    if (clickedControl) return;
+
+    if (root.classList.contains("is-collapsed")) {
+      toggleRowCollapse(root, false);
+    }
   });
 
   if (root.getAttribute("data-type") === "person") {
