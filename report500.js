@@ -4860,32 +4860,37 @@
     });
   }
 
-  function createSimpleIndexedRowHtml(type, index, titleLabel, detailLabel, titlePlaceholder, detailPlaceholder) {
+   function createSimpleIndexedRowHtml(type, index, titleLabel, detailLabel, titlePlaceholder, detailPlaceholder) {
     return `
       <div class="rptRepeatCard" data-type="${escapeHtml(type)}">
-        <div class="rptCardHead" style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid #e7eef8">
-          <div style="font-size:13px;font-weight:900;line-height:1.2">${escapeHtml(titleLabel)} ${index}</div>
-          <div class="rptRowIndex" style="display:inline-flex;align-items:center;justify-content:center;min-width:34px;height:30px;padding:0 10px;border-radius:999px;background:#eef4ff;color:#1d4ed8;border:1px solid #d8e5fb;font-size:11px;font-weight:900">${index}</div>
-        </div>
-
-        <div class="gridCompact">
-          <div class="field">
-            <label>${escapeHtml(titleLabel)}</label>
-            <input type="text" class="rptIdxTitle" placeholder="${escapeHtml(titlePlaceholder || "")}">
-          </div>
-          <div class="field">
-            <label>${escapeHtml(detailLabel)}</label>
-            <textarea class="rptIdxDetail" rows="3" placeholder="${escapeHtml(detailPlaceholder || "")}"></textarea>
+        <div class="rptCardHead">
+          <div class="rptCardHeadMain">
+            <div class="rptCardTitle">${escapeHtml(titleLabel)} <span class="rptRowIndex">${index}</span></div>
+            <div class="rptCardSummary">ยังไม่มีข้อมูล</div>
           </div>
         </div>
 
-        <div class="panelActions" style="justify-content:flex-end;margin-top:10px">
-          <button type="button" class="btn ghost rptRemoveRow">ลบแถว</button>
+        <div class="rptCardBody">
+          <div class="gridCompact">
+            <div class="field">
+              <label>${escapeHtml(titleLabel)}</label>
+              <input type="text" class="rptIdxTitle" placeholder="${escapeHtml(titlePlaceholder || "")}">
+            </div>
+
+            <div class="field">
+              <label>${escapeHtml(detailLabel)}</label>
+              <textarea class="rptIdxDetail" rows="3" placeholder="${escapeHtml(detailPlaceholder || "")}"></textarea>
+            </div>
+          </div>
+
+          <div class="panelActions">
+            <button type="button" class="btn ghost rptCollapseRow">ย่อ</button>
+            <button type="button" class="btn ghost rptRemoveRow">ลบแถว</button>
+          </div>
         </div>
       </div>
     `;
   }
-
   function createPersonRowHtml(index) {
     const positionOptions = buildOptionsHtml(state.options?.personPositionList, true);
     const departmentOptions = buildOptionsHtml(state.options?.personDepartmentList, true);
@@ -5112,18 +5117,26 @@
     return "complete";
   }
 
-  function updateRowFilledState(node) {
+    function updateRowFilledState(node) {
     if (!node) return;
 
-    const status = getRowStatus(node);
+    const root = getCardRoot(node);
+    if (!root) return;
 
-    node.classList.remove("is-partial", "is-complete");
+    const status = getRowStatus(root);
+
+    root.classList.remove("is-partial", "is-complete");
 
     if (status === "partial") {
-      node.classList.add("is-partial");
+      root.classList.add("is-partial");
     } else if (status === "complete") {
-      node.classList.add("is-complete");
+      root.classList.add("is-complete");
+    } else {
+      root.classList.remove("is-collapsed");
     }
+
+    updateRowSummary(root);
+    updateCollapseButtonState(root);
   }
 
   function bindRowFilledState(node) {
@@ -5137,7 +5150,139 @@
 
     updateRowFilledState(node);
   }
+  function getCardRoot(node) {
+    return node?.closest(".rptRepeatCard") || node?.closest(".rptBlock") || node || null;
+  }
 
+  function getCardBody(node) {
+    const root = getCardRoot(node);
+    return root?.querySelector(".rptCardBody") || null;
+  }
+
+  function canCollapseRow(node) {
+    const root = getCardRoot(node);
+    if (!root) return false;
+    return root.classList.contains("is-complete");
+  }
+
+  function updateCollapseButtonState(node) {
+    const root = getCardRoot(node);
+    if (!root) return;
+
+    const btn = root.querySelector(".rptCollapseRow");
+    if (!btn) return;
+
+    const complete = root.classList.contains("is-complete");
+    const collapsed = root.classList.contains("is-collapsed");
+
+    btn.disabled = !complete;
+    btn.classList.toggle("is-disabled", !complete);
+
+    if (!complete) {
+      btn.textContent = "ย่อ";
+      root.classList.remove("is-collapsed");
+      return;
+    }
+
+    btn.textContent = collapsed ? "ขยาย" : "ย่อ";
+  }
+
+  function toggleRowCollapse(node, forceCollapsed = null) {
+    const root = getCardRoot(node);
+    if (!root) return;
+
+    if (!canCollapseRow(root)) {
+      root.classList.remove("is-collapsed");
+      updateCollapseButtonState(root);
+      return;
+    }
+
+    const nextState = (forceCollapsed == null)
+      ? !root.classList.contains("is-collapsed")
+      : !!forceCollapsed;
+
+    root.classList.toggle("is-collapsed", nextState);
+    updateCollapseButtonState(root);
+  }
+
+  function collapsePreviousCompletedRow(fromButtonOrListId) {
+    let listRoot = null;
+    let currentCard = null;
+
+    if (typeof fromButtonOrListId === "string") {
+      listRoot = $(fromButtonOrListId);
+    } else {
+      currentCard = getCardRoot(fromButtonOrListId);
+      listRoot = currentCard?.parentElement || null;
+    }
+
+    if (!listRoot) return;
+
+    let target = null;
+
+    if (currentCard) {
+      target = currentCard;
+    } else {
+      const cards = listRoot.querySelectorAll(".rptRepeatCard, .rptBlock");
+      target = cards.length ? cards[cards.length - 1] : null;
+    }
+
+    if (!target) return;
+    if (!target.classList.contains("is-complete")) return;
+
+    toggleRowCollapse(target, true);
+  }
+
+  function buildRowSummary(node) {
+    const root = getCardRoot(node);
+    if (!root) return "";
+
+    const type = String(root.getAttribute("data-type") || "");
+    let summary = "";
+
+    if (type === "person") {
+      const who = String(root.querySelector(".rptPersonWho")?.value || "").trim();
+      const pos = String(root.querySelector(".rptPersonPosition")?.value || "").trim();
+      const dep = String(root.querySelector(".rptPersonDepartment")?.value || "").trim();
+      summary = [who, pos, dep].filter(Boolean).join(" • ");
+    } else if (type === "stepTaken") {
+      const action = String(root.querySelector(".rptStepActionType")?.value || "").trim();
+      const detail = String(root.querySelector(".rptStepDetail")?.value || "").trim();
+      summary = action || detail;
+    } else if (type === "image") {
+      const caption = String(root.querySelector(".rptImageCaption")?.value || "").trim();
+      const meta = String(root.querySelector(".rptImageMeta")?.textContent || "").trim();
+      summary = caption || meta;
+    } else {
+      const title = String(root.querySelector(".rptIdxTitle")?.value || "").trim();
+      const detail = String(root.querySelector(".rptIdxDetail")?.value || "").trim();
+      summary = title || detail;
+    }
+
+    return summary || "มีข้อมูลแล้ว";
+  }
+
+  function updateRowSummary(node) {
+    const root = getCardRoot(node);
+    if (!root) return;
+
+    const summaryEl = root.querySelector(".rptCardSummary");
+    if (!summaryEl) return;
+
+    summaryEl.textContent = buildRowSummary(root);
+  }
+
+  function bindRowSummary(node) {
+    const root = getCardRoot(node);
+    if (!root) return;
+
+    root.querySelectorAll("input, select, textarea").forEach((el) => {
+      el.addEventListener("input", () => updateRowSummary(root));
+      el.addEventListener("change", () => updateRowSummary(root));
+    });
+
+    updateRowSummary(root);
+  }
      function bindDynamicRow(node) {
     if (!node) return;
 
