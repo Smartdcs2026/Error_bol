@@ -4670,3 +4670,127 @@ body.img-editor-lock{
 .rptBlock.is-collapsed .rptCardHead:hover{
   opacity:.96;
 }
+/* =========================
+   FIX: mobile overlap between status badge and collapse button
+========================= */
+
+/* desktop/tablet กว้าง: ให้หัวการ์ดจัดระยะชัดขึ้น */
+.rptCardHead{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:10px;
+}
+
+.rptCardHeadMain{
+  min-width:0;
+  flex:1 1 auto;
+}
+
+.rptCardHeadActions{
+  flex:0 0 auto;
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  gap:8px;
+}
+
+.rptRepeatCard .rptCollapseRow,
+.rptBlock .rptCollapseRow{
+  min-width:72px;
+  white-space:nowrap;
+}
+
+/* จอเล็ก: ย้าย badge ลงมา ไม่ให้ลอยทับปุ่ม */
+@media (max-width:640px){
+  .rptRepeatCard.is-partial,
+  .rptRepeatCard.is-complete,
+  .rptBlock.is-partial,
+  .rptBlock.is-complete{
+    padding-top:10px;
+  }
+
+  .rptRepeatCard.is-partial::after,
+  .rptRepeatCard.is-complete::after,
+  .rptBlock.is-partial::after,
+  .rptBlock.is-complete::after{
+    position:static;
+    display:inline-flex;
+    margin:0 0 8px auto;
+    top:auto;
+    right:auto;
+    min-height:22px;
+    padding:3px 8px;
+    font-size:10.5px;
+    line-height:1;
+    box-shadow:none;
+  }
+
+  .rptRepeatCard.is-partial .rptCardHead,
+  .rptRepeatCard.is-complete .rptCardHead,
+  .rptBlock.is-partial .rptCardHead,
+  .rptBlock.is-complete .rptCardHead{
+    padding-right:0 !important;
+  }
+
+  .rptCardHead{
+    display:grid;
+    grid-template-columns:minmax(0,1fr) auto;
+    gap:8px;
+    align-items:start;
+  }
+
+  .rptCardHeadMain{
+    min-width:0;
+  }
+
+  .rptCardHeadActions{
+    justify-content:flex-end;
+    align-self:start;
+  }
+
+  .rptRepeatCard .rptCollapseRow,
+  .rptBlock .rptCollapseRow{
+    min-width:64px;
+    min-height:34px;
+    padding:6px 10px;
+    font-size:11px;
+    border-radius:10px;
+  }
+
+  .rptRepeatCard .rptCardTitle,
+  .rptBlock .rptCardTitle{
+    padding-right:0;
+  }
+
+  .rptRepeatCard .rptCardSummary,
+  .rptBlock .rptCardSummary{
+    margin-top:4px;
+    padding-right:0;
+  }
+}
+
+/* จอเล็กมาก: ให้ badge อยู่เต็มความกว้างด้านบนหัวการ์ด */
+@media (max-width:420px){
+  .rptRepeatCard.is-partial::after,
+  .rptRepeatCard.is-complete::after,
+  .rptBlock.is-partial::after,
+  .rptBlock.is-complete::after{
+    margin:0 0 6px 0;
+    width:max-content;
+    max-width:100%;
+  }
+
+  .rptCardHead{
+    grid-template-columns:minmax(0,1fr) auto;
+    gap:6px;
+  }
+
+  .rptRepeatCard .rptCollapseRow,
+  .rptBlock .rptCollapseRow{
+    min-width:58px;
+    min-height:32px;
+    padding:5px 8px;
+    font-size:10.5px;
+  }
+}
