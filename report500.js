@@ -5048,7 +5048,61 @@
     toggleEmptyState(listId, emptyLabel);
   }
 
-  function bindDynamicRow(node) {
+
+  function rowHasMeaningfulValue(node) {
+    if (!node) return false;
+
+    const fields = node.querySelectorAll("input, select, textarea");
+    for (const el of fields) {
+      if (!el) continue;
+
+      const tag = String(el.tagName || "").toUpperCase();
+      const type = String(el.type || "").toLowerCase();
+
+      if (type === "hidden" || type === "button" || type === "submit" || type === "reset") continue;
+
+      if (type === "file") {
+        if ((el.files && el.files.length > 0) || el.closest(".rptRepeatCard")?.querySelector(".rptImagePreview:not(.hidden)")) {
+          return true;
+        }
+        continue;
+      }
+
+      if (type === "checkbox" || type === "radio") {
+        if (el.checked) return true;
+        continue;
+      }
+
+      const val = String(el.value || "").trim();
+      if (!val) continue;
+
+      if (tag === "SELECT" && (val === "" || val === "-- เลือก --")) continue;
+
+      return true;
+    }
+
+    return false;
+  }
+
+  function updateRowFilledState(node) {
+    if (!node) return;
+    const filled = rowHasMeaningfulValue(node);
+    node.classList.toggle("is-filled", filled);
+  }
+
+  function bindRowFilledState(node) {
+    if (!node) return;
+
+    const fields = node.querySelectorAll("input, select, textarea");
+    fields.forEach((el) => {
+      el.addEventListener("input", () => updateRowFilledState(node));
+      el.addEventListener("change", () => updateRowFilledState(node));
+    });
+
+    updateRowFilledState(node);
+  }
+
+    function bindDynamicRow(node) {
     if (!node) return;
 
     node.querySelector(".rptRemoveRow")?.addEventListener("click", () => {
@@ -5083,6 +5137,8 @@
     if (node.getAttribute("data-type") === "image") {
       bindImageRow(node);
     }
+
+    bindRowFilledState(node);
   }
 
   function bindSelectOtherInRow(node, selectSel, wrapSel, inputSel) {
