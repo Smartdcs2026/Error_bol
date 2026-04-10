@@ -4640,3 +4640,33 @@ body.img-editor-lock{
     min-width:68px;
   }
 }
+/* หัวการ์ดสำหรับย่อ/ขยาย */
+.rptCardHead{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:10px;
+}
+
+.rptCardHeadMain{
+  min-width:0;
+  flex:1 1 auto;
+}
+
+.rptCardHeadActions{
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  gap:8px;
+  flex:0 0 auto;
+}
+
+.rptRepeatCard.is-collapsed .rptCardHead,
+.rptBlock.is-collapsed .rptCardHead{
+  cursor:pointer;
+}
+
+.rptRepeatCard.is-collapsed .rptCardHead:hover,
+.rptBlock.is-collapsed .rptCardHead:hover{
+  opacity:.96;
+}
