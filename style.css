@@ -3993,3 +3993,362 @@ body.img-editor-lock{
     font-size:10.5px;
   }
 }
+/* =========================
+   REPORT500 REPEATER DISPLAY PATCH
+   ใช้คู่กับ index.html ที่ย้ายปุ่มเพิ่มแถวลงใต้ list
+========================= */
+
+.rptRepeaterList{
+  display:grid;
+  grid-template-columns:1fr;
+  gap:12px;
+  align-items:start;
+  min-width:0;
+}
+
+.rptRepeaterFooter{
+  position:sticky;
+  bottom:0;
+  z-index:3;
+  margin-top:10px;
+  padding-top:8px;
+  background:
+    linear-gradient(
+      180deg,
+      rgba(255,255,255,0) 0%,
+      rgba(255,255,255,.92) 28%,
+      rgba(255,255,255,.98) 100%
+    );
+}
+
+.rptAddBottomBtn{
+  width:100%;
+  min-height:44px;
+  border-radius:14px;
+}
+
+#rptPersonList:empty,
+#rptDamageList:empty,
+#rptStepTakenList:empty,
+#rptEvidenceList:empty,
+#rptCauseList:empty,
+#rptPreventionList:empty,
+#rptLearningList:empty,
+#rptImageList:empty{
+  min-height:0;
+}
+
+#rptPersonList .rptRepeatCard,
+#rptDamageList .rptRepeatCard,
+#rptStepTakenList .rptRepeatCard,
+#rptEvidenceList .rptRepeatCard,
+#rptCauseList .rptRepeatCard,
+#rptPreventionList .rptRepeatCard,
+#rptLearningList .rptRepeatCard,
+#rptImageList .rptRepeatCard,
+#rptPersonList .rptBlock,
+#rptDamageList .rptBlock,
+#rptStepTakenList .rptBlock,
+#rptEvidenceList .rptBlock,
+#rptCauseList .rptBlock,
+#rptPreventionList .rptBlock,
+#rptLearningList .rptBlock,
+#rptImageList .rptBlock{
+  position:relative;
+  padding:12px;
+  border-radius:15px;
+  border:1.3px solid var(--line);
+  background:#fff;
+  box-shadow:var(--shadow-sm);
+  scroll-margin-top:92px;
+}
+
+#rptPersonList .rptRepeatCard .rptCardHead,
+#rptDamageList .rptRepeatCard .rptCardHead,
+#rptStepTakenList .rptRepeatCard .rptCardHead,
+#rptEvidenceList .rptRepeatCard .rptCardHead,
+#rptCauseList .rptRepeatCard .rptCardHead,
+#rptPreventionList .rptRepeatCard .rptCardHead,
+#rptLearningList .rptRepeatCard .rptCardHead,
+#rptImageList .rptRepeatCard .rptCardHead,
+#rptPersonList .rptBlock .rptCardHead,
+#rptDamageList .rptBlock .rptCardHead,
+#rptStepTakenList .rptBlock .rptCardHead,
+#rptEvidenceList .rptBlock .rptCardHead,
+#rptCauseList .rptBlock .rptCardHead,
+#rptPreventionList .rptBlock .rptCardHead,
+#rptLearningList .rptBlock .rptCardHead,
+#rptImageList .rptBlock .rptCardHead{
+  position:sticky;
+  top:0;
+  z-index:1;
+  margin:-2px -2px 10px;
+  padding:2px 2px 10px;
+  background:
+    linear-gradient(
+      180deg,
+      rgba(255,255,255,1) 0%,
+      rgba(255,255,255,.96) 76%,
+      rgba(255,255,255,0) 100%
+    );
+}
+
+#rptPersonList .rptRepeatCard .panelActions,
+#rptDamageList .rptRepeatCard .panelActions,
+#rptStepTakenList .rptRepeatCard .panelActions,
+#rptEvidenceList .rptRepeatCard .panelActions,
+#rptCauseList .rptRepeatCard .panelActions,
+#rptPreventionList .rptRepeatCard .panelActions,
+#rptLearningList .rptRepeatCard .panelActions,
+#rptImageList .rptRepeatCard .panelActions,
+#rptPersonList .rptBlock .panelActions,
+#rptDamageList .rptBlock .panelActions,
+#rptStepTakenList .rptBlock .panelActions,
+#rptEvidenceList .rptBlock .panelActions,
+#rptCauseList .rptBlock .panelActions,
+#rptPreventionList .rptBlock .panelActions,
+#rptLearningList .rptBlock .panelActions,
+#rptImageList .rptBlock .panelActions{
+  display:flex;
+  flex-wrap:wrap;
+  justify-content:flex-end;
+  gap:8px;
+  margin-top:10px;
+}
+
+#rptPersonList .rptRepeatCard .panelActions .btn,
+#rptDamageList .rptRepeatCard .panelActions .btn,
+#rptStepTakenList .rptRepeatCard .panelActions .btn,
+#rptEvidenceList .rptRepeatCard .panelActions .btn,
+#rptCauseList .rptRepeatCard .panelActions .btn,
+#rptPreventionList .rptRepeatCard .panelActions .btn,
+#rptLearningList .rptRepeatCard .panelActions .btn,
+#rptImageList .rptRepeatCard .panelActions .btn,
+#rptPersonList .rptBlock .panelActions .btn,
+#rptDamageList .rptBlock .panelActions .btn,
+#rptStepTakenList .rptBlock .panelActions .btn,
+#rptEvidenceList .rptBlock .panelActions .btn,
+#rptCauseList .rptBlock .panelActions .btn,
+#rptPreventionList .rptBlock .panelActions .btn,
+#rptLearningList .rptBlock .panelActions .btn,
+#rptImageList .rptBlock .panelActions .btn{
+  flex:0 0 auto;
+  min-width:108px;
+}
+
+#rptPersonList .rptRepeatCard textarea,
+#rptDamageList .rptRepeatCard textarea,
+#rptStepTakenList .rptRepeatCard textarea,
+#rptEvidenceList .rptRepeatCard textarea,
+#rptCauseList .rptRepeatCard textarea,
+#rptPreventionList .rptRepeatCard textarea,
+#rptLearningList .rptRepeatCard textarea,
+#rptImageList .rptRepeatCard textarea,
+#rptPersonList .rptBlock textarea,
+#rptDamageList .rptBlock textarea,
+#rptStepTakenList .rptBlock textarea,
+#rptEvidenceList .rptBlock textarea,
+#rptCauseList .rptBlock textarea,
+#rptPreventionList .rptBlock textarea,
+#rptLearningList .rptBlock textarea,
+#rptImageList .rptBlock textarea{
+  min-height:88px;
+}
+
+#rptPersonList .rptRepeatCard .field + .field,
+#rptDamageList .rptRepeatCard .field + .field,
+#rptStepTakenList .rptRepeatCard .field + .field,
+#rptEvidenceList .rptRepeatCard .field + .field,
+#rptCauseList .rptRepeatCard .field + .field,
+#rptPreventionList .rptRepeatCard .field + .field,
+#rptLearningList .rptRepeatCard .field + .field,
+#rptImageList .rptRepeatCard .field + .field,
+#rptPersonList .rptBlock .field + .field,
+#rptDamageList .rptBlock .field + .field,
+#rptStepTakenList .rptBlock .field + .field,
+#rptEvidenceList .rptBlock .field + .field,
+#rptCauseList .rptBlock .field + .field,
+#rptPreventionList .rptBlock .field + .field,
+#rptLearningList .rptBlock .field + .field,
+#rptImageList .rptBlock .field + .field{
+  margin-top:8px;
+}
+
+@media (max-width:860px){
+  .rptRepeaterList{
+    gap:10px;
+  }
+
+  .rptRepeaterFooter{
+    margin-top:8px;
+    padding-top:6px;
+  }
+
+  .rptAddBottomBtn{
+    min-height:42px;
+  }
+
+  #rptPersonList .rptRepeatCard,
+  #rptDamageList .rptRepeatCard,
+  #rptStepTakenList .rptRepeatCard,
+  #rptEvidenceList .rptRepeatCard,
+  #rptCauseList .rptRepeatCard,
+  #rptPreventionList .rptRepeatCard,
+  #rptLearningList .rptRepeatCard,
+  #rptImageList .rptRepeatCard,
+  #rptPersonList .rptBlock,
+  #rptDamageList .rptBlock,
+  #rptStepTakenList .rptBlock,
+  #rptEvidenceList .rptBlock,
+  #rptCauseList .rptBlock,
+  #rptPreventionList .rptBlock,
+  #rptLearningList .rptBlock,
+  #rptImageList .rptBlock{
+    padding:10px;
+    border-radius:14px;
+  }
+
+  #rptPersonList .rptRepeatCard .panelActions,
+  #rptDamageList .rptRepeatCard .panelActions,
+  #rptStepTakenList .rptRepeatCard .panelActions,
+  #rptEvidenceList .rptRepeatCard .panelActions,
+  #rptCauseList .rptRepeatCard .panelActions,
+  #rptPreventionList .rptRepeatCard .panelActions,
+  #rptLearningList .rptRepeatCard .panelActions,
+  #rptImageList .rptRepeatCard .panelActions,
+  #rptPersonList .rptBlock .panelActions,
+  #rptDamageList .rptBlock .panelActions,
+  #rptStepTakenList .rptBlock .panelActions,
+  #rptEvidenceList .rptBlock .panelActions,
+  #rptCauseList .rptBlock .panelActions,
+  #rptPreventionList .rptBlock .panelActions,
+  #rptLearningList .rptBlock .panelActions,
+  #rptImageList .rptBlock .panelActions{
+    gap:6px;
+  }
+
+  #rptPersonList .rptRepeatCard .panelActions .btn,
+  #rptDamageList .rptRepeatCard .panelActions .btn,
+  #rptStepTakenList .rptRepeatCard .panelActions .btn,
+  #rptEvidenceList .rptRepeatCard .panelActions .btn,
+  #rptCauseList .rptRepeatCard .panelActions .btn,
+  #rptPreventionList .rptRepeatCard .panelActions .btn,
+  #rptLearningList .rptRepeatCard .panelActions .btn,
+  #rptImageList .rptRepeatCard .panelActions .btn,
+  #rptPersonList .rptBlock .panelActions .btn,
+  #rptDamageList .rptBlock .panelActions .btn,
+  #rptStepTakenList .rptBlock .panelActions .btn,
+  #rptEvidenceList .rptBlock .panelActions .btn,
+  #rptCauseList .rptBlock .panelActions .btn,
+  #rptPreventionList .rptBlock .panelActions .btn,
+  #rptLearningList .rptBlock .panelActions .btn,
+  #rptImageList .rptBlock .panelActions .btn{
+    min-width:96px;
+    min-height:36px;
+    padding:8px 10px;
+    font-size:12px;
+  }
+}
+
+@media (max-width:640px){
+  .rptRepeaterFooter{
+    position:sticky;
+    bottom:-1px;
+  }
+
+  #rptPersonList .rptRepeatCard .panelActions,
+  #rptDamageList .rptRepeatCard .panelActions,
+  #rptStepTakenList .rptRepeatCard .panelActions,
+  #rptEvidenceList .rptRepeatCard .panelActions,
+  #rptCauseList .rptRepeatCard .panelActions,
+  #rptPreventionList .rptRepeatCard .panelActions,
+  #rptLearningList .rptRepeatCard .panelActions,
+  #rptImageList .rptRepeatCard .panelActions,
+  #rptPersonList .rptBlock .panelActions,
+  #rptDamageList .rptBlock .panelActions,
+  #rptStepTakenList .rptBlock .panelActions,
+  #rptEvidenceList .rptBlock .panelActions,
+  #rptCauseList .rptBlock .panelActions,
+  #rptPreventionList .rptBlock .panelActions,
+  #rptLearningList .rptBlock .panelActions,
+  #rptImageList .rptBlock .panelActions{
+    justify-content:flex-end;
+  }
+
+  #rptPersonList .rptRepeatCard .panelActions .btn,
+  #rptDamageList .rptRepeatCard .panelActions .btn,
+  #rptStepTakenList .rptRepeatCard .panelActions .btn,
+  #rptEvidenceList .rptRepeatCard .panelActions .btn,
+  #rptCauseList .rptRepeatCard .panelActions .btn,
+  #rptPreventionList .rptRepeatCard .panelActions .btn,
+  #rptLearningList .rptRepeatCard .panelActions .btn,
+  #rptImageList .rptRepeatCard .panelActions .btn,
+  #rptPersonList .rptBlock .panelActions .btn,
+  #rptDamageList .rptBlock .panelActions .btn,
+  #rptStepTakenList .rptBlock .panelActions .btn,
+  #rptEvidenceList .rptBlock .panelActions .btn,
+  #rptCauseList .rptBlock .panelActions .btn,
+  #rptPreventionList .rptBlock .panelActions .btn,
+  #rptLearningList .rptBlock .panelActions .btn,
+  #rptImageList .rptBlock .panelActions .btn{
+    flex:1 1 calc(50% - 6px);
+    min-width:0;
+  }
+}
+
+@media (max-width:480px){
+  .rptRepeaterList{
+    gap:9px;
+  }
+
+  .rptRepeaterFooter{
+    margin-top:7px;
+    padding-top:6px;
+  }
+
+  .rptAddBottomBtn{
+    min-height:40px;
+    font-size:12px;
+  }
+
+  #rptPersonList .rptRepeatCard,
+  #rptDamageList .rptRepeatCard,
+  #rptStepTakenList .rptRepeatCard,
+  #rptEvidenceList .rptRepeatCard,
+  #rptCauseList .rptRepeatCard,
+  #rptPreventionList .rptRepeatCard,
+  #rptLearningList .rptRepeatCard,
+  #rptImageList .rptRepeatCard,
+  #rptPersonList .rptBlock,
+  #rptDamageList .rptBlock,
+  #rptStepTakenList .rptBlock,
+  #rptEvidenceList .rptBlock,
+  #rptCauseList .rptBlock,
+  #rptPreventionList .rptBlock,
+  #rptLearningList .rptBlock,
+  #rptImageList .rptBlock{
+    padding:9px;
+    border-radius:13px;
+  }
+
+  #rptPersonList .rptRepeatCard .panelActions .btn,
+  #rptDamageList .rptRepeatCard .panelActions .btn,
+  #rptStepTakenList .rptRepeatCard .panelActions .btn,
+  #rptEvidenceList .rptRepeatCard .panelActions .btn,
+  #rptCauseList .rptRepeatCard .panelActions .btn,
+  #rptPreventionList .rptRepeatCard .panelActions .btn,
+  #rptLearningList .rptRepeatCard .panelActions .btn,
+  #rptImageList .rptRepeatCard .panelActions .btn,
+  #rptPersonList .rptBlock .panelActions .btn,
+  #rptDamageList .rptBlock .panelActions .btn,
+  #rptStepTakenList .rptBlock .panelActions .btn,
+  #rptEvidenceList .rptBlock .panelActions .btn,
+  #rptCauseList .rptBlock .panelActions .btn,
+  #rptPreventionList .rptBlock .panelActions .btn,
+  #rptLearningList .rptBlock .panelActions .btn,
+  #rptImageList .rptBlock .panelActions .btn{
+    min-height:34px;
+    padding:7px 8px;
+    font-size:11.5px;
+  }
+}
