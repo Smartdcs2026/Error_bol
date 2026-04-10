@@ -4861,48 +4861,51 @@
   }
 
    function createSimpleIndexedRowHtml(type, index, titleLabel, detailLabel, titlePlaceholder, detailPlaceholder) {
-    return `
-      <div class="rptRepeatCard" data-type="${escapeHtml(type)}">
-        <div class="rptCardHead">
-          <div class="rptCardHeadMain">
-            <div class="rptCardTitle">${escapeHtml(titleLabel)} <span class="rptRowIndex">${index}</span></div>
-            <div class="rptCardSummary">ยังไม่มีข้อมูล</div>
-          </div>
-        </div>
-
-        <div class="rptCardBody">
-          <div class="gridCompact">
-            <div class="field">
-              <label>${escapeHtml(titleLabel)}</label>
-              <input type="text" class="rptIdxTitle" placeholder="${escapeHtml(titlePlaceholder || "")}">
-            </div>
-
-            <div class="field">
-              <label>${escapeHtml(detailLabel)}</label>
-              <textarea class="rptIdxDetail" rows="3" placeholder="${escapeHtml(detailPlaceholder || "")}"></textarea>
-            </div>
-          </div>
-
-          <div class="panelActions">
-            <button type="button" class="btn ghost rptCollapseRow">ย่อ</button>
-            <button type="button" class="btn ghost rptRemoveRow">ลบแถว</button>
-          </div>
+  return `
+    <div class="rptRepeatCard" data-type="${escapeHtml(type)}">
+      <div class="rptCardHead">
+        <div class="rptCardHeadMain">
+          <div class="rptCardTitle">${escapeHtml(titleLabel)} <span class="rptRowIndex">${index}</span></div>
+          <div class="rptCardSummary">ยังไม่มีข้อมูล</div>
         </div>
       </div>
-    `;
-  }
-  function createPersonRowHtml(index) {
-    const positionOptions = buildOptionsHtml(state.options?.personPositionList, true);
-    const departmentOptions = buildOptionsHtml(state.options?.personDepartmentList, true);
-    const remarkOptions = buildOptionsHtml(state.options?.personRemarkList, true);
 
-    return `
-      <div class="rptRepeatCard" data-type="person">
-        <div class="rptCardHead" style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid #e7eef8">
-          <div style="font-size:13px;font-weight:900;line-height:1.2">ผู้เกี่ยวข้อง ${index}</div>
-          <div class="rptRowIndex" style="display:inline-flex;align-items:center;justify-content:center;min-width:34px;height:30px;padding:0 10px;border-radius:999px;background:#eef4ff;color:#1d4ed8;border:1px solid #d8e5fb;font-size:11px;font-weight:900">${index}</div>
+      <div class="rptCardBody">
+        <div class="gridCompact">
+          <div class="field">
+            <label>${escapeHtml(titleLabel)}</label>
+            <input type="text" class="rptIdxTitle" placeholder="${escapeHtml(titlePlaceholder || "")}">
+          </div>
+
+          <div class="field">
+            <label>${escapeHtml(detailLabel)}</label>
+            <textarea class="rptIdxDetail" rows="3" placeholder="${escapeHtml(detailPlaceholder || "")}"></textarea>
+          </div>
         </div>
 
+        <div class="panelActions">
+          <button type="button" class="btn ghost rptCollapseRow">ย่อ</button>
+          <button type="button" class="btn ghost rptRemoveRow">ลบแถว</button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+  function createPersonRowHtml(index) {
+  const positionOptions = buildOptionsHtml(state.options?.personPositionList, true);
+  const departmentOptions = buildOptionsHtml(state.options?.personDepartmentList, true);
+  const remarkOptions = buildOptionsHtml(state.options?.personRemarkList, true);
+
+  return `
+    <div class="rptRepeatCard" data-type="person">
+      <div class="rptCardHead">
+        <div class="rptCardHeadMain">
+          <div class="rptCardTitle">ผู้เกี่ยวข้อง <span class="rptRowIndex">${index}</span></div>
+          <div class="rptCardSummary">ยังไม่มีข้อมูล</div>
+        </div>
+      </div>
+
+      <div class="rptCardBody">
         <div class="gridCompact">
           <div class="field">
             <label>ผู้เกี่ยวข้อง (Who is involved)</label>
@@ -4941,22 +4944,27 @@
         </div>
 
         <div class="panelActions" style="justify-content:flex-end;margin-top:10px">
+          <button type="button" class="btn ghost rptCollapseRow">ย่อ</button>
           <button type="button" class="btn ghost rptRemoveRow">ลบแถว</button>
         </div>
       </div>
-    `;
-  }
+    </div>
+  `;
+}
 
   function createStepTakenRowHtml(index) {
-    const actionOptions = buildOptionsHtml(state.options?.actionTypeList, true);
+  const actionOptions = buildOptionsHtml(state.options?.actionTypeList, true);
 
-    return `
-      <div class="rptRepeatCard" data-type="stepTaken">
-        <div class="rptCardHead" style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid #e7eef8">
-          <div style="font-size:13px;font-weight:900;line-height:1.2">การดำเนินการ ${index}</div>
-          <div class="rptRowIndex" style="display:inline-flex;align-items:center;justify-content:center;min-width:34px;height:30px;padding:0 10px;border-radius:999px;background:#eef4ff;color:#1d4ed8;border:1px solid #d8e5fb;font-size:11px;font-weight:900">${index}</div>
+  return `
+    <div class="rptRepeatCard" data-type="stepTaken">
+      <div class="rptCardHead">
+        <div class="rptCardHeadMain">
+          <div class="rptCardTitle">การดำเนินการ <span class="rptRowIndex">${index}</span></div>
+          <div class="rptCardSummary">ยังไม่มีข้อมูล</div>
         </div>
+      </div>
 
+      <div class="rptCardBody">
         <div class="gridCompact">
           <div class="field">
             <label>ประเภทการดำเนินการ</label>
@@ -4999,20 +5007,24 @@
         </div>
 
         <div class="panelActions" style="justify-content:flex-end;margin-top:10px">
+          <button type="button" class="btn ghost rptCollapseRow">ย่อ</button>
           <button type="button" class="btn ghost rptRemoveRow">ลบแถว</button>
         </div>
       </div>
-    `;
-  }
-
+    </div>
+  `;
+}
   function createImageRowHtml(index) {
-    return `
-      <div class="rptRepeatCard" data-type="image">
-        <div class="rptCardHead" style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid #e7eef8">
-          <div style="font-size:13px;font-weight:900;line-height:1.2">รูปภาพ ${index}</div>
-          <div class="rptRowIndex" style="display:inline-flex;align-items:center;justify-content:center;min-width:34px;height:30px;padding:0 10px;border-radius:999px;background:#eef4ff;color:#1d4ed8;border:1px solid #d8e5fb;font-size:11px;font-weight:900">${index}</div>
+  return `
+    <div class="rptRepeatCard" data-type="image">
+      <div class="rptCardHead">
+        <div class="rptCardHeadMain">
+          <div class="rptCardTitle">รูปภาพ <span class="rptRowIndex">${index}</span></div>
+          <div class="rptCardSummary">ยังไม่มีข้อมูล</div>
         </div>
+      </div>
 
+      <div class="rptCardBody">
         <div class="gridCompact">
           <div class="field">
             <label>เลือกรูปภาพ</label>
@@ -5035,12 +5047,13 @@
 
         <div class="panelActions" style="justify-content:flex-end;margin-top:10px">
           <button type="button" class="btn ghost rptEditImageBtn">แก้ไขภาพ</button>
+          <button type="button" class="btn ghost rptCollapseRow">ย่อ</button>
           <button type="button" class="btn ghost rptRemoveRow">ลบแถว</button>
         </div>
       </div>
-    `;
-  }
-
+    </div>
+  `;
+}
   function appendRow(listId, html, emptyLabel) {
     const root = $(listId);
     if (!root) return;
@@ -5283,44 +5296,271 @@
 
     updateRowSummary(root);
   }
-     function bindDynamicRow(node) {
-    if (!node) return;
 
-    node.querySelector(".rptRemoveRow")?.addEventListener("click", () => {
-      if (node.getAttribute("data-type") === "image") {
-        clearRptEditedImageState(node);
-      } else {
-        const img = node.querySelector(".rptImagePreview");
-        if (img && img.dataset.objectUrl) {
-          try { URL.revokeObjectURL(img.dataset.objectUrl); } catch (_) {}
-        }
-      }
+function getVisibleUsableFields(node) {
+  if (!node) return [];
 
-      const parentId = node.parentElement?.id || "";
-      node.remove();
+  return Array.from(node.querySelectorAll("input, select, textarea")).filter((el) => {
+    if (!el) return false;
 
-      if (parentId) {
-        refreshRowIndex(parentId);
-        toggleEmptyState(parentId, emptyStateLabelFor(parentId));
-      }
-    });
+    const type = String(el.type || "").toLowerCase();
+    if (type === "hidden" || type === "button" || type === "submit" || type === "reset") return false;
+    if (el.disabled) return false;
 
-    if (node.getAttribute("data-type") === "person") {
-      bindSelectOtherInRow(node, ".rptPersonPosition", ".rptPersonPositionOtherWrap", ".rptPersonPositionOther");
-      bindSelectOtherInRow(node, ".rptPersonDepartment", ".rptPersonDepartmentOtherWrap", ".rptPersonDepartmentOther");
-      bindSelectOtherInRow(node, ".rptPersonRemark", ".rptPersonRemarkOtherWrap", ".rptPersonRemarkOther");
-    }
+    const hiddenByClass = !!el.closest(".hidden");
+    if (hiddenByClass) return false;
 
-    if (node.getAttribute("data-type") === "stepTaken") {
-      bindStepTakenRow(node);
-    }
+    const style = window.getComputedStyle(el);
+    if (style.display === "none" || style.visibility === "hidden") return false;
 
-    if (node.getAttribute("data-type") === "image") {
-      bindImageRow(node);
-    }
+    return true;
+  });
+}
 
-    bindRowFilledState(node);
+function isFieldFilled(el, rowNode) {
+  if (!el) return false;
+
+  const tag = String(el.tagName || "").toUpperCase();
+  const type = String(el.type || "").toLowerCase();
+
+  if (type === "file") {
+    if (el.files && el.files.length > 0) return true;
+    const row = rowNode || el.closest(".rptRepeatCard") || el.closest(".rptBlock");
+    if (row && row.querySelector(".rptImagePreview:not(.hidden)")) return true;
+    return false;
   }
+
+  if (type === "checkbox" || type === "radio") {
+    return !!el.checked;
+  }
+
+  const val = String(el.value || "").trim();
+  if (!val) return false;
+
+  if (tag === "SELECT" && (val === "" || val === "-- เลือก --")) return false;
+
+  return true;
+}
+
+function getRowStatus(node) {
+  if (!node) return "empty";
+
+  const fields = getVisibleUsableFields(node);
+  if (!fields.length) return "empty";
+
+  const total = fields.length;
+  let filled = 0;
+
+  fields.forEach((el) => {
+    if (isFieldFilled(el, node)) filled += 1;
+  });
+
+  if (filled === 0) return "empty";
+  if (filled < total) return "partial";
+  return "complete";
+}
+
+function getCardRoot(node) {
+  return node?.closest(".rptRepeatCard") || node?.closest(".rptBlock") || node || null;
+}
+
+function canCollapseRow(node) {
+  const root = getCardRoot(node);
+  if (!root) return false;
+  return root.classList.contains("is-complete");
+}
+
+function updateCollapseButtonState(node) {
+  const root = getCardRoot(node);
+  if (!root) return;
+
+  const btn = root.querySelector(".rptCollapseRow");
+  if (!btn) return;
+
+  const complete = root.classList.contains("is-complete");
+  const collapsed = root.classList.contains("is-collapsed");
+
+  btn.disabled = !complete;
+  btn.classList.toggle("is-disabled", !complete);
+
+  if (!complete) {
+    btn.textContent = "ย่อ";
+    root.classList.remove("is-collapsed");
+    return;
+  }
+
+  btn.textContent = collapsed ? "ขยาย" : "ย่อ";
+}
+
+function toggleRowCollapse(node, forceCollapsed = null) {
+  const root = getCardRoot(node);
+  if (!root) return;
+
+  if (!canCollapseRow(root)) {
+    root.classList.remove("is-collapsed");
+    updateCollapseButtonState(root);
+    return;
+  }
+
+  const nextState = (forceCollapsed == null)
+    ? !root.classList.contains("is-collapsed")
+    : !!forceCollapsed;
+
+  root.classList.toggle("is-collapsed", nextState);
+  updateCollapseButtonState(root);
+}
+
+function collapsePreviousCompletedRow(fromButtonOrListId) {
+  let listRoot = null;
+
+  if (typeof fromButtonOrListId === "string") {
+    listRoot = $(fromButtonOrListId);
+  } else {
+    const currentCard = getCardRoot(fromButtonOrListId);
+    listRoot = currentCard?.parentElement || null;
+  }
+
+  if (!listRoot) return;
+
+  const cards = listRoot.querySelectorAll(".rptRepeatCard, .rptBlock");
+  const target = cards.length ? cards[cards.length - 1] : null;
+
+  if (!target) return;
+  if (!target.classList.contains("is-complete")) return;
+
+  toggleRowCollapse(target, true);
+}
+
+function buildRowSummary(node) {
+  const root = getCardRoot(node);
+  if (!root) return "";
+
+  const type = String(root.getAttribute("data-type") || "");
+  let summary = "";
+
+  if (type === "person") {
+    const who = String(root.querySelector(".rptPersonWho")?.value || "").trim();
+    const pos = String(root.querySelector(".rptPersonPosition")?.value || "").trim();
+    const dep = String(root.querySelector(".rptPersonDepartment")?.value || "").trim();
+    summary = [who, pos, dep].filter(Boolean).join(" • ");
+  } else if (type === "stepTaken") {
+    const action = String(root.querySelector(".rptStepActionType")?.value || "").trim();
+    const detail = String(root.querySelector(".rptStepDetail")?.value || "").trim();
+    summary = action || detail;
+  } else if (type === "image") {
+    const caption = String(root.querySelector(".rptImageCaption")?.value || "").trim();
+    const meta = String(root.querySelector(".rptImageMeta")?.textContent || "").trim();
+    summary = caption || meta;
+  } else {
+    const title = String(root.querySelector(".rptIdxTitle")?.value || "").trim();
+    const detail = String(root.querySelector(".rptIdxDetail")?.value || "").trim();
+    summary = title || detail;
+  }
+
+  return summary || "มีข้อมูลแล้ว";
+}
+
+function updateRowSummary(node) {
+  const root = getCardRoot(node);
+  if (!root) return;
+
+  const summaryEl = root.querySelector(".rptCardSummary");
+  if (!summaryEl) return;
+
+  summaryEl.textContent = buildRowSummary(root);
+}
+
+function bindRowSummary(node) {
+  const root = getCardRoot(node);
+  if (!root) return;
+
+  root.querySelectorAll("input, select, textarea").forEach((el) => {
+    el.addEventListener("input", () => updateRowSummary(root));
+    el.addEventListener("change", () => updateRowSummary(root));
+  });
+
+  updateRowSummary(root);
+}
+
+function updateRowFilledState(node) {
+  if (!node) return;
+
+  const root = getCardRoot(node);
+  if (!root) return;
+
+  const status = getRowStatus(root);
+
+  root.classList.remove("is-partial", "is-complete");
+
+  if (status === "partial") {
+    root.classList.add("is-partial");
+  } else if (status === "complete") {
+    root.classList.add("is-complete");
+  } else {
+    root.classList.remove("is-collapsed");
+  }
+
+  updateRowSummary(root);
+  updateCollapseButtonState(root);
+}
+
+function bindRowFilledState(node) {
+  if (!node) return;
+
+  const fields = node.querySelectorAll("input, select, textarea");
+  fields.forEach((el) => {
+    el.addEventListener("input", () => updateRowFilledState(node));
+    el.addEventListener("change", () => updateRowFilledState(node));
+  });
+
+  updateRowFilledState(node);
+}
+     function bindDynamicRow(node) {
+  if (!node) return;
+
+  const root = getCardRoot(node);
+
+  root.querySelector(".rptRemoveRow")?.addEventListener("click", () => {
+    if (root.getAttribute("data-type") === "image") {
+      clearRptEditedImageState(root);
+    } else {
+      const img = root.querySelector(".rptImagePreview");
+      if (img && img.dataset.objectUrl) {
+        try { URL.revokeObjectURL(img.dataset.objectUrl); } catch (_) {}
+      }
+    }
+
+    const parentId = root.parentElement?.id || "";
+    root.remove();
+
+    if (parentId) {
+      refreshRowIndex(parentId);
+      toggleEmptyState(parentId, emptyStateLabelFor(parentId));
+    }
+  });
+
+  root.querySelector(".rptCollapseRow")?.addEventListener("click", () => {
+    toggleRowCollapse(root);
+  });
+
+  if (root.getAttribute("data-type") === "person") {
+    bindSelectOtherInRow(root, ".rptPersonPosition", ".rptPersonPositionOtherWrap", ".rptPersonPositionOther");
+    bindSelectOtherInRow(root, ".rptPersonDepartment", ".rptPersonDepartmentOtherWrap", ".rptPersonDepartmentOther");
+    bindSelectOtherInRow(root, ".rptPersonRemark", ".rptPersonRemarkOtherWrap", ".rptPersonRemarkOther");
+  }
+
+  if (root.getAttribute("data-type") === "stepTaken") {
+    bindStepTakenRow(root);
+  }
+
+  if (root.getAttribute("data-type") === "image") {
+    bindImageRow(root);
+  }
+
+  bindRowSummary(root);
+  bindRowFilledState(root);
+  updateCollapseButtonState(root);
+}
 
   function bindSelectOtherInRow(node, selectSel, wrapSel, inputSel) {
     const select = node.querySelector(selectSel);
@@ -6656,76 +6896,83 @@ async function openItemLookupPopup() {
   }
 
   function bindTopButtons() {
-    if (state.buttonsBound) return;
-    state.buttonsBound = true;
+  if (state.buttonsBound) return;
+  state.buttonsBound = true;
 
-    $("btnRptPreview")?.addEventListener("click", preview);
-    $("btnRptSubmit")?.addEventListener("click", submit);
+  $("btnRptPreview")?.addEventListener("click", preview);
+  $("btnRptSubmit")?.addEventListener("click", submit);
 
-    $("btnRptEmailCheckAll")?.addEventListener("click", () => setAllChecks(".rptEmailChk", true));
-    $("btnRptEmailClearAll")?.addEventListener("click", () => setAllChecks(".rptEmailChk", false));
+  $("btnRptEmailCheckAll")?.addEventListener("click", () => setAllChecks(".rptEmailChk", true));
+  $("btnRptEmailClearAll")?.addEventListener("click", () => setAllChecks(".rptEmailChk", false));
 
-    $("btnRptAddPerson")?.addEventListener("click", () => {
-      const idx = document.querySelectorAll("#rptPersonList .rptRepeatCard").length + 1;
-      appendRow("rptPersonList", createPersonRowHtml(idx), "ผู้เกี่ยวข้อง");
-    });
+  $("btnRptAddPerson")?.addEventListener("click", () => {
+    collapsePreviousCompletedRow("rptPersonList");
+    const idx = document.querySelectorAll("#rptPersonList .rptRepeatCard").length + 1;
+    appendRow("rptPersonList", createPersonRowHtml(idx), "ผู้เกี่ยวข้อง");
+  });
 
-    $("btnRptAddDamage")?.addEventListener("click", () => {
-      const idx = document.querySelectorAll("#rptDamageList .rptRepeatCard").length + 1;
-      appendRow(
-        "rptDamageList",
-        createSimpleIndexedRowHtml("damage", idx, "ความเสียหาย", "รายละเอียด", "หัวข้อความเสียหาย", "รายละเอียดเพิ่มเติม"),
-        "ความเสียหาย"
-      );
-    });
+  $("btnRptAddDamage")?.addEventListener("click", () => {
+    collapsePreviousCompletedRow("rptDamageList");
+    const idx = document.querySelectorAll("#rptDamageList .rptRepeatCard").length + 1;
+    appendRow(
+      "rptDamageList",
+      createSimpleIndexedRowHtml("damage", idx, "ความเสียหาย", "รายละเอียด", "หัวข้อความเสียหาย", "รายละเอียดเพิ่มเติม"),
+      "ความเสียหาย"
+    );
+  });
 
-    $("btnRptAddStepTaken")?.addEventListener("click", () => {
-      const idx = document.querySelectorAll("#rptStepTakenList .rptRepeatCard").length + 1;
-      appendRow("rptStepTakenList", createStepTakenRowHtml(idx), "การดำเนินการ");
-    });
+  $("btnRptAddStepTaken")?.addEventListener("click", () => {
+    collapsePreviousCompletedRow("rptStepTakenList");
+    const idx = document.querySelectorAll("#rptStepTakenList .rptRepeatCard").length + 1;
+    appendRow("rptStepTakenList", createStepTakenRowHtml(idx), "การดำเนินการ");
+  });
 
-    $("btnRptAddEvidence")?.addEventListener("click", () => {
-      const idx = document.querySelectorAll("#rptEvidenceList .rptRepeatCard").length + 1;
-      appendRow(
-        "rptEvidenceList",
-        createSimpleIndexedRowHtml("evidence", idx, "หลักฐาน", "รายละเอียด", "หัวข้อหลักฐาน", "รายละเอียดเพิ่มเติม"),
-        "หลักฐาน"
-      );
-    });
+  $("btnRptAddEvidence")?.addEventListener("click", () => {
+    collapsePreviousCompletedRow("rptEvidenceList");
+    const idx = document.querySelectorAll("#rptEvidenceList .rptRepeatCard").length + 1;
+    appendRow(
+      "rptEvidenceList",
+      createSimpleIndexedRowHtml("evidence", idx, "หลักฐาน", "รายละเอียด", "หัวข้อหลักฐาน", "รายละเอียดเพิ่มเติม"),
+      "หลักฐาน"
+    );
+  });
 
-    $("btnRptAddCause")?.addEventListener("click", () => {
-      const idx = document.querySelectorAll("#rptCauseList .rptRepeatCard").length + 1;
-      appendRow(
-        "rptCauseList",
-        createSimpleIndexedRowHtml("cause", idx, "สาเหตุ", "รายละเอียด", "หัวข้อสาเหตุ", "รายละเอียดเพิ่มเติม"),
-        "สาเหตุ"
-      );
-    });
+  $("btnRptAddCause")?.addEventListener("click", () => {
+    collapsePreviousCompletedRow("rptCauseList");
+    const idx = document.querySelectorAll("#rptCauseList .rptRepeatCard").length + 1;
+    appendRow(
+      "rptCauseList",
+      createSimpleIndexedRowHtml("cause", idx, "สาเหตุ", "รายละเอียด", "หัวข้อสาเหตุ", "รายละเอียดเพิ่มเติม"),
+      "สาเหตุ"
+    );
+  });
 
-    $("btnRptAddPrevention")?.addEventListener("click", () => {
-      const idx = document.querySelectorAll("#rptPreventionList .rptRepeatCard").length + 1;
-      appendRow(
-        "rptPreventionList",
-        createSimpleIndexedRowHtml("prevention", idx, "การป้องกัน", "รายละเอียด", "หัวข้อการป้องกัน", "รายละเอียดเพิ่มเติม"),
-        "การป้องกัน"
-      );
-    });
+  $("btnRptAddPrevention")?.addEventListener("click", () => {
+    collapsePreviousCompletedRow("rptPreventionList");
+    const idx = document.querySelectorAll("#rptPreventionList .rptRepeatCard").length + 1;
+    appendRow(
+      "rptPreventionList",
+      createSimpleIndexedRowHtml("prevention", idx, "การป้องกัน", "รายละเอียด", "หัวข้อการป้องกัน", "รายละเอียดเพิ่มเติม"),
+      "การป้องกัน"
+    );
+  });
 
-    $("btnRptAddLearning")?.addEventListener("click", () => {
-      const idx = document.querySelectorAll("#rptLearningList .rptRepeatCard").length + 1;
-      appendRow(
-        "rptLearningList",
-        createSimpleIndexedRowHtml("learning", idx, "ข้อสรุป/บทเรียน", "รายละเอียด", "หัวข้อข้อสรุป", "รายละเอียดเพิ่มเติม"),
-        "ข้อสรุป/บทเรียน"
-      );
-    });
+  $("btnRptAddLearning")?.addEventListener("click", () => {
+    collapsePreviousCompletedRow("rptLearningList");
+    const idx = document.querySelectorAll("#rptLearningList .rptRepeatCard").length + 1;
+    appendRow(
+      "rptLearningList",
+      createSimpleIndexedRowHtml("learning", idx, "ข้อสรุป/บทเรียน", "รายละเอียด", "หัวข้อข้อสรุป", "รายละเอียดเพิ่มเติม"),
+      "ข้อสรุป/บทเรียน"
+    );
+  });
 
-    $("btnRptAddImage")?.addEventListener("click", () => {
-      const idx = document.querySelectorAll("#rptImageList .rptRepeatCard").length + 1;
-      appendRow("rptImageList", createImageRowHtml(idx), "รูปภาพ");
-    });
-  }
-
+  $("btnRptAddImage")?.addEventListener("click", () => {
+    collapsePreviousCompletedRow("rptImageList");
+    const idx = document.querySelectorAll("#rptImageList .rptRepeatCard").length + 1;
+    appendRow("rptImageList", createImageRowHtml(idx), "รูปภาพ");
+  });
+}
   function bindLookupButtons() {
     if (state.lookupButtonsBound) return;
     state.lookupButtonsBound = true;
