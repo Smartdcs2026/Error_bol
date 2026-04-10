@@ -4552,3 +4552,91 @@ body.img-editor-lock{
     padding-right:86px;
   }
 }
+/* =========================
+   REPORT500 COLLAPSE / EXPAND
+========================= */
+
+.rptRepeatCard,
+.rptBlock{
+  overflow:hidden;
+}
+
+.rptCardHead{
+  cursor:default;
+}
+
+.rptCollapseRow{
+  min-width:74px;
+}
+
+.rptRepeatCard .rptCardSummary,
+.rptBlock .rptCardSummary{
+  display:none;
+}
+
+.rptRepeatCard.is-partial .rptCardSummary,
+.rptRepeatCard.is-complete .rptCardSummary,
+.rptBlock.is-partial .rptCardSummary,
+.rptBlock.is-complete .rptCardSummary{
+  display:block;
+  margin-top:4px;
+  font-size:11px;
+  font-weight:800;
+  line-height:1.4;
+  color:#64748b;
+  word-break:break-word;
+}
+
+.rptRepeatCard.is-collapsed .rptCardBody,
+.rptBlock.is-collapsed .rptCardBody{
+  display:none;
+}
+
+.rptRepeatCard.is-collapsed,
+.rptBlock.is-collapsed{
+  padding-bottom:10px;
+}
+
+.rptRepeatCard.is-collapsed .rptCardHead,
+.rptBlock.is-collapsed .rptCardHead{
+  margin-bottom:0;
+  padding-bottom:0;
+  border-bottom:none;
+}
+
+.rptRepeatCard.is-collapsed .panelActions,
+.rptBlock.is-collapsed .panelActions{
+  display:none;
+}
+
+.rptRepeatCard.is-collapsed::after,
+.rptBlock.is-collapsed::after{
+  top:8px;
+}
+
+.rptRepeatCard.is-collapsed .rptCardTitle,
+.rptBlock.is-collapsed .rptCardTitle{
+  padding-right:6px;
+}
+
+.rptRepeatCard.is-collapsed .rptCardSummary,
+.rptBlock.is-collapsed .rptCardSummary{
+  display:block;
+  margin-top:5px;
+}
+
+.rptRepeatCard.is-collapsed .rptCardHeadMain,
+.rptBlock.is-collapsed .rptCardHeadMain{
+  min-width:0;
+}
+
+.rptRepeatCard.is-collapsed .rptCardTools,
+.rptBlock.is-collapsed .rptCardTools{
+  margin-top:2px;
+}
+
+@media (max-width:640px){
+  .rptCollapseRow{
+    min-width:68px;
+  }
+}
