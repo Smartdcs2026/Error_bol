@@ -5049,45 +5049,81 @@
   }
 
 
-  function rowHasMeaningfulValue(node) {
-    if (!node) return false;
+    function getVisibleUsableFields(node) {
+    if (!node) return [];
 
-    const fields = node.querySelectorAll("input, select, textarea");
-    for (const el of fields) {
-      if (!el) continue;
+    return Array.from(node.querySelectorAll("input, select, textarea")).filter((el) => {
+      if (!el) return false;
 
-      const tag = String(el.tagName || "").toUpperCase();
       const type = String(el.type || "").toLowerCase();
+      if (type === "hidden" || type === "button" || type === "submit" || type === "reset") return false;
+      if (el.disabled) return false;
 
-      if (type === "hidden" || type === "button" || type === "submit" || type === "reset") continue;
+      const hiddenByClass = !!el.closest(".hidden");
+      if (hiddenByClass) return false;
 
-      if (type === "file") {
-        if ((el.files && el.files.length > 0) || el.closest(".rptRepeatCard")?.querySelector(".rptImagePreview:not(.hidden)")) {
-          return true;
-        }
-        continue;
-      }
-
-      if (type === "checkbox" || type === "radio") {
-        if (el.checked) return true;
-        continue;
-      }
-
-      const val = String(el.value || "").trim();
-      if (!val) continue;
-
-      if (tag === "SELECT" && (val === "" || val === "-- เลือก --")) continue;
+      const style = window.getComputedStyle(el);
+      if (style.display === "none" || style.visibility === "hidden") return false;
 
       return true;
+    });
+  }
+
+  function isFieldFilled(el, rowNode) {
+    if (!el) return false;
+
+    const tag = String(el.tagName || "").toUpperCase();
+    const type = String(el.type || "").toLowerCase();
+
+    if (type === "file") {
+      if (el.files && el.files.length > 0) return true;
+      const row = rowNode || el.closest(".rptRepeatCard") || el.closest(".rptBlock");
+      if (row && row.querySelector(".rptImagePreview:not(.hidden)")) return true;
+      return false;
     }
 
-    return false;
+    if (type === "checkbox" || type === "radio") {
+      return !!el.checked;
+    }
+
+    const val = String(el.value || "").trim();
+    if (!val) return false;
+
+    if (tag === "SELECT" && (val === "" || val === "-- เลือก --")) return false;
+
+    return true;
+  }
+
+  function getRowStatus(node) {
+    if (!node) return "empty";
+
+    const fields = getVisibleUsableFields(node);
+    if (!fields.length) return "empty";
+
+    const total = fields.length;
+    let filled = 0;
+
+    fields.forEach((el) => {
+      if (isFieldFilled(el, node)) filled += 1;
+    });
+
+    if (filled === 0) return "empty";
+    if (filled < total) return "partial";
+    return "complete";
   }
 
   function updateRowFilledState(node) {
     if (!node) return;
-    const filled = rowHasMeaningfulValue(node);
-    node.classList.toggle("is-filled", filled);
+
+    const status = getRowStatus(node);
+
+    node.classList.remove("is-partial", "is-complete");
+
+    if (status === "partial") {
+      node.classList.add("is-partial");
+    } else if (status === "complete") {
+      node.classList.add("is-complete");
+    }
   }
 
   function bindRowFilledState(node) {
@@ -5102,7 +5138,7 @@
     updateRowFilledState(node);
   }
 
-    function bindDynamicRow(node) {
+     function bindDynamicRow(node) {
     if (!node) return;
 
     node.querySelector(".rptRemoveRow")?.addEventListener("click", () => {
