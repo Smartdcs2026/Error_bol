@@ -4487,6 +4487,2585 @@
 // })();
 
 
+// (function () {
+//   const $ = (id) => document.getElementById(id);
+
+//   function createEmptyDisciplineLookupState() {
+//     return {
+//       employeeCode: "",
+//       employeeName: "",
+//       normalizedEmployeeCode: "",
+//       matchCount: 0,
+//       records: [],
+//       attached: false,
+//       searched: false
+//     };
+//   }
+
+//   function createEmptyItemLookupState() {
+//     return {
+//       item: "",
+//       description: "",
+//       displayText: "",
+//       found: false,
+//       searched: false
+//     };
+//   }
+
+//   const state = {
+//     ready: false,
+//     loading: false,
+//     buttonsBound: false,
+//     lookupButtonsBound: false,
+//     options: null,
+//     disciplineLookup: createEmptyDisciplineLookupState(),
+//     itemLookup: createEmptyItemLookupState()
+//   };
+
+//   const RPT_EDITED_IMAGE_STORE = new WeakMap();
+
+//   function buildRptEditedImageMeta(file, isEdited = false) {
+//     if (!file) return "";
+//     const sizeKb = Math.round((file.size || 0) / 1024);
+//     return isEdited
+//       ? `ไฟล์แก้ไขแล้ว: ${file.name || "edited-image.jpg"} (${sizeKb} KB)`
+//       : `ไฟล์ที่เลือก: ${file.name || "image.jpg"} (${sizeKb} KB)`;
+//   }
+
+//   function updateRptImagePreview(row, file, metaText) {
+//     if (!row || !file) return;
+
+//     const meta = row.querySelector(".rptImageMeta");
+//     const img = row.querySelector(".rptImagePreview");
+//     const empty = row.querySelector(".rptImagePreviewEmpty");
+
+//     if (meta) {
+//       meta.textContent = metaText || buildRptEditedImageMeta(file, false);
+//     }
+
+//     if (img) {
+//       if (img.dataset.objectUrl) {
+//         try { URL.revokeObjectURL(img.dataset.objectUrl); } catch (_) {}
+//       }
+
+//       const url = URL.createObjectURL(file);
+//       img.src = url;
+//       img.dataset.objectUrl = url;
+//       img.classList.remove("hidden");
+//     }
+
+//     empty?.classList.add("hidden");
+//   }
+
+//   function clearRptEditedImageState(row) {
+//     const fileInput = row?.querySelector(".rptImageFile");
+//     const img = row?.querySelector(".rptImagePreview");
+//     const empty = row?.querySelector(".rptImagePreviewEmpty");
+//     const meta = row?.querySelector(".rptImageMeta");
+
+//     if (fileInput) {
+//       RPT_EDITED_IMAGE_STORE.delete(fileInput);
+//     }
+
+//     if (img?.dataset.objectUrl) {
+//       try { URL.revokeObjectURL(img.dataset.objectUrl); } catch (_) {}
+//     }
+
+//     if (img) {
+//       img.removeAttribute("src");
+//       delete img.dataset.objectUrl;
+//       img.classList.add("hidden");
+//     }
+
+//     empty?.classList.remove("hidden");
+//     if (meta) meta.textContent = "";
+//   }
+
+//   async function openRptImageEditor(row) {
+//     if (!window.ImageEditorX || typeof window.ImageEditorX.open !== "function") {
+//       await Swal.fire({
+//         icon: "error",
+//         title: "ยังไม่พร้อมใช้งาน",
+//         text: "ไม่พบ image-editor.js หรือยังไม่ได้โหลด modal ของ image editor"
+//       });
+//       return;
+//     }
+
+//     const fileInput = row?.querySelector(".rptImageFile");
+//     if (!fileInput) return;
+
+//     const edited = RPT_EDITED_IMAGE_STORE.get(fileInput)?.file || null;
+//     const raw = fileInput.files && fileInput.files[0] ? fileInput.files[0] : null;
+//     const sourceFile = edited || raw;
+
+//     if (!sourceFile) {
+//       await Swal.fire({
+//         icon: "info",
+//         title: "ยังไม่มีรูปภาพ",
+//         text: "กรุณาเลือกรูปภาพก่อนแล้วจึงกดแก้ไข"
+//       });
+//       return;
+//     }
+
+//     const result = await window.ImageEditorX.open(sourceFile, {
+//       strokeColor: "#dc2626",
+//       strokeWidth: 3
+//     });
+
+//     if (!result?.ok || !result.file) return;
+
+//     RPT_EDITED_IMAGE_STORE.set(fileInput, {
+//       edited: true,
+//       file: result.file,
+//       filename: result.filename || result.file.name,
+//       dataUrl: result.dataUrl || ""
+//     });
+
+//     updateRptImagePreview(
+//       row,
+//       result.file,
+//       buildRptEditedImageMeta(result.file, true)
+//     );
+//   }
+
+//   function norm(v) {
+//     return String(v == null ? "" : v).trim();
+//   }
+
+//   function escapeHtml(value) {
+//     return String(value == null ? "" : value)
+//       .replace(/&/g, "&amp;")
+//       .replace(/</g, "&lt;")
+//       .replace(/>/g, "&gt;")
+//       .replace(/"/g, "&quot;")
+//       .replace(/'/g, "&#039;");
+//   }
+
+//   function apiUrl(path) {
+//     if (typeof window.apiUrl === "function") return window.apiUrl(path);
+//     const base = String(window.API_BASE || "").replace(/\/+$/, "");
+//     const p = String(path || "").replace(/^\/+/, "");
+//     return `${base}/${p}`;
+//   }
+
+//   function todayIsoLocal() {
+//     const d = new Date();
+//     const yyyy = d.getFullYear();
+//     const mm = String(d.getMonth() + 1).padStart(2, "0");
+//     const dd = String(d.getDate()).padStart(2, "0");
+//     return `${yyyy}-${mm}-${dd}`;
+//   }
+
+//   function getAuth() {
+//     return window.AUTH || { name: "", pass: "" };
+//   }
+
+//   function getRefNo() {
+//     if (typeof window.getRptRefNoValue === "function") return window.getRptRefNoValue();
+//     const running = String($("rptRefNo")?.value || "").replace(/[^\d]/g, "").trim();
+//     const year = String($("rptRefYear")?.value || $("rptRefYear")?.textContent || "").trim();
+//     return running ? `${running}-${year}` : "";
+//   }
+
+//   function setRefYear() {
+//     const el = $("rptRefYear");
+//     if (!el) return;
+
+//     const currentYear = new Date().getFullYear() + 543;
+//     const years = [currentYear - 1, currentYear, currentYear + 1];
+
+//     if (String(el.tagName || "").toUpperCase() === "SELECT") {
+//       el.innerHTML = years.map((y) => `<option value="${y}">${y}</option>`).join("");
+//       el.value = String(currentYear);
+//     } else {
+//       el.textContent = String(currentYear);
+//     }
+//   }
+
+//   function isOther(v) {
+//     const s = norm(v).toLowerCase();
+//     return s === "อื่นๆ" || s === "other" || s === "others";
+//   }
+
+//   function splitMultiEmails(text) {
+//     return String(text || "")
+//       .split(/[\n,;]+/)
+//       .map((x) => x.trim())
+//       .filter(Boolean);
+//   }
+
+//   function uniqueEmails(list) {
+//     const seen = new Set();
+//     const out = [];
+//     const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/i;
+
+//     (Array.isArray(list) ? list : []).forEach((v) => {
+//       const s = String(v || "").trim();
+//       if (!s || !re.test(s)) return;
+//       const key = s.toLowerCase();
+//       if (seen.has(key)) return;
+//       seen.add(key);
+//       out.push(s);
+//     });
+
+//     return out;
+//   }
+
+//   function setReadonlyValue(id, value) {
+//     const el = $(id);
+//     if (!el) return;
+//     el.value = value || "";
+//   }
+
+//   function renderSelect(id, list, withPlaceholder = true) {
+//     const el = $(id);
+//     if (!el) return;
+
+//     const items = Array.isArray(list) ? list : [];
+//     const html = [];
+//     if (withPlaceholder) html.push(`<option value="">-- เลือก --</option>`);
+//     items.forEach((item) => {
+//       html.push(`<option value="${escapeHtml(item)}">${escapeHtml(item)}</option>`);
+//     });
+//     el.innerHTML = html.join("");
+//   }
+
+//   function buildOptionsHtml(list, withPlaceholder = true) {
+//     const items = Array.isArray(list) ? list : [];
+//     const html = [];
+//     if (withPlaceholder) html.push(`<option value="">-- เลือก --</option>`);
+//     items.forEach((item) => {
+//       html.push(`<option value="${escapeHtml(item)}">${escapeHtml(item)}</option>`);
+//     });
+//     return html.join("");
+//   }
+
+//   function bindOtherSelect(selectId, wrapId, inputId) {
+//     const select = $(selectId);
+//     const wrap = $(wrapId);
+//     const input = $(inputId);
+//     if (!select || !wrap) return;
+
+//     const sync = () => {
+//       const show = isOther(select.value);
+//       wrap.classList.toggle("hidden", !show);
+//       if (!show && input) input.value = "";
+//     };
+
+//     select.addEventListener("change", sync);
+//     sync();
+//   }
+
+//   function renderOptionMatrix(rootId, name, list) {
+//     const root = $(rootId);
+//     if (!root) return;
+
+//     const items = Array.isArray(list) ? list : [];
+//     if (!items.length) {
+//       root.innerHTML = `<div class="emailEmpty">ไม่พบรายการตัวเลือก</div>`;
+//       return;
+//     }
+
+//     root.innerHTML = items.map((item) => `
+//       <label class="optionChoice">
+//         <div class="optionChoiceCard">
+//           <input type="checkbox" name="${escapeHtml(name)}" value="${escapeHtml(item)}">
+//           <span class="optionChoiceMark"></span>
+//           <span class="optionChoiceText">${escapeHtml(item)}</span>
+//         </div>
+//       </label>
+//     `).join("");
+//   }
+
+//   function renderWhereTypeSelections() {
+//     const root = $("rptWhereTypeSelections");
+//     if (!root) return;
+
+//     const list = Array.isArray(state.options?.whereTypeList) ? state.options.whereTypeList : [];
+//     if (!list.length) {
+//       root.innerHTML = `<div class="emailEmpty">ไม่พบรายการประเภทสถานที่</div>`;
+//       return;
+//     }
+
+//     root.innerHTML = list.map((item, idx) => {
+//       const value = norm(item && item.value);
+//       const needSuffix = !!(item && item.needSuffixInput);
+//       const rowId = `rptWhereType_${idx}_${value.replace(/[^\wก-๙]+/g, "_")}`;
+
+//       return `
+//         <div class="rptWhereTypeRow" data-value="${escapeHtml(value)}" data-need-suffix="${needSuffix ? "1" : "0"}">
+//           <label class="optionChoice" for="${escapeHtml(rowId)}">
+//             <div class="optionChoiceCard">
+//               <input
+//                 id="${escapeHtml(rowId)}"
+//                 type="checkbox"
+//                 class="rptWhereTypeChk"
+//                 value="${escapeHtml(value)}"
+//               >
+//               <span class="optionChoiceMark"></span>
+//               <span class="optionChoiceText">${escapeHtml(value)}</span>
+//             </div>
+//           </label>
+
+//           <div class="optionChoiceOther hidden">
+//             <input
+//               type="text"
+//               class="input rptWhereTypeSuffix"
+//               placeholder="กรอกข้อมูลต่อท้าย ${escapeHtml(value)}"
+//             >
+//           </div>
+//         </div>
+//       `;
+//     }).join("");
+
+//     root.querySelectorAll(".rptWhereTypeRow").forEach((row) => {
+//       const chk = row.querySelector(".rptWhereTypeChk");
+//       const wrap = row.querySelector(".optionChoiceOther");
+//       const input = row.querySelector(".rptWhereTypeSuffix");
+//       const needSuffix = row.getAttribute("data-need-suffix") === "1";
+
+//       const sync = () => {
+//         const show = !!chk?.checked && needSuffix;
+//         wrap?.classList.toggle("hidden", !show);
+//         if (!show && input) input.value = "";
+//       };
+
+//       chk?.addEventListener("change", sync);
+//       sync();
+//     });
+//   }
+
+//   function renderEmailSelector() {
+//     const root = $("rptEmailSelector");
+//     if (!root) return;
+
+//     const emails = Array.isArray(state.options?.emailList) ? state.options.emailList : [];
+//     if (!emails.length) {
+//       root.innerHTML = `<div class="emailEmpty">ไม่พบรายการอีเมล</div>`;
+//       return;
+//     }
+
+//     root.innerHTML = emails.map((email) => `
+//       <label class="emailItem" title="${escapeHtml(email)}">
+//         <input type="checkbox" class="rptEmailChk" value="${escapeHtml(email)}">
+//         <span class="emailCheckBox"></span>
+//         <span class="emailText">${escapeHtml(email)}</span>
+//       </label>
+//     `).join("");
+//   }
+
+//   function setAllChecks(selector, checked) {
+//     document.querySelectorAll(selector).forEach((el) => {
+//       el.checked = !!checked;
+//     });
+//   }
+
+//   function createSimpleIndexedRowHtml(type, index, titleLabel, detailLabel, titlePlaceholder, detailPlaceholder) {
+//   return `
+//     <div class="rptRepeatCard" data-type="${escapeHtml(type)}">
+//       <div class="rptCardHead">
+//         <div class="rptCardHeadMain">
+//           <div class="rptCardTitle">${escapeHtml(titleLabel)} <span class="rptRowIndex">${index}</span></div>
+//           <div class="rptCardSummary">ยังไม่มีข้อมูล</div>
+//         </div>
+//         <div class="rptCardHeadActions">
+//           <button type="button" class="btn ghost rptCollapseRow">ย่อ</button>
+//         </div>
+//       </div>
+
+//       <div class="rptCardBody">
+//         <div class="gridCompact">
+//           <div class="field">
+//             <label>${escapeHtml(titleLabel)}</label>
+//             <input type="text" class="rptIdxTitle" placeholder="${escapeHtml(titlePlaceholder || "")}">
+//           </div>
+
+//           <div class="field">
+//             <label>${escapeHtml(detailLabel)}</label>
+//             <textarea class="rptIdxDetail" rows="3" placeholder="${escapeHtml(detailPlaceholder || "")}"></textarea>
+//           </div>
+//         </div>
+
+//         <div class="panelActions">
+//           <button type="button" class="btn ghost rptRemoveRow">ลบแถว</button>
+//         </div>
+//       </div>
+//     </div>
+//   `;
+// }
+//   function createPersonRowHtml(index) {
+//   const positionOptions = buildOptionsHtml(state.options?.personPositionList, true);
+//   const departmentOptions = buildOptionsHtml(state.options?.personDepartmentList, true);
+//   const remarkOptions = buildOptionsHtml(state.options?.personRemarkList, true);
+
+//   return `
+//     <div class="rptRepeatCard" data-type="person">
+//       <div class="rptCardHead">
+//         <div class="rptCardHeadMain">
+//           <div class="rptCardTitle">ผู้เกี่ยวข้อง <span class="rptRowIndex">${index}</span></div>
+//           <div class="rptCardSummary">ยังไม่มีข้อมูล</div>
+//         </div>
+//         <div class="rptCardHeadActions">
+//           <button type="button" class="btn ghost rptCollapseRow">ย่อ</button>
+//         </div>
+//       </div>
+
+//       <div class="rptCardBody">
+//         <div class="gridCompact">
+//           <div class="field">
+//             <label>ผู้เกี่ยวข้อง (Who is involved)</label>
+//             <input type="text" class="rptPersonWho" placeholder="ชื่อผู้เกี่ยวข้อง">
+//           </div>
+
+//           <div class="field">
+//             <label>Position</label>
+//             <select class="rptPersonPosition">${positionOptions}</select>
+//           </div>
+
+//           <div class="field rptPersonPositionOtherWrap hidden">
+//             <label>Position อื่นๆ</label>
+//             <input type="text" class="rptPersonPositionOther" placeholder="ระบุตำแหน่งเพิ่มเติม">
+//           </div>
+
+//           <div class="field">
+//             <label>Department</label>
+//             <select class="rptPersonDepartment">${departmentOptions}</select>
+//           </div>
+
+//           <div class="field rptPersonDepartmentOtherWrap hidden">
+//             <label>Department อื่นๆ</label>
+//             <input type="text" class="rptPersonDepartmentOther" placeholder="ระบุส่วนงานเพิ่มเติม">
+//           </div>
+
+//           <div class="field">
+//             <label>Remark</label>
+//             <select class="rptPersonRemark">${remarkOptions}</select>
+//           </div>
+
+//           <div class="field rptPersonRemarkOtherWrap hidden">
+//             <label>Remark อื่นๆ</label>
+//             <input type="text" class="rptPersonRemarkOther" placeholder="ระบุหมายเหตุเพิ่มเติม">
+//           </div>
+//         </div>
+
+//         <div class="panelActions" style="justify-content:flex-end;margin-top:10px">
+//           <button type="button" class="btn ghost rptRemoveRow">ลบแถว</button>
+//         </div>
+//       </div>
+//     </div>
+//   `;
+// }
+
+//   function createStepTakenRowHtml(index) {
+//   const actionOptions = buildOptionsHtml(state.options?.actionTypeList, true);
+
+//   return `
+//     <div class="rptRepeatCard" data-type="stepTaken">
+//       <div class="rptCardHead">
+//         <div class="rptCardHeadMain">
+//           <div class="rptCardTitle">การดำเนินการ <span class="rptRowIndex">${index}</span></div>
+//           <div class="rptCardSummary">ยังไม่มีข้อมูล</div>
+//         </div>
+//         <div class="rptCardHeadActions">
+//           <button type="button" class="btn ghost rptCollapseRow">ย่อ</button>
+//         </div>
+//       </div>
+
+//       <div class="rptCardBody">
+//         <div class="gridCompact">
+//           <div class="field">
+//             <label>ประเภทการดำเนินการ</label>
+//             <select class="rptStepActionType">${actionOptions}</select>
+//           </div>
+
+//           <div class="field rptStepActionTypeOtherWrap hidden">
+//             <label>ระบุการดำเนินการอื่นๆ</label>
+//             <input type="text" class="rptStepActionTypeOther" placeholder="ระบุเอง">
+//           </div>
+
+//           <div class="field rptAlcoholResultWrap hidden">
+//             <label>ผลการตรวจแอลกอฮอล์</label>
+//             <select class="rptAlcoholResult">
+//               <option value="">-- เลือก --</option>
+//               <option value="พบ">พบ</option>
+//               <option value="ไม่พบ">ไม่พบ</option>
+//             </select>
+//           </div>
+
+//           <div class="field rptAlcoholMgWrap hidden">
+//             <label>ปริมาณแอลกอฮอล์ (Mg%)</label>
+//             <input type="number" class="rptAlcoholMgPercent" placeholder="กรอกเฉพาะตัวเลข" inputmode="decimal">
+//           </div>
+
+//           <div class="field rptDrugConfirmedWrap hidden">
+//             <label>ผลยืนยันการเสพ</label>
+//             <input type="text" class="rptDrugConfirmed" placeholder="เช่น ยืนยันผลบวก">
+//           </div>
+
+//           <div class="field rptDrugDetailWrap hidden">
+//             <label>รายละเอียดแบบย่อ</label>
+//             <textarea class="rptDrugShortDetail" rows="3" placeholder="รายละเอียดการตรวจสารเสพติด"></textarea>
+//           </div>
+
+//           <div class="field fieldSpan2">
+//             <label>รายละเอียดเพิ่มเติม</label>
+//             <textarea class="rptStepDetail" rows="3" placeholder="รายละเอียดเพิ่มเติมของการดำเนินการ"></textarea>
+//           </div>
+//         </div>
+
+//         <div class="panelActions" style="justify-content:flex-end;margin-top:10px">
+//           <button type="button" class="btn ghost rptRemoveRow">ลบแถว</button>
+//         </div>
+//       </div>
+//     </div>
+//   `;
+// }
+//   function createImageRowHtml(index) {
+//   return `
+//     <div class="rptRepeatCard" data-type="image">
+//       <div class="rptCardHead">
+//         <div class="rptCardHeadMain">
+//           <div class="rptCardTitle">รูปภาพ <span class="rptRowIndex">${index}</span></div>
+//           <div class="rptCardSummary">ยังไม่มีข้อมูล</div>
+//         </div>
+//         <div class="rptCardHeadActions">
+//           <button type="button" class="btn ghost rptCollapseRow">ย่อ</button>
+//         </div>
+//       </div>
+
+//       <div class="rptCardBody">
+//         <div class="gridCompact">
+//           <div class="field">
+//             <label>เลือกรูปภาพ</label>
+//             <input type="file" class="rptImageFile" accept="image/*">
+//             <div class="fieldHint rptImageMeta"></div>
+//           </div>
+
+//           <div class="field">
+//             <label>คำบรรยายภาพ</label>
+//             <textarea class="rptImageCaption" rows="4" placeholder="อธิบายภาพนี้"></textarea>
+//           </div>
+//         </div>
+
+//         <div class="field" style="margin-top:10px">
+//           <div class="rptImagePreviewEmpty" style="padding:12px 14px;border:1px dashed #bfd1e6;border-radius:14px;background:#f8fbff;color:#64748b;font-size:12px;font-weight:800">
+//             ยังไม่ได้เลือกรูปภาพ
+//           </div>
+//           <img class="rptImagePreview hidden" alt="preview" style="width:100%;max-height:260px;object-fit:contain;border-radius:14px;border:1px solid #d9e4f1;background:#fff;padding:6px">
+//         </div>
+
+//         <div class="panelActions" style="justify-content:flex-end;margin-top:10px">
+//           <button type="button" class="btn ghost rptEditImageBtn">แก้ไขภาพ</button>
+//           <button type="button" class="btn ghost rptRemoveRow">ลบแถว</button>
+//         </div>
+//       </div>
+//     </div>
+//   `;
+// }
+//   function appendRow(listId, html, emptyLabel) {
+//     const root = $(listId);
+//     if (!root) return;
+//     const wrap = document.createElement("div");
+//     wrap.innerHTML = html.trim();
+//     const node = wrap.firstElementChild;
+//     root.appendChild(node);
+//     bindDynamicRow(node);
+//     refreshRowIndex(listId);
+//     toggleEmptyState(listId, emptyLabel);
+//   }
+
+
+//     function getVisibleUsableFields(node) {
+//     if (!node) return [];
+
+//     return Array.from(node.querySelectorAll("input, select, textarea")).filter((el) => {
+//       if (!el) return false;
+
+//       const type = String(el.type || "").toLowerCase();
+//       if (type === "hidden" || type === "button" || type === "submit" || type === "reset") return false;
+//       if (el.disabled) return false;
+
+//       const hiddenByClass = !!el.closest(".hidden");
+//       if (hiddenByClass) return false;
+
+//       const style = window.getComputedStyle(el);
+//       if (style.display === "none" || style.visibility === "hidden") return false;
+
+//       return true;
+//     });
+//   }
+
+//   function isFieldFilled(el, rowNode) {
+//     if (!el) return false;
+
+//     const tag = String(el.tagName || "").toUpperCase();
+//     const type = String(el.type || "").toLowerCase();
+
+//     if (type === "file") {
+//       if (el.files && el.files.length > 0) return true;
+//       const row = rowNode || el.closest(".rptRepeatCard") || el.closest(".rptBlock");
+//       if (row && row.querySelector(".rptImagePreview:not(.hidden)")) return true;
+//       return false;
+//     }
+
+//     if (type === "checkbox" || type === "radio") {
+//       return !!el.checked;
+//     }
+
+//     const val = String(el.value || "").trim();
+//     if (!val) return false;
+
+//     if (tag === "SELECT" && (val === "" || val === "-- เลือก --")) return false;
+
+//     return true;
+//   }
+
+//   function getRowStatus(node) {
+//     if (!node) return "empty";
+
+//     const fields = getVisibleUsableFields(node);
+//     if (!fields.length) return "empty";
+
+//     const total = fields.length;
+//     let filled = 0;
+
+//     fields.forEach((el) => {
+//       if (isFieldFilled(el, node)) filled += 1;
+//     });
+
+//     if (filled === 0) return "empty";
+//     if (filled < total) return "partial";
+//     return "complete";
+//   }
+
+//     function updateRowFilledState(node) {
+//     if (!node) return;
+
+//     const root = getCardRoot(node);
+//     if (!root) return;
+
+//     const status = getRowStatus(root);
+
+//     root.classList.remove("is-partial", "is-complete");
+
+//     if (status === "partial") {
+//       root.classList.add("is-partial");
+//     } else if (status === "complete") {
+//       root.classList.add("is-complete");
+//     } else {
+//       root.classList.remove("is-collapsed");
+//     }
+
+//     updateRowSummary(root);
+//     updateCollapseButtonState(root);
+//   }
+
+//   function bindRowFilledState(node) {
+//     if (!node) return;
+
+//     const fields = node.querySelectorAll("input, select, textarea");
+//     fields.forEach((el) => {
+//       el.addEventListener("input", () => updateRowFilledState(node));
+//       el.addEventListener("change", () => updateRowFilledState(node));
+//     });
+
+//     updateRowFilledState(node);
+//   }
+//   function getCardRoot(node) {
+//     return node?.closest(".rptRepeatCard") || node?.closest(".rptBlock") || node || null;
+//   }
+
+//   function getCardBody(node) {
+//     const root = getCardRoot(node);
+//     return root?.querySelector(".rptCardBody") || null;
+//   }
+
+//   function canCollapseRow(node) {
+//     const root = getCardRoot(node);
+//     if (!root) return false;
+//     return root.classList.contains("is-complete");
+//   }
+
+//   function updateCollapseButtonState(node) {
+//     const root = getCardRoot(node);
+//     if (!root) return;
+
+//     const btn = root.querySelector(".rptCollapseRow");
+//     if (!btn) return;
+
+//     const complete = root.classList.contains("is-complete");
+//     const collapsed = root.classList.contains("is-collapsed");
+
+//     btn.disabled = !complete;
+//     btn.classList.toggle("is-disabled", !complete);
+
+//     if (!complete) {
+//       btn.textContent = "ย่อ";
+//       root.classList.remove("is-collapsed");
+//       return;
+//     }
+
+//     btn.textContent = collapsed ? "ขยาย" : "ย่อ";
+//   }
+
+//   function toggleRowCollapse(node, forceCollapsed = null) {
+//     const root = getCardRoot(node);
+//     if (!root) return;
+
+//     if (!canCollapseRow(root)) {
+//       root.classList.remove("is-collapsed");
+//       updateCollapseButtonState(root);
+//       return;
+//     }
+
+//     const nextState = (forceCollapsed == null)
+//       ? !root.classList.contains("is-collapsed")
+//       : !!forceCollapsed;
+
+//     root.classList.toggle("is-collapsed", nextState);
+//     updateCollapseButtonState(root);
+//   }
+
+//   function collapsePreviousCompletedRow(fromButtonOrListId) {
+//     let listRoot = null;
+//     let currentCard = null;
+
+//     if (typeof fromButtonOrListId === "string") {
+//       listRoot = $(fromButtonOrListId);
+//     } else {
+//       currentCard = getCardRoot(fromButtonOrListId);
+//       listRoot = currentCard?.parentElement || null;
+//     }
+
+//     if (!listRoot) return;
+
+//     let target = null;
+
+//     if (currentCard) {
+//       target = currentCard;
+//     } else {
+//       const cards = listRoot.querySelectorAll(".rptRepeatCard, .rptBlock");
+//       target = cards.length ? cards[cards.length - 1] : null;
+//     }
+
+//     if (!target) return;
+//     if (!target.classList.contains("is-complete")) return;
+
+//     toggleRowCollapse(target, true);
+//   }
+
+//   function buildRowSummary(node) {
+//     const root = getCardRoot(node);
+//     if (!root) return "";
+
+//     const type = String(root.getAttribute("data-type") || "");
+//     let summary = "";
+
+//     if (type === "person") {
+//       const who = String(root.querySelector(".rptPersonWho")?.value || "").trim();
+//       const pos = String(root.querySelector(".rptPersonPosition")?.value || "").trim();
+//       const dep = String(root.querySelector(".rptPersonDepartment")?.value || "").trim();
+//       summary = [who, pos, dep].filter(Boolean).join(" • ");
+//     } else if (type === "stepTaken") {
+//       const action = String(root.querySelector(".rptStepActionType")?.value || "").trim();
+//       const detail = String(root.querySelector(".rptStepDetail")?.value || "").trim();
+//       summary = action || detail;
+//     } else if (type === "image") {
+//       const caption = String(root.querySelector(".rptImageCaption")?.value || "").trim();
+//       const meta = String(root.querySelector(".rptImageMeta")?.textContent || "").trim();
+//       summary = caption || meta;
+//     } else {
+//       const title = String(root.querySelector(".rptIdxTitle")?.value || "").trim();
+//       const detail = String(root.querySelector(".rptIdxDetail")?.value || "").trim();
+//       summary = title || detail;
+//     }
+
+//     return summary || "มีข้อมูลแล้ว";
+//   }
+
+//   function updateRowSummary(node) {
+//     const root = getCardRoot(node);
+//     if (!root) return;
+
+//     const summaryEl = root.querySelector(".rptCardSummary");
+//     if (!summaryEl) return;
+
+//     summaryEl.textContent = buildRowSummary(root);
+//   }
+
+//   function bindRowSummary(node) {
+//     const root = getCardRoot(node);
+//     if (!root) return;
+
+//     root.querySelectorAll("input, select, textarea").forEach((el) => {
+//       el.addEventListener("input", () => updateRowSummary(root));
+//       el.addEventListener("change", () => updateRowSummary(root));
+//     });
+
+//     updateRowSummary(root);
+//   }
+
+// function getVisibleUsableFields(node) {
+//   if (!node) return [];
+
+//   return Array.from(node.querySelectorAll("input, select, textarea")).filter((el) => {
+//     if (!el) return false;
+
+//     const type = String(el.type || "").toLowerCase();
+//     if (type === "hidden" || type === "button" || type === "submit" || type === "reset") return false;
+//     if (el.disabled) return false;
+
+//     const hiddenByClass = !!el.closest(".hidden");
+//     if (hiddenByClass) return false;
+
+//     const style = window.getComputedStyle(el);
+//     if (style.display === "none" || style.visibility === "hidden") return false;
+
+//     return true;
+//   });
+// }
+
+// function isFieldFilled(el, rowNode) {
+//   if (!el) return false;
+
+//   const tag = String(el.tagName || "").toUpperCase();
+//   const type = String(el.type || "").toLowerCase();
+
+//   if (type === "file") {
+//     if (el.files && el.files.length > 0) return true;
+//     const row = rowNode || el.closest(".rptRepeatCard") || el.closest(".rptBlock");
+//     if (row && row.querySelector(".rptImagePreview:not(.hidden)")) return true;
+//     return false;
+//   }
+
+//   if (type === "checkbox" || type === "radio") {
+//     return !!el.checked;
+//   }
+
+//   const val = String(el.value || "").trim();
+//   if (!val) return false;
+
+//   if (tag === "SELECT" && (val === "" || val === "-- เลือก --")) return false;
+
+//   return true;
+// }
+
+// function getRowStatus(node) {
+//   if (!node) return "empty";
+
+//   const fields = getVisibleUsableFields(node);
+//   if (!fields.length) return "empty";
+
+//   const total = fields.length;
+//   let filled = 0;
+
+//   fields.forEach((el) => {
+//     if (isFieldFilled(el, node)) filled += 1;
+//   });
+
+//   if (filled === 0) return "empty";
+//   if (filled < total) return "partial";
+//   return "complete";
+// }
+
+// function getCardRoot(node) {
+//   return node?.closest(".rptRepeatCard") || node?.closest(".rptBlock") || node || null;
+// }
+
+// function canCollapseRow(node) {
+//   const root = getCardRoot(node);
+//   if (!root) return false;
+//   return root.classList.contains("is-complete");
+// }
+
+// function updateCollapseButtonState(node) {
+//   const root = getCardRoot(node);
+//   if (!root) return;
+
+//   const btn = root.querySelector(".rptCollapseRow");
+//   if (!btn) return;
+
+//   const complete = root.classList.contains("is-complete");
+//   const collapsed = root.classList.contains("is-collapsed");
+
+//   btn.disabled = !complete;
+//   btn.classList.toggle("is-disabled", !complete);
+
+//   if (!complete) {
+//     btn.textContent = "ย่อ";
+//     root.classList.remove("is-collapsed");
+//     return;
+//   }
+
+//   btn.textContent = collapsed ? "ขยาย" : "ย่อ";
+// }
+
+// function toggleRowCollapse(node, forceCollapsed = null) {
+//   const root = getCardRoot(node);
+//   if (!root) return;
+
+//   if (!canCollapseRow(root)) {
+//     root.classList.remove("is-collapsed");
+//     updateCollapseButtonState(root);
+//     return;
+//   }
+
+//   const nextState = (forceCollapsed == null)
+//     ? !root.classList.contains("is-collapsed")
+//     : !!forceCollapsed;
+
+//   root.classList.toggle("is-collapsed", nextState);
+//   updateCollapseButtonState(root);
+// }
+
+// function collapsePreviousCompletedRow(fromButtonOrListId) {
+//   let listRoot = null;
+
+//   if (typeof fromButtonOrListId === "string") {
+//     listRoot = $(fromButtonOrListId);
+//   } else {
+//     const currentCard = getCardRoot(fromButtonOrListId);
+//     listRoot = currentCard?.parentElement || null;
+//   }
+
+//   if (!listRoot) return;
+
+//   const cards = listRoot.querySelectorAll(".rptRepeatCard, .rptBlock");
+//   const target = cards.length ? cards[cards.length - 1] : null;
+
+//   if (!target) return;
+//   if (!target.classList.contains("is-complete")) return;
+
+//   toggleRowCollapse(target, true);
+// }
+
+// function buildRowSummary(node) {
+//   const root = getCardRoot(node);
+//   if (!root) return "";
+
+//   const type = String(root.getAttribute("data-type") || "");
+//   let summary = "";
+
+//   if (type === "person") {
+//     const who = String(root.querySelector(".rptPersonWho")?.value || "").trim();
+//     const pos = String(root.querySelector(".rptPersonPosition")?.value || "").trim();
+//     const dep = String(root.querySelector(".rptPersonDepartment")?.value || "").trim();
+//     summary = [who, pos, dep].filter(Boolean).join(" • ");
+//   } else if (type === "stepTaken") {
+//     const action = String(root.querySelector(".rptStepActionType")?.value || "").trim();
+//     const detail = String(root.querySelector(".rptStepDetail")?.value || "").trim();
+//     summary = action || detail;
+//   } else if (type === "image") {
+//     const caption = String(root.querySelector(".rptImageCaption")?.value || "").trim();
+//     const meta = String(root.querySelector(".rptImageMeta")?.textContent || "").trim();
+//     summary = caption || meta;
+//   } else {
+//     const title = String(root.querySelector(".rptIdxTitle")?.value || "").trim();
+//     const detail = String(root.querySelector(".rptIdxDetail")?.value || "").trim();
+//     summary = title || detail;
+//   }
+
+//   return summary || "มีข้อมูลแล้ว";
+// }
+
+// function updateRowSummary(node) {
+//   const root = getCardRoot(node);
+//   if (!root) return;
+
+//   const summaryEl = root.querySelector(".rptCardSummary");
+//   if (!summaryEl) return;
+
+//   summaryEl.textContent = buildRowSummary(root);
+// }
+
+// function bindRowSummary(node) {
+//   const root = getCardRoot(node);
+//   if (!root) return;
+
+//   root.querySelectorAll("input, select, textarea").forEach((el) => {
+//     el.addEventListener("input", () => updateRowSummary(root));
+//     el.addEventListener("change", () => updateRowSummary(root));
+//   });
+
+//   updateRowSummary(root);
+// }
+
+// function updateRowFilledState(node) {
+//   if (!node) return;
+
+//   const root = getCardRoot(node);
+//   if (!root) return;
+
+//   const status = getRowStatus(root);
+
+//   root.classList.remove("is-partial", "is-complete");
+
+//   if (status === "partial") {
+//     root.classList.add("is-partial");
+//   } else if (status === "complete") {
+//     root.classList.add("is-complete");
+//   } else {
+//     root.classList.remove("is-collapsed");
+//   }
+
+//   updateRowSummary(root);
+//   updateCollapseButtonState(root);
+// }
+
+// function bindRowFilledState(node) {
+//   if (!node) return;
+
+//   const fields = node.querySelectorAll("input, select, textarea");
+//   fields.forEach((el) => {
+//     el.addEventListener("input", () => updateRowFilledState(node));
+//     el.addEventListener("change", () => updateRowFilledState(node));
+//   });
+
+//   updateRowFilledState(node);
+// }
+//     function bindDynamicRow(node) {
+//   if (!node) return;
+
+//   const root = getCardRoot(node);
+//   const head = root.querySelector(".rptCardHead");
+//   const collapseBtn = root.querySelector(".rptCollapseRow");
+
+//   root.querySelector(".rptRemoveRow")?.addEventListener("click", () => {
+//     if (root.getAttribute("data-type") === "image") {
+//       clearRptEditedImageState(root);
+//     } else {
+//       const img = root.querySelector(".rptImagePreview");
+//       if (img && img.dataset.objectUrl) {
+//         try { URL.revokeObjectURL(img.dataset.objectUrl); } catch (_) {}
+//       }
+//     }
+
+//     const parentId = root.parentElement?.id || "";
+//     root.remove();
+
+//     if (parentId) {
+//       refreshRowIndex(parentId);
+//       toggleEmptyState(parentId, emptyStateLabelFor(parentId));
+//     }
+//   });
+
+//   collapseBtn?.addEventListener("click", (ev) => {
+//     ev.preventDefault();
+//     ev.stopPropagation();
+//     toggleRowCollapse(root);
+//   });
+
+//   head?.addEventListener("click", (ev) => {
+//     const clickedControl = ev.target.closest("button, input, select, textarea, label, a");
+//     if (clickedControl) return;
+
+//     if (root.classList.contains("is-collapsed")) {
+//       toggleRowCollapse(root, false);
+//     }
+//   });
+
+//   if (root.getAttribute("data-type") === "person") {
+//     bindSelectOtherInRow(root, ".rptPersonPosition", ".rptPersonPositionOtherWrap", ".rptPersonPositionOther");
+//     bindSelectOtherInRow(root, ".rptPersonDepartment", ".rptPersonDepartmentOtherWrap", ".rptPersonDepartmentOther");
+//     bindSelectOtherInRow(root, ".rptPersonRemark", ".rptPersonRemarkOtherWrap", ".rptPersonRemarkOther");
+//   }
+
+//   if (root.getAttribute("data-type") === "stepTaken") {
+//     bindStepTakenRow(root);
+//   }
+
+//   if (root.getAttribute("data-type") === "image") {
+//     bindImageRow(root);
+//   }
+
+//   bindRowSummary(root);
+//   bindRowFilledState(root);
+//   updateCollapseButtonState(root);
+// }
+
+//   function bindSelectOtherInRow(node, selectSel, wrapSel, inputSel) {
+//     const select = node.querySelector(selectSel);
+//     const wrap = node.querySelector(wrapSel);
+//     const input = node.querySelector(inputSel);
+//     if (!select || !wrap) return;
+
+//     const sync = () => {
+//       const show = isOther(select.value);
+//       wrap.classList.toggle("hidden", !show);
+//       if (!show && input) input.value = "";
+//     };
+
+//     select.addEventListener("change", sync);
+//     sync();
+//   }
+
+//   function bindStepTakenRow(node) {
+//     const typeEl = node.querySelector(".rptStepActionType");
+//     const otherWrap = node.querySelector(".rptStepActionTypeOtherWrap");
+//     const otherInput = node.querySelector(".rptStepActionTypeOther");
+
+//     const alcoholWrap = node.querySelector(".rptAlcoholResultWrap");
+//     const alcoholResult = node.querySelector(".rptAlcoholResult");
+//     const alcoholMgWrap = node.querySelector(".rptAlcoholMgWrap");
+//     const alcoholMgInput = node.querySelector(".rptAlcoholMgPercent");
+
+//     const drugConfirmedWrap = node.querySelector(".rptDrugConfirmedWrap");
+//     const drugDetailWrap = node.querySelector(".rptDrugDetailWrap");
+//     const drugConfirmedInput = node.querySelector(".rptDrugConfirmed");
+//     const drugDetailInput = node.querySelector(".rptDrugShortDetail");
+
+//     const syncAlcoholMg = () => {
+//       const isAlcohol = norm(typeEl?.value) === "ตรวจวัดปริมาณแอลกอฮอล์";
+//       const showMg = isAlcohol && norm(alcoholResult?.value) === "พบ";
+//       alcoholMgWrap?.classList.toggle("hidden", !showMg);
+//       if (!showMg && alcoholMgInput) alcoholMgInput.value = "";
+//     };
+
+//     const syncType = () => {
+//       const type = norm(typeEl?.value);
+//       const isAlcohol = type === "ตรวจวัดปริมาณแอลกอฮอล์";
+//       const isDrug = type === "ตรวจสารเสพติดเมทแอเฟตามีน";
+//       const isOtherType = isOther(type);
+
+//       otherWrap?.classList.toggle("hidden", !isOtherType);
+//       if (!isOtherType && otherInput) otherInput.value = "";
+
+//       alcoholWrap?.classList.toggle("hidden", !isAlcohol);
+//       if (!isAlcohol && alcoholResult) alcoholResult.value = "";
+//       syncAlcoholMg();
+
+//       drugConfirmedWrap?.classList.toggle("hidden", !isDrug);
+//       drugDetailWrap?.classList.toggle("hidden", !isDrug);
+//       if (!isDrug && drugConfirmedInput) drugConfirmedInput.value = "";
+//       if (!isDrug && drugDetailInput) drugDetailInput.value = "";
+//     };
+
+//     typeEl?.addEventListener("change", syncType);
+//     alcoholResult?.addEventListener("change", syncAlcoholMg);
+
+//     syncType();
+//   }
+
+//   function bindImageRow(node) {
+//     const fileInput = node.querySelector(".rptImageFile");
+//     const editBtn = node.querySelector(".rptEditImageBtn");
+
+//     if (!fileInput) return;
+
+//     fileInput.addEventListener("change", async () => {
+//       const file = fileInput.files && fileInput.files[0] ? fileInput.files[0] : null;
+
+//       if (!file) {
+//         clearRptEditedImageState(node);
+//         return;
+//       }
+
+//       if (!/^image\//i.test(file.type || "")) {
+//         fileInput.value = "";
+//         clearRptEditedImageState(node);
+
+//         await Swal.fire({
+//           icon: "warning",
+//           title: "ไฟล์ไม่ถูกต้อง",
+//           text: "กรุณาเลือกไฟล์รูปภาพเท่านั้น"
+//         });
+//         return;
+//       }
+
+//       RPT_EDITED_IMAGE_STORE.delete(fileInput);
+
+//       updateRptImagePreview(
+//         node,
+//         file,
+//         buildRptEditedImageMeta(file, false)
+//       );
+//     });
+
+//     editBtn?.addEventListener("click", async () => {
+//       await openRptImageEditor(node);
+//     });
+//   }
+
+//   function refreshRowIndex(listId) {
+//     const root = $(listId);
+//     if (!root) return;
+
+//     const cards = Array.from(root.querySelectorAll(".rptRepeatCard"));
+//     cards.forEach((card, idx) => {
+//       const index = idx + 1;
+//       const badge = card.querySelector(".rptRowIndex");
+//       if (badge) badge.textContent = String(index);
+
+//       const headTitle = card.querySelector(".rptCardHead > div:first-child");
+//       if (headTitle) {
+//         const type = card.getAttribute("data-type");
+//         let label = "รายการ";
+//         if (type === "person") label = "ผู้เกี่ยวข้อง";
+//         else if (type === "stepTaken") label = "การดำเนินการ";
+//         else if (type === "image") label = "รูปภาพ";
+//         else if (listId === "rptDamageList") label = "ความเสียหาย";
+//         else if (listId === "rptEvidenceList") label = "หลักฐาน";
+//         else if (listId === "rptCauseList") label = "สาเหตุ";
+//         else if (listId === "rptPreventionList") label = "การป้องกัน";
+//         else if (listId === "rptLearningList") label = "ข้อสรุป/บทเรียน";
+//         headTitle.textContent = `${label} ${index}`;
+//       }
+//     });
+//   }
+
+//   function toggleEmptyState(listId, label) {
+//     const root = $(listId);
+//     if (!root) return;
+
+//     let empty = root.querySelector(".rptListEmpty");
+//     const count = root.querySelectorAll(".rptRepeatCard").length;
+
+//     if (!empty) {
+//       empty = document.createElement("div");
+//       empty.className = "rptListEmpty";
+//       empty.innerHTML = `
+//         <div class="emailEmpty" style="text-align:center">
+//           ยังไม่มี${escapeHtml(label)}<br>
+//           <span style="font-size:11px;color:#94a3b8">กดปุ่มเพิ่มรายการเพื่อเริ่มต้น</span>
+//         </div>
+//       `;
+//       root.appendChild(empty);
+//     }
+
+//     empty.classList.toggle("hidden", count > 0);
+//   }
+
+//   function emptyStateLabelFor(listId) {
+//     const map = {
+//       rptPersonList: "ผู้เกี่ยวข้อง",
+//       rptDamageList: "ความเสียหาย",
+//       rptStepTakenList: "การดำเนินการ",
+//       rptEvidenceList: "หลักฐาน",
+//       rptCauseList: "สาเหตุ",
+//       rptPreventionList: "การป้องกัน",
+//       rptLearningList: "ข้อสรุป/บทเรียน",
+//       rptImageList: "รูปภาพ"
+//     };
+//     return map[listId] || "รายการ";
+//   }
+
+//   function collectCheckedOptionObjects(rootId, inputName) {
+//     const root = $(rootId);
+//     if (!root) return [];
+
+//     return Array.from(root.querySelectorAll(`input[name="${inputName}"]`)).map((el) => ({
+//       value: norm(el.value),
+//       checked: !!el.checked,
+//       otherText: ""
+//     }));
+//   }
+
+//   function collectWhereTypes() {
+//     const root = $("rptWhereTypeSelections");
+//     if (!root) return [];
+
+//     return Array.from(root.querySelectorAll(".rptWhereTypeRow")).map((row) => {
+//       const chk = row.querySelector(".rptWhereTypeChk");
+//       const suffix = row.querySelector(".rptWhereTypeSuffix");
+
+//       return {
+//         value: norm(chk?.value),
+//         checked: !!chk?.checked,
+//         suffixText: !!chk?.checked ? norm(suffix?.value) : ""
+//       };
+//     }).filter((x) => x.value);
+//   }
+
+//   function collectPersons() {
+//     return Array.from(document.querySelectorAll("#rptPersonList .rptRepeatCard")).map((card, idx) => ({
+//       seq: idx + 1,
+//       who: norm(card.querySelector(".rptPersonWho")?.value),
+//       position: norm(card.querySelector(".rptPersonPosition")?.value),
+//       positionOther: norm(card.querySelector(".rptPersonPositionOther")?.value),
+//       department: norm(card.querySelector(".rptPersonDepartment")?.value),
+//       departmentOther: norm(card.querySelector(".rptPersonDepartmentOther")?.value),
+//       remark: norm(card.querySelector(".rptPersonRemark")?.value),
+//       remarkOther: norm(card.querySelector(".rptPersonRemarkOther")?.value)
+//     })).filter((x) =>
+//       x.who || x.position || x.positionOther || x.department || x.departmentOther || x.remark || x.remarkOther
+//     );
+//   }
+
+//   function collectIndexedRows(listId) {
+//     return Array.from(document.querySelectorAll(`#${listId} .rptRepeatCard`)).map((card, idx) => ({
+//       seq: idx + 1,
+//       title: norm(card.querySelector(".rptIdxTitle")?.value),
+//       detail: norm(card.querySelector(".rptIdxDetail")?.value)
+//     })).filter((x) => x.title || x.detail);
+//   }
+
+//   function collectStepTakens() {
+//     return Array.from(document.querySelectorAll("#rptStepTakenList .rptRepeatCard")).map((card, idx) => ({
+//       seq: idx + 1,
+//       actionType: norm(card.querySelector(".rptStepActionType")?.value),
+//       actionTypeOther: norm(card.querySelector(".rptStepActionTypeOther")?.value),
+//       alcoholResult: norm(card.querySelector(".rptAlcoholResult")?.value),
+//       alcoholMgPercent: norm(card.querySelector(".rptAlcoholMgPercent")?.value),
+//       drugConfirmed: norm(card.querySelector(".rptDrugConfirmed")?.value),
+//       drugShortDetail: norm(card.querySelector(".rptDrugShortDetail")?.value),
+//       detail: norm(card.querySelector(".rptStepDetail")?.value)
+//     })).filter((x) =>
+//       x.actionType || x.actionTypeOther || x.alcoholResult || x.alcoholMgPercent || x.drugConfirmed || x.drugShortDetail || x.detail
+//     );
+//   }
+
+//   async function fileToBase64(file) {
+//     return new Promise((resolve, reject) => {
+//       const fr = new FileReader();
+//       fr.onload = () => {
+//         const out = String(fr.result || "");
+//         const i = out.indexOf(",");
+//         resolve(i >= 0 ? out.slice(i + 1) : out);
+//       };
+//       fr.onerror = () => reject(fr.error || new Error("ไม่สามารถอ่านไฟล์ได้"));
+//       fr.readAsDataURL(file);
+//     });
+//   }
+
+//   async function collectImages() {
+//     const rows = Array.from(document.querySelectorAll("#rptImageList .rptRepeatCard"));
+//     const out = [];
+
+//     for (let i = 0; i < rows.length; i++) {
+//       const row = rows[i];
+//       const fileInput = row.querySelector(".rptImageFile");
+//       const edited = fileInput ? (RPT_EDITED_IMAGE_STORE.get(fileInput)?.file || null) : null;
+//       const raw = fileInput?.files && fileInput.files[0] ? fileInput.files[0] : null;
+//       const file = edited || raw;
+//       const caption = norm(row.querySelector(".rptImageCaption")?.value);
+
+//       if (!file && !caption) continue;
+//       if (!file) throw new Error(`รูปภาพรายการที่ ${i + 1} ยังไม่ได้เลือกไฟล์`);
+//       if (!/^image\//i.test(file.type || "")) {
+//         throw new Error(`ไฟล์รูปภาพรายการที่ ${i + 1} ไม่ถูกต้อง`);
+//       }
+
+//       const base64 = await fileToBase64(file);
+//       out.push({
+//         filename: file.name,
+//         mimeType: file.type || "application/octet-stream",
+//         base64,
+//         caption
+//       });
+//     }
+
+//     return out;
+//   }
+
+//   function collectEmailRecipients() {
+//     const checked = Array.from(document.querySelectorAll(".rptEmailChk:checked"))
+//       .map((el) => norm(el.value))
+//       .filter(Boolean);
+
+//     const extra = splitMultiEmails($("rptEmailOther")?.value || "");
+//     return uniqueEmails([].concat(checked).concat(extra));
+//   }
+
+//   function resetDisciplineLookupState() {
+//     state.disciplineLookup = createEmptyDisciplineLookupState();
+
+//     const summary = $("rptDisciplineSummary");
+//     const meta = $("rptDisciplineSummaryMeta");
+
+//     if (summary) summary.classList.add("hidden");
+//     if (meta) meta.textContent = "";
+//   }
+
+//   function resetItemLookupState() {
+//     state.itemLookup = createEmptyItemLookupState();
+//   }
+
+//   async function searchDisciplineByEmployeeCode(employeeCode) {
+//     const code = norm(employeeCode);
+//     if (!code) {
+//       throw new Error("กรุณาระบุรหัสพนักงาน");
+//     }
+
+//     const res = await fetch(apiUrl(`/disciplineLookup?employeeCode=${encodeURIComponent(code)}`), {
+//       method: "GET"
+//     });
+
+//     let json = null;
+//     try {
+//       json = await res.json();
+//     } catch (_) {
+//       throw new Error("ระบบค้นหาวินัยไม่ส่ง JSON กลับมา");
+//     }
+
+//     if (!res.ok || !json || !json.ok) {
+//       throw new Error(json?.error || "ค้นหาการดำเนินการทางวินัยไม่สำเร็จ");
+//     }
+
+//     return json;
+//   }
+
+//   async function searchItemLookup(item) {
+//     const clean = norm(item);
+//     if (!clean) {
+//       throw new Error("กรุณาระบุ Item");
+//     }
+
+//     const res = await fetch(apiUrl(`/itemLookup?item=${encodeURIComponent(clean)}`), {
+//       method: "GET"
+//     });
+
+//     let json = null;
+//     try {
+//       json = await res.json();
+//     } catch (_) {
+//       throw new Error("ระบบค้นหา Item ไม่ส่ง JSON กลับมา");
+//     }
+
+//     if (!res.ok || !json || !json.ok) {
+//       throw new Error(json?.error || "ค้นหารายการสินค้าไม่สำเร็จ");
+//     }
+
+//     state.itemLookup = {
+//       item: norm(json.item),
+//       description: norm(json.description),
+//       displayText: norm(json.displayText),
+//       found: !!json.found,
+//       searched: true
+//     };
+
+//     return json;
+//   }
+
+//  function renderDisciplineLookupTable(records, meta = {}) {
+//   const rows = Array.isArray(records) ? records : [];
+//   const count = Number(meta.count || rows.length || 0);
+//   const employeeCode = escapeHtml(meta.employeeCode || "");
+//   const employeeName = escapeHtml(meta.employeeName || "");
+
+//   if (!rows.length) {
+//     return `
+//       <div class="rptLookupEmpty">
+//         ไม่พบข้อมูลการดำเนินการทางวินัย
+//       </div>
+//     `;
+//   }
+
+//   const tableBody = rows.map((row) => `
+//     <tr>
+//       <td>${escapeHtml(row.violationDate || "")}</td>
+//       <td>${escapeHtml(row.subject || "")}</td>
+//       <td>${escapeHtml(row.docStatus || "")}</td>
+//       <td>${escapeHtml(row.result || "")}</td>
+//       <td>${escapeHtml(row.supervisor || "")}</td>
+//       <td>${escapeHtml(row.actionDate || "")}</td>
+//     </tr>
+//   `).join("");
+
+//   const cardBody = rows.map((row, idx) => `
+//     <div class="rptLookupRecordCard rptLookupRecordCardCompact">
+//       <div class="rptLookupRecordTop">
+//         <div class="rptLookupRecordIndex">รายการ ${idx + 1}</div>
+//         <div class="rptLookupRecordDate">${escapeHtml(row.violationDate || "-")}</div>
+//       </div>
+
+//       <div class="rptLookupRecordGrid rptLookupRecordGridCompact">
+//         <div class="rptLookupRecordItem rptLookupRecordItemWide">
+//           <div class="rptLookupRecordLabel">เรื่อง</div>
+//           <div class="rptLookupRecordValue">${escapeHtml(row.subject || "-")}</div>
+//         </div>
+
+//         <div class="rptLookupRecordItem">
+//           <div class="rptLookupRecordLabel">สถานะเอกสาร</div>
+//           <div class="rptLookupRecordValue">${escapeHtml(row.docStatus || "-")}</div>
+//         </div>
+
+//         <div class="rptLookupRecordItem">
+//           <div class="rptLookupRecordLabel">ผลการดำเนินการ</div>
+//           <div class="rptLookupRecordValue">${escapeHtml(row.result || "-")}</div>
+//         </div>
+
+//         <div class="rptLookupRecordItem">
+//           <div class="rptLookupRecordLabel">ผู้บังคับบัญชา</div>
+//           <div class="rptLookupRecordValue">${escapeHtml(row.supervisor || "-")}</div>
+//         </div>
+
+//         <div class="rptLookupRecordItem">
+//           <div class="rptLookupRecordLabel">วันที่ดำเนินการลงโทษ</div>
+//           <div class="rptLookupRecordValue">${escapeHtml(row.actionDate || "-")}</div>
+//         </div>
+//       </div>
+//     </div>
+//   `).join("");
+
+//   return `
+//     <div class="rptLookupMetaCompact">
+//       <div class="rptLookupMetaBar">
+//         <div class="rptLookupMetaPill">รหัส: ${employeeCode || "-"}</div>
+//         <div class="rptLookupMetaPill">ชื่อ: ${employeeName || "-"}</div>
+//         <div class="rptLookupMetaPill">พบ ${count} รายการ</div>
+//       </div>
+//     </div>
+
+//     <div class="rptLookupResultCard rptLookupResultCardDiscipline">
+//       <div class="rptLookupDesktopView">
+//         <div class="rptLookupTableWrap rptLookupTableWrapCompact">
+//           <table class="rptLookupTable rptLookupTableCompact rptLookupTableDiscipline">
+//             <thead>
+//               <tr>
+//                 <th style="width:100px">วันที่กระทำผิด</th>
+//                 <th style="min-width:320px">เรื่อง</th>
+//                 <th style="width:130px">สถานะเอกสาร</th>
+//                 <th style="width:150px">ผลการดำเนินการ</th>
+//                 <th style="width:130px">ผู้บังคับบัญชา</th>
+//                 <th style="width:130px">วันที่ดำเนินการลงโทษ</th>
+//               </tr>
+//             </thead>
+//             <tbody>${tableBody}</tbody>
+//           </table>
+//         </div>
+//       </div>
+
+//       <div class="rptLookupMobileView">
+//         <div class="rptLookupRecordList rptLookupRecordListCompact">
+//           ${cardBody}
+//         </div>
+//       </div>
+//     </div>
+//   `;
+// }
+ 
+// function renderItemLookupResult(result) {
+//   const item = escapeHtml(result?.item || "");
+//   const description = escapeHtml(result?.description || "");
+//   const displayText = escapeHtml(result?.displayText || "");
+//   const found = !!result?.found;
+
+//   if (!result || !result.item) {
+//     return `
+//       <div class="rptLookupState">
+//         <div class="rptLookupStateInner">
+//           <div class="rptLookupStateIcon">⌕</div>
+//           <div class="rptLookupStateTitle">ยังไม่มีผลการค้นหา</div>
+//           <div class="rptLookupStateText">กรอก Item แล้วกดค้นหา ระบบจะแสดงชื่อสินค้าและข้อความพร้อมใช้งานที่นี่</div>
+//         </div>
+//       </div>
+//     `;
+//   }
+
+//   return `
+//     <div class="rptLookupMetaBar">
+//       <div class="rptLookupMetaPill">${found ? "พบข้อมูลสินค้า" : "ไม่พบในฐานข้อมูล"}</div>
+//       <div class="rptLookupMetaPill">Item: ${item || "-"}</div>
+//     </div>
+
+//     <div class="rptLookupResultCard">
+//       <div class="rptLookupResultGrid rptLookupResultGridCompact">
+//         <div class="rptLookupResultBox">
+//           <div class="rptLookupResultLabel">รหัสสินค้า</div>
+//           <div class="rptLookupResultValue">${item || "-"}</div>
+//         </div>
+
+//         <div class="rptLookupResultBox">
+//           <div class="rptLookupResultLabel">ชื่อสินค้า</div>
+//           <div class="rptLookupResultValue">${description || "-"}</div>
+//         </div>
+//       </div>
+
+//       <div class="rptLookupResultTextBlock">
+//         <div class="rptLookupResultTextTitle">ข้อความพร้อมใช้งาน</div>
+//         <div class="rptLookupResultTextValue">${displayText || "-"}</div>
+//       </div>
+
+//       <div class="rptLookupActionRow rptLookupActionRowCompact">
+//         <button type="button" id="swalRptItemCopyDesc" class="rptLookupBtn ghost">คัดลอกชื่อสินค้า</button>
+//         <button type="button" id="swalRptItemCopyFull" class="rptLookupBtn ghost">คัดลอกเต็ม</button>
+//         <button type="button" id="swalRptItemToSubject" class="rptLookupBtn primary">ใส่ในช่องเรื่อง</button>
+//         <button type="button" id="swalRptItemToWhat" class="rptLookupBtn primary">ใส่ในเหตุที่เกิด</button>
+//       </div>
+//     </div>
+//   `;
+// }
+  
+//   function attachDisciplineLookupResult(result) {
+//     const records = Array.isArray(result?.records) ? result.records : [];
+//     const employeeCode = norm(result?.employeeCode || result?.normalizedEmployeeCode || "");
+//     const employeeName = norm(result?.employeeName || (records[0]?.employeeName || ""));
+//     const normalizedEmployeeCode = norm(result?.normalizedEmployeeCode || "");
+//     const matchCount = Number(result?.count || records.length || 0);
+
+//     state.disciplineLookup = {
+//       employeeCode,
+//       employeeName,
+//       normalizedEmployeeCode,
+//       matchCount,
+//       records,
+//       attached: true,
+//       searched: true
+//     };
+
+//     updateDisciplineSummaryCard();
+//   }
+
+//   function updateDisciplineSummaryCard() {
+//     const box = $("rptDisciplineSummary");
+//     const meta = $("rptDisciplineSummaryMeta");
+//     if (!box || !meta) return;
+
+//     const d = state.disciplineLookup || createEmptyDisciplineLookupState();
+
+//     if (!d.attached || !d.records.length) {
+//       box.classList.add("hidden");
+//       meta.textContent = "";
+//       return;
+//     }
+
+//     meta.textContent = `รหัส ${d.employeeCode || "-"} • ${d.employeeName || "-"} • พบ ${d.matchCount || d.records.length} รายการ`;
+//     box.classList.remove("hidden");
+//   }
+
+//   function copyTextToClipboard(text, successMessage) {
+//     const value = String(text || "").trim();
+//     if (!value) {
+//       return Swal.fire({
+//         icon: "warning",
+//         title: "ไม่มีข้อมูลให้คัดลอก",
+//         text: "กรุณาค้นหา Item ก่อน"
+//       });
+//     }
+
+//     const done = () => Swal.fire({
+//       icon: "success",
+//       title: "คัดลอกแล้ว",
+//       text: successMessage || "คัดลอกข้อมูลเรียบร้อย",
+//       timer: 1200,
+//       showConfirmButton: false
+//     });
+
+//     if (navigator.clipboard && navigator.clipboard.writeText) {
+//       return navigator.clipboard.writeText(value).then(done).catch(() => fallbackCopy(value, done));
+//     }
+
+//     return fallbackCopy(value, done);
+//   }
+
+//   function fallbackCopy(text, onDone) {
+//     const ta = document.createElement("textarea");
+//     ta.value = text;
+//     ta.setAttribute("readonly", "readonly");
+//     ta.style.position = "fixed";
+//     ta.style.left = "-9999px";
+//     document.body.appendChild(ta);
+//     ta.select();
+//     try { document.execCommand("copy"); } catch (_) {}
+//     document.body.removeChild(ta);
+//     if (typeof onDone === "function") onDone();
+//   }
+
+//   function insertItemTextToField(fieldId, text, mode = "replace") {
+//     const el = $(fieldId);
+//     const value = String(text || "").trim();
+
+//     if (!el) {
+//       return Swal.fire({
+//         icon: "warning",
+//         title: "ไม่พบช่องข้อมูล",
+//         text: `ไม่พบฟิลด์ ${fieldId}`
+//       });
+//     }
+
+//     if (!value) {
+//       return Swal.fire({
+//         icon: "warning",
+//         title: "ไม่มีข้อมูลให้ใส่",
+//         text: "กรุณาค้นหา Item ก่อน"
+//       });
+//     }
+
+//     if (mode === "append" && norm(el.value)) {
+//       el.value = `${norm(el.value)} ${value}`;
+//     } else {
+//       el.value = value;
+//     }
+
+//     el.dispatchEvent(new Event("input", { bubbles: true }));
+//     el.dispatchEvent(new Event("change", { bubbles: true }));
+
+//     return Swal.fire({
+//       icon: "success",
+//       title: "ใส่ข้อมูลแล้ว",
+//       text: "นำข้อมูลสินค้าไปใส่ในรายงานเรียบร้อย",
+//       timer: 1200,
+//       showConfirmButton: false
+//     });
+//   }
+
+// async function openDisciplineLookupPopup() {
+//   const initialCode = state.disciplineLookup?.employeeCode || "";
+
+//   await Swal.fire({
+//     customClass: { popup: "rptLookupPopup" },
+//     confirmButtonText: "ปิด",
+//     html: `
+//       <div class="rptLookupModal">
+//         <div class="rptLookupModalHead">
+//           <div class="rptLookupModalBadge">DISCIPLINE LOOKUP</div>
+//           <div class="rptLookupModalTitle">ค้นหาการดำเนินการทางวินัย</div>
+//           <div class="rptLookupModalSub">ค้นหาประวัติการดำเนินการทางวินัยจากรหัสพนักงาน และเลือกแนบข้อมูลอ้างอิงนี้เข้ากับรายงานได้ทันที</div>
+//         </div>
+
+//         <div class="rptLookupToolbar rptLookupToolbarCompact">
+//           <div class="field">
+//             <label for="swalRptDisciplineEmployeeCode">รหัสพนักงาน</label>
+//             <input id="swalRptDisciplineEmployeeCode" class="rptLookupInput" value="${escapeHtml(initialCode)}" placeholder="กรอกรหัสพนักงาน">
+//           </div>
+
+//           <div class="rptLookupToolbarActions rptLookupToolbarActionsCompact">
+//             <button type="button" id="swalRptDisciplineSearch" class="rptLookupBtn primary">ค้นหา</button>
+//             <button type="button" id="swalRptDisciplineUse" class="rptLookupBtn ghost" disabled>ใช้ข้อมูลนี้กับรายงาน</button>
+//           </div>
+//         </div>
+
+//         <div class="rptLookupBody">
+//           <div id="swalRptDisciplineResult" class="rptLookupResult">
+//             <div class="rptLookupState">
+//               <div class="rptLookupStateInner">
+//                 <div class="rptLookupStateIcon">⌕</div>
+//                 <div class="rptLookupStateTitle">พร้อมค้นหาข้อมูลวินัย</div>
+//                 <div class="rptLookupStateText">กรอกรหัสพนักงานแล้วกดค้นหา ระบบจะแสดงประวัติการดำเนินการทางวินัยในพื้นที่ด้านล่าง</div>
+//               </div>
+//             </div>
+//           </div>
+//         </div>
+//       </div>
+//     `,
+//     didOpen: () => {
+//       const input = document.getElementById("swalRptDisciplineEmployeeCode");
+//       const btnSearch = document.getElementById("swalRptDisciplineSearch");
+//       const btnUse = document.getElementById("swalRptDisciplineUse");
+//       const resultBox = document.getElementById("swalRptDisciplineResult");
+
+//       let latestResult = null;
+
+//       const runSearch = async () => {
+//         const employeeCode = norm(input?.value || "");
+//         resultBox.innerHTML = `
+//           <div class="rptLookupState">
+//             <div class="rptLookupStateInner">
+//               <div class="rptLookupStateIcon">…</div>
+//               <div class="rptLookupStateTitle">กำลังค้นหา</div>
+//               <div class="rptLookupStateText">ระบบกำลังค้นหาประวัติการดำเนินการทางวินัย โปรดรอสักครู่</div>
+//             </div>
+//           </div>
+//         `;
+//         btnUse.disabled = true;
+//         latestResult = null;
+
+//         try {
+//           const json = await searchDisciplineByEmployeeCode(employeeCode);
+//           latestResult = json;
+
+//           const count = Number(json.count || (json.records || []).length || 0);
+//           resultBox.innerHTML = renderDisciplineLookupTable(json.records || [], {
+//             count,
+//             employeeCode: json.employeeCode || json.normalizedEmployeeCode || "",
+//             employeeName: json.employeeName || ""
+//           });
+
+//           btnUse.disabled = !(json.records && json.records.length);
+//         } catch (err) {
+//           resultBox.innerHTML = `<div class="rptLookupEmpty">${escapeHtml(err.message || String(err))}</div>`;
+//         }
+//       };
+
+//       btnSearch?.addEventListener("click", runSearch);
+//       input?.addEventListener("keydown", (ev) => {
+//         if (ev.key === "Enter") {
+//           ev.preventDefault();
+//           runSearch();
+//         }
+//       });
+
+//       btnUse?.addEventListener("click", () => {
+//         if (!latestResult || !latestResult.records || !latestResult.records.length) return;
+//         attachDisciplineLookupResult(latestResult);
+//         Swal.close();
+//       });
+//     }
+//   });
+// }
+       
+
+  
+// async function openItemLookupPopup() {
+//   const initialItem = state.itemLookup?.item || "";
+
+//   await Swal.fire({
+//     customClass: { popup: "rptLookupPopup" },
+//     confirmButtonText: "ปิด",
+//     html: `
+//       <div class="rptLookupModal">
+//         <div class="rptLookupModalHead">
+//           <div class="rptLookupModalBadge">ITEM LOOKUP</div>
+//           <div class="rptLookupModalTitle">ค้นหารายการสินค้า</div>
+//           <div class="rptLookupModalSub">ค้นหา Item เพื่อคัดลอกชื่อสินค้า หรือแทรกข้อความลงในหัวข้อเรื่องและรายละเอียดเหตุการณ์ได้ทันที</div>
+//         </div>
+
+//         <div class="rptLookupToolbar rptLookupToolbarCompact">
+//           <div class="field">
+//             <label for="swalRptItemCode">Item</label>
+//             <input id="swalRptItemCode" class="rptLookupInput" value="${escapeHtml(initialItem)}" placeholder="กรอก Item เช่น 170643654">
+//           </div>
+
+//           <div class="rptLookupToolbarActions rptLookupToolbarActionsCompact">
+//             <button type="button" id="swalRptItemSearch" class="rptLookupBtn primary">ค้นหา</button>
+//           </div>
+//         </div>
+
+//         <div class="rptLookupBody">
+//           <div id="swalRptItemResult" class="rptLookupResult">
+//             <div class="rptLookupState">
+//               <div class="rptLookupStateInner">
+//                 <div class="rptLookupStateIcon">⌕</div>
+//                 <div class="rptLookupStateTitle">พร้อมค้นหา Item</div>
+//                 <div class="rptLookupStateText">กรอกหมายเลขสินค้าแล้วกดค้นหา ระบบจะแสดงชื่อสินค้าและข้อความพร้อมใช้งานในพื้นที่ด้านล่าง</div>
+//               </div>
+//             </div>
+//           </div>
+//         </div>
+//       </div>
+//     `,
+//     didOpen: () => {
+//       const input = document.getElementById("swalRptItemCode");
+//       const btnSearch = document.getElementById("swalRptItemSearch");
+//       const resultBox = document.getElementById("swalRptItemResult");
+
+//       const bindResultActions = (result) => {
+//         document.getElementById("swalRptItemCopyDesc")?.addEventListener("click", () => {
+//           copyTextToClipboard(result.description || "", "คัดลอกชื่อสินค้าเรียบร้อย");
+//         });
+
+//         document.getElementById("swalRptItemCopyFull")?.addEventListener("click", () => {
+//           copyTextToClipboard(result.displayText || "", "คัดลอก Item และชื่อสินค้าเรียบร้อย");
+//         });
+
+//         document.getElementById("swalRptItemToSubject")?.addEventListener("click", () => {
+//           insertItemTextToField("rptSubject", result.displayText || result.description || "", "replace");
+//         });
+
+//         document.getElementById("swalRptItemToWhat")?.addEventListener("click", () => {
+//           insertItemTextToField("rptWhatHappen", result.displayText || result.description || "", "append");
+//         });
+//       };
+
+//       const runSearch = async () => {
+//         const item = norm(input?.value || "");
+//         resultBox.innerHTML = `
+//           <div class="rptLookupState">
+//             <div class="rptLookupStateInner">
+//               <div class="rptLookupStateIcon">…</div>
+//               <div class="rptLookupStateTitle">กำลังค้นหา</div>
+//               <div class="rptLookupStateText">ระบบกำลังค้นหารายการสินค้า โปรดรอสักครู่</div>
+//             </div>
+//           </div>
+//         `;
+
+//         try {
+//           const json = await searchItemLookup(item);
+//           resultBox.innerHTML = renderItemLookupResult(json);
+//           bindResultActions(json);
+//         } catch (err) {
+//           resultBox.innerHTML = `<div class="rptLookupEmpty">${escapeHtml(err.message || String(err))}</div>`;
+//         }
+//       };
+
+//       btnSearch?.addEventListener("click", runSearch);
+//       input?.addEventListener("keydown", (ev) => {
+//         if (ev.key === "Enter") {
+//           ev.preventDefault();
+//           runSearch();
+//         }
+//       });
+
+//       if (state.itemLookup?.searched) {
+//         const existing = {
+//           item: state.itemLookup.item,
+//           description: state.itemLookup.description,
+//           displayText: state.itemLookup.displayText,
+//           found: state.itemLookup.found
+//         };
+//         resultBox.innerHTML = renderItemLookupResult(existing);
+//         bindResultActions(existing);
+//       }
+//     }
+//   });
+// }
+//   async function openAttachedDisciplinePreview() {
+//   const d = state.disciplineLookup || createEmptyDisciplineLookupState();
+//   if (!d.attached || !d.records.length) {
+//     await Swal.fire({
+//       icon: "info",
+//       title: "ยังไม่มีข้อมูล",
+//       text: "ยังไม่ได้แนบข้อมูลวินัยกับรายงานนี้"
+//     });
+//     return;
+//   }
+
+//   await Swal.fire({
+//     title: "ข้อมูลวินัยที่แนบกับรายงาน",
+//     width: 1280,
+//     confirmButtonText: "ปิด",
+//     customClass: {
+//       popup: "rptLookupPopup rptLookupPreviewPopup",
+//       title: "rptLookupPreviewTitle",
+//       htmlContainer: "rptLookupPreviewHtml"
+//     },
+//     html: `
+//       <div class="rptLookupPreviewWrap">
+//         ${renderDisciplineLookupTable(d.records, {
+//           count: d.matchCount,
+//           employeeCode: d.employeeCode,
+//           employeeName: d.employeeName
+//         })}
+//       </div>
+//     `
+//   });
+// }
+//   function clearDisciplineLookup() {
+//     resetDisciplineLookupState();
+//   }
+
+//   function bindLookupButtons() {
+//     if (state.lookupButtonsBound) return;
+//     state.lookupButtonsBound = true;
+
+//     $("btnRptDisciplineLookup")?.addEventListener("click", openDisciplineLookupPopup);
+//     $("btnRptDisciplineView")?.addEventListener("click", openAttachedDisciplinePreview);
+//     $("btnRptDisciplineClear")?.addEventListener("click", clearDisciplineLookup);
+//     $("btnRptItemLookup")?.addEventListener("click", openItemLookupPopup);
+//   }
+
+//   function appendDisciplinePayloadToReport500Payload(payload) {
+//     const d = state.disciplineLookup || createEmptyDisciplineLookupState();
+
+//     payload.disciplineEmployeeCode = d.attached ? (d.employeeCode || "") : "";
+//     payload.disciplineEmployeeName = d.attached ? (d.employeeName || "") : "";
+//     payload.disciplineMatchCount = d.attached ? Number(d.matchCount || d.records.length || 0) : 0;
+//     payload.disciplineReferenceJson = d.attached ? JSON.stringify(d.records || []) : "";
+
+//     return payload;
+//   }
+
+//   function collectPayload() {
+//     const auth = getAuth();
+
+//     const payload = {
+//       refNo: getRefNo(),
+//       lps: norm(auth.name),
+
+//       reportedBy: norm($("rptReportedBy")?.value) || norm(auth.name),
+//       reporterPosition: norm($("rptReporterPosition")?.value),
+//       reporterPositionOther: norm($("rptReporterPositionOther")?.value),
+//       reportDate: norm($("rptReportDate")?.value),
+
+//       branch: norm($("rptBranch")?.value),
+//       branchOther: norm($("rptBranchOther")?.value),
+//       subject: norm($("rptSubject")?.value),
+
+//       reportTypes: collectCheckedOptionObjects("rptReportTypes", "rptReportTypes"),
+//       urgencyTypes: collectCheckedOptionObjects("rptUrgencyTypes", "rptUrgencyTypes"),
+//       notifyTo: collectCheckedOptionObjects("rptNotifyTo", "rptNotifyTo"),
+
+//       incidentDate: norm($("rptIncidentDate")?.value),
+//       incidentTime: norm($("rptIncidentTime")?.value),
+//       whatHappen: norm($("rptWhatHappen")?.value),
+
+//       whereDidItHappen: norm($("rptWhereDidItHappen")?.value),
+//       whereTypeSelections: collectWhereTypes(),
+//       area: norm($("rptArea")?.value),
+
+//       involvedPersons: collectPersons(),
+
+//       damages: collectIndexedRows("rptDamageList"),
+//       stepTakens: collectStepTakens(),
+//       offenderStatement: norm($("rptOffenderStatement")?.value),
+//       evidences: collectIndexedRows("rptEvidenceList"),
+//       summaryText: norm($("rptSummaryText")?.value),
+//       causes: collectIndexedRows("rptCauseList"),
+//       preventions: collectIndexedRows("rptPreventionList"),
+//       learnings: collectIndexedRows("rptLearningList"),
+
+//       emailRecipients: Array.from(document.querySelectorAll(".rptEmailChk:checked"))
+//         .map((el) => norm(el.value))
+//         .filter(Boolean),
+//       emailOther: norm($("rptEmailOther")?.value)
+//     };
+
+//     appendDisciplinePayloadToReport500Payload(payload);
+//     validatePayload(payload);
+//     return payload;
+//   }
+
+//   function validatePayload(p) {
+//     if (!norm(p.refNo)) throw new Error("กรุณากรอก Ref No.");
+//     if (!norm(p.branch)) throw new Error("กรุณาเลือกสาขา");
+//     if (isOther(p.branch) && !norm(p.branchOther)) throw new Error("กรุณาระบุสาขาอื่นๆ");
+//     if (!norm(p.subject)) throw new Error("กรุณากรอกเรื่อง");
+
+//     if (!(p.reportTypes || []).some((x) => x.checked)) throw new Error("กรุณาเลือกประเภทรายงานอย่างน้อย 1 รายการ");
+//     if (!(p.urgencyTypes || []).some((x) => x.checked)) throw new Error("กรุณาเลือกระดับความเร่งด่วนอย่างน้อย 1 รายการ");
+//     if (!(p.notifyTo || []).some((x) => x.checked)) throw new Error("กรุณาเลือกผู้รับทราบอย่างน้อย 1 รายการ");
+
+//     if (!norm(p.incidentDate)) throw new Error("กรุณาเลือกวันที่เกิดเหตุ");
+//     if (!norm(p.whereDidItHappen)) throw new Error("กรุณาเลือกสถานที่เกิดเหตุ");
+//     if (!norm(p.whatHappen)) throw new Error("กรุณากรอกรายละเอียดเหตุการณ์");
+//     if (!norm(p.reportedBy)) throw new Error("ไม่พบชื่อผู้รายงาน");
+//     if (!norm(p.reportDate)) throw new Error("กรุณาเลือกวันที่รายงาน");
+
+//     (p.whereTypeSelections || []).forEach((x) => {
+//       const isStore = /store$/i.test(norm(x.value));
+//       if (x.checked && isStore && !norm(x.suffixText)) {
+//         throw new Error(`กรุณากรอกข้อมูลต่อท้าย ${x.value}`);
+//       }
+//     });
+
+//     (p.involvedPersons || []).forEach((x, idx) => {
+//       if (isOther(x.position) && !norm(x.positionOther)) {
+//         throw new Error(`ผู้เกี่ยวข้องลำดับ ${idx + 1}: กรุณาระบุ Position อื่นๆ`);
+//       }
+//       if (isOther(x.department) && !norm(x.departmentOther)) {
+//         throw new Error(`ผู้เกี่ยวข้องลำดับ ${idx + 1}: กรุณาระบุ Department อื่นๆ`);
+//       }
+//       if (isOther(x.remark) && !norm(x.remarkOther)) {
+//         throw new Error(`ผู้เกี่ยวข้องลำดับ ${idx + 1}: กรุณาระบุ Remark อื่นๆ`);
+//       }
+//     });
+
+//     (p.stepTakens || []).forEach((x, idx) => {
+//       if (x.actionType === "ตรวจวัดปริมาณแอลกอฮอล์") {
+//         if (!norm(x.alcoholResult)) {
+//           throw new Error(`การดำเนินการลำดับ ${idx + 1}: กรุณาเลือกผลการตรวจแอลกอฮอล์`);
+//         }
+//         if (norm(x.alcoholResult) === "พบ" && !norm(x.alcoholMgPercent)) {
+//           throw new Error(`การดำเนินการลำดับ ${idx + 1}: กรุณากรอกค่า Mg%`);
+//         }
+//       }
+//       if (x.actionType === "ตรวจสารเสพติดเมทแอเฟตามีน") {
+//         if (!norm(x.drugConfirmed)) {
+//           throw new Error(`การดำเนินการลำดับ ${idx + 1}: กรุณากรอกผลยืนยันการเสพ`);
+//         }
+//       }
+//       if (isOther(x.actionType) && !norm(x.actionTypeOther)) {
+//         throw new Error(`การดำเนินการลำดับ ${idx + 1}: กรุณาระบุการดำเนินการอื่นๆ`);
+//       }
+//     });
+
+//     if (isOther(p.reporterPosition) && !norm(p.reporterPositionOther)) {
+//       throw new Error("กรุณาระบุตำแหน่งผู้รายงานอื่นๆ");
+//     }
+//   }
+
+//   function payloadSummaryHtml(payload, images) {
+//     const selectedEmails = collectEmailRecipients();
+
+//     return `
+//       <div class="swalSummary">
+//         <div class="swalHero">
+//           <div class="swalHeroTitle">ตรวจสอบข้อมูลก่อนบันทึก</div>
+//           <div class="swalHeroSub">Report</div>
+//         </div>
+
+//         <div class="swalSection">
+//           <div class="swalSectionTitle">ข้อมูลหลัก</div>
+//           <div class="swalKvGrid">
+//             <div class="swalKv"><div class="swalKvLabel">Ref No.</div><div class="swalKvValue">${escapeHtml(payload.refNo)}</div></div>
+//             <div class="swalKv"><div class="swalKvLabel">สาขา</div><div class="swalKvValue">${escapeHtml(payload.branch)}${payload.branchOther ? " (" + escapeHtml(payload.branchOther) + ")" : ""}</div></div>
+//             <div class="swalKv"><div class="swalKvLabel">เรื่อง</div><div class="swalKvValue">${escapeHtml(payload.subject || "-")}</div></div>
+//             <div class="swalKv"><div class="swalKvLabel">Reported by</div><div class="swalKvValue">${escapeHtml(payload.reportedBy || "-")}</div></div>
+//           </div>
+//         </div>
+
+//         <div class="swalSection">
+//           <div class="swalSectionTitle">เหตุการณ์</div>
+//           <div class="swalKvGrid">
+//             <div class="swalKv"><div class="swalKvLabel">วันที่</div><div class="swalKvValue">${escapeHtml(payload.incidentDate || "-")}</div></div>
+//             <div class="swalKv"><div class="swalKvLabel">เวลา</div><div class="swalKvValue">${escapeHtml(payload.incidentTime || "-")}</div></div>
+//             <div class="swalKv"><div class="swalKvLabel">สถานที่หลัก</div><div class="swalKvValue">${escapeHtml(payload.whereDidItHappen || "-")}</div></div>
+//             <div class="swalKv"><div class="swalKvLabel">Area</div><div class="swalKvValue">${escapeHtml(payload.area || "-")}</div></div>
+//           </div>
+//         </div>
+
+//         <div class="swalSection">
+//           <div class="swalSectionTitle">สรุปจำนวนรายการ</div>
+//           <div class="swalKvGrid">
+//             <div class="swalKv"><div class="swalKvLabel">ผู้เกี่ยวข้อง</div><div class="swalKvValue">${payload.involvedPersons.length}</div></div>
+//             <div class="swalKv"><div class="swalKvLabel">ความเสียหาย</div><div class="swalKvValue">${payload.damages.length}</div></div>
+//             <div class="swalKv"><div class="swalKvLabel">การดำเนินการ</div><div class="swalKvValue">${payload.stepTakens.length}</div></div>
+//             <div class="swalKv"><div class="swalKvLabel">หลักฐาน</div><div class="swalKvValue">${payload.evidences.length}</div></div>
+//             <div class="swalKv"><div class="swalKvLabel">สาเหตุ</div><div class="swalKvValue">${payload.causes.length}</div></div>
+//             <div class="swalKv"><div class="swalKvLabel">การป้องกัน</div><div class="swalKvValue">${payload.preventions.length}</div></div>
+//             <div class="swalKv"><div class="swalKvLabel">ข้อสรุป/บทเรียน</div><div class="swalKvValue">${payload.learnings.length}</div></div>
+//             <div class="swalKv"><div class="swalKvLabel">รูปภาพ</div><div class="swalKvValue">${images.length}</div></div>
+//           </div>
+//         </div>
+
+//         <div class="swalSection">
+//           <div class="swalSectionTitle">อีเมลปลายทาง</div>
+//           <div class="swalKvValue">${selectedEmails.length} รายการ</div>
+//         </div>
+//       </div>
+//     `;
+//   }
+
+//   async function preview() {
+//     try {
+//       const payload = collectPayload();
+//       const images = await collectImages();
+
+//       await Swal.fire({
+//         title: "สรุปก่อนบันทึก",
+//         html: payloadSummaryHtml(payload, images),
+//         width: 920,
+//         confirmButtonText: "ปิด"
+//       });
+//     } catch (err) {
+//       Swal.fire({
+//         icon: "warning",
+//         title: "ตรวจสอบข้อมูลไม่ผ่าน",
+//         text: err?.message || String(err)
+//       });
+//     }
+//   }
+
+//   async function submit() {
+//     const auth = getAuth();
+//     if (!norm(auth.pass)) {
+//       Swal.fire({
+//         icon: "warning",
+//         title: "ยังไม่ได้เข้าสู่ระบบ",
+//         text: "กรุณาเข้าสู่ระบบก่อนบันทึกข้อมูล"
+//       });
+//       return;
+//     }
+
+//     try {
+//       const payload = collectPayload();
+//       const images = await collectImages();
+
+//       const ok = await Swal.fire({
+//         icon: "question",
+//         title: "ยืนยันการบันทึก Report",
+//         html: payloadSummaryHtml(payload, images),
+//         width: 920,
+//         showCancelButton: true,
+//         confirmButtonText: "ยืนยันบันทึก",
+//         cancelButtonText: "ยกเลิก"
+//       });
+
+//       if (!ok.isConfirmed) return;
+
+//       const Progress = window.ProgressUI;
+//       Progress?.show(
+//         "กำลังบันทึก Report",
+//         "ระบบกำลังตรวจสอบข้อมูล อัปโหลดรูป สร้าง PDF และส่งอีเมล"
+//       );
+
+//       Progress?.activateOnly("validate", 8, "กำลังตรวจสอบข้อมูลรายงาน");
+//       await (window.sleepMs ? window.sleepMs(160) : new Promise((r) => setTimeout(r, 160)));
+//       Progress?.markDone("validate", 14, "ตรวจสอบข้อมูลเรียบร้อย");
+
+//       Progress?.activateOnly("upload", 18, "กำลังเตรียมรูปภาพสำหรับรายงาน");
+//       const uploadProg = typeof window.estimateUploadProgressByFiles === "function"
+//         ? window.estimateUploadProgressByFiles(Math.max(images.length, 1), 18, 42)
+//         : {
+//             next: (currentIndex) => {
+//               const count = Math.max(1, images.length || 1);
+//               const ratio = Math.max(0, Math.min(1, currentIndex / count));
+//               return Math.round(18 + ((42 - 18) * ratio));
+//             }
+//           };
+
+//       images.forEach((_, idx) => {
+//         Progress?.setProgress(uploadProg.next(idx + 1), `เตรียมรูปภาพ ${idx + 1}/${images.length || 1}`);
+//       });
+
+//       await (window.sleepMs ? window.sleepMs(120) : new Promise((r) => setTimeout(r, 120)));
+//       Progress?.markDone("upload", 44, `เตรียมรูปภาพเรียบร้อย (${images.length} รูป)`);
+
+//       Progress?.activateOnly("save", 56, "กำลังบันทึกข้อมูล Report");
+
+//       const res = await fetch(apiUrl("/report500/submit"), {
+//         method: "POST",
+//         headers: { "Content-Type": "application/json" },
+//         body: JSON.stringify({
+//           pass: auth.pass,
+//           payload,
+//           files: images
+//         })
+//       });
+
+//       const text = await res.text();
+//       let json = {};
+//       try {
+//         json = JSON.parse(text);
+//       } catch (_) {
+//         throw new Error("Backend ตอบกลับไม่ใช่ JSON");
+//       }
+
+//       if (!res.ok || !json.ok) {
+//         throw new Error(json?.error || `บันทึกข้อมูลไม่สำเร็จ (HTTP ${res.status})`);
+//       }
+
+//       Progress?.markDone("save", 72, "บันทึกข้อมูลลงระบบเรียบร้อย");
+
+//       Progress?.activateOnly("pdf", 84, "กำลังสร้างไฟล์ PDF");
+//       await (window.sleepMs ? window.sleepMs(180) : new Promise((r) => setTimeout(r, 180)));
+
+//       if (json.pdfFileId || json.pdfUrl) {
+//         const sizeText = json.pdfSizeText ? ` (${json.pdfSizeText})` : "";
+//         Progress?.markDone("pdf", 93, `สร้างไฟล์ PDF เรียบร้อย${sizeText}`);
+//       } else {
+//         Progress?.markDone("pdf", 93, "สร้างไฟล์ PDF เรียบร้อย");
+//       }
+
+//       Progress?.activateOnly("email", 97, "กำลังตรวจสอบผลการส่งอีเมล");
+//       await (window.sleepMs ? window.sleepMs(160) : new Promise((r) => setTimeout(r, 160)));
+
+//       const emailResult = json.emailResult || {};
+//       const emailOk = !!emailResult.ok;
+//       const emailSkipped = !!emailResult.skipped;
+//       const attachmentMode = String(emailResult.attachmentMode || "").trim();
+//       const emailErr = String(emailResult.error || "").trim();
+
+//       let emailText = "ส่งอีเมลเรียบร้อย";
+//       if (attachmentMode === "LINK_ONLY") emailText = "ส่งอีเมลพร้อมลิงก์ PDF";
+//       if (attachmentMode === "ATTACHED") emailText = "ส่งอีเมลพร้อมไฟล์ PDF";
+
+//       if (emailOk) {
+//         Progress?.markDone("email", 100, emailText, emailText);
+//         Progress?.success("บันทึกสำเร็จ", "รายงานถูกบันทึกเรียบร้อยแล้ว");
+//       } else if (emailSkipped) {
+//         Progress?.markDone("email", 100, "ไม่ได้เลือกส่งอีเมล", "ข้าม");
+//         Progress?.success("บันทึกสำเร็จ", "บันทึกข้อมูลและสร้าง PDF เรียบร้อยแล้ว");
+//       } else {
+//         Progress?.markError("email", "ส่งอีเมลไม่สำเร็จ", 100);
+//         Progress?.success("บันทึกสำเร็จ", "ข้อมูลและ PDF สำเร็จแล้ว แต่การส่งอีเมลไม่สำเร็จ");
+//         Progress?.setHint(emailErr || "กรุณาตรวจสอบสิทธิ์เมลหรือขนาดไฟล์ PDF");
+//       }
+
+//       Progress?.hide(120);
+
+//       await Swal.fire({
+//         icon: (emailOk || emailSkipped) ? "success" : "warning",
+//         title: (emailOk || emailSkipped) ? "บันทึก Report สำเร็จ" : "บันทึก Report สำเร็จบางส่วน",
+//         showConfirmButton: false,
+//         width: 820,
+//         html: `
+//           <div class="swalSummary">
+//             <div class="swalHero">
+//               <div class="swalHeroTitle">บันทึกรายงานเรียบร้อยแล้ว</div>
+//               <div class="swalHeroSub">ระบบจัดเก็บข้อมูล รูปภาพ และไฟล์ PDF เรียบร้อย</div>
+//               <div class="swalPillRow">
+//                 <div class="swalPill primary">Ref: ${escapeHtml(json.refNo || payload.refNo || "-")}</div>
+//                 <div class="swalPill">รูป ${Number(json.imageCount || images.length || 0)}</div>
+//                 <div class="swalPill">${emailOk ? "ส่งอีเมลสำเร็จ" : emailSkipped ? "ไม่ได้ส่งอีเมล" : "อีเมลไม่สำเร็จ"}</div>
+//               </div>
+//             </div>
+
+//             <div class="swalSection">
+//               <div class="swalSectionTitle">สรุปผลการบันทึก</div>
+//               <div class="swalKvGrid">
+//                 <div class="swalKv">
+//                   <div class="swalKvLabel">Ref No.</div>
+//                   <div class="swalKvValue">${escapeHtml(json.refNo || payload.refNo || "-")}</div>
+//                 </div>
+//                 <div class="swalKv">
+//                   <div class="swalKvLabel">เรื่อง</div>
+//                   <div class="swalKvValue">${escapeHtml(payload.subject || "-")}</div>
+//                 </div>
+//                 <div class="swalKv">
+//                   <div class="swalKvLabel">รูปภาพ</div>
+//                   <div class="swalKvValue">${Number(json.imageCount || images.length || 0)} รูป</div>
+//                 </div>
+//                 <div class="swalKv">
+//                   <div class="swalKvLabel">PDF</div>
+//                   <div class="swalKvValue">${json.pdfUrl ? "สร้างแล้ว" : "ไม่พบลิงก์ PDF"}</div>
+//                 </div>
+//                 <div class="swalKv">
+//                   <div class="swalKvLabel">การส่งอีเมล</div>
+//                   <div class="swalKvValue">${
+//                     emailOk ? emailText :
+//                     emailSkipped ? "ไม่ได้เลือกผู้รับอีเมล" :
+//                     `ไม่สำเร็จ${emailErr ? ` - ${escapeHtml(emailErr)}` : ""}`
+//                   }</div>
+//                 </div>
+//               </div>
+//             </div>
+
+//             <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:18px">
+//               ${
+//                 json.pdfUrl
+//                   ? `<button type="button" id="btnRptOpenPdfAfterSave" class="swal2-confirm swal2-styled" style="background:#2563eb">เปิด PDF</button>`
+//                   : ``
+//               }
+//               <button type="button" id="btnRptCloseAfterSave" class="swal2-cancel swal2-styled" style="display:inline-block;background:#64748b">ปิดหน้าต่าง</button>
+//             </div>
+//           </div>
+//         `,
+//         didOpen: () => {
+//           const btnOpen = document.getElementById("btnRptOpenPdfAfterSave");
+//           const btnClose = document.getElementById("btnRptCloseAfterSave");
+
+//           if (btnOpen && json.pdfUrl) {
+//             btnOpen.addEventListener("click", () => {
+//               window.open(json.pdfUrl, "_blank", "noopener,noreferrer");
+//               Swal.close();
+//             });
+//           }
+
+//           if (btnClose) {
+//             btnClose.addEventListener("click", () => {
+//               Swal.close();
+//             });
+//           }
+//         },
+//         willClose: () => {
+//           resetForm();
+//         }
+//       });
+
+//     } catch (err) {
+//       console.error(err);
+//       window.ProgressUI?.markError("save", err?.message || "เกิดข้อผิดพลาด", 56);
+//       window.ProgressUI?.setHint("กรุณาตรวจสอบข้อมูล เครือข่าย หรือ backend แล้วลองใหม่อีกครั้ง");
+
+//       await Swal.fire({
+//         icon: "error",
+//         title: "บันทึก Report ไม่สำเร็จ",
+//         text: err?.message || String(err)
+//       });
+
+//       window.ProgressUI?.hide(180);
+//     }
+//   }
+
+//   function resetForm() {
+//     [
+//       "rptRefNo",
+//       "rptBranchOther",
+//       "rptSubject",
+//       "rptIncidentTime",
+//       "rptWhatHappen",
+//       "rptArea",
+//       "rptOffenderStatement",
+//       "rptSummaryText",
+//       "rptReporterPositionOther",
+//       "rptEmailOther"
+//     ].forEach((id) => {
+//       const el = $(id);
+//       if (el) el.value = "";
+//     });
+
+//     ["rptBranch", "rptWhereDidItHappen", "rptReporterPosition"].forEach((id) => {
+//       const el = $(id);
+//       if (el) el.value = "";
+//     });
+
+//     if ($("rptIncidentDate")) $("rptIncidentDate").value = todayIsoLocal();
+//     if ($("rptReportDate")) $("rptReportDate").value = todayIsoLocal();
+
+//     setRefYear();
+//     setReadonlyValue("rptReportedBy", norm(getAuth().name));
+
+//     document.querySelectorAll('.rptEmailChk, #rptReportTypes input[type="checkbox"], #rptUrgencyTypes input[type="checkbox"], #rptNotifyTo input[type="checkbox"], #rptWhereTypeSelections input[type="checkbox"]').forEach((el) => {
+//       el.checked = false;
+//     });
+
+//     document.querySelectorAll(".rptWhereTypeSuffix").forEach((el) => {
+//       el.value = "";
+//       el.closest(".optionChoiceOther")?.classList.add("hidden");
+//     });
+
+//     bindOtherSelect("rptBranch", "rptBranchOtherWrap", "rptBranchOther");
+//     bindOtherSelect("rptReporterPosition", "rptReporterPositionOtherWrap", "rptReporterPositionOther");
+
+//     if ($("rptPersonList")) $("rptPersonList").innerHTML = "";
+//     if ($("rptDamageList")) $("rptDamageList").innerHTML = "";
+//     if ($("rptStepTakenList")) $("rptStepTakenList").innerHTML = "";
+//     if ($("rptEvidenceList")) $("rptEvidenceList").innerHTML = "";
+//     if ($("rptCauseList")) $("rptCauseList").innerHTML = "";
+//     if ($("rptPreventionList")) $("rptPreventionList").innerHTML = "";
+//     if ($("rptLearningList")) $("rptLearningList").innerHTML = "";
+//     document.querySelectorAll("#rptImageList .rptRepeatCard").forEach((row) => {
+//       clearRptEditedImageState(row);
+//     });
+//     if ($("rptImageList")) $("rptImageList").innerHTML = "";
+
+//     toggleEmptyState("rptPersonList", "ผู้เกี่ยวข้อง");
+//     toggleEmptyState("rptDamageList", "ความเสียหาย");
+//     toggleEmptyState("rptStepTakenList", "การดำเนินการ");
+//     toggleEmptyState("rptEvidenceList", "หลักฐาน");
+//     toggleEmptyState("rptCauseList", "สาเหตุ");
+//     toggleEmptyState("rptPreventionList", "การป้องกัน");
+//     toggleEmptyState("rptLearningList", "ข้อสรุป/บทเรียน");
+//     toggleEmptyState("rptImageList", "รูปภาพ");
+
+//     appendRow("rptPersonList", createPersonRowHtml(1), "ผู้เกี่ยวข้อง");
+//     appendRow("rptImageList", createImageRowHtml(1), "รูปภาพ");
+
+//     resetDisciplineLookupState();
+//     resetItemLookupState();
+//   }
+
+//   function bindTopButtons() {
+//   if (state.buttonsBound) return;
+//   state.buttonsBound = true;
+
+//   $("btnRptPreview")?.addEventListener("click", preview);
+//   $("btnRptSubmit")?.addEventListener("click", submit);
+
+//   $("btnRptEmailCheckAll")?.addEventListener("click", () => setAllChecks(".rptEmailChk", true));
+//   $("btnRptEmailClearAll")?.addEventListener("click", () => setAllChecks(".rptEmailChk", false));
+
+//   $("btnRptAddPerson")?.addEventListener("click", () => {
+//     collapsePreviousCompletedRow("rptPersonList");
+//     const idx = document.querySelectorAll("#rptPersonList .rptRepeatCard").length + 1;
+//     appendRow("rptPersonList", createPersonRowHtml(idx), "ผู้เกี่ยวข้อง");
+//   });
+
+//   $("btnRptAddDamage")?.addEventListener("click", () => {
+//     collapsePreviousCompletedRow("rptDamageList");
+//     const idx = document.querySelectorAll("#rptDamageList .rptRepeatCard").length + 1;
+//     appendRow(
+//       "rptDamageList",
+//       createSimpleIndexedRowHtml("damage", idx, "ความเสียหาย", "รายละเอียด", "หัวข้อความเสียหาย", "รายละเอียดเพิ่มเติม"),
+//       "ความเสียหาย"
+//     );
+//   });
+
+//   $("btnRptAddStepTaken")?.addEventListener("click", () => {
+//     collapsePreviousCompletedRow("rptStepTakenList");
+//     const idx = document.querySelectorAll("#rptStepTakenList .rptRepeatCard").length + 1;
+//     appendRow("rptStepTakenList", createStepTakenRowHtml(idx), "การดำเนินการ");
+//   });
+
+//   $("btnRptAddEvidence")?.addEventListener("click", () => {
+//     collapsePreviousCompletedRow("rptEvidenceList");
+//     const idx = document.querySelectorAll("#rptEvidenceList .rptRepeatCard").length + 1;
+//     appendRow(
+//       "rptEvidenceList",
+//       createSimpleIndexedRowHtml("evidence", idx, "หลักฐาน", "รายละเอียด", "หัวข้อหลักฐาน", "รายละเอียดเพิ่มเติม"),
+//       "หลักฐาน"
+//     );
+//   });
+
+//   $("btnRptAddCause")?.addEventListener("click", () => {
+//     collapsePreviousCompletedRow("rptCauseList");
+//     const idx = document.querySelectorAll("#rptCauseList .rptRepeatCard").length + 1;
+//     appendRow(
+//       "rptCauseList",
+//       createSimpleIndexedRowHtml("cause", idx, "สาเหตุ", "รายละเอียด", "หัวข้อสาเหตุ", "รายละเอียดเพิ่มเติม"),
+//       "สาเหตุ"
+//     );
+//   });
+
+//   $("btnRptAddPrevention")?.addEventListener("click", () => {
+//     collapsePreviousCompletedRow("rptPreventionList");
+//     const idx = document.querySelectorAll("#rptPreventionList .rptRepeatCard").length + 1;
+//     appendRow(
+//       "rptPreventionList",
+//       createSimpleIndexedRowHtml("prevention", idx, "การป้องกัน", "รายละเอียด", "หัวข้อการป้องกัน", "รายละเอียดเพิ่มเติม"),
+//       "การป้องกัน"
+//     );
+//   });
+
+//   $("btnRptAddLearning")?.addEventListener("click", () => {
+//     collapsePreviousCompletedRow("rptLearningList");
+//     const idx = document.querySelectorAll("#rptLearningList .rptRepeatCard").length + 1;
+//     appendRow(
+//       "rptLearningList",
+//       createSimpleIndexedRowHtml("learning", idx, "ข้อสรุป/บทเรียน", "รายละเอียด", "หัวข้อข้อสรุป", "รายละเอียดเพิ่มเติม"),
+//       "ข้อสรุป/บทเรียน"
+//     );
+//   });
+
+//   $("btnRptAddImage")?.addEventListener("click", () => {
+//     collapsePreviousCompletedRow("rptImageList");
+//     const idx = document.querySelectorAll("#rptImageList .rptRepeatCard").length + 1;
+//     appendRow("rptImageList", createImageRowHtml(idx), "รูปภาพ");
+//   });
+// }
+//   function bindLookupButtons() {
+//     if (state.lookupButtonsBound) return;
+//     state.lookupButtonsBound = true;
+
+//     $("btnRptDisciplineLookup")?.addEventListener("click", openDisciplineLookupPopup);
+//     $("btnRptDisciplineView")?.addEventListener("click", openAttachedDisciplinePreview);
+//     $("btnRptDisciplineClear")?.addEventListener("click", clearDisciplineLookup);
+//     $("btnRptItemLookup")?.addEventListener("click", openItemLookupPopup);
+//   }
+
+//   async function ensureReady() {
+//     if (state.ready || state.loading) return;
+//     state.loading = true;
+
+//     try {
+//       setRefYear();
+
+//       const res = await fetch(apiUrl("/report500/options"), { method: "GET" });
+//       const text = await res.text();
+
+//       let json = {};
+//       try {
+//         json = JSON.parse(text);
+//       } catch (_) {}
+
+//       if (!res.ok || !json.ok) {
+//         throw new Error(json?.error || `โหลดตัวเลือก Report ไม่สำเร็จ (HTTP ${res.status})`);
+//       }
+
+//       state.options = (json && json.data) ? json.data : {};
+
+//       renderSelect("rptBranch", state.options.branchList, true);
+//       renderOptionMatrix("rptReportTypes", "rptReportTypes", state.options.reportTypeList);
+//       renderOptionMatrix("rptUrgencyTypes", "rptUrgencyTypes", state.options.urgencyList);
+//       renderOptionMatrix("rptNotifyTo", "rptNotifyTo", state.options.notifyToList);
+
+//       renderSelect("rptWhereDidItHappen", state.options.locationList, false);
+//       if ($("rptWhereDidItHappen") && state.options.whereDidItHappenDefault) {
+//         $("rptWhereDidItHappen").value = state.options.whereDidItHappenDefault;
+//       }
+
+//       renderWhereTypeSelections();
+//       renderSelect("rptReporterPosition", state.options.reporterPositionList, true);
+//       renderEmailSelector();
+
+//       setReadonlyValue("rptReportedBy", norm(getAuth().name));
+//       if ($("rptReportDate")) $("rptReportDate").value = todayIsoLocal();
+//       if ($("rptIncidentDate")) $("rptIncidentDate").value = todayIsoLocal();
+
+//       bindOtherSelect("rptBranch", "rptBranchOtherWrap", "rptBranchOther");
+//       bindOtherSelect("rptReporterPosition", "rptReporterPositionOtherWrap", "rptReporterPositionOther");
+
+//       bindTopButtons();
+//       bindLookupButtons();
+//       resetForm();
+
+//       state.ready = true;
+//     } finally {
+//       state.loading = false;
+//     }
+//   }
+
+//   window.Report500UI = {
+//     ensureReady,
+//     preview,
+//     submit,
+//     reset: resetForm
+//   };
+// })();
+
+
+
 (function () {
   const $ = (id) => document.getElementById(id);
 
@@ -4517,116 +7096,23 @@
     loading: false,
     buttonsBound: false,
     lookupButtonsBound: false,
+    editButtonsBound: false,
     options: null,
     disciplineLookup: createEmptyDisciplineLookupState(),
-    itemLookup: createEmptyItemLookupState()
+    itemLookup: createEmptyItemLookupState(),
+
+    formMode: "create",
+    currentRecordId: "",
+    currentParentRecordId: "",
+    currentRevisionNo: 0,
+    currentBaseRecordId: "",
+    currentBaseRevisionNo: 0,
+    existingImages: [],
+    keepImageIds: [],
+    deleteImageIds: []
   };
 
   const RPT_EDITED_IMAGE_STORE = new WeakMap();
-
-  function buildRptEditedImageMeta(file, isEdited = false) {
-    if (!file) return "";
-    const sizeKb = Math.round((file.size || 0) / 1024);
-    return isEdited
-      ? `ไฟล์แก้ไขแล้ว: ${file.name || "edited-image.jpg"} (${sizeKb} KB)`
-      : `ไฟล์ที่เลือก: ${file.name || "image.jpg"} (${sizeKb} KB)`;
-  }
-
-  function updateRptImagePreview(row, file, metaText) {
-    if (!row || !file) return;
-
-    const meta = row.querySelector(".rptImageMeta");
-    const img = row.querySelector(".rptImagePreview");
-    const empty = row.querySelector(".rptImagePreviewEmpty");
-
-    if (meta) {
-      meta.textContent = metaText || buildRptEditedImageMeta(file, false);
-    }
-
-    if (img) {
-      if (img.dataset.objectUrl) {
-        try { URL.revokeObjectURL(img.dataset.objectUrl); } catch (_) {}
-      }
-
-      const url = URL.createObjectURL(file);
-      img.src = url;
-      img.dataset.objectUrl = url;
-      img.classList.remove("hidden");
-    }
-
-    empty?.classList.add("hidden");
-  }
-
-  function clearRptEditedImageState(row) {
-    const fileInput = row?.querySelector(".rptImageFile");
-    const img = row?.querySelector(".rptImagePreview");
-    const empty = row?.querySelector(".rptImagePreviewEmpty");
-    const meta = row?.querySelector(".rptImageMeta");
-
-    if (fileInput) {
-      RPT_EDITED_IMAGE_STORE.delete(fileInput);
-    }
-
-    if (img?.dataset.objectUrl) {
-      try { URL.revokeObjectURL(img.dataset.objectUrl); } catch (_) {}
-    }
-
-    if (img) {
-      img.removeAttribute("src");
-      delete img.dataset.objectUrl;
-      img.classList.add("hidden");
-    }
-
-    empty?.classList.remove("hidden");
-    if (meta) meta.textContent = "";
-  }
-
-  async function openRptImageEditor(row) {
-    if (!window.ImageEditorX || typeof window.ImageEditorX.open !== "function") {
-      await Swal.fire({
-        icon: "error",
-        title: "ยังไม่พร้อมใช้งาน",
-        text: "ไม่พบ image-editor.js หรือยังไม่ได้โหลด modal ของ image editor"
-      });
-      return;
-    }
-
-    const fileInput = row?.querySelector(".rptImageFile");
-    if (!fileInput) return;
-
-    const edited = RPT_EDITED_IMAGE_STORE.get(fileInput)?.file || null;
-    const raw = fileInput.files && fileInput.files[0] ? fileInput.files[0] : null;
-    const sourceFile = edited || raw;
-
-    if (!sourceFile) {
-      await Swal.fire({
-        icon: "info",
-        title: "ยังไม่มีรูปภาพ",
-        text: "กรุณาเลือกรูปภาพก่อนแล้วจึงกดแก้ไข"
-      });
-      return;
-    }
-
-    const result = await window.ImageEditorX.open(sourceFile, {
-      strokeColor: "#dc2626",
-      strokeWidth: 3
-    });
-
-    if (!result?.ok || !result.file) return;
-
-    RPT_EDITED_IMAGE_STORE.set(fileInput, {
-      edited: true,
-      file: result.file,
-      filename: result.filename || result.file.name,
-      dataUrl: result.dataUrl || ""
-    });
-
-    updateRptImagePreview(
-      row,
-      result.file,
-      buildRptEditedImageMeta(result.file, true)
-    );
-  }
 
   function norm(v) {
     return String(v == null ? "" : v).trim();
@@ -4639,6 +7125,10 @@
       .replace(/>/g, "&gt;")
       .replace(/"/g, "&quot;")
       .replace(/'/g, "&#039;");
+  }
+
+  function escapeHtmlWithBr(value) {
+    return escapeHtml(value).replace(/\n/g, "<br>");
   }
 
   function apiUrl(path) {
@@ -4663,7 +7153,7 @@
   function getRefNo() {
     if (typeof window.getRptRefNoValue === "function") return window.getRptRefNoValue();
     const running = String($("rptRefNo")?.value || "").replace(/[^\d]/g, "").trim();
-    const year = String($("rptRefYear")?.value || $("rptRefYear")?.textContent || "").trim();
+    const year = String($("rptRefYear")?.value || "").trim();
     return running ? `${running}-${year}` : "";
   }
 
@@ -4674,12 +7164,8 @@
     const currentYear = new Date().getFullYear() + 543;
     const years = [currentYear - 1, currentYear, currentYear + 1];
 
-    if (String(el.tagName || "").toUpperCase() === "SELECT") {
-      el.innerHTML = years.map((y) => `<option value="${y}">${y}</option>`).join("");
-      el.value = String(currentYear);
-    } else {
-      el.textContent = String(currentYear);
-    }
+    el.innerHTML = years.map((y) => `<option value="${y}">${y}</option>`).join("");
+    el.value = String(currentYear);
   }
 
   function isOther(v) {
@@ -4711,23 +7197,36 @@
     return out;
   }
 
+  function uniqStrings(list) {
+    const seen = new Set();
+    const out = [];
+    (Array.isArray(list) ? list : []).forEach((v) => {
+      const s = String(v || "").trim();
+      if (!s) return;
+      if (seen.has(s)) return;
+      seen.add(s);
+      out.push(s);
+    });
+    return out;
+  }
+
+  function parseArray(value) {
+    if (Array.isArray(value)) return value;
+    if (typeof value === "string" && value.trim()) {
+      try {
+        const parsed = JSON.parse(value);
+        return Array.isArray(parsed) ? parsed : [];
+      } catch (_) {
+        return [];
+      }
+    }
+    return [];
+  }
+
   function setReadonlyValue(id, value) {
     const el = $(id);
     if (!el) return;
     el.value = value || "";
-  }
-
-  function renderSelect(id, list, withPlaceholder = true) {
-    const el = $(id);
-    if (!el) return;
-
-    const items = Array.isArray(list) ? list : [];
-    const html = [];
-    if (withPlaceholder) html.push(`<option value="">-- เลือก --</option>`);
-    items.forEach((item) => {
-      html.push(`<option value="${escapeHtml(item)}">${escapeHtml(item)}</option>`);
-    });
-    el.innerHTML = html.join("");
   }
 
   function buildOptionsHtml(list, withPlaceholder = true) {
@@ -4738,6 +7237,12 @@
       html.push(`<option value="${escapeHtml(item)}">${escapeHtml(item)}</option>`);
     });
     return html.join("");
+  }
+
+  function renderSelect(id, list, withPlaceholder = true) {
+    const el = $(id);
+    if (!el) return;
+    el.innerHTML = buildOptionsHtml(list, withPlaceholder);
   }
 
   function bindOtherSelect(selectId, wrapId, inputId) {
@@ -4860,209 +7365,329 @@
     });
   }
 
+  function setCheckedValues(name, values) {
+    const target = new Set((Array.isArray(values) ? values : []).map((v) => String(v || "").trim()).filter(Boolean));
+    document.querySelectorAll(`input[name="${name}"]`).forEach((el) => {
+      el.checked = target.has(String(el.value || "").trim());
+    });
+  }
+
+  function getCheckedValues(name) {
+    return Array.from(document.querySelectorAll(`input[name="${name}"]:checked`))
+      .map((el) => String(el.value || "").trim())
+      .filter(Boolean);
+  }
+
+  function buildRptEditedImageMeta(file, isEdited = false) {
+    if (!file) return "";
+    const sizeKb = Math.round((file.size || 0) / 1024);
+    return isEdited
+      ? `ไฟล์แก้ไขแล้ว: ${file.name || "edited-image.jpg"} (${sizeKb} KB)`
+      : `ไฟล์ที่เลือก: ${file.name || "image.jpg"} (${sizeKb} KB)`;
+  }
+
+  function updateRptImagePreview(row, file, metaText) {
+    if (!row || !file) return;
+
+    const meta = row.querySelector(".rptImageMeta");
+    const img = row.querySelector(".rptImagePreview");
+    const empty = row.querySelector(".rptImagePreviewEmpty");
+
+    if (meta) {
+      meta.textContent = metaText || buildRptEditedImageMeta(file, false);
+    }
+
+    if (img) {
+      if (img.dataset.objectUrl) {
+        try { URL.revokeObjectURL(img.dataset.objectUrl); } catch (_) {}
+      }
+
+      const url = URL.createObjectURL(file);
+      img.src = url;
+      img.dataset.objectUrl = url;
+      img.classList.remove("hidden");
+    }
+
+    empty?.classList.add("hidden");
+  }
+
+  function clearRptEditedImageState(row) {
+    const fileInput = row?.querySelector(".rptImageFile");
+    const img = row?.querySelector(".rptImagePreview");
+    const empty = row?.querySelector(".rptImagePreviewEmpty");
+    const meta = row?.querySelector(".rptImageMeta");
+
+    if (fileInput) {
+      RPT_EDITED_IMAGE_STORE.delete(fileInput);
+    }
+
+    if (img?.dataset.objectUrl) {
+      try { URL.revokeObjectURL(img.dataset.objectUrl); } catch (_) {}
+    }
+
+    if (img) {
+      img.removeAttribute("src");
+      delete img.dataset.objectUrl;
+      img.classList.add("hidden");
+    }
+
+    empty?.classList.remove("hidden");
+    if (meta) meta.textContent = "";
+  }
+
+  async function openRptImageEditor(row) {
+    if (!window.ImageEditorX || typeof window.ImageEditorX.open !== "function") {
+      await Swal.fire({
+        icon: "error",
+        title: "ยังไม่พร้อมใช้งาน",
+        text: "ไม่พบ image-editor.js หรือยังไม่ได้โหลด modal ของ image editor"
+      });
+      return;
+    }
+
+    const fileInput = row?.querySelector(".rptImageFile");
+    if (!fileInput) return;
+
+    const edited = RPT_EDITED_IMAGE_STORE.get(fileInput)?.file || null;
+    const raw = fileInput.files && fileInput.files[0] ? fileInput.files[0] : null;
+    const sourceFile = edited || raw;
+
+    if (!sourceFile) {
+      await Swal.fire({
+        icon: "info",
+        title: "ยังไม่มีรูปภาพ",
+        text: "กรุณาเลือกรูปภาพก่อนแล้วจึงกดแก้ไข"
+      });
+      return;
+    }
+
+    const result = await window.ImageEditorX.open(sourceFile, {
+      strokeColor: "#dc2626",
+      strokeWidth: 3
+    });
+
+    if (!result?.ok || !result.file) return;
+
+    RPT_EDITED_IMAGE_STORE.set(fileInput, {
+      edited: true,
+      file: result.file,
+      filename: result.filename || result.file.name,
+      dataUrl: result.dataUrl || ""
+    });
+
+    updateRptImagePreview(
+      row,
+      result.file,
+      buildRptEditedImageMeta(result.file, true)
+    );
+  }
+
   function createSimpleIndexedRowHtml(type, index, titleLabel, detailLabel, titlePlaceholder, detailPlaceholder) {
-  return `
-    <div class="rptRepeatCard" data-type="${escapeHtml(type)}">
-      <div class="rptCardHead">
-        <div class="rptCardHeadMain">
-          <div class="rptCardTitle">${escapeHtml(titleLabel)} <span class="rptRowIndex">${index}</span></div>
-          <div class="rptCardSummary">ยังไม่มีข้อมูล</div>
-        </div>
-        <div class="rptCardHeadActions">
-          <button type="button" class="btn ghost rptCollapseRow">ย่อ</button>
-        </div>
-      </div>
-
-      <div class="rptCardBody">
-        <div class="gridCompact">
-          <div class="field">
-            <label>${escapeHtml(titleLabel)}</label>
-            <input type="text" class="rptIdxTitle" placeholder="${escapeHtml(titlePlaceholder || "")}">
+    return `
+      <div class="rptRepeatCard" data-type="${escapeHtml(type)}">
+        <div class="rptCardHead">
+          <div class="rptCardHeadMain">
+            <div class="rptCardTitle">${escapeHtml(titleLabel)} <span class="rptRowIndex">${index}</span></div>
+            <div class="rptCardSummary">ยังไม่มีข้อมูล</div>
           </div>
-
-          <div class="field">
-            <label>${escapeHtml(detailLabel)}</label>
-            <textarea class="rptIdxDetail" rows="3" placeholder="${escapeHtml(detailPlaceholder || "")}"></textarea>
+          <div class="rptCardHeadActions">
+            <button type="button" class="btn ghost rptCollapseRow">ย่อ</button>
           </div>
         </div>
 
-        <div class="panelActions">
-          <button type="button" class="btn ghost rptRemoveRow">ลบแถว</button>
+        <div class="rptCardBody">
+          <div class="gridCompact">
+            <div class="field">
+              <label>${escapeHtml(titleLabel)}</label>
+              <input type="text" class="rptIdxTitle" placeholder="${escapeHtml(titlePlaceholder || "")}">
+            </div>
+
+            <div class="field">
+              <label>${escapeHtml(detailLabel)}</label>
+              <textarea class="rptIdxDetail" rows="3" placeholder="${escapeHtml(detailPlaceholder || "")}"></textarea>
+            </div>
+          </div>
+
+          <div class="panelActions">
+            <button type="button" class="btn ghost rptRemoveRow">ลบแถว</button>
+          </div>
         </div>
       </div>
-    </div>
-  `;
-}
+    `;
+  }
+
   function createPersonRowHtml(index) {
-  const positionOptions = buildOptionsHtml(state.options?.personPositionList, true);
-  const departmentOptions = buildOptionsHtml(state.options?.personDepartmentList, true);
-  const remarkOptions = buildOptionsHtml(state.options?.personRemarkList, true);
+    const positionOptions = buildOptionsHtml(state.options?.personPositionList, true);
+    const departmentOptions = buildOptionsHtml(state.options?.personDepartmentList, true);
+    const remarkOptions = buildOptionsHtml(state.options?.personRemarkList, true);
 
-  return `
-    <div class="rptRepeatCard" data-type="person">
-      <div class="rptCardHead">
-        <div class="rptCardHeadMain">
-          <div class="rptCardTitle">ผู้เกี่ยวข้อง <span class="rptRowIndex">${index}</span></div>
-          <div class="rptCardSummary">ยังไม่มีข้อมูล</div>
+    return `
+      <div class="rptRepeatCard" data-type="person">
+        <div class="rptCardHead">
+          <div class="rptCardHeadMain">
+            <div class="rptCardTitle">ผู้เกี่ยวข้อง <span class="rptRowIndex">${index}</span></div>
+            <div class="rptCardSummary">ยังไม่มีข้อมูล</div>
+          </div>
+          <div class="rptCardHeadActions">
+            <button type="button" class="btn ghost rptCollapseRow">ย่อ</button>
+          </div>
         </div>
-        <div class="rptCardHeadActions">
-          <button type="button" class="btn ghost rptCollapseRow">ย่อ</button>
+
+        <div class="rptCardBody">
+          <div class="gridCompact">
+            <div class="field">
+              <label>ผู้เกี่ยวข้อง (Who is involved)</label>
+              <input type="text" class="rptPersonWho" placeholder="ชื่อผู้เกี่ยวข้อง">
+            </div>
+
+            <div class="field">
+              <label>Position</label>
+              <select class="rptPersonPosition">${positionOptions}</select>
+            </div>
+
+            <div class="field rptPersonPositionOtherWrap hidden">
+              <label>Position อื่นๆ</label>
+              <input type="text" class="rptPersonPositionOther" placeholder="ระบุตำแหน่งเพิ่มเติม">
+            </div>
+
+            <div class="field">
+              <label>Department</label>
+              <select class="rptPersonDepartment">${departmentOptions}</select>
+            </div>
+
+            <div class="field rptPersonDepartmentOtherWrap hidden">
+              <label>Department อื่นๆ</label>
+              <input type="text" class="rptPersonDepartmentOther" placeholder="ระบุส่วนงานเพิ่มเติม">
+            </div>
+
+            <div class="field">
+              <label>Remark</label>
+              <select class="rptPersonRemark">${remarkOptions}</select>
+            </div>
+
+            <div class="field rptPersonRemarkOtherWrap hidden">
+              <label>Remark อื่นๆ</label>
+              <input type="text" class="rptPersonRemarkOther" placeholder="ระบุหมายเหตุเพิ่มเติม">
+            </div>
+          </div>
+
+          <div class="panelActions" style="justify-content:flex-end;margin-top:10px">
+            <button type="button" class="btn ghost rptRemoveRow">ลบแถว</button>
+          </div>
         </div>
       </div>
-
-      <div class="rptCardBody">
-        <div class="gridCompact">
-          <div class="field">
-            <label>ผู้เกี่ยวข้อง (Who is involved)</label>
-            <input type="text" class="rptPersonWho" placeholder="ชื่อผู้เกี่ยวข้อง">
-          </div>
-
-          <div class="field">
-            <label>Position</label>
-            <select class="rptPersonPosition">${positionOptions}</select>
-          </div>
-
-          <div class="field rptPersonPositionOtherWrap hidden">
-            <label>Position อื่นๆ</label>
-            <input type="text" class="rptPersonPositionOther" placeholder="ระบุตำแหน่งเพิ่มเติม">
-          </div>
-
-          <div class="field">
-            <label>Department</label>
-            <select class="rptPersonDepartment">${departmentOptions}</select>
-          </div>
-
-          <div class="field rptPersonDepartmentOtherWrap hidden">
-            <label>Department อื่นๆ</label>
-            <input type="text" class="rptPersonDepartmentOther" placeholder="ระบุส่วนงานเพิ่มเติม">
-          </div>
-
-          <div class="field">
-            <label>Remark</label>
-            <select class="rptPersonRemark">${remarkOptions}</select>
-          </div>
-
-          <div class="field rptPersonRemarkOtherWrap hidden">
-            <label>Remark อื่นๆ</label>
-            <input type="text" class="rptPersonRemarkOther" placeholder="ระบุหมายเหตุเพิ่มเติม">
-          </div>
-        </div>
-
-        <div class="panelActions" style="justify-content:flex-end;margin-top:10px">
-          <button type="button" class="btn ghost rptRemoveRow">ลบแถว</button>
-        </div>
-      </div>
-    </div>
-  `;
-}
+    `;
+  }
 
   function createStepTakenRowHtml(index) {
-  const actionOptions = buildOptionsHtml(state.options?.actionTypeList, true);
+    const actionOptions = buildOptionsHtml(state.options?.actionTypeList, true);
 
-  return `
-    <div class="rptRepeatCard" data-type="stepTaken">
-      <div class="rptCardHead">
-        <div class="rptCardHeadMain">
-          <div class="rptCardTitle">การดำเนินการ <span class="rptRowIndex">${index}</span></div>
-          <div class="rptCardSummary">ยังไม่มีข้อมูล</div>
+    return `
+      <div class="rptRepeatCard" data-type="stepTaken">
+        <div class="rptCardHead">
+          <div class="rptCardHeadMain">
+            <div class="rptCardTitle">การดำเนินการ <span class="rptRowIndex">${index}</span></div>
+            <div class="rptCardSummary">ยังไม่มีข้อมูล</div>
+          </div>
+          <div class="rptCardHeadActions">
+            <button type="button" class="btn ghost rptCollapseRow">ย่อ</button>
+          </div>
         </div>
-        <div class="rptCardHeadActions">
-          <button type="button" class="btn ghost rptCollapseRow">ย่อ</button>
+
+        <div class="rptCardBody">
+          <div class="gridCompact">
+            <div class="field">
+              <label>ประเภทการดำเนินการ</label>
+              <select class="rptStepActionType">${actionOptions}</select>
+            </div>
+
+            <div class="field rptStepActionTypeOtherWrap hidden">
+              <label>ระบุการดำเนินการอื่นๆ</label>
+              <input type="text" class="rptStepActionTypeOther" placeholder="ระบุเอง">
+            </div>
+
+            <div class="field rptAlcoholResultWrap hidden">
+              <label>ผลการตรวจแอลกอฮอล์</label>
+              <select class="rptAlcoholResult">
+                <option value="">-- เลือก --</option>
+                <option value="พบ">พบ</option>
+                <option value="ไม่พบ">ไม่พบ</option>
+              </select>
+            </div>
+
+            <div class="field rptAlcoholMgWrap hidden">
+              <label>ปริมาณแอลกอฮอล์ (Mg%)</label>
+              <input type="number" class="rptAlcoholMgPercent" placeholder="กรอกเฉพาะตัวเลข" inputmode="decimal">
+            </div>
+
+            <div class="field rptDrugConfirmedWrap hidden">
+              <label>ผลยืนยันการเสพ</label>
+              <input type="text" class="rptDrugConfirmed" placeholder="เช่น ยืนยันผลบวก">
+            </div>
+
+            <div class="field rptDrugDetailWrap hidden">
+              <label>รายละเอียดแบบย่อ</label>
+              <textarea class="rptDrugShortDetail" rows="3" placeholder="รายละเอียดการตรวจสารเสพติด"></textarea>
+            </div>
+
+            <div class="field fieldSpan2">
+              <label>รายละเอียดเพิ่มเติม</label>
+              <textarea class="rptStepDetail" rows="3" placeholder="รายละเอียดเพิ่มเติมของการดำเนินการ"></textarea>
+            </div>
+          </div>
+
+          <div class="panelActions" style="justify-content:flex-end;margin-top:10px">
+            <button type="button" class="btn ghost rptRemoveRow">ลบแถว</button>
+          </div>
         </div>
       </div>
+    `;
+  }
 
-      <div class="rptCardBody">
-        <div class="gridCompact">
-          <div class="field">
-            <label>ประเภทการดำเนินการ</label>
-            <select class="rptStepActionType">${actionOptions}</select>
-          </div>
-
-          <div class="field rptStepActionTypeOtherWrap hidden">
-            <label>ระบุการดำเนินการอื่นๆ</label>
-            <input type="text" class="rptStepActionTypeOther" placeholder="ระบุเอง">
-          </div>
-
-          <div class="field rptAlcoholResultWrap hidden">
-            <label>ผลการตรวจแอลกอฮอล์</label>
-            <select class="rptAlcoholResult">
-              <option value="">-- เลือก --</option>
-              <option value="พบ">พบ</option>
-              <option value="ไม่พบ">ไม่พบ</option>
-            </select>
-          </div>
-
-          <div class="field rptAlcoholMgWrap hidden">
-            <label>ปริมาณแอลกอฮอล์ (Mg%)</label>
-            <input type="number" class="rptAlcoholMgPercent" placeholder="กรอกเฉพาะตัวเลข" inputmode="decimal">
-          </div>
-
-          <div class="field rptDrugConfirmedWrap hidden">
-            <label>ผลยืนยันการเสพ</label>
-            <input type="text" class="rptDrugConfirmed" placeholder="เช่น ยืนยันผลบวก">
-          </div>
-
-          <div class="field rptDrugDetailWrap hidden">
-            <label>รายละเอียดแบบย่อ</label>
-            <textarea class="rptDrugShortDetail" rows="3" placeholder="รายละเอียดการตรวจสารเสพติด"></textarea>
-          </div>
-
-          <div class="field fieldSpan2">
-            <label>รายละเอียดเพิ่มเติม</label>
-            <textarea class="rptStepDetail" rows="3" placeholder="รายละเอียดเพิ่มเติมของการดำเนินการ"></textarea>
-          </div>
-        </div>
-
-        <div class="panelActions" style="justify-content:flex-end;margin-top:10px">
-          <button type="button" class="btn ghost rptRemoveRow">ลบแถว</button>
-        </div>
-      </div>
-    </div>
-  `;
-}
   function createImageRowHtml(index) {
-  return `
-    <div class="rptRepeatCard" data-type="image">
-      <div class="rptCardHead">
-        <div class="rptCardHeadMain">
-          <div class="rptCardTitle">รูปภาพ <span class="rptRowIndex">${index}</span></div>
-          <div class="rptCardSummary">ยังไม่มีข้อมูล</div>
+    return `
+      <div class="rptRepeatCard" data-type="image">
+        <div class="rptCardHead">
+          <div class="rptCardHeadMain">
+            <div class="rptCardTitle">รูปภาพ <span class="rptRowIndex">${index}</span></div>
+            <div class="rptCardSummary">ยังไม่มีข้อมูล</div>
+          </div>
+          <div class="rptCardHeadActions">
+            <button type="button" class="btn ghost rptCollapseRow">ย่อ</button>
+          </div>
         </div>
-        <div class="rptCardHeadActions">
-          <button type="button" class="btn ghost rptCollapseRow">ย่อ</button>
+
+        <div class="rptCardBody">
+          <div class="gridCompact">
+            <div class="field">
+              <label>เลือกรูปภาพ</label>
+              <input type="file" class="rptImageFile" accept="image/*">
+              <div class="fieldHint rptImageMeta"></div>
+            </div>
+
+            <div class="field">
+              <label>คำบรรยายภาพ</label>
+              <textarea class="rptImageCaption" rows="4" placeholder="อธิบายภาพนี้"></textarea>
+            </div>
+          </div>
+
+          <div class="field" style="margin-top:10px">
+            <div class="rptImagePreviewEmpty" style="padding:12px 14px;border:1px dashed #bfd1e6;border-radius:14px;background:#f8fbff;color:#64748b;font-size:12px;font-weight:800">
+              ยังไม่ได้เลือกรูปภาพ
+            </div>
+            <img class="rptImagePreview hidden" alt="preview" style="width:100%;max-height:260px;object-fit:contain;border-radius:14px;border:1px solid #d9e4f1;background:#fff;padding:6px">
+          </div>
+
+          <div class="panelActions" style="justify-content:flex-end;margin-top:10px">
+            <button type="button" class="btn ghost rptEditImageBtn">แก้ไขภาพ</button>
+            <button type="button" class="btn ghost rptRemoveRow">ลบแถว</button>
+          </div>
         </div>
       </div>
+    `;
+  }
 
-      <div class="rptCardBody">
-        <div class="gridCompact">
-          <div class="field">
-            <label>เลือกรูปภาพ</label>
-            <input type="file" class="rptImageFile" accept="image/*">
-            <div class="fieldHint rptImageMeta"></div>
-          </div>
-
-          <div class="field">
-            <label>คำบรรยายภาพ</label>
-            <textarea class="rptImageCaption" rows="4" placeholder="อธิบายภาพนี้"></textarea>
-          </div>
-        </div>
-
-        <div class="field" style="margin-top:10px">
-          <div class="rptImagePreviewEmpty" style="padding:12px 14px;border:1px dashed #bfd1e6;border-radius:14px;background:#f8fbff;color:#64748b;font-size:12px;font-weight:800">
-            ยังไม่ได้เลือกรูปภาพ
-          </div>
-          <img class="rptImagePreview hidden" alt="preview" style="width:100%;max-height:260px;object-fit:contain;border-radius:14px;border:1px solid #d9e4f1;background:#fff;padding:6px">
-        </div>
-
-        <div class="panelActions" style="justify-content:flex-end;margin-top:10px">
-          <button type="button" class="btn ghost rptEditImageBtn">แก้ไขภาพ</button>
-          <button type="button" class="btn ghost rptRemoveRow">ลบแถว</button>
-        </div>
-      </div>
-    </div>
-  `;
-}
-  function appendRow(listId, html, emptyLabel) {
+  function appendRow(listId, html) {
     const root = $(listId);
     if (!root) return;
     const wrap = document.createElement("div");
@@ -5071,1367 +7696,217 @@
     root.appendChild(node);
     bindDynamicRow(node);
     refreshRowIndex(listId);
-    toggleEmptyState(listId, emptyLabel);
-  }
-
-
-    function getVisibleUsableFields(node) {
-    if (!node) return [];
-
-    return Array.from(node.querySelectorAll("input, select, textarea")).filter((el) => {
-      if (!el) return false;
-
-      const type = String(el.type || "").toLowerCase();
-      if (type === "hidden" || type === "button" || type === "submit" || type === "reset") return false;
-      if (el.disabled) return false;
-
-      const hiddenByClass = !!el.closest(".hidden");
-      if (hiddenByClass) return false;
-
-      const style = window.getComputedStyle(el);
-      if (style.display === "none" || style.visibility === "hidden") return false;
-
-      return true;
-    });
-  }
-
-  function isFieldFilled(el, rowNode) {
-    if (!el) return false;
-
-    const tag = String(el.tagName || "").toUpperCase();
-    const type = String(el.type || "").toLowerCase();
-
-    if (type === "file") {
-      if (el.files && el.files.length > 0) return true;
-      const row = rowNode || el.closest(".rptRepeatCard") || el.closest(".rptBlock");
-      if (row && row.querySelector(".rptImagePreview:not(.hidden)")) return true;
-      return false;
-    }
-
-    if (type === "checkbox" || type === "radio") {
-      return !!el.checked;
-    }
-
-    const val = String(el.value || "").trim();
-    if (!val) return false;
-
-    if (tag === "SELECT" && (val === "" || val === "-- เลือก --")) return false;
-
-    return true;
-  }
-
-  function getRowStatus(node) {
-    if (!node) return "empty";
-
-    const fields = getVisibleUsableFields(node);
-    if (!fields.length) return "empty";
-
-    const total = fields.length;
-    let filled = 0;
-
-    fields.forEach((el) => {
-      if (isFieldFilled(el, node)) filled += 1;
-    });
-
-    if (filled === 0) return "empty";
-    if (filled < total) return "partial";
-    return "complete";
-  }
-
-    function updateRowFilledState(node) {
-    if (!node) return;
-
-    const root = getCardRoot(node);
-    if (!root) return;
-
-    const status = getRowStatus(root);
-
-    root.classList.remove("is-partial", "is-complete");
-
-    if (status === "partial") {
-      root.classList.add("is-partial");
-    } else if (status === "complete") {
-      root.classList.add("is-complete");
-    } else {
-      root.classList.remove("is-collapsed");
-    }
-
-    updateRowSummary(root);
-    updateCollapseButtonState(root);
-  }
-
-  function bindRowFilledState(node) {
-    if (!node) return;
-
-    const fields = node.querySelectorAll("input, select, textarea");
-    fields.forEach((el) => {
-      el.addEventListener("input", () => updateRowFilledState(node));
-      el.addEventListener("change", () => updateRowFilledState(node));
-    });
-
-    updateRowFilledState(node);
-  }
-  function getCardRoot(node) {
-    return node?.closest(".rptRepeatCard") || node?.closest(".rptBlock") || node || null;
-  }
-
-  function getCardBody(node) {
-    const root = getCardRoot(node);
-    return root?.querySelector(".rptCardBody") || null;
-  }
-
-  function canCollapseRow(node) {
-    const root = getCardRoot(node);
-    if (!root) return false;
-    return root.classList.contains("is-complete");
-  }
-
-  function updateCollapseButtonState(node) {
-    const root = getCardRoot(node);
-    if (!root) return;
-
-    const btn = root.querySelector(".rptCollapseRow");
-    if (!btn) return;
-
-    const complete = root.classList.contains("is-complete");
-    const collapsed = root.classList.contains("is-collapsed");
-
-    btn.disabled = !complete;
-    btn.classList.toggle("is-disabled", !complete);
-
-    if (!complete) {
-      btn.textContent = "ย่อ";
-      root.classList.remove("is-collapsed");
-      return;
-    }
-
-    btn.textContent = collapsed ? "ขยาย" : "ย่อ";
-  }
-
-  function toggleRowCollapse(node, forceCollapsed = null) {
-    const root = getCardRoot(node);
-    if (!root) return;
-
-    if (!canCollapseRow(root)) {
-      root.classList.remove("is-collapsed");
-      updateCollapseButtonState(root);
-      return;
-    }
-
-    const nextState = (forceCollapsed == null)
-      ? !root.classList.contains("is-collapsed")
-      : !!forceCollapsed;
-
-    root.classList.toggle("is-collapsed", nextState);
-    updateCollapseButtonState(root);
-  }
-
-  function collapsePreviousCompletedRow(fromButtonOrListId) {
-    let listRoot = null;
-    let currentCard = null;
-
-    if (typeof fromButtonOrListId === "string") {
-      listRoot = $(fromButtonOrListId);
-    } else {
-      currentCard = getCardRoot(fromButtonOrListId);
-      listRoot = currentCard?.parentElement || null;
-    }
-
-    if (!listRoot) return;
-
-    let target = null;
-
-    if (currentCard) {
-      target = currentCard;
-    } else {
-      const cards = listRoot.querySelectorAll(".rptRepeatCard, .rptBlock");
-      target = cards.length ? cards[cards.length - 1] : null;
-    }
-
-    if (!target) return;
-    if (!target.classList.contains("is-complete")) return;
-
-    toggleRowCollapse(target, true);
-  }
-
-  function buildRowSummary(node) {
-    const root = getCardRoot(node);
-    if (!root) return "";
-
-    const type = String(root.getAttribute("data-type") || "");
-    let summary = "";
-
-    if (type === "person") {
-      const who = String(root.querySelector(".rptPersonWho")?.value || "").trim();
-      const pos = String(root.querySelector(".rptPersonPosition")?.value || "").trim();
-      const dep = String(root.querySelector(".rptPersonDepartment")?.value || "").trim();
-      summary = [who, pos, dep].filter(Boolean).join(" • ");
-    } else if (type === "stepTaken") {
-      const action = String(root.querySelector(".rptStepActionType")?.value || "").trim();
-      const detail = String(root.querySelector(".rptStepDetail")?.value || "").trim();
-      summary = action || detail;
-    } else if (type === "image") {
-      const caption = String(root.querySelector(".rptImageCaption")?.value || "").trim();
-      const meta = String(root.querySelector(".rptImageMeta")?.textContent || "").trim();
-      summary = caption || meta;
-    } else {
-      const title = String(root.querySelector(".rptIdxTitle")?.value || "").trim();
-      const detail = String(root.querySelector(".rptIdxDetail")?.value || "").trim();
-      summary = title || detail;
-    }
-
-    return summary || "มีข้อมูลแล้ว";
-  }
-
-  function updateRowSummary(node) {
-    const root = getCardRoot(node);
-    if (!root) return;
-
-    const summaryEl = root.querySelector(".rptCardSummary");
-    if (!summaryEl) return;
-
-    summaryEl.textContent = buildRowSummary(root);
-  }
-
-  function bindRowSummary(node) {
-    const root = getCardRoot(node);
-    if (!root) return;
-
-    root.querySelectorAll("input, select, textarea").forEach((el) => {
-      el.addEventListener("input", () => updateRowSummary(root));
-      el.addEventListener("change", () => updateRowSummary(root));
-    });
-
-    updateRowSummary(root);
-  }
-
-function getVisibleUsableFields(node) {
-  if (!node) return [];
-
-  return Array.from(node.querySelectorAll("input, select, textarea")).filter((el) => {
-    if (!el) return false;
-
-    const type = String(el.type || "").toLowerCase();
-    if (type === "hidden" || type === "button" || type === "submit" || type === "reset") return false;
-    if (el.disabled) return false;
-
-    const hiddenByClass = !!el.closest(".hidden");
-    if (hiddenByClass) return false;
-
-    const style = window.getComputedStyle(el);
-    if (style.display === "none" || style.visibility === "hidden") return false;
-
-    return true;
-  });
-}
-
-function isFieldFilled(el, rowNode) {
-  if (!el) return false;
-
-  const tag = String(el.tagName || "").toUpperCase();
-  const type = String(el.type || "").toLowerCase();
-
-  if (type === "file") {
-    if (el.files && el.files.length > 0) return true;
-    const row = rowNode || el.closest(".rptRepeatCard") || el.closest(".rptBlock");
-    if (row && row.querySelector(".rptImagePreview:not(.hidden)")) return true;
-    return false;
-  }
-
-  if (type === "checkbox" || type === "radio") {
-    return !!el.checked;
-  }
-
-  const val = String(el.value || "").trim();
-  if (!val) return false;
-
-  if (tag === "SELECT" && (val === "" || val === "-- เลือก --")) return false;
-
-  return true;
-}
-
-function getRowStatus(node) {
-  if (!node) return "empty";
-
-  const fields = getVisibleUsableFields(node);
-  if (!fields.length) return "empty";
-
-  const total = fields.length;
-  let filled = 0;
-
-  fields.forEach((el) => {
-    if (isFieldFilled(el, node)) filled += 1;
-  });
-
-  if (filled === 0) return "empty";
-  if (filled < total) return "partial";
-  return "complete";
-}
-
-function getCardRoot(node) {
-  return node?.closest(".rptRepeatCard") || node?.closest(".rptBlock") || node || null;
-}
-
-function canCollapseRow(node) {
-  const root = getCardRoot(node);
-  if (!root) return false;
-  return root.classList.contains("is-complete");
-}
-
-function updateCollapseButtonState(node) {
-  const root = getCardRoot(node);
-  if (!root) return;
-
-  const btn = root.querySelector(".rptCollapseRow");
-  if (!btn) return;
-
-  const complete = root.classList.contains("is-complete");
-  const collapsed = root.classList.contains("is-collapsed");
-
-  btn.disabled = !complete;
-  btn.classList.toggle("is-disabled", !complete);
-
-  if (!complete) {
-    btn.textContent = "ย่อ";
-    root.classList.remove("is-collapsed");
-    return;
-  }
-
-  btn.textContent = collapsed ? "ขยาย" : "ย่อ";
-}
-
-function toggleRowCollapse(node, forceCollapsed = null) {
-  const root = getCardRoot(node);
-  if (!root) return;
-
-  if (!canCollapseRow(root)) {
-    root.classList.remove("is-collapsed");
-    updateCollapseButtonState(root);
-    return;
-  }
-
-  const nextState = (forceCollapsed == null)
-    ? !root.classList.contains("is-collapsed")
-    : !!forceCollapsed;
-
-  root.classList.toggle("is-collapsed", nextState);
-  updateCollapseButtonState(root);
-}
-
-function collapsePreviousCompletedRow(fromButtonOrListId) {
-  let listRoot = null;
-
-  if (typeof fromButtonOrListId === "string") {
-    listRoot = $(fromButtonOrListId);
-  } else {
-    const currentCard = getCardRoot(fromButtonOrListId);
-    listRoot = currentCard?.parentElement || null;
-  }
-
-  if (!listRoot) return;
-
-  const cards = listRoot.querySelectorAll(".rptRepeatCard, .rptBlock");
-  const target = cards.length ? cards[cards.length - 1] : null;
-
-  if (!target) return;
-  if (!target.classList.contains("is-complete")) return;
-
-  toggleRowCollapse(target, true);
-}
-
-function buildRowSummary(node) {
-  const root = getCardRoot(node);
-  if (!root) return "";
-
-  const type = String(root.getAttribute("data-type") || "");
-  let summary = "";
-
-  if (type === "person") {
-    const who = String(root.querySelector(".rptPersonWho")?.value || "").trim();
-    const pos = String(root.querySelector(".rptPersonPosition")?.value || "").trim();
-    const dep = String(root.querySelector(".rptPersonDepartment")?.value || "").trim();
-    summary = [who, pos, dep].filter(Boolean).join(" • ");
-  } else if (type === "stepTaken") {
-    const action = String(root.querySelector(".rptStepActionType")?.value || "").trim();
-    const detail = String(root.querySelector(".rptStepDetail")?.value || "").trim();
-    summary = action || detail;
-  } else if (type === "image") {
-    const caption = String(root.querySelector(".rptImageCaption")?.value || "").trim();
-    const meta = String(root.querySelector(".rptImageMeta")?.textContent || "").trim();
-    summary = caption || meta;
-  } else {
-    const title = String(root.querySelector(".rptIdxTitle")?.value || "").trim();
-    const detail = String(root.querySelector(".rptIdxDetail")?.value || "").trim();
-    summary = title || detail;
-  }
-
-  return summary || "มีข้อมูลแล้ว";
-}
-
-function updateRowSummary(node) {
-  const root = getCardRoot(node);
-  if (!root) return;
-
-  const summaryEl = root.querySelector(".rptCardSummary");
-  if (!summaryEl) return;
-
-  summaryEl.textContent = buildRowSummary(root);
-}
-
-function bindRowSummary(node) {
-  const root = getCardRoot(node);
-  if (!root) return;
-
-  root.querySelectorAll("input, select, textarea").forEach((el) => {
-    el.addEventListener("input", () => updateRowSummary(root));
-    el.addEventListener("change", () => updateRowSummary(root));
-  });
-
-  updateRowSummary(root);
-}
-
-function updateRowFilledState(node) {
-  if (!node) return;
-
-  const root = getCardRoot(node);
-  if (!root) return;
-
-  const status = getRowStatus(root);
-
-  root.classList.remove("is-partial", "is-complete");
-
-  if (status === "partial") {
-    root.classList.add("is-partial");
-  } else if (status === "complete") {
-    root.classList.add("is-complete");
-  } else {
-    root.classList.remove("is-collapsed");
-  }
-
-  updateRowSummary(root);
-  updateCollapseButtonState(root);
-}
-
-function bindRowFilledState(node) {
-  if (!node) return;
-
-  const fields = node.querySelectorAll("input, select, textarea");
-  fields.forEach((el) => {
-    el.addEventListener("input", () => updateRowFilledState(node));
-    el.addEventListener("change", () => updateRowFilledState(node));
-  });
-
-  updateRowFilledState(node);
-}
-    function bindDynamicRow(node) {
-  if (!node) return;
-
-  const root = getCardRoot(node);
-  const head = root.querySelector(".rptCardHead");
-  const collapseBtn = root.querySelector(".rptCollapseRow");
-
-  root.querySelector(".rptRemoveRow")?.addEventListener("click", () => {
-    if (root.getAttribute("data-type") === "image") {
-      clearRptEditedImageState(root);
-    } else {
-      const img = root.querySelector(".rptImagePreview");
-      if (img && img.dataset.objectUrl) {
-        try { URL.revokeObjectURL(img.dataset.objectUrl); } catch (_) {}
-      }
-    }
-
-    const parentId = root.parentElement?.id || "";
-    root.remove();
-
-    if (parentId) {
-      refreshRowIndex(parentId);
-      toggleEmptyState(parentId, emptyStateLabelFor(parentId));
-    }
-  });
-
-  collapseBtn?.addEventListener("click", (ev) => {
-    ev.preventDefault();
-    ev.stopPropagation();
-    toggleRowCollapse(root);
-  });
-
-  head?.addEventListener("click", (ev) => {
-    const clickedControl = ev.target.closest("button, input, select, textarea, label, a");
-    if (clickedControl) return;
-
-    if (root.classList.contains("is-collapsed")) {
-      toggleRowCollapse(root, false);
-    }
-  });
-
-  if (root.getAttribute("data-type") === "person") {
-    bindSelectOtherInRow(root, ".rptPersonPosition", ".rptPersonPositionOtherWrap", ".rptPersonPositionOther");
-    bindSelectOtherInRow(root, ".rptPersonDepartment", ".rptPersonDepartmentOtherWrap", ".rptPersonDepartmentOther");
-    bindSelectOtherInRow(root, ".rptPersonRemark", ".rptPersonRemarkOtherWrap", ".rptPersonRemarkOther");
-  }
-
-  if (root.getAttribute("data-type") === "stepTaken") {
-    bindStepTakenRow(root);
-  }
-
-  if (root.getAttribute("data-type") === "image") {
-    bindImageRow(root);
-  }
-
-  bindRowSummary(root);
-  bindRowFilledState(root);
-  updateCollapseButtonState(root);
-}
-
-  function bindSelectOtherInRow(node, selectSel, wrapSel, inputSel) {
-    const select = node.querySelector(selectSel);
-    const wrap = node.querySelector(wrapSel);
-    const input = node.querySelector(inputSel);
-    if (!select || !wrap) return;
-
-    const sync = () => {
-      const show = isOther(select.value);
-      wrap.classList.toggle("hidden", !show);
-      if (!show && input) input.value = "";
-    };
-
-    select.addEventListener("change", sync);
-    sync();
-  }
-
-  function bindStepTakenRow(node) {
-    const typeEl = node.querySelector(".rptStepActionType");
-    const otherWrap = node.querySelector(".rptStepActionTypeOtherWrap");
-    const otherInput = node.querySelector(".rptStepActionTypeOther");
-
-    const alcoholWrap = node.querySelector(".rptAlcoholResultWrap");
-    const alcoholResult = node.querySelector(".rptAlcoholResult");
-    const alcoholMgWrap = node.querySelector(".rptAlcoholMgWrap");
-    const alcoholMgInput = node.querySelector(".rptAlcoholMgPercent");
-
-    const drugConfirmedWrap = node.querySelector(".rptDrugConfirmedWrap");
-    const drugDetailWrap = node.querySelector(".rptDrugDetailWrap");
-    const drugConfirmedInput = node.querySelector(".rptDrugConfirmed");
-    const drugDetailInput = node.querySelector(".rptDrugShortDetail");
-
-    const syncAlcoholMg = () => {
-      const isAlcohol = norm(typeEl?.value) === "ตรวจวัดปริมาณแอลกอฮอล์";
-      const showMg = isAlcohol && norm(alcoholResult?.value) === "พบ";
-      alcoholMgWrap?.classList.toggle("hidden", !showMg);
-      if (!showMg && alcoholMgInput) alcoholMgInput.value = "";
-    };
-
-    const syncType = () => {
-      const type = norm(typeEl?.value);
-      const isAlcohol = type === "ตรวจวัดปริมาณแอลกอฮอล์";
-      const isDrug = type === "ตรวจสารเสพติดเมทแอเฟตามีน";
-      const isOtherType = isOther(type);
-
-      otherWrap?.classList.toggle("hidden", !isOtherType);
-      if (!isOtherType && otherInput) otherInput.value = "";
-
-      alcoholWrap?.classList.toggle("hidden", !isAlcohol);
-      if (!isAlcohol && alcoholResult) alcoholResult.value = "";
-      syncAlcoholMg();
-
-      drugConfirmedWrap?.classList.toggle("hidden", !isDrug);
-      drugDetailWrap?.classList.toggle("hidden", !isDrug);
-      if (!isDrug && drugConfirmedInput) drugConfirmedInput.value = "";
-      if (!isDrug && drugDetailInput) drugDetailInput.value = "";
-    };
-
-    typeEl?.addEventListener("change", syncType);
-    alcoholResult?.addEventListener("change", syncAlcoholMg);
-
-    syncType();
-  }
-
-  function bindImageRow(node) {
-    const fileInput = node.querySelector(".rptImageFile");
-    const editBtn = node.querySelector(".rptEditImageBtn");
-
-    if (!fileInput) return;
-
-    fileInput.addEventListener("change", async () => {
-      const file = fileInput.files && fileInput.files[0] ? fileInput.files[0] : null;
-
-      if (!file) {
-        clearRptEditedImageState(node);
-        return;
-      }
-
-      if (!/^image\//i.test(file.type || "")) {
-        fileInput.value = "";
-        clearRptEditedImageState(node);
-
-        await Swal.fire({
-          icon: "warning",
-          title: "ไฟล์ไม่ถูกต้อง",
-          text: "กรุณาเลือกไฟล์รูปภาพเท่านั้น"
-        });
-        return;
-      }
-
-      RPT_EDITED_IMAGE_STORE.delete(fileInput);
-
-      updateRptImagePreview(
-        node,
-        file,
-        buildRptEditedImageMeta(file, false)
-      );
-    });
-
-    editBtn?.addEventListener("click", async () => {
-      await openRptImageEditor(node);
-    });
+    refreshRepeatCardSummaryAll();
   }
 
   function refreshRowIndex(listId) {
     const root = $(listId);
     if (!root) return;
-
-    const cards = Array.from(root.querySelectorAll(".rptRepeatCard"));
-    cards.forEach((card, idx) => {
-      const index = idx + 1;
-      const badge = card.querySelector(".rptRowIndex");
-      if (badge) badge.textContent = String(index);
-
-      const headTitle = card.querySelector(".rptCardHead > div:first-child");
-      if (headTitle) {
-        const type = card.getAttribute("data-type");
-        let label = "รายการ";
-        if (type === "person") label = "ผู้เกี่ยวข้อง";
-        else if (type === "stepTaken") label = "การดำเนินการ";
-        else if (type === "image") label = "รูปภาพ";
-        else if (listId === "rptDamageList") label = "ความเสียหาย";
-        else if (listId === "rptEvidenceList") label = "หลักฐาน";
-        else if (listId === "rptCauseList") label = "สาเหตุ";
-        else if (listId === "rptPreventionList") label = "การป้องกัน";
-        else if (listId === "rptLearningList") label = "ข้อสรุป/บทเรียน";
-        headTitle.textContent = `${label} ${index}`;
-      }
+    Array.from(root.querySelectorAll(".rptRepeatCard")).forEach((card, idx) => {
+      const indexEl = card.querySelector(".rptRowIndex");
+      if (indexEl) indexEl.textContent = String(idx + 1);
     });
   }
 
-  function toggleEmptyState(listId, label) {
-    const root = $(listId);
-    if (!root) return;
-
-    let empty = root.querySelector(".rptListEmpty");
-    const count = root.querySelectorAll(".rptRepeatCard").length;
-
-    if (!empty) {
-      empty = document.createElement("div");
-      empty.className = "rptListEmpty";
-      empty.innerHTML = `
-        <div class="emailEmpty" style="text-align:center">
-          ยังไม่มี${escapeHtml(label)}<br>
-          <span style="font-size:11px;color:#94a3b8">กดปุ่มเพิ่มรายการเพื่อเริ่มต้น</span>
-        </div>
-      `;
-      root.appendChild(empty);
-    }
-
-    empty.classList.toggle("hidden", count > 0);
-  }
-
-  function emptyStateLabelFor(listId) {
-    const map = {
-      rptPersonList: "ผู้เกี่ยวข้อง",
-      rptDamageList: "ความเสียหาย",
-      rptStepTakenList: "การดำเนินการ",
-      rptEvidenceList: "หลักฐาน",
-      rptCauseList: "สาเหตุ",
-      rptPreventionList: "การป้องกัน",
-      rptLearningList: "ข้อสรุป/บทเรียน",
-      rptImageList: "รูปภาพ"
-    };
-    return map[listId] || "รายการ";
-  }
-
-  function collectCheckedOptionObjects(rootId, inputName) {
-    const root = $(rootId);
-    if (!root) return [];
-
-    return Array.from(root.querySelectorAll(`input[name="${inputName}"]`)).map((el) => ({
-      value: norm(el.value),
-      checked: !!el.checked,
-      otherText: ""
-    }));
-  }
-
-  function collectWhereTypes() {
-    const root = $("rptWhereTypeSelections");
-    if (!root) return [];
-
-    return Array.from(root.querySelectorAll(".rptWhereTypeRow")).map((row) => {
-      const chk = row.querySelector(".rptWhereTypeChk");
-      const suffix = row.querySelector(".rptWhereTypeSuffix");
-
-      return {
-        value: norm(chk?.value),
-        checked: !!chk?.checked,
-        suffixText: !!chk?.checked ? norm(suffix?.value) : ""
-      };
-    }).filter((x) => x.value);
-  }
-
-  function collectPersons() {
-    return Array.from(document.querySelectorAll("#rptPersonList .rptRepeatCard")).map((card, idx) => ({
-      seq: idx + 1,
-      who: norm(card.querySelector(".rptPersonWho")?.value),
-      position: norm(card.querySelector(".rptPersonPosition")?.value),
-      positionOther: norm(card.querySelector(".rptPersonPositionOther")?.value),
-      department: norm(card.querySelector(".rptPersonDepartment")?.value),
-      departmentOther: norm(card.querySelector(".rptPersonDepartmentOther")?.value),
-      remark: norm(card.querySelector(".rptPersonRemark")?.value),
-      remarkOther: norm(card.querySelector(".rptPersonRemarkOther")?.value)
-    })).filter((x) =>
-      x.who || x.position || x.positionOther || x.department || x.departmentOther || x.remark || x.remarkOther
-    );
-  }
-
-  function collectIndexedRows(listId) {
-    return Array.from(document.querySelectorAll(`#${listId} .rptRepeatCard`)).map((card, idx) => ({
-      seq: idx + 1,
-      title: norm(card.querySelector(".rptIdxTitle")?.value),
-      detail: norm(card.querySelector(".rptIdxDetail")?.value)
-    })).filter((x) => x.title || x.detail);
-  }
-
-  function collectStepTakens() {
-    return Array.from(document.querySelectorAll("#rptStepTakenList .rptRepeatCard")).map((card, idx) => ({
-      seq: idx + 1,
-      actionType: norm(card.querySelector(".rptStepActionType")?.value),
-      actionTypeOther: norm(card.querySelector(".rptStepActionTypeOther")?.value),
-      alcoholResult: norm(card.querySelector(".rptAlcoholResult")?.value),
-      alcoholMgPercent: norm(card.querySelector(".rptAlcoholMgPercent")?.value),
-      drugConfirmed: norm(card.querySelector(".rptDrugConfirmed")?.value),
-      drugShortDetail: norm(card.querySelector(".rptDrugShortDetail")?.value),
-      detail: norm(card.querySelector(".rptStepDetail")?.value)
-    })).filter((x) =>
-      x.actionType || x.actionTypeOther || x.alcoholResult || x.alcoholMgPercent || x.drugConfirmed || x.drugShortDetail || x.detail
-    );
-  }
-
-  async function fileToBase64(file) {
-    return new Promise((resolve, reject) => {
-      const fr = new FileReader();
-      fr.onload = () => {
-        const out = String(fr.result || "");
-        const i = out.indexOf(",");
-        resolve(i >= 0 ? out.slice(i + 1) : out);
-      };
-      fr.onerror = () => reject(fr.error || new Error("ไม่สามารถอ่านไฟล์ได้"));
-      fr.readAsDataURL(file);
-    });
-  }
-
-  async function collectImages() {
-    const rows = Array.from(document.querySelectorAll("#rptImageList .rptRepeatCard"));
-    const out = [];
-
-    for (let i = 0; i < rows.length; i++) {
-      const row = rows[i];
-      const fileInput = row.querySelector(".rptImageFile");
-      const edited = fileInput ? (RPT_EDITED_IMAGE_STORE.get(fileInput)?.file || null) : null;
-      const raw = fileInput?.files && fileInput.files[0] ? fileInput.files[0] : null;
-      const file = edited || raw;
-      const caption = norm(row.querySelector(".rptImageCaption")?.value);
-
-      if (!file && !caption) continue;
-      if (!file) throw new Error(`รูปภาพรายการที่ ${i + 1} ยังไม่ได้เลือกไฟล์`);
-      if (!/^image\//i.test(file.type || "")) {
-        throw new Error(`ไฟล์รูปภาพรายการที่ ${i + 1} ไม่ถูกต้อง`);
-      }
-
-      const base64 = await fileToBase64(file);
-      out.push({
-        filename: file.name,
-        mimeType: file.type || "application/octet-stream",
-        base64,
-        caption
-      });
-    }
-
-    return out;
-  }
-
-  function collectEmailRecipients() {
-    const checked = Array.from(document.querySelectorAll(".rptEmailChk:checked"))
-      .map((el) => norm(el.value))
+  function summarizeCard(card) {
+    const values = Array.from(card.querySelectorAll("input, textarea, select"))
+      .filter((el) => {
+        if (el.closest(".hidden")) return false;
+        if (String(el.type || "").toLowerCase() === "file") return false;
+        return true;
+      })
+      .map((el) => String(el.value || "").trim())
       .filter(Boolean);
 
-    const extra = splitMultiEmails($("rptEmailOther")?.value || "");
-    return uniqueEmails([].concat(checked).concat(extra));
-  }
+    const summary = card.querySelector(".rptCardSummary");
+    if (!summary) return;
 
-  function resetDisciplineLookupState() {
-    state.disciplineLookup = createEmptyDisciplineLookupState();
-
-    const summary = $("rptDisciplineSummary");
-    const meta = $("rptDisciplineSummaryMeta");
-
-    if (summary) summary.classList.add("hidden");
-    if (meta) meta.textContent = "";
-  }
-
-  function resetItemLookupState() {
-    state.itemLookup = createEmptyItemLookupState();
-  }
-
-  async function searchDisciplineByEmployeeCode(employeeCode) {
-    const code = norm(employeeCode);
-    if (!code) {
-      throw new Error("กรุณาระบุรหัสพนักงาน");
-    }
-
-    const res = await fetch(apiUrl(`/disciplineLookup?employeeCode=${encodeURIComponent(code)}`), {
-      method: "GET"
-    });
-
-    let json = null;
-    try {
-      json = await res.json();
-    } catch (_) {
-      throw new Error("ระบบค้นหาวินัยไม่ส่ง JSON กลับมา");
-    }
-
-    if (!res.ok || !json || !json.ok) {
-      throw new Error(json?.error || "ค้นหาการดำเนินการทางวินัยไม่สำเร็จ");
-    }
-
-    return json;
-  }
-
-  async function searchItemLookup(item) {
-    const clean = norm(item);
-    if (!clean) {
-      throw new Error("กรุณาระบุ Item");
-    }
-
-    const res = await fetch(apiUrl(`/itemLookup?item=${encodeURIComponent(clean)}`), {
-      method: "GET"
-    });
-
-    let json = null;
-    try {
-      json = await res.json();
-    } catch (_) {
-      throw new Error("ระบบค้นหา Item ไม่ส่ง JSON กลับมา");
-    }
-
-    if (!res.ok || !json || !json.ok) {
-      throw new Error(json?.error || "ค้นหารายการสินค้าไม่สำเร็จ");
-    }
-
-    state.itemLookup = {
-      item: norm(json.item),
-      description: norm(json.description),
-      displayText: norm(json.displayText),
-      found: !!json.found,
-      searched: true
-    };
-
-    return json;
-  }
-
- function renderDisciplineLookupTable(records, meta = {}) {
-  const rows = Array.isArray(records) ? records : [];
-  const count = Number(meta.count || rows.length || 0);
-  const employeeCode = escapeHtml(meta.employeeCode || "");
-  const employeeName = escapeHtml(meta.employeeName || "");
-
-  if (!rows.length) {
-    return `
-      <div class="rptLookupEmpty">
-        ไม่พบข้อมูลการดำเนินการทางวินัย
-      </div>
-    `;
-  }
-
-  const tableBody = rows.map((row) => `
-    <tr>
-      <td>${escapeHtml(row.violationDate || "")}</td>
-      <td>${escapeHtml(row.subject || "")}</td>
-      <td>${escapeHtml(row.docStatus || "")}</td>
-      <td>${escapeHtml(row.result || "")}</td>
-      <td>${escapeHtml(row.supervisor || "")}</td>
-      <td>${escapeHtml(row.actionDate || "")}</td>
-    </tr>
-  `).join("");
-
-  const cardBody = rows.map((row, idx) => `
-    <div class="rptLookupRecordCard rptLookupRecordCardCompact">
-      <div class="rptLookupRecordTop">
-        <div class="rptLookupRecordIndex">รายการ ${idx + 1}</div>
-        <div class="rptLookupRecordDate">${escapeHtml(row.violationDate || "-")}</div>
-      </div>
-
-      <div class="rptLookupRecordGrid rptLookupRecordGridCompact">
-        <div class="rptLookupRecordItem rptLookupRecordItemWide">
-          <div class="rptLookupRecordLabel">เรื่อง</div>
-          <div class="rptLookupRecordValue">${escapeHtml(row.subject || "-")}</div>
-        </div>
-
-        <div class="rptLookupRecordItem">
-          <div class="rptLookupRecordLabel">สถานะเอกสาร</div>
-          <div class="rptLookupRecordValue">${escapeHtml(row.docStatus || "-")}</div>
-        </div>
-
-        <div class="rptLookupRecordItem">
-          <div class="rptLookupRecordLabel">ผลการดำเนินการ</div>
-          <div class="rptLookupRecordValue">${escapeHtml(row.result || "-")}</div>
-        </div>
-
-        <div class="rptLookupRecordItem">
-          <div class="rptLookupRecordLabel">ผู้บังคับบัญชา</div>
-          <div class="rptLookupRecordValue">${escapeHtml(row.supervisor || "-")}</div>
-        </div>
-
-        <div class="rptLookupRecordItem">
-          <div class="rptLookupRecordLabel">วันที่ดำเนินการลงโทษ</div>
-          <div class="rptLookupRecordValue">${escapeHtml(row.actionDate || "-")}</div>
-        </div>
-      </div>
-    </div>
-  `).join("");
-
-  return `
-    <div class="rptLookupMetaCompact">
-      <div class="rptLookupMetaBar">
-        <div class="rptLookupMetaPill">รหัส: ${employeeCode || "-"}</div>
-        <div class="rptLookupMetaPill">ชื่อ: ${employeeName || "-"}</div>
-        <div class="rptLookupMetaPill">พบ ${count} รายการ</div>
-      </div>
-    </div>
-
-    <div class="rptLookupResultCard rptLookupResultCardDiscipline">
-      <div class="rptLookupDesktopView">
-        <div class="rptLookupTableWrap rptLookupTableWrapCompact">
-          <table class="rptLookupTable rptLookupTableCompact rptLookupTableDiscipline">
-            <thead>
-              <tr>
-                <th style="width:100px">วันที่กระทำผิด</th>
-                <th style="min-width:320px">เรื่อง</th>
-                <th style="width:130px">สถานะเอกสาร</th>
-                <th style="width:150px">ผลการดำเนินการ</th>
-                <th style="width:130px">ผู้บังคับบัญชา</th>
-                <th style="width:130px">วันที่ดำเนินการลงโทษ</th>
-              </tr>
-            </thead>
-            <tbody>${tableBody}</tbody>
-          </table>
-        </div>
-      </div>
-
-      <div class="rptLookupMobileView">
-        <div class="rptLookupRecordList rptLookupRecordListCompact">
-          ${cardBody}
-        </div>
-      </div>
-    </div>
-  `;
-}
- 
-function renderItemLookupResult(result) {
-  const item = escapeHtml(result?.item || "");
-  const description = escapeHtml(result?.description || "");
-  const displayText = escapeHtml(result?.displayText || "");
-  const found = !!result?.found;
-
-  if (!result || !result.item) {
-    return `
-      <div class="rptLookupState">
-        <div class="rptLookupStateInner">
-          <div class="rptLookupStateIcon">⌕</div>
-          <div class="rptLookupStateTitle">ยังไม่มีผลการค้นหา</div>
-          <div class="rptLookupStateText">กรอก Item แล้วกดค้นหา ระบบจะแสดงชื่อสินค้าและข้อความพร้อมใช้งานที่นี่</div>
-        </div>
-      </div>
-    `;
-  }
-
-  return `
-    <div class="rptLookupMetaBar">
-      <div class="rptLookupMetaPill">${found ? "พบข้อมูลสินค้า" : "ไม่พบในฐานข้อมูล"}</div>
-      <div class="rptLookupMetaPill">Item: ${item || "-"}</div>
-    </div>
-
-    <div class="rptLookupResultCard">
-      <div class="rptLookupResultGrid rptLookupResultGridCompact">
-        <div class="rptLookupResultBox">
-          <div class="rptLookupResultLabel">รหัสสินค้า</div>
-          <div class="rptLookupResultValue">${item || "-"}</div>
-        </div>
-
-        <div class="rptLookupResultBox">
-          <div class="rptLookupResultLabel">ชื่อสินค้า</div>
-          <div class="rptLookupResultValue">${description || "-"}</div>
-        </div>
-      </div>
-
-      <div class="rptLookupResultTextBlock">
-        <div class="rptLookupResultTextTitle">ข้อความพร้อมใช้งาน</div>
-        <div class="rptLookupResultTextValue">${displayText || "-"}</div>
-      </div>
-
-      <div class="rptLookupActionRow rptLookupActionRowCompact">
-        <button type="button" id="swalRptItemCopyDesc" class="rptLookupBtn ghost">คัดลอกชื่อสินค้า</button>
-        <button type="button" id="swalRptItemCopyFull" class="rptLookupBtn ghost">คัดลอกเต็ม</button>
-        <button type="button" id="swalRptItemToSubject" class="rptLookupBtn primary">ใส่ในช่องเรื่อง</button>
-        <button type="button" id="swalRptItemToWhat" class="rptLookupBtn primary">ใส่ในเหตุที่เกิด</button>
-      </div>
-    </div>
-  `;
-}
-  
-  function attachDisciplineLookupResult(result) {
-    const records = Array.isArray(result?.records) ? result.records : [];
-    const employeeCode = norm(result?.employeeCode || result?.normalizedEmployeeCode || "");
-    const employeeName = norm(result?.employeeName || (records[0]?.employeeName || ""));
-    const normalizedEmployeeCode = norm(result?.normalizedEmployeeCode || "");
-    const matchCount = Number(result?.count || records.length || 0);
-
-    state.disciplineLookup = {
-      employeeCode,
-      employeeName,
-      normalizedEmployeeCode,
-      matchCount,
-      records,
-      attached: true,
-      searched: true
-    };
-
-    updateDisciplineSummaryCard();
-  }
-
-  function updateDisciplineSummaryCard() {
-    const box = $("rptDisciplineSummary");
-    const meta = $("rptDisciplineSummaryMeta");
-    if (!box || !meta) return;
-
-    const d = state.disciplineLookup || createEmptyDisciplineLookupState();
-
-    if (!d.attached || !d.records.length) {
-      box.classList.add("hidden");
-      meta.textContent = "";
+    if (!values.length) {
+      summary.textContent = "ยังไม่มีข้อมูล";
       return;
     }
 
-    meta.textContent = `รหัส ${d.employeeCode || "-"} • ${d.employeeName || "-"} • พบ ${d.matchCount || d.records.length} รายการ`;
-    box.classList.remove("hidden");
+    const text = values.join(" • ");
+    summary.textContent = text.length > 90 ? text.slice(0, 90) + "..." : text;
   }
 
-  function copyTextToClipboard(text, successMessage) {
-    const value = String(text || "").trim();
-    if (!value) {
-      return Swal.fire({
-        icon: "warning",
-        title: "ไม่มีข้อมูลให้คัดลอก",
-        text: "กรุณาค้นหา Item ก่อน"
-      });
-    }
+  function refreshRepeatCardSummaryAll() {
+    document.querySelectorAll(".rptRepeatCard").forEach((card) => summarizeCard(card));
+  }
 
-    const done = () => Swal.fire({
-      icon: "success",
-      title: "คัดลอกแล้ว",
-      text: successMessage || "คัดลอกข้อมูลเรียบร้อย",
-      timer: 1200,
-      showConfirmButton: false
+  function bindDynamicRow(node) {
+    if (!node) return;
+
+    const collapseBtn = node.querySelector(".rptCollapseRow");
+    const body = node.querySelector(".rptCardBody");
+    collapseBtn?.addEventListener("click", () => {
+      const isHidden = body?.classList.contains("hidden");
+      body?.classList.toggle("hidden", !isHidden);
+      collapseBtn.textContent = isHidden ? "ย่อ" : "ขยาย";
     });
 
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      return navigator.clipboard.writeText(value).then(done).catch(() => fallbackCopy(value, done));
-    }
-
-    return fallbackCopy(value, done);
-  }
-
-  function fallbackCopy(text, onDone) {
-    const ta = document.createElement("textarea");
-    ta.value = text;
-    ta.setAttribute("readonly", "readonly");
-    ta.style.position = "fixed";
-    ta.style.left = "-9999px";
-    document.body.appendChild(ta);
-    ta.select();
-    try { document.execCommand("copy"); } catch (_) {}
-    document.body.removeChild(ta);
-    if (typeof onDone === "function") onDone();
-  }
-
-  function insertItemTextToField(fieldId, text, mode = "replace") {
-    const el = $(fieldId);
-    const value = String(text || "").trim();
-
-    if (!el) {
-      return Swal.fire({
-        icon: "warning",
-        title: "ไม่พบช่องข้อมูล",
-        text: `ไม่พบฟิลด์ ${fieldId}`
-      });
-    }
-
-    if (!value) {
-      return Swal.fire({
-        icon: "warning",
-        title: "ไม่มีข้อมูลให้ใส่",
-        text: "กรุณาค้นหา Item ก่อน"
-      });
-    }
-
-    if (mode === "append" && norm(el.value)) {
-      el.value = `${norm(el.value)} ${value}`;
-    } else {
-      el.value = value;
-    }
-
-    el.dispatchEvent(new Event("input", { bubbles: true }));
-    el.dispatchEvent(new Event("change", { bubbles: true }));
-
-    return Swal.fire({
-      icon: "success",
-      title: "ใส่ข้อมูลแล้ว",
-      text: "นำข้อมูลสินค้าไปใส่ในรายงานเรียบร้อย",
-      timer: 1200,
-      showConfirmButton: false
+    node.querySelectorAll("input, textarea, select").forEach((el) => {
+      el.addEventListener("input", () => summarizeCard(node));
+      el.addEventListener("change", () => summarizeCard(node));
     });
-  }
 
-async function openDisciplineLookupPopup() {
-  const initialCode = state.disciplineLookup?.employeeCode || "";
+    node.querySelector(".rptRemoveRow")?.addEventListener("click", () => {
+      const list = node.parentElement;
+      node.remove();
+      if (list && list.id) refreshRowIndex(list.id);
+      refreshRepeatCardSummaryAll();
+    });
 
-  await Swal.fire({
-    customClass: { popup: "rptLookupPopup" },
-    confirmButtonText: "ปิด",
-    html: `
-      <div class="rptLookupModal">
-        <div class="rptLookupModalHead">
-          <div class="rptLookupModalBadge">DISCIPLINE LOOKUP</div>
-          <div class="rptLookupModalTitle">ค้นหาการดำเนินการทางวินัย</div>
-          <div class="rptLookupModalSub">ค้นหาประวัติการดำเนินการทางวินัยจากรหัสพนักงาน และเลือกแนบข้อมูลอ้างอิงนี้เข้ากับรายงานได้ทันที</div>
-        </div>
+    const imgInput = node.querySelector(".rptImageFile");
+    if (imgInput) {
+      imgInput.addEventListener("change", async () => {
+        const f = imgInput.files && imgInput.files[0] ? imgInput.files[0] : null;
+        if (!f) {
+          clearRptEditedImageState(node);
+          summarizeCard(node);
+          return;
+        }
 
-        <div class="rptLookupToolbar rptLookupToolbarCompact">
-          <div class="field">
-            <label for="swalRptDisciplineEmployeeCode">รหัสพนักงาน</label>
-            <input id="swalRptDisciplineEmployeeCode" class="rptLookupInput" value="${escapeHtml(initialCode)}" placeholder="กรอกรหัสพนักงาน">
-          </div>
-
-          <div class="rptLookupToolbarActions rptLookupToolbarActionsCompact">
-            <button type="button" id="swalRptDisciplineSearch" class="rptLookupBtn primary">ค้นหา</button>
-            <button type="button" id="swalRptDisciplineUse" class="rptLookupBtn ghost" disabled>ใช้ข้อมูลนี้กับรายงาน</button>
-          </div>
-        </div>
-
-        <div class="rptLookupBody">
-          <div id="swalRptDisciplineResult" class="rptLookupResult">
-            <div class="rptLookupState">
-              <div class="rptLookupStateInner">
-                <div class="rptLookupStateIcon">⌕</div>
-                <div class="rptLookupStateTitle">พร้อมค้นหาข้อมูลวินัย</div>
-                <div class="rptLookupStateText">กรอกรหัสพนักงานแล้วกดค้นหา ระบบจะแสดงประวัติการดำเนินการทางวินัยในพื้นที่ด้านล่าง</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    `,
-    didOpen: () => {
-      const input = document.getElementById("swalRptDisciplineEmployeeCode");
-      const btnSearch = document.getElementById("swalRptDisciplineSearch");
-      const btnUse = document.getElementById("swalRptDisciplineUse");
-      const resultBox = document.getElementById("swalRptDisciplineResult");
-
-      let latestResult = null;
-
-      const runSearch = async () => {
-        const employeeCode = norm(input?.value || "");
-        resultBox.innerHTML = `
-          <div class="rptLookupState">
-            <div class="rptLookupStateInner">
-              <div class="rptLookupStateIcon">…</div>
-              <div class="rptLookupStateTitle">กำลังค้นหา</div>
-              <div class="rptLookupStateText">ระบบกำลังค้นหาประวัติการดำเนินการทางวินัย โปรดรอสักครู่</div>
-            </div>
-          </div>
-        `;
-        btnUse.disabled = true;
-        latestResult = null;
-
-        try {
-          const json = await searchDisciplineByEmployeeCode(employeeCode);
-          latestResult = json;
-
-          const count = Number(json.count || (json.records || []).length || 0);
-          resultBox.innerHTML = renderDisciplineLookupTable(json.records || [], {
-            count,
-            employeeCode: json.employeeCode || json.normalizedEmployeeCode || "",
-            employeeName: json.employeeName || ""
+        if (!/^image\//i.test(f.type || "")) {
+          imgInput.value = "";
+          clearRptEditedImageState(node);
+          await Swal.fire({
+            icon: "warning",
+            title: "ไฟล์ไม่ถูกต้อง",
+            text: "กรุณาเลือกไฟล์รูปภาพเท่านั้น"
           });
-
-          btnUse.disabled = !(json.records && json.records.length);
-        } catch (err) {
-          resultBox.innerHTML = `<div class="rptLookupEmpty">${escapeHtml(err.message || String(err))}</div>`;
+          return;
         }
-      };
 
-      btnSearch?.addEventListener("click", runSearch);
-      input?.addEventListener("keydown", (ev) => {
-        if (ev.key === "Enter") {
-          ev.preventDefault();
-          runSearch();
-        }
-      });
-
-      btnUse?.addEventListener("click", () => {
-        if (!latestResult || !latestResult.records || !latestResult.records.length) return;
-        attachDisciplineLookupResult(latestResult);
-        Swal.close();
+        RPT_EDITED_IMAGE_STORE.delete(imgInput);
+        updateRptImagePreview(node, f, buildRptEditedImageMeta(f, false));
+        summarizeCard(node);
       });
     }
-  });
-}
-       
 
-  
-async function openItemLookupPopup() {
-  const initialItem = state.itemLookup?.item || "";
-
-  await Swal.fire({
-    customClass: { popup: "rptLookupPopup" },
-    confirmButtonText: "ปิด",
-    html: `
-      <div class="rptLookupModal">
-        <div class="rptLookupModalHead">
-          <div class="rptLookupModalBadge">ITEM LOOKUP</div>
-          <div class="rptLookupModalTitle">ค้นหารายการสินค้า</div>
-          <div class="rptLookupModalSub">ค้นหา Item เพื่อคัดลอกชื่อสินค้า หรือแทรกข้อความลงในหัวข้อเรื่องและรายละเอียดเหตุการณ์ได้ทันที</div>
-        </div>
-
-        <div class="rptLookupToolbar rptLookupToolbarCompact">
-          <div class="field">
-            <label for="swalRptItemCode">Item</label>
-            <input id="swalRptItemCode" class="rptLookupInput" value="${escapeHtml(initialItem)}" placeholder="กรอก Item เช่น 170643654">
-          </div>
-
-          <div class="rptLookupToolbarActions rptLookupToolbarActionsCompact">
-            <button type="button" id="swalRptItemSearch" class="rptLookupBtn primary">ค้นหา</button>
-          </div>
-        </div>
-
-        <div class="rptLookupBody">
-          <div id="swalRptItemResult" class="rptLookupResult">
-            <div class="rptLookupState">
-              <div class="rptLookupStateInner">
-                <div class="rptLookupStateIcon">⌕</div>
-                <div class="rptLookupStateTitle">พร้อมค้นหา Item</div>
-                <div class="rptLookupStateText">กรอกหมายเลขสินค้าแล้วกดค้นหา ระบบจะแสดงชื่อสินค้าและข้อความพร้อมใช้งานในพื้นที่ด้านล่าง</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    `,
-    didOpen: () => {
-      const input = document.getElementById("swalRptItemCode");
-      const btnSearch = document.getElementById("swalRptItemSearch");
-      const resultBox = document.getElementById("swalRptItemResult");
-
-      const bindResultActions = (result) => {
-        document.getElementById("swalRptItemCopyDesc")?.addEventListener("click", () => {
-          copyTextToClipboard(result.description || "", "คัดลอกชื่อสินค้าเรียบร้อย");
-        });
-
-        document.getElementById("swalRptItemCopyFull")?.addEventListener("click", () => {
-          copyTextToClipboard(result.displayText || "", "คัดลอก Item และชื่อสินค้าเรียบร้อย");
-        });
-
-        document.getElementById("swalRptItemToSubject")?.addEventListener("click", () => {
-          insertItemTextToField("rptSubject", result.displayText || result.description || "", "replace");
-        });
-
-        document.getElementById("swalRptItemToWhat")?.addEventListener("click", () => {
-          insertItemTextToField("rptWhatHappen", result.displayText || result.description || "", "append");
-        });
-      };
-
-      const runSearch = async () => {
-        const item = norm(input?.value || "");
-        resultBox.innerHTML = `
-          <div class="rptLookupState">
-            <div class="rptLookupStateInner">
-              <div class="rptLookupStateIcon">…</div>
-              <div class="rptLookupStateTitle">กำลังค้นหา</div>
-              <div class="rptLookupStateText">ระบบกำลังค้นหารายการสินค้า โปรดรอสักครู่</div>
-            </div>
-          </div>
-        `;
-
-        try {
-          const json = await searchItemLookup(item);
-          resultBox.innerHTML = renderItemLookupResult(json);
-          bindResultActions(json);
-        } catch (err) {
-          resultBox.innerHTML = `<div class="rptLookupEmpty">${escapeHtml(err.message || String(err))}</div>`;
-        }
-      };
-
-      btnSearch?.addEventListener("click", runSearch);
-      input?.addEventListener("keydown", (ev) => {
-        if (ev.key === "Enter") {
-          ev.preventDefault();
-          runSearch();
-        }
-      });
-
-      if (state.itemLookup?.searched) {
-        const existing = {
-          item: state.itemLookup.item,
-          description: state.itemLookup.description,
-          displayText: state.itemLookup.displayText,
-          found: state.itemLookup.found
-        };
-        resultBox.innerHTML = renderItemLookupResult(existing);
-        bindResultActions(existing);
-      }
-    }
-  });
-}
-  async function openAttachedDisciplinePreview() {
-  const d = state.disciplineLookup || createEmptyDisciplineLookupState();
-  if (!d.attached || !d.records.length) {
-    await Swal.fire({
-      icon: "info",
-      title: "ยังไม่มีข้อมูล",
-      text: "ยังไม่ได้แนบข้อมูลวินัยกับรายงานนี้"
+    node.querySelector(".rptEditImageBtn")?.addEventListener("click", async () => {
+      await openRptImageEditor(node);
+      summarizeCard(node);
     });
-    return;
+
+    const actionType = node.querySelector(".rptStepActionType");
+    if (actionType) {
+      const syncActionType = () => {
+        const v = norm(actionType.value);
+        const otherWrap = node.querySelector(".rptStepActionTypeOtherWrap");
+        const alcoholResultWrap = node.querySelector(".rptAlcoholResultWrap");
+        const alcoholMgWrap = node.querySelector(".rptAlcoholMgWrap");
+        const drugConfirmedWrap = node.querySelector(".rptDrugConfirmedWrap");
+        const drugDetailWrap = node.querySelector(".rptDrugDetailWrap");
+
+        otherWrap?.classList.toggle("hidden", !isOther(v));
+        alcoholResultWrap?.classList.toggle("hidden", !(v.includes("แอลกอฮอล์") || v.toLowerCase().includes("alcohol")));
+        alcoholMgWrap?.classList.toggle("hidden", !(v.includes("แอลกอฮอล์") || v.toLowerCase().includes("alcohol")));
+        drugConfirmedWrap?.classList.toggle("hidden", !(v.includes("สารเสพติด") || v.toLowerCase().includes("drug")));
+        drugDetailWrap?.classList.toggle("hidden", !(v.includes("สารเสพติด") || v.toLowerCase().includes("drug")));
+      };
+
+      actionType.addEventListener("change", syncActionType);
+      syncActionType();
+    }
+
+    const position = node.querySelector(".rptPersonPosition");
+    if (position) {
+      const sync = () => {
+        node.querySelector(".rptPersonPositionOtherWrap")?.classList.toggle("hidden", !isOther(position.value));
+      };
+      position.addEventListener("change", sync);
+      sync();
+    }
+
+    const dept = node.querySelector(".rptPersonDepartment");
+    if (dept) {
+      const sync = () => {
+        node.querySelector(".rptPersonDepartmentOtherWrap")?.classList.toggle("hidden", !isOther(dept.value));
+      };
+      dept.addEventListener("change", sync);
+      sync();
+    }
+
+    const remark = node.querySelector(".rptPersonRemark");
+    if (remark) {
+      const sync = () => {
+        node.querySelector(".rptPersonRemarkOtherWrap")?.classList.toggle("hidden", !isOther(remark.value));
+      };
+      remark.addEventListener("change", sync);
+      sync();
+    }
   }
 
-  await Swal.fire({
-    title: "ข้อมูลวินัยที่แนบกับรายงาน",
-    width: 1280,
-    confirmButtonText: "ปิด",
-    customClass: {
-      popup: "rptLookupPopup rptLookupPreviewPopup",
-      title: "rptLookupPreviewTitle",
-      htmlContainer: "rptLookupPreviewHtml"
-    },
-    html: `
-      <div class="rptLookupPreviewWrap">
-        ${renderDisciplineLookupTable(d.records, {
-          count: d.matchCount,
-          employeeCode: d.employeeCode,
-          employeeName: d.employeeName
-        })}
-      </div>
-    `
-  });
-}
-  function clearDisciplineLookup() {
-    resetDisciplineLookupState();
+  function addPersonRow() {
+    const idx = document.querySelectorAll("#rptPersonList .rptRepeatCard").length + 1;
+    appendRow("rptPersonList", createPersonRowHtml(idx));
+  }
+
+  function addDamageRow() {
+    const idx = document.querySelectorAll("#rptDamageList .rptRepeatCard").length + 1;
+    appendRow("rptDamageList", createSimpleIndexedRowHtml("damage", idx, "ความเสียหาย", "รายละเอียด", "หัวข้อความเสียหาย", "รายละเอียดเพิ่มเติม"));
+  }
+
+  function addStepTakenRow() {
+    const idx = document.querySelectorAll("#rptStepTakenList .rptRepeatCard").length + 1;
+    appendRow("rptStepTakenList", createStepTakenRowHtml(idx));
+  }
+
+  function addEvidenceRow() {
+    const idx = document.querySelectorAll("#rptEvidenceList .rptRepeatCard").length + 1;
+    appendRow("rptEvidenceList", createSimpleIndexedRowHtml("evidence", idx, "หลักฐาน", "รายละเอียด", "หัวข้อหลักฐาน", "รายละเอียดเพิ่มเติม"));
+  }
+
+  function addCauseRow() {
+    const idx = document.querySelectorAll("#rptCauseList .rptRepeatCard").length + 1;
+    appendRow("rptCauseList", createSimpleIndexedRowHtml("cause", idx, "สาเหตุ", "รายละเอียด", "หัวข้อสาเหตุ", "รายละเอียดเพิ่มเติม"));
+  }
+
+  function addPreventionRow() {
+    const idx = document.querySelectorAll("#rptPreventionList .rptRepeatCard").length + 1;
+    appendRow("rptPreventionList", createSimpleIndexedRowHtml("prevention", idx, "การป้องกัน", "รายละเอียด", "หัวข้อการป้องกัน", "รายละเอียดเพิ่มเติม"));
+  }
+
+  function addLearningRow() {
+    const idx = document.querySelectorAll("#rptLearningList .rptRepeatCard").length + 1;
+    appendRow("rptLearningList", createSimpleIndexedRowHtml("learning", idx, "ข้อสรุป/บทเรียน", "รายละเอียด", "หัวข้อข้อสรุป", "รายละเอียดเพิ่มเติม"));
+  }
+
+  function addImageRow() {
+    const idx = document.querySelectorAll("#rptImageList .rptRepeatCard").length + 1;
+    appendRow("rptImageList", createImageRowHtml(idx));
+  }
+
+  function bindTopButtons() {
+    if (state.buttonsBound) return;
+    state.buttonsBound = true;
+
+    $("btnRptAddPerson")?.addEventListener("click", addPersonRow);
+    $("btnRptAddDamage")?.addEventListener("click", addDamageRow);
+    $("btnRptAddStepTaken")?.addEventListener("click", addStepTakenRow);
+    $("btnRptAddEvidence")?.addEventListener("click", addEvidenceRow);
+    $("btnRptAddCause")?.addEventListener("click", addCauseRow);
+    $("btnRptAddPrevention")?.addEventListener("click", addPreventionRow);
+    $("btnRptAddLearning")?.addEventListener("click", addLearningRow);
+    $("btnRptAddImage")?.addEventListener("click", addImageRow);
+
+    $("btnRptEmailCheckAll")?.addEventListener("click", () => setAllChecks(".rptEmailChk", true));
+    $("btnRptEmailClearAll")?.addEventListener("click", () => setAllChecks(".rptEmailChk", false));
+
+    $("btnRptPreview")?.addEventListener("click", preview);
+    $("btnRptSubmit")?.addEventListener("click", async () => {
+      try {
+        await submitWithEditSupport();
+      } catch (err) {
+        console.error(err);
+        await Swal.fire({
+          icon: "error",
+          title: "บันทึกไม่สำเร็จ",
+          text: err?.message || String(err)
+        });
+      }
+    });
   }
 
   function bindLookupButtons() {
@@ -6444,25 +7919,393 @@ async function openItemLookupPopup() {
     $("btnRptItemLookup")?.addEventListener("click", openItemLookupPopup);
   }
 
-  function appendDisciplinePayloadToReport500Payload(payload) {
-    const d = state.disciplineLookup || createEmptyDisciplineLookupState();
+  function bindEditButtons() {
+    if (state.editButtonsBound) return;
+    state.editButtonsBound = true;
 
-    payload.disciplineEmployeeCode = d.attached ? (d.employeeCode || "") : "";
-    payload.disciplineEmployeeName = d.attached ? (d.employeeName || "") : "";
-    payload.disciplineMatchCount = d.attached ? Number(d.matchCount || d.records.length || 0) : 0;
-    payload.disciplineReferenceJson = d.attached ? JSON.stringify(d.records || []) : "";
+    $("btnLoadReport500ForEdit")?.addEventListener("click", async () => {
+      try {
+        await loadForEdit();
+        await Swal.fire({
+          icon: "success",
+          title: "โหลดเอกสารสำเร็จ",
+          text: `เข้าสู่โหมดแก้ไข Rev.${state.currentBaseRevisionNo || "-"}`
+        });
+      } catch (err) {
+        console.error(err);
+        await Swal.fire({
+          icon: "error",
+          title: "โหลดเอกสารไม่สำเร็จ",
+          text: err?.message || String(err)
+        });
+      }
+    });
 
-    return payload;
+    $("btnCancelReport500Edit")?.addEventListener("click", () => {
+      cancelEditMode();
+    });
+  }
+
+  function resetEditState() {
+    state.formMode = "create";
+    state.currentRecordId = "";
+    state.currentParentRecordId = "";
+    state.currentRevisionNo = 0;
+    state.currentBaseRecordId = "";
+    state.currentBaseRevisionNo = 0;
+    state.existingImages = [];
+    state.keepImageIds = [];
+    state.deleteImageIds = [];
+    renderReport500EditModeUi();
+    renderReport500ExistingImages();
+  }
+
+  function renderReport500EditModeUi() {
+    const badge = $("report500ModeBadge");
+    const cancelBtn = $("btnCancelReport500Edit");
+    const meta = $("report500EditMeta");
+    const submitBtn = $("btnRptSubmit");
+
+    if (badge) {
+      badge.classList.remove("create", "edit", "draft");
+      if (state.formMode === "edit") {
+        badge.classList.add("edit");
+        badge.textContent = `โหมด: แก้ไข Rev.${state.currentBaseRevisionNo || "-"}`;
+      } else if (state.formMode === "recover_draft") {
+        badge.classList.add("draft");
+        badge.textContent = "โหมด: กู้คืน draft";
+      } else {
+        badge.classList.add("create");
+        badge.textContent = "โหมด: สร้างใหม่";
+      }
+    }
+
+    if (cancelBtn) {
+      cancelBtn.classList.toggle("hidden", state.formMode !== "edit");
+    }
+
+    if (submitBtn) {
+      submitBtn.textContent = state.formMode === "edit" ? "บันทึกเป็นฉบับแก้ไข" : "บันทึกและสร้าง PDF";
+    }
+
+    if (meta) {
+      if (state.formMode === "edit") {
+        meta.innerHTML = `
+          <div class="revisionMetaInline">
+            <div><b>RecordId:</b> ${escapeHtml(state.currentBaseRecordId || "-")}</div>
+            <div><b>Revision เดิม:</b> ${escapeHtml(String(state.currentBaseRevisionNo || "-"))}</div>
+          </div>
+        `;
+        meta.classList.remove("hidden");
+      } else {
+        meta.innerHTML = "";
+        meta.classList.add("hidden");
+      }
+    }
+  }
+
+  function hydrateReport500Images(images) {
+    state.existingImages = Array.isArray(images) ? images.map((x) => ({
+      fileId: String(x?.fileId || "").trim(),
+      url: String(x?.url || "").trim(),
+      name: String(x?.name || "").trim()
+    })).filter((x) => x.fileId) : [];
+
+    state.keepImageIds = state.existingImages.map((x) => x.fileId);
+    state.deleteImageIds = [];
+    renderReport500ExistingImages();
+  }
+
+  function renderReport500ExistingImages() {
+    const root = $("rptExistingImagesContainer");
+    if (!root) return;
+
+    if (!state.existingImages.length) {
+      root.innerHTML = `<div class="swalNote">ไม่มีรูปภาพเดิม</div>`;
+      return;
+    }
+
+    root.innerHTML = state.existingImages.map((img, idx) => {
+      const kept = state.keepImageIds.includes(img.fileId) && !state.deleteImageIds.includes(img.fileId);
+      return `
+        <div class="existingAssetCard" data-file-id="${escapeHtml(img.fileId)}">
+          <div class="existingAssetTitle">รูปเดิม ${idx + 1}</div>
+          <img class="existingAssetPreview" src="${escapeHtml(img.url)}" alt="${escapeHtml(img.name || ("image-" + (idx + 1)))}">
+          <div class="signatureModeActions">
+            <button type="button" class="btn ghost rptKeepExistingImage" data-file-id="${escapeHtml(img.fileId)}">
+              ${kept ? "คงรูปนี้ไว้" : "นำรูปนี้กลับมาใช้"}
+            </button>
+            <button type="button" class="btn ghost rptDeleteExistingImage" data-file-id="${escapeHtml(img.fileId)}">
+              ${kept ? "ลบรูปนี้" : "ยกเลิกการลบ"}
+            </button>
+          </div>
+          <div class="fieldHint">${kept ? "สถานะ: ใช้รูปเดิม" : "สถานะ: ลบออกจากฉบับแก้ไข"}</div>
+        </div>
+      `;
+    }).join("");
+
+    root.querySelectorAll(".rptKeepExistingImage").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const id = String(btn.dataset.fileId || "").trim();
+        if (!id) return;
+        if (!state.keepImageIds.includes(id)) state.keepImageIds.push(id);
+        state.deleteImageIds = state.deleteImageIds.filter((x) => x !== id);
+        renderReport500ExistingImages();
+      });
+    });
+
+    root.querySelectorAll(".rptDeleteExistingImage").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const id = String(btn.dataset.fileId || "").trim();
+        if (!id) return;
+
+        const isDeleted = state.deleteImageIds.includes(id);
+        if (isDeleted) {
+          state.deleteImageIds = state.deleteImageIds.filter((x) => x !== id);
+          if (!state.keepImageIds.includes(id)) state.keepImageIds.push(id);
+        } else {
+          state.deleteImageIds.push(id);
+          state.keepImageIds = state.keepImageIds.filter((x) => x !== id);
+        }
+
+        renderReport500ExistingImages();
+      });
+    });
+  }
+
+  function fillPersonRows(rows) {
+    $("rptPersonList").innerHTML = "";
+    (Array.isArray(rows) ? rows : []).forEach(() => addPersonRow());
+
+    const cards = Array.from(document.querySelectorAll("#rptPersonList .rptRepeatCard"));
+    cards.forEach((card, index) => {
+      const row = rows[index] || {};
+      card.querySelector(".rptPersonWho") && (card.querySelector(".rptPersonWho").value = row.who || "");
+      card.querySelector(".rptPersonPosition") && (card.querySelector(".rptPersonPosition").value = row.position || "");
+      card.querySelector(".rptPersonPositionOther") && (card.querySelector(".rptPersonPositionOther").value = row.positionOther || "");
+      card.querySelector(".rptPersonDepartment") && (card.querySelector(".rptPersonDepartment").value = row.department || "");
+      card.querySelector(".rptPersonDepartmentOther") && (card.querySelector(".rptPersonDepartmentOther").value = row.departmentOther || "");
+      card.querySelector(".rptPersonRemark") && (card.querySelector(".rptPersonRemark").value = row.remark || "");
+      card.querySelector(".rptPersonRemarkOther") && (card.querySelector(".rptPersonRemarkOther").value = row.remarkOther || "");
+    });
+  }
+
+  function fillSimpleRows(listId, addFn, rows) {
+    const root = $(listId);
+    if (!root) return;
+    root.innerHTML = "";
+    (Array.isArray(rows) ? rows : []).forEach(() => addFn());
+
+    const cards = Array.from(root.querySelectorAll(".rptRepeatCard"));
+    cards.forEach((card, index) => {
+      const row = rows[index] || {};
+      card.querySelector(".rptIdxTitle") && (card.querySelector(".rptIdxTitle").value = row.title || "");
+      card.querySelector(".rptIdxDetail") && (card.querySelector(".rptIdxDetail").value = row.detail || "");
+    });
+  }
+
+  function fillStepRows(rows) {
+    $("rptStepTakenList").innerHTML = "";
+    (Array.isArray(rows) ? rows : []).forEach(() => addStepTakenRow());
+
+    const cards = Array.from(document.querySelectorAll("#rptStepTakenList .rptRepeatCard"));
+    cards.forEach((card, index) => {
+      const row = rows[index] || {};
+      card.querySelector(".rptStepActionType") && (card.querySelector(".rptStepActionType").value = row.actionType || "");
+      card.querySelector(".rptStepActionTypeOther") && (card.querySelector(".rptStepActionTypeOther").value = row.actionTypeOther || "");
+      card.querySelector(".rptAlcoholResult") && (card.querySelector(".rptAlcoholResult").value = row.alcoholResult || "");
+      card.querySelector(".rptAlcoholMgPercent") && (card.querySelector(".rptAlcoholMgPercent").value = row.alcoholMgPercent || "");
+      card.querySelector(".rptDrugConfirmed") && (card.querySelector(".rptDrugConfirmed").value = row.drugConfirmed || "");
+      card.querySelector(".rptDrugShortDetail") && (card.querySelector(".rptDrugShortDetail").value = row.drugShortDetail || "");
+      card.querySelector(".rptStepDetail") && (card.querySelector(".rptStepDetail").value = row.detail || "");
+
+      const event = new Event("change");
+      card.querySelector(".rptStepActionType")?.dispatchEvent(event);
+    });
+  }
+
+  function setWhereTypeSelections(items) {
+    const list = Array.isArray(items) ? items : [];
+    const map = new Map();
+    list.forEach((item) => {
+      map.set(String(item?.value || "").trim(), item);
+    });
+
+    document.querySelectorAll(".rptWhereTypeRow").forEach((row) => {
+      const value = String(row.getAttribute("data-value") || "").trim();
+      const chk = row.querySelector(".rptWhereTypeChk");
+      const input = row.querySelector(".rptWhereTypeSuffix");
+      const wrap = row.querySelector(".optionChoiceOther");
+      const item = map.get(value);
+
+      if (chk) chk.checked = !!item;
+      if (input) input.value = item ? String(item.suffix || "").trim() : "";
+      if (wrap) wrap.classList.toggle("hidden", !(chk?.checked && row.getAttribute("data-need-suffix") === "1"));
+    });
+  }
+
+  function hydrateReport500Form(data) {
+    if (!data || typeof data !== "object") return;
+
+    const refNo = String(data.refNo || "").trim();
+    if (refNo) {
+      const m = refNo.match(/^(\d+)-(\d{4})$/);
+      if (m) {
+        if ($("rptRefNo")) $("rptRefNo").value = m[1];
+        if ($("rptRefYear")) $("rptRefYear").value = m[2];
+      }
+    }
+
+    setReadonlyValue("rptReportedBy", norm(getAuth().name || data.reportedBy || data.lps));
+    if ($("rptReporterPosition")) $("rptReporterPosition").value = data.reporterPosition || "";
+    if ($("rptReporterPositionOther")) $("rptReporterPositionOther").value = data.reporterPositionOther || "";
+    if ($("rptReportDate")) $("rptReportDate").value = data.reportDate || todayIsoLocal();
+
+    if ($("rptBranch")) $("rptBranch").value = data.branch || "";
+    if ($("rptBranchOther")) $("rptBranchOther").value = data.branchOther || "";
+    if ($("rptSubject")) $("rptSubject").value = data.subject || "";
+
+    if ($("rptIncidentDate")) $("rptIncidentDate").value = data.incidentDate || "";
+    if ($("rptIncidentTime")) $("rptIncidentTime").value = data.incidentTime || "";
+
+    if ($("rptWhereDidItHappen")) $("rptWhereDidItHappen").value = data.whereDidItHappen || "";
+    if ($("rptArea")) $("rptArea").value = data.area || "";
+    if ($("rptWhatHappen")) $("rptWhatHappen").value = data.whatHappen || "";
+    if ($("rptOffenderStatement")) $("rptOffenderStatement").value = data.offenderStatement || "";
+    if ($("rptSummaryText")) $("rptSummaryText").value = data.summaryText || "";
+    if ($("rptEmailOther")) $("rptEmailOther").value = data.emailOther || "";
+
+    setCheckedValues("rptReportTypes", parseArray(data.reportTypesJson || data.reportTypes || []));
+    setCheckedValues("rptUrgencyTypes", parseArray(data.urgencyJson || data.urgencyTypes || []));
+    setCheckedValues("rptNotifyTo", parseArray(data.notifyToJson || data.notifyTo || []));
+    setWhereTypeSelections(parseArray(data.whereTypeJson || data.whereTypeSelections || []));
+
+    bindOtherSelect("rptBranch", "rptBranchOtherWrap", "rptBranchOther");
+    bindOtherSelect("rptReporterPosition", "rptReporterPositionOtherWrap", "rptReporterPositionOther");
+
+    const emailValues = uniqueEmails(
+      []
+        .concat(parseArray(data.emailRecipientsJson || []))
+        .concat(splitMultiEmails(data.emailRecipients || ""))
+        .concat(splitMultiEmails(data.emailOther || ""))
+    );
+    document.querySelectorAll(".rptEmailChk").forEach((chk) => {
+      chk.checked = emailValues.includes(String(chk.value || "").trim());
+    });
+
+    fillPersonRows(parseArray(data.involvedPersonsJson || data.involvedPersons || []));
+    fillSimpleRows("rptDamageList", addDamageRow, parseArray(data.damagesJson || data.damages || []));
+    fillStepRows(parseArray(data.stepTakensJson || data.stepTakens || []));
+    fillSimpleRows("rptEvidenceList", addEvidenceRow, parseArray(data.evidencesJson || data.evidences || []));
+    fillSimpleRows("rptCauseList", addCauseRow, parseArray(data.causesJson || data.causes || []));
+    fillSimpleRows("rptPreventionList", addPreventionRow, parseArray(data.preventionsJson || data.preventions || []));
+    fillSimpleRows("rptLearningList", addLearningRow, parseArray(data.learningsJson || data.learnings || []));
+
+    state.disciplineLookup = {
+      employeeCode: data.disciplineEmployeeCode || "",
+      employeeName: data.disciplineEmployeeName || "",
+      normalizedEmployeeCode: data.disciplineNormalizedEmployeeCode || "",
+      matchCount: Number(data.disciplineMatchCount || 0),
+      records: parseArray(data.disciplineReferenceJson || data.disciplineRecords || []),
+      attached: !!(Number(data.disciplineMatchCount || 0) > 0),
+      searched: !!(Number(data.disciplineMatchCount || 0) > 0)
+    };
+
+    refreshRepeatCardSummaryAll();
+  }
+
+  function collectPersonRows() {
+    return Array.from(document.querySelectorAll("#rptPersonList .rptRepeatCard")).map((card) => ({
+      who: norm(card.querySelector(".rptPersonWho")?.value),
+      position: norm(card.querySelector(".rptPersonPosition")?.value),
+      positionOther: norm(card.querySelector(".rptPersonPositionOther")?.value),
+      department: norm(card.querySelector(".rptPersonDepartment")?.value),
+      departmentOther: norm(card.querySelector(".rptPersonDepartmentOther")?.value),
+      remark: norm(card.querySelector(".rptPersonRemark")?.value),
+      remarkOther: norm(card.querySelector(".rptPersonRemarkOther")?.value)
+    })).filter((row) => Object.values(row).some(Boolean));
+  }
+
+  function collectSimpleRows(listId) {
+    return Array.from(document.querySelectorAll(`#${listId} .rptRepeatCard`)).map((card) => ({
+      title: norm(card.querySelector(".rptIdxTitle")?.value),
+      detail: norm(card.querySelector(".rptIdxDetail")?.value)
+    })).filter((row) => Object.values(row).some(Boolean));
+  }
+
+  function collectStepRows() {
+    return Array.from(document.querySelectorAll("#rptStepTakenList .rptRepeatCard")).map((card) => ({
+      actionType: norm(card.querySelector(".rptStepActionType")?.value),
+      actionTypeOther: norm(card.querySelector(".rptStepActionTypeOther")?.value),
+      alcoholResult: norm(card.querySelector(".rptAlcoholResult")?.value),
+      alcoholMgPercent: norm(card.querySelector(".rptAlcoholMgPercent")?.value),
+      drugConfirmed: norm(card.querySelector(".rptDrugConfirmed")?.value),
+      drugShortDetail: norm(card.querySelector(".rptDrugShortDetail")?.value),
+      detail: norm(card.querySelector(".rptStepDetail")?.value)
+    })).filter((row) => Object.values(row).some(Boolean));
+  }
+
+  function collectWhereTypeSelections() {
+    return Array.from(document.querySelectorAll(".rptWhereTypeRow")).map((row) => {
+      const chk = row.querySelector(".rptWhereTypeChk");
+      const input = row.querySelector(".rptWhereTypeSuffix");
+      if (!chk?.checked) return null;
+      return {
+        value: norm(chk.value),
+        suffix: norm(input?.value)
+      };
+    }).filter(Boolean);
+  }
+
+  async function collectImageFilesAsBase64() {
+    const rows = Array.from(document.querySelectorAll("#rptImageList .rptRepeatCard"));
+    const out = [];
+
+    for (const row of rows) {
+      const fileInput = row.querySelector(".rptImageFile");
+      const caption = norm(row.querySelector(".rptImageCaption")?.value);
+
+      const edited = fileInput ? (RPT_EDITED_IMAGE_STORE.get(fileInput)?.file || null) : null;
+      const raw = fileInput?.files && fileInput.files[0] ? fileInput.files[0] : null;
+      const file = edited || raw;
+
+      if (!file) continue;
+
+      const base64 = await fileToBase64(file);
+      out.push({
+        filename: file.name,
+        caption: caption,
+        base64: base64
+      });
+    }
+
+    return out;
+  }
+
+  function fileToBase64(file) {
+    return new Promise((resolve, reject) => {
+      const r = new FileReader();
+      r.onload = () => {
+        const result = String(r.result || "");
+        const base64 = result.includes(",") ? result.split(",")[1] : result;
+        resolve(base64);
+      };
+      r.onerror = reject;
+      r.readAsDataURL(file);
+    });
   }
 
   function collectPayload() {
-    const auth = getAuth();
+    const emailChecked = Array.from(document.querySelectorAll(".rptEmailChk:checked"))
+      .map((el) => norm(el.value))
+      .filter(Boolean);
 
-    const payload = {
+    const emailOther = splitMultiEmails($("rptEmailOther")?.value || "");
+    const allEmails = uniqueEmails([...emailChecked, ...emailOther]);
+
+    return {
       refNo: getRefNo(),
-      lps: norm(auth.name),
-
-      reportedBy: norm($("rptReportedBy")?.value) || norm(auth.name),
+      reportedBy: norm($("rptReportedBy")?.value),
       reporterPosition: norm($("rptReporterPosition")?.value),
       reporterPositionOther: norm($("rptReporterPositionOther")?.value),
       reportDate: norm($("rptReportDate")?.value),
@@ -6471,537 +8314,543 @@ async function openItemLookupPopup() {
       branchOther: norm($("rptBranchOther")?.value),
       subject: norm($("rptSubject")?.value),
 
-      reportTypes: collectCheckedOptionObjects("rptReportTypes", "rptReportTypes"),
-      urgencyTypes: collectCheckedOptionObjects("rptUrgencyTypes", "rptUrgencyTypes"),
-      notifyTo: collectCheckedOptionObjects("rptNotifyTo", "rptNotifyTo"),
+      reportTypes: getCheckedValues("rptReportTypes"),
+      reportTypesJson: JSON.stringify(getCheckedValues("rptReportTypes")),
+
+      urgencyTypes: getCheckedValues("rptUrgencyTypes"),
+      urgencyJson: JSON.stringify(getCheckedValues("rptUrgencyTypes")),
+
+      notifyTo: getCheckedValues("rptNotifyTo"),
+      notifyToJson: JSON.stringify(getCheckedValues("rptNotifyTo")),
 
       incidentDate: norm($("rptIncidentDate")?.value),
       incidentTime: norm($("rptIncidentTime")?.value),
-      whatHappen: norm($("rptWhatHappen")?.value),
-
       whereDidItHappen: norm($("rptWhereDidItHappen")?.value),
-      whereTypeSelections: collectWhereTypes(),
       area: norm($("rptArea")?.value),
 
-      involvedPersons: collectPersons(),
+      whereTypeSelections: collectWhereTypeSelections(),
+      whereTypeJson: JSON.stringify(collectWhereTypeSelections()),
 
-      damages: collectIndexedRows("rptDamageList"),
-      stepTakens: collectStepTakens(),
+      whatHappen: norm($("rptWhatHappen")?.value),
       offenderStatement: norm($("rptOffenderStatement")?.value),
-      evidences: collectIndexedRows("rptEvidenceList"),
       summaryText: norm($("rptSummaryText")?.value),
-      causes: collectIndexedRows("rptCauseList"),
-      preventions: collectIndexedRows("rptPreventionList"),
-      learnings: collectIndexedRows("rptLearningList"),
 
-      emailRecipients: Array.from(document.querySelectorAll(".rptEmailChk:checked"))
-        .map((el) => norm(el.value))
-        .filter(Boolean),
+      involvedPersons: collectPersonRows(),
+      involvedPersonsJson: JSON.stringify(collectPersonRows()),
+
+      damages: collectSimpleRows("rptDamageList"),
+      damagesJson: JSON.stringify(collectSimpleRows("rptDamageList")),
+
+      stepTakens: collectStepRows(),
+      stepTakensJson: JSON.stringify(collectStepRows()),
+
+      evidences: collectSimpleRows("rptEvidenceList"),
+      evidencesJson: JSON.stringify(collectSimpleRows("rptEvidenceList")),
+
+      causes: collectSimpleRows("rptCauseList"),
+      causesJson: JSON.stringify(collectSimpleRows("rptCauseList")),
+
+      preventions: collectSimpleRows("rptPreventionList"),
+      preventionsJson: JSON.stringify(collectSimpleRows("rptPreventionList")),
+
+      learnings: collectSimpleRows("rptLearningList"),
+      learningsJson: JSON.stringify(collectSimpleRows("rptLearningList")),
+
+      disciplineMatchCount: Number(state.disciplineLookup.matchCount || 0),
+      disciplineReferenceJson: JSON.stringify(state.disciplineLookup.records || []),
+
+      emailRecipients: allEmails,
+      emailRecipientsJson: JSON.stringify(allEmails),
       emailOther: norm($("rptEmailOther")?.value)
     };
-
-    appendDisciplinePayloadToReport500Payload(payload);
-    validatePayload(payload);
-    return payload;
   }
 
-  function validatePayload(p) {
-    if (!norm(p.refNo)) throw new Error("กรุณากรอก Ref No.");
-    if (!norm(p.branch)) throw new Error("กรุณาเลือกสาขา");
-    if (isOther(p.branch) && !norm(p.branchOther)) throw new Error("กรุณาระบุสาขาอื่นๆ");
-    if (!norm(p.subject)) throw new Error("กรุณากรอกเรื่อง");
+  function validatePayload(payload) {
+    const required = [
+      ["refNo", "Ref No."],
+      ["reportedBy", "รายงานโดย"],
+      ["reportDate", "วันที่รายงาน"],
+      ["branch", "สาขา"],
+      ["subject", "เรื่อง"],
+      ["incidentDate", "วันที่เกิดเหตุ"],
+      ["incidentTime", "เวลาเกิดเหตุ"],
+      ["whereDidItHappen", "สถานที่เกิดเหตุหลัก"],
+      ["whatHappen", "เหตุที่เกิด"]
+    ];
 
-    if (!(p.reportTypes || []).some((x) => x.checked)) throw new Error("กรุณาเลือกประเภทรายงานอย่างน้อย 1 รายการ");
-    if (!(p.urgencyTypes || []).some((x) => x.checked)) throw new Error("กรุณาเลือกระดับความเร่งด่วนอย่างน้อย 1 รายการ");
-    if (!(p.notifyTo || []).some((x) => x.checked)) throw new Error("กรุณาเลือกผู้รับทราบอย่างน้อย 1 รายการ");
-
-    if (!norm(p.incidentDate)) throw new Error("กรุณาเลือกวันที่เกิดเหตุ");
-    if (!norm(p.whereDidItHappen)) throw new Error("กรุณาเลือกสถานที่เกิดเหตุ");
-    if (!norm(p.whatHappen)) throw new Error("กรุณากรอกรายละเอียดเหตุการณ์");
-    if (!norm(p.reportedBy)) throw new Error("ไม่พบชื่อผู้รายงาน");
-    if (!norm(p.reportDate)) throw new Error("กรุณาเลือกวันที่รายงาน");
-
-    (p.whereTypeSelections || []).forEach((x) => {
-      const isStore = /store$/i.test(norm(x.value));
-      if (x.checked && isStore && !norm(x.suffixText)) {
-        throw new Error(`กรุณากรอกข้อมูลต่อท้าย ${x.value}`);
-      }
-    });
-
-    (p.involvedPersons || []).forEach((x, idx) => {
-      if (isOther(x.position) && !norm(x.positionOther)) {
-        throw new Error(`ผู้เกี่ยวข้องลำดับ ${idx + 1}: กรุณาระบุ Position อื่นๆ`);
-      }
-      if (isOther(x.department) && !norm(x.departmentOther)) {
-        throw new Error(`ผู้เกี่ยวข้องลำดับ ${idx + 1}: กรุณาระบุ Department อื่นๆ`);
-      }
-      if (isOther(x.remark) && !norm(x.remarkOther)) {
-        throw new Error(`ผู้เกี่ยวข้องลำดับ ${idx + 1}: กรุณาระบุ Remark อื่นๆ`);
-      }
-    });
-
-    (p.stepTakens || []).forEach((x, idx) => {
-      if (x.actionType === "ตรวจวัดปริมาณแอลกอฮอล์") {
-        if (!norm(x.alcoholResult)) {
-          throw new Error(`การดำเนินการลำดับ ${idx + 1}: กรุณาเลือกผลการตรวจแอลกอฮอล์`);
-        }
-        if (norm(x.alcoholResult) === "พบ" && !norm(x.alcoholMgPercent)) {
-          throw new Error(`การดำเนินการลำดับ ${idx + 1}: กรุณากรอกค่า Mg%`);
-        }
-      }
-      if (x.actionType === "ตรวจสารเสพติดเมทแอเฟตามีน") {
-        if (!norm(x.drugConfirmed)) {
-          throw new Error(`การดำเนินการลำดับ ${idx + 1}: กรุณากรอกผลยืนยันการเสพ`);
-        }
-      }
-      if (isOther(x.actionType) && !norm(x.actionTypeOther)) {
-        throw new Error(`การดำเนินการลำดับ ${idx + 1}: กรุณาระบุการดำเนินการอื่นๆ`);
-      }
-    });
-
-    if (isOther(p.reporterPosition) && !norm(p.reporterPositionOther)) {
-      throw new Error("กรุณาระบุตำแหน่งผู้รายงานอื่นๆ");
+    for (const [k, label] of required) {
+      if (!norm(payload[k])) return `กรุณากรอก ${label}`;
     }
-  }
 
-  function payloadSummaryHtml(payload, images) {
-    const selectedEmails = collectEmailRecipients();
+    if (!Array.isArray(payload.reportTypes) || !payload.reportTypes.length) {
+      return "กรุณาเลือกประเภทรายงานอย่างน้อย 1 รายการ";
+    }
 
-    return `
-      <div class="swalSummary">
-        <div class="swalHero">
-          <div class="swalHeroTitle">ตรวจสอบข้อมูลก่อนบันทึก</div>
-          <div class="swalHeroSub">Report</div>
-        </div>
+    if (!Array.isArray(payload.urgencyTypes) || !payload.urgencyTypes.length) {
+      return "กรุณาเลือกระดับความเร่งด่วนอย่างน้อย 1 รายการ";
+    }
 
-        <div class="swalSection">
-          <div class="swalSectionTitle">ข้อมูลหลัก</div>
-          <div class="swalKvGrid">
-            <div class="swalKv"><div class="swalKvLabel">Ref No.</div><div class="swalKvValue">${escapeHtml(payload.refNo)}</div></div>
-            <div class="swalKv"><div class="swalKvLabel">สาขา</div><div class="swalKvValue">${escapeHtml(payload.branch)}${payload.branchOther ? " (" + escapeHtml(payload.branchOther) + ")" : ""}</div></div>
-            <div class="swalKv"><div class="swalKvLabel">เรื่อง</div><div class="swalKvValue">${escapeHtml(payload.subject || "-")}</div></div>
-            <div class="swalKv"><div class="swalKvLabel">Reported by</div><div class="swalKvValue">${escapeHtml(payload.reportedBy || "-")}</div></div>
-          </div>
-        </div>
+    if (!Array.isArray(payload.notifyTo) || !payload.notifyTo.length) {
+      return "กรุณาเลือกผู้รับทราบอย่างน้อย 1 รายการ";
+    }
 
-        <div class="swalSection">
-          <div class="swalSectionTitle">เหตุการณ์</div>
-          <div class="swalKvGrid">
-            <div class="swalKv"><div class="swalKvLabel">วันที่</div><div class="swalKvValue">${escapeHtml(payload.incidentDate || "-")}</div></div>
-            <div class="swalKv"><div class="swalKvLabel">เวลา</div><div class="swalKvValue">${escapeHtml(payload.incidentTime || "-")}</div></div>
-            <div class="swalKv"><div class="swalKvLabel">สถานที่หลัก</div><div class="swalKvValue">${escapeHtml(payload.whereDidItHappen || "-")}</div></div>
-            <div class="swalKv"><div class="swalKvLabel">Area</div><div class="swalKvValue">${escapeHtml(payload.area || "-")}</div></div>
-          </div>
-        </div>
-
-        <div class="swalSection">
-          <div class="swalSectionTitle">สรุปจำนวนรายการ</div>
-          <div class="swalKvGrid">
-            <div class="swalKv"><div class="swalKvLabel">ผู้เกี่ยวข้อง</div><div class="swalKvValue">${payload.involvedPersons.length}</div></div>
-            <div class="swalKv"><div class="swalKvLabel">ความเสียหาย</div><div class="swalKvValue">${payload.damages.length}</div></div>
-            <div class="swalKv"><div class="swalKvLabel">การดำเนินการ</div><div class="swalKvValue">${payload.stepTakens.length}</div></div>
-            <div class="swalKv"><div class="swalKvLabel">หลักฐาน</div><div class="swalKvValue">${payload.evidences.length}</div></div>
-            <div class="swalKv"><div class="swalKvLabel">สาเหตุ</div><div class="swalKvValue">${payload.causes.length}</div></div>
-            <div class="swalKv"><div class="swalKvLabel">การป้องกัน</div><div class="swalKvValue">${payload.preventions.length}</div></div>
-            <div class="swalKv"><div class="swalKvLabel">ข้อสรุป/บทเรียน</div><div class="swalKvValue">${payload.learnings.length}</div></div>
-            <div class="swalKv"><div class="swalKvLabel">รูปภาพ</div><div class="swalKvValue">${images.length}</div></div>
-          </div>
-        </div>
-
-        <div class="swalSection">
-          <div class="swalSectionTitle">อีเมลปลายทาง</div>
-          <div class="swalKvValue">${selectedEmails.length} รายการ</div>
-        </div>
-      </div>
-    `;
+    return "";
   }
 
   async function preview() {
-    try {
-      const payload = collectPayload();
-      const images = await collectImages();
+    const payload = collectPayload();
+    const err = validatePayload(payload);
 
+    if (err) {
       await Swal.fire({
-        title: "สรุปก่อนบันทึก",
-        html: payloadSummaryHtml(payload, images),
-        width: 920,
-        confirmButtonText: "ปิด"
-      });
-    } catch (err) {
-      Swal.fire({
         icon: "warning",
-        title: "ตรวจสอบข้อมูลไม่ผ่าน",
-        text: err?.message || String(err)
-      });
-    }
-  }
-
-  async function submit() {
-    const auth = getAuth();
-    if (!norm(auth.pass)) {
-      Swal.fire({
-        icon: "warning",
-        title: "ยังไม่ได้เข้าสู่ระบบ",
-        text: "กรุณาเข้าสู่ระบบก่อนบันทึกข้อมูล"
+        title: "ข้อมูลไม่ครบ",
+        text: err
       });
       return;
     }
 
-    try {
-      const payload = collectPayload();
-      const images = await collectImages();
+    const imageCount = document.querySelectorAll("#rptImageList .rptRepeatCard").length;
+    const emailCount = Array.isArray(payload.emailRecipients) ? payload.emailRecipients.length : 0;
 
-      const ok = await Swal.fire({
-        icon: "question",
-        title: "ยืนยันการบันทึก Report",
-        html: payloadSummaryHtml(payload, images),
-        width: 920,
-        showCancelButton: true,
-        confirmButtonText: "ยืนยันบันทึก",
-        cancelButtonText: "ยกเลิก"
-      });
-
-      if (!ok.isConfirmed) return;
-
-      const Progress = window.ProgressUI;
-      Progress?.show(
-        "กำลังบันทึก Report",
-        "ระบบกำลังตรวจสอบข้อมูล อัปโหลดรูป สร้าง PDF และส่งอีเมล"
-      );
-
-      Progress?.activateOnly("validate", 8, "กำลังตรวจสอบข้อมูลรายงาน");
-      await (window.sleepMs ? window.sleepMs(160) : new Promise((r) => setTimeout(r, 160)));
-      Progress?.markDone("validate", 14, "ตรวจสอบข้อมูลเรียบร้อย");
-
-      Progress?.activateOnly("upload", 18, "กำลังเตรียมรูปภาพสำหรับรายงาน");
-      const uploadProg = typeof window.estimateUploadProgressByFiles === "function"
-        ? window.estimateUploadProgressByFiles(Math.max(images.length, 1), 18, 42)
-        : {
-            next: (currentIndex) => {
-              const count = Math.max(1, images.length || 1);
-              const ratio = Math.max(0, Math.min(1, currentIndex / count));
-              return Math.round(18 + ((42 - 18) * ratio));
-            }
-          };
-
-      images.forEach((_, idx) => {
-        Progress?.setProgress(uploadProg.next(idx + 1), `เตรียมรูปภาพ ${idx + 1}/${images.length || 1}`);
-      });
-
-      await (window.sleepMs ? window.sleepMs(120) : new Promise((r) => setTimeout(r, 120)));
-      Progress?.markDone("upload", 44, `เตรียมรูปภาพเรียบร้อย (${images.length} รูป)`);
-
-      Progress?.activateOnly("save", 56, "กำลังบันทึกข้อมูล Report");
-
-      const res = await fetch(apiUrl("/report500/submit"), {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          pass: auth.pass,
-          payload,
-          files: images
-        })
-      });
-
-      const text = await res.text();
-      let json = {};
-      try {
-        json = JSON.parse(text);
-      } catch (_) {
-        throw new Error("Backend ตอบกลับไม่ใช่ JSON");
-      }
-
-      if (!res.ok || !json.ok) {
-        throw new Error(json?.error || `บันทึกข้อมูลไม่สำเร็จ (HTTP ${res.status})`);
-      }
-
-      Progress?.markDone("save", 72, "บันทึกข้อมูลลงระบบเรียบร้อย");
-
-      Progress?.activateOnly("pdf", 84, "กำลังสร้างไฟล์ PDF");
-      await (window.sleepMs ? window.sleepMs(180) : new Promise((r) => setTimeout(r, 180)));
-
-      if (json.pdfFileId || json.pdfUrl) {
-        const sizeText = json.pdfSizeText ? ` (${json.pdfSizeText})` : "";
-        Progress?.markDone("pdf", 93, `สร้างไฟล์ PDF เรียบร้อย${sizeText}`);
-      } else {
-        Progress?.markDone("pdf", 93, "สร้างไฟล์ PDF เรียบร้อย");
-      }
-
-      Progress?.activateOnly("email", 97, "กำลังตรวจสอบผลการส่งอีเมล");
-      await (window.sleepMs ? window.sleepMs(160) : new Promise((r) => setTimeout(r, 160)));
-
-      const emailResult = json.emailResult || {};
-      const emailOk = !!emailResult.ok;
-      const emailSkipped = !!emailResult.skipped;
-      const attachmentMode = String(emailResult.attachmentMode || "").trim();
-      const emailErr = String(emailResult.error || "").trim();
-
-      let emailText = "ส่งอีเมลเรียบร้อย";
-      if (attachmentMode === "LINK_ONLY") emailText = "ส่งอีเมลพร้อมลิงก์ PDF";
-      if (attachmentMode === "ATTACHED") emailText = "ส่งอีเมลพร้อมไฟล์ PDF";
-
-      if (emailOk) {
-        Progress?.markDone("email", 100, emailText, emailText);
-        Progress?.success("บันทึกสำเร็จ", "รายงานถูกบันทึกเรียบร้อยแล้ว");
-      } else if (emailSkipped) {
-        Progress?.markDone("email", 100, "ไม่ได้เลือกส่งอีเมล", "ข้าม");
-        Progress?.success("บันทึกสำเร็จ", "บันทึกข้อมูลและสร้าง PDF เรียบร้อยแล้ว");
-      } else {
-        Progress?.markError("email", "ส่งอีเมลไม่สำเร็จ", 100);
-        Progress?.success("บันทึกสำเร็จ", "ข้อมูลและ PDF สำเร็จแล้ว แต่การส่งอีเมลไม่สำเร็จ");
-        Progress?.setHint(emailErr || "กรุณาตรวจสอบสิทธิ์เมลหรือขนาดไฟล์ PDF");
-      }
-
-      Progress?.hide(120);
-
-      await Swal.fire({
-        icon: (emailOk || emailSkipped) ? "success" : "warning",
-        title: (emailOk || emailSkipped) ? "บันทึก Report สำเร็จ" : "บันทึก Report สำเร็จบางส่วน",
-        showConfirmButton: false,
-        width: 820,
-        html: `
-          <div class="swalSummary">
-            <div class="swalHero">
-              <div class="swalHeroTitle">บันทึกรายงานเรียบร้อยแล้ว</div>
-              <div class="swalHeroSub">ระบบจัดเก็บข้อมูล รูปภาพ และไฟล์ PDF เรียบร้อย</div>
-              <div class="swalPillRow">
-                <div class="swalPill primary">Ref: ${escapeHtml(json.refNo || payload.refNo || "-")}</div>
-                <div class="swalPill">รูป ${Number(json.imageCount || images.length || 0)}</div>
-                <div class="swalPill">${emailOk ? "ส่งอีเมลสำเร็จ" : emailSkipped ? "ไม่ได้ส่งอีเมล" : "อีเมลไม่สำเร็จ"}</div>
-              </div>
-            </div>
-
-            <div class="swalSection">
-              <div class="swalSectionTitle">สรุปผลการบันทึก</div>
-              <div class="swalKvGrid">
-                <div class="swalKv">
-                  <div class="swalKvLabel">Ref No.</div>
-                  <div class="swalKvValue">${escapeHtml(json.refNo || payload.refNo || "-")}</div>
-                </div>
-                <div class="swalKv">
-                  <div class="swalKvLabel">เรื่อง</div>
-                  <div class="swalKvValue">${escapeHtml(payload.subject || "-")}</div>
-                </div>
-                <div class="swalKv">
-                  <div class="swalKvLabel">รูปภาพ</div>
-                  <div class="swalKvValue">${Number(json.imageCount || images.length || 0)} รูป</div>
-                </div>
-                <div class="swalKv">
-                  <div class="swalKvLabel">PDF</div>
-                  <div class="swalKvValue">${json.pdfUrl ? "สร้างแล้ว" : "ไม่พบลิงก์ PDF"}</div>
-                </div>
-                <div class="swalKv">
-                  <div class="swalKvLabel">การส่งอีเมล</div>
-                  <div class="swalKvValue">${
-                    emailOk ? emailText :
-                    emailSkipped ? "ไม่ได้เลือกผู้รับอีเมล" :
-                    `ไม่สำเร็จ${emailErr ? ` - ${escapeHtml(emailErr)}` : ""}`
-                  }</div>
-                </div>
-              </div>
-            </div>
-
-            <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:18px">
-              ${
-                json.pdfUrl
-                  ? `<button type="button" id="btnRptOpenPdfAfterSave" class="swal2-confirm swal2-styled" style="background:#2563eb">เปิด PDF</button>`
-                  : ``
-              }
-              <button type="button" id="btnRptCloseAfterSave" class="swal2-cancel swal2-styled" style="display:inline-block;background:#64748b">ปิดหน้าต่าง</button>
+    await Swal.fire({
+      title: state.formMode === "edit" ? "ตรวจสอบก่อนบันทึกฉบับแก้ไข" : "ตรวจสอบก่อนบันทึก",
+      width: 960,
+      html: `
+        <div class="swalSummary">
+          <div class="swalHero">
+            <div class="swalHeroTitle">${state.formMode === "edit" ? "สรุปข้อมูลก่อนบันทึกฉบับแก้ไข" : "สรุปข้อมูลก่อนบันทึก"}</div>
+            <div class="swalHeroSub">กรุณาตรวจสอบข้อมูลสำคัญของรายงานก่อนดำเนินการ</div>
+            <div class="swalPillRow">
+              <div class="swalPill primary">ผู้รายงาน: ${escapeHtml(payload.reportedBy || "-")}</div>
+              <div class="swalPill">Ref: ${escapeHtml(payload.refNo || "-")}</div>
+              <div class="swalPill">รูปใหม่ ${imageCount} รูป</div>
+              <div class="swalPill">Email ${emailCount} รายการ</div>
             </div>
           </div>
-        `,
-        didOpen: () => {
-          const btnOpen = document.getElementById("btnRptOpenPdfAfterSave");
-          const btnClose = document.getElementById("btnRptCloseAfterSave");
 
-          if (btnOpen && json.pdfUrl) {
-            btnOpen.addEventListener("click", () => {
-              window.open(json.pdfUrl, "_blank", "noopener,noreferrer");
-              Swal.close();
-            });
-          }
+          <div class="swalSection">
+            <div class="swalSectionTitle">ข้อมูลเอกสาร</div>
+            <div class="swalKvGrid">
+              <div class="swalKv"><div class="swalKvLabel">Ref No.</div><div class="swalKvValue">${escapeHtml(payload.refNo || "-")}</div></div>
+              <div class="swalKv"><div class="swalKvLabel">เรื่อง</div><div class="swalKvValue">${escapeHtml(payload.subject || "-")}</div></div>
+              <div class="swalKv"><div class="swalKvLabel">สาขา</div><div class="swalKvValue">${escapeHtml(payload.branch || "-")}</div></div>
+              <div class="swalKv"><div class="swalKvLabel">วันที่รายงาน</div><div class="swalKvValue">${escapeHtml(payload.reportDate || "-")}</div></div>
+            </div>
+          </div>
 
-          if (btnClose) {
-            btnClose.addEventListener("click", () => {
-              Swal.close();
-            });
-          }
-        },
-        willClose: () => {
-          resetForm();
-        }
-      });
+          <div class="swalSection">
+            <div class="swalSectionTitle">เหตุการณ์</div>
+            <div class="swalKvGrid">
+              <div class="swalKv"><div class="swalKvLabel">วันที่เกิดเหตุ</div><div class="swalKvValue">${escapeHtml(payload.incidentDate || "-")}</div></div>
+              <div class="swalKv"><div class="swalKvLabel">เวลาเกิดเหตุ</div><div class="swalKvValue">${escapeHtml(payload.incidentTime || "-")}</div></div>
+              <div class="swalKv"><div class="swalKvLabel">สถานที่หลัก</div><div class="swalKvValue">${escapeHtml(payload.whereDidItHappen || "-")}</div></div>
+              <div class="swalKv"><div class="swalKvLabel">Area</div><div class="swalKvValue">${escapeHtml(payload.area || "-")}</div></div>
+            </div>
 
-    } catch (err) {
-      console.error(err);
-      window.ProgressUI?.markError("save", err?.message || "เกิดข้อผิดพลาด", 56);
-      window.ProgressUI?.setHint("กรุณาตรวจสอบข้อมูล เครือข่าย หรือ backend แล้วลองใหม่อีกครั้ง");
+            <div class="swalDesc" style="margin-top:8px">
+              <div class="swalDescLabel">What happen</div>
+              <div class="swalDescValue">${escapeHtmlWithBr(payload.whatHappen || "-")}</div>
+            </div>
+          </div>
 
-      await Swal.fire({
-        icon: "error",
-        title: "บันทึก Report ไม่สำเร็จ",
-        text: err?.message || String(err)
-      });
+          <div class="swalSection">
+            <div class="swalSectionTitle">รายการที่เลือก</div>
+            <div class="swalKvGrid">
+              <div class="swalKv"><div class="swalKvLabel">ประเภทรายงาน</div><div class="swalKvValue">${escapeHtml((payload.reportTypes || []).join(" | ") || "-")}</div></div>
+              <div class="swalKv"><div class="swalKvLabel">ระดับความเร่งด่วน</div><div class="swalKvValue">${escapeHtml((payload.urgencyTypes || []).join(" | ") || "-")}</div></div>
+              <div class="swalKv"><div class="swalKvLabel">ผู้รับทราบ</div><div class="swalKvValue">${escapeHtml((payload.notifyTo || []).join(" | ") || "-")}</div></div>
+              <div class="swalKv"><div class="swalKvLabel">ประเภทสถานที่</div><div class="swalKvValue">${escapeHtml((payload.whereTypeSelections || []).map(x => x.value + (x.suffix ? ` (${x.suffix})` : "")).join(" | ") || "-")}</div></div>
+            </div>
+          </div>
 
-      window.ProgressUI?.hide(180);
+          <div class="swalSection">
+            <div class="swalSectionTitle">สรุปจำนวนรายการ</div>
+            <div class="swalKvGrid">
+              <div class="swalKv"><div class="swalKvLabel">ผู้เกี่ยวข้อง</div><div class="swalKvValue">${payload.involvedPersons.length}</div></div>
+              <div class="swalKv"><div class="swalKvLabel">ความเสียหาย</div><div class="swalKvValue">${payload.damages.length}</div></div>
+              <div class="swalKv"><div class="swalKvLabel">การดำเนินการ</div><div class="swalKvValue">${payload.stepTakens.length}</div></div>
+              <div class="swalKv"><div class="swalKvLabel">หลักฐาน</div><div class="swalKvValue">${payload.evidences.length}</div></div>
+              <div class="swalKv"><div class="swalKvLabel">สาเหตุ</div><div class="swalKvValue">${payload.causes.length}</div></div>
+              <div class="swalKv"><div class="swalKvLabel">การป้องกัน</div><div class="swalKvValue">${payload.preventions.length}</div></div>
+              <div class="swalKv"><div class="swalKvLabel">ข้อสรุป/บทเรียน</div><div class="swalKvValue">${payload.learnings.length}</div></div>
+              <div class="swalKv"><div class="swalKvLabel">ประวัติวินัยที่แนบ</div><div class="swalKvValue">${payload.disciplineMatchCount}</div></div>
+            </div>
+          </div>
+        </div>
+      `,
+      confirmButtonText: "ตกลง",
+      confirmButtonColor: "#2563eb"
+    });
+  }
+
+  async function openDisciplineLookupPopup() {
+    const { value: employeeCode } = await Swal.fire({
+      title: "ค้นหาข้อมูลวินัย",
+      input: "text",
+      inputLabel: "กรอกรหัสพนักงาน",
+      inputPlaceholder: "เช่น A12345",
+      confirmButtonText: "ค้นหา",
+      showCancelButton: true,
+      cancelButtonText: "ยกเลิก",
+      inputValidator: (value) => {
+        if (!norm(value)) return "กรุณากรอกรหัสพนักงาน";
+        return null;
+      }
+    });
+
+    if (!employeeCode) return;
+
+    const res = await fetch(apiUrl(`/disciplineLookup?employeeCode=${encodeURIComponent(employeeCode)}`), {
+      method: "GET"
+    });
+    const text = await res.text();
+
+    let json = {};
+    try {
+      json = JSON.parse(text);
+    } catch (_) {
+      throw new Error("Backend ตอบกลับไม่ใช่ JSON");
     }
+
+    if (!res.ok || !json.ok) {
+      throw new Error(json?.error || `ค้นหาวินัยไม่สำเร็จ (HTTP ${res.status})`);
+    }
+
+    state.disciplineLookup = {
+      employeeCode: json.employeeCode || employeeCode,
+      employeeName: json.employeeName || "",
+      normalizedEmployeeCode: json.normalizedEmployeeCode || "",
+      matchCount: Number(json.matchCount || 0),
+      records: Array.isArray(json.records) ? json.records : [],
+      attached: true,
+      searched: true
+    };
+
+    await Swal.fire({
+      icon: "success",
+      title: "ค้นหาสำเร็จ",
+      text: `พบข้อมูลวินัย ${state.disciplineLookup.matchCount} รายการ`
+    });
+  }
+
+  async function openAttachedDisciplinePreview() {
+    if (!state.disciplineLookup.attached || !state.disciplineLookup.records.length) {
+      await Swal.fire({
+        icon: "info",
+        title: "ยังไม่มีข้อมูลวินัยแนบ",
+        text: "กรุณาค้นหาและแนบข้อมูลวินัยก่อน"
+      });
+      return;
+    }
+
+    const rows = state.disciplineLookup.records.map((r, idx) => `
+      <div class="swalKv" style="margin-top:8px">
+        <div class="swalKvLabel">รายการ ${idx + 1}</div>
+        <div class="swalKvValue">
+          ${escapeHtml([
+            r.violationDate || r.date || "",
+            r.subject || "",
+            r.result || "",
+            r.docStatus || ""
+          ].filter(Boolean).join(" | ") || "-")}
+        </div>
+      </div>
+    `).join("");
+
+    await Swal.fire({
+      title: "ข้อมูลวินัยที่แนบ",
+      width: 920,
+      html: `
+        <div class="swalSummary">
+          <div class="swalSection">
+            <div class="swalSectionTitle">สรุป</div>
+            <div class="swalKvGrid">
+              <div class="swalKv"><div class="swalKvLabel">รหัสพนักงาน</div><div class="swalKvValue">${escapeHtml(state.disciplineLookup.employeeCode || "-")}</div></div>
+              <div class="swalKv"><div class="swalKvLabel">ชื่อ</div><div class="swalKvValue">${escapeHtml(state.disciplineLookup.employeeName || "-")}</div></div>
+              <div class="swalKv"><div class="swalKvLabel">จำนวน</div><div class="swalKvValue">${escapeHtml(String(state.disciplineLookup.matchCount || 0))}</div></div>
+            </div>
+            ${rows}
+          </div>
+        </div>
+      `,
+      confirmButtonText: "ปิด"
+    });
+  }
+
+  async function clearDisciplineLookup() {
+    state.disciplineLookup = createEmptyDisciplineLookupState();
+    await Swal.fire({
+      icon: "success",
+      title: "ล้างข้อมูลวินัยแล้ว",
+      text: "ระบบล้างข้อมูลวินัยที่แนบเรียบร้อย"
+    });
+  }
+
+  async function openItemLookupPopup() {
+    const { value: item } = await Swal.fire({
+      title: "ค้นหา Item",
+      input: "text",
+      inputLabel: "กรอก Item",
+      inputPlaceholder: "เช่น 170643695",
+      confirmButtonText: "ค้นหา",
+      showCancelButton: true,
+      cancelButtonText: "ยกเลิก",
+      inputValidator: (value) => {
+        if (!norm(value)) return "กรุณากรอก Item";
+        return null;
+      }
+    });
+
+    if (!item) return;
+
+    const res = await fetch(apiUrl(`/itemLookup?item=${encodeURIComponent(item)}`), {
+      method: "GET"
+    });
+    const text = await res.text();
+
+    let json = {};
+    try {
+      json = JSON.parse(text);
+    } catch (_) {
+      throw new Error("Backend ตอบกลับไม่ใช่ JSON");
+    }
+
+    if (!res.ok || !json.ok) {
+      throw new Error(json?.error || `ค้นหา Item ไม่สำเร็จ (HTTP ${res.status})`);
+    }
+
+    state.itemLookup = {
+      item: json.item || item,
+      description: json.description || "",
+      displayText: json.displayText || "",
+      found: !!json.found,
+      searched: true
+    };
+
+    await Swal.fire({
+      icon: json.found ? "success" : "info",
+      title: json.found ? "พบข้อมูลสินค้า" : "ไม่พบข้อมูลสินค้า",
+      text: json.displayText || `${item} | -ไม่พบรายการสินค้า-`
+    });
+  }
+
+  async function loadForEdit() {
+    const refNo = String($("editRefNoReport500")?.value || "").trim();
+    if (!refNo) {
+      await Swal.fire({
+        icon: "warning",
+        title: "ยังไม่ได้กรอก Ref No.",
+        text: "กรุณากรอก Ref No. ที่ต้องการโหลดเพื่อแก้ไข"
+      });
+      return;
+    }
+
+    const res = await fetch(apiUrl(`/loadForEdit?type=report500&refNo=${encodeURIComponent(refNo)}`), {
+      method: "GET"
+    });
+
+    const text = await res.text();
+    let json = {};
+    try {
+      json = JSON.parse(text);
+    } catch (_) {
+      throw new Error("Backend ตอบกลับไม่ใช่ JSON");
+    }
+
+    if (!res.ok || !json.ok) {
+      throw new Error(json?.error || `โหลดเอกสารไม่สำเร็จ (HTTP ${res.status})`);
+    }
+
+    enterEditMode(json);
+    return json;
+  }
+
+  function enterEditMode(res) {
+    resetEditState();
+
+    state.formMode = "edit";
+    state.currentRecordId = String(res?.recordId || "").trim();
+    state.currentParentRecordId = String(res?.parentRecordId || "").trim();
+    state.currentRevisionNo = Number(res?.revisionNo || 0);
+    state.currentBaseRecordId = String(res?.recordId || "").trim();
+    state.currentBaseRevisionNo = Number(res?.revisionNo || 0);
+
+    hydrateReport500Form(res?.data || {});
+    hydrateReport500Images(res?.existingImages || []);
+    renderReport500EditModeUi();
+  }
+
+  async function submit() {
+    await ensureReady();
+
+    const auth = getAuth();
+    if (!auth.pass) {
+      throw new Error("ยังไม่ได้เข้าสู่ระบบ");
+    }
+
+    const payload = collectPayload();
+    const err = validatePayload(payload);
+    if (err) throw new Error(err);
+
+    const files = await collectImageFilesAsBase64();
+
+    const body = {
+      action: "report500Submit",
+      pass: auth.pass,
+      payload: payload,
+      files: files
+    };
+
+    const res = await fetch(apiUrl("/"), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body)
+    });
+
+    const text = await res.text();
+    let json = {};
+    try {
+      json = JSON.parse(text);
+    } catch (_) {
+      throw new Error("Backend ตอบกลับไม่ใช่ JSON");
+    }
+
+    if (!res.ok || !json.ok) {
+      throw new Error(json?.error || `บันทึกข้อมูลไม่สำเร็จ (HTTP ${res.status})`);
+    }
+
+    await Swal.fire({
+      icon: "success",
+      title: "บันทึกสำเร็จ",
+      text: "ระบบสร้างรายงานเรียบร้อยแล้ว"
+    });
+
+    resetForm();
+    return json;
+  }
+
+  async function submitWithEditSupport() {
+    await ensureReady();
+
+    if (state.formMode !== "edit") {
+      return submit();
+    }
+
+    const auth = getAuth();
+    if (!auth.pass) {
+      throw new Error("ยังไม่ได้เข้าสู่ระบบ");
+    }
+
+    const payload = collectPayload();
+    const err = validatePayload(payload);
+    if (err) throw new Error(err);
+
+    const files = await collectImageFilesAsBase64();
+    const editReason = norm($("report500EditReason")?.value);
+
+    const body = {
+      action: "submitEdit",
+      type: "report500",
+      pass: auth.pass,
+      baseRecordId: state.currentBaseRecordId,
+      baseRevisionNo: state.currentBaseRevisionNo,
+      editReason: editReason,
+      payload: payload,
+      files: files,
+      keepImageIds: state.keepImageIds.slice(),
+      deleteImageIds: state.deleteImageIds.slice()
+    };
+
+    const res = await fetch(apiUrl("/"), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body)
+    });
+
+    const text = await res.text();
+    let json = {};
+    try {
+      json = JSON.parse(text);
+    } catch (_) {
+      throw new Error("Backend ตอบกลับไม่ใช่ JSON");
+    }
+
+    if (!res.ok || !json.ok) {
+      throw new Error(json?.error || `บันทึกข้อมูลไม่สำเร็จ (HTTP ${res.status})`);
+    }
+
+    await Swal.fire({
+      icon: "success",
+      title: "บันทึกฉบับแก้ไขสำเร็จ",
+      text: `สร้าง Revision ใหม่เรียบร้อย Rev.${json.revisionNo || "-"}`
+    });
+
+    resetForm();
+    return json;
+  }
+
+  function cancelEditMode() {
+    resetForm();
+    resetEditState();
   }
 
   function resetForm() {
-    [
-      "rptRefNo",
-      "rptBranchOther",
-      "rptSubject",
-      "rptIncidentTime",
-      "rptWhatHappen",
-      "rptArea",
-      "rptOffenderStatement",
-      "rptSummaryText",
-      "rptReporterPositionOther",
-      "rptEmailOther"
-    ].forEach((id) => {
-      const el = $(id);
-      if (el) el.value = "";
-    });
+    if ($("rptRefNo")) $("rptRefNo").value = "";
+    if ($("rptRefYear")) setRefYear();
 
-    ["rptBranch", "rptWhereDidItHappen", "rptReporterPosition"].forEach((id) => {
-      const el = $(id);
-      if (el) el.value = "";
-    });
-
-    if ($("rptIncidentDate")) $("rptIncidentDate").value = todayIsoLocal();
+    setReadonlyValue("rptReportedBy", norm(getAuth().name));
+    if ($("rptReporterPosition")) $("rptReporterPosition").value = "";
+    if ($("rptReporterPositionOther")) $("rptReporterPositionOther").value = "";
     if ($("rptReportDate")) $("rptReportDate").value = todayIsoLocal();
 
-    setRefYear();
-    setReadonlyValue("rptReportedBy", norm(getAuth().name));
+    if ($("rptBranch")) $("rptBranch").value = "";
+    if ($("rptBranchOther")) $("rptBranchOther").value = "";
+    if ($("rptSubject")) $("rptSubject").value = "";
 
-    document.querySelectorAll('.rptEmailChk, #rptReportTypes input[type="checkbox"], #rptUrgencyTypes input[type="checkbox"], #rptNotifyTo input[type="checkbox"], #rptWhereTypeSelections input[type="checkbox"]').forEach((el) => {
-      el.checked = false;
+    if ($("rptIncidentDate")) $("rptIncidentDate").value = todayIsoLocal();
+    if ($("rptIncidentTime")) $("rptIncidentTime").value = "";
+    if ($("rptWhereDidItHappen")) {
+      $("rptWhereDidItHappen").value = state.options?.whereDidItHappenDefault || "";
+    }
+    if ($("rptArea")) $("rptArea").value = "";
+
+    if ($("rptWhatHappen")) $("rptWhatHappen").value = "";
+    if ($("rptOffenderStatement")) $("rptOffenderStatement").value = "";
+    if ($("rptSummaryText")) $("rptSummaryText").value = "";
+    if ($("rptEmailOther")) $("rptEmailOther").value = "";
+
+    setAllChecks(".rptEmailChk", false);
+    setCheckedValues("rptReportTypes", []);
+    setCheckedValues("rptUrgencyTypes", []);
+    setCheckedValues("rptNotifyTo", []);
+
+    document.querySelectorAll(".rptWhereTypeRow").forEach((row) => {
+      const chk = row.querySelector(".rptWhereTypeChk");
+      const input = row.querySelector(".rptWhereTypeSuffix");
+      const wrap = row.querySelector(".optionChoiceOther");
+      if (chk) chk.checked = false;
+      if (input) input.value = "";
+      wrap?.classList.add("hidden");
     });
 
-    document.querySelectorAll(".rptWhereTypeSuffix").forEach((el) => {
-      el.value = "";
-      el.closest(".optionChoiceOther")?.classList.add("hidden");
-    });
+    $("rptPersonList").innerHTML = "";
+    $("rptDamageList").innerHTML = "";
+    $("rptStepTakenList").innerHTML = "";
+    $("rptEvidenceList").innerHTML = "";
+    $("rptCauseList").innerHTML = "";
+    $("rptPreventionList").innerHTML = "";
+    $("rptLearningList").innerHTML = "";
+    $("rptImageList").innerHTML = "";
 
+    state.disciplineLookup = createEmptyDisciplineLookupState();
+    state.itemLookup = createEmptyItemLookupState();
+
+    if ($("report500EditReason")) $("report500EditReason").value = "";
+
+    resetEditState();
     bindOtherSelect("rptBranch", "rptBranchOtherWrap", "rptBranchOther");
     bindOtherSelect("rptReporterPosition", "rptReporterPositionOtherWrap", "rptReporterPositionOther");
-
-    if ($("rptPersonList")) $("rptPersonList").innerHTML = "";
-    if ($("rptDamageList")) $("rptDamageList").innerHTML = "";
-    if ($("rptStepTakenList")) $("rptStepTakenList").innerHTML = "";
-    if ($("rptEvidenceList")) $("rptEvidenceList").innerHTML = "";
-    if ($("rptCauseList")) $("rptCauseList").innerHTML = "";
-    if ($("rptPreventionList")) $("rptPreventionList").innerHTML = "";
-    if ($("rptLearningList")) $("rptLearningList").innerHTML = "";
-    document.querySelectorAll("#rptImageList .rptRepeatCard").forEach((row) => {
-      clearRptEditedImageState(row);
-    });
-    if ($("rptImageList")) $("rptImageList").innerHTML = "";
-
-    toggleEmptyState("rptPersonList", "ผู้เกี่ยวข้อง");
-    toggleEmptyState("rptDamageList", "ความเสียหาย");
-    toggleEmptyState("rptStepTakenList", "การดำเนินการ");
-    toggleEmptyState("rptEvidenceList", "หลักฐาน");
-    toggleEmptyState("rptCauseList", "สาเหตุ");
-    toggleEmptyState("rptPreventionList", "การป้องกัน");
-    toggleEmptyState("rptLearningList", "ข้อสรุป/บทเรียน");
-    toggleEmptyState("rptImageList", "รูปภาพ");
-
-    appendRow("rptPersonList", createPersonRowHtml(1), "ผู้เกี่ยวข้อง");
-    appendRow("rptImageList", createImageRowHtml(1), "รูปภาพ");
-
-    resetDisciplineLookupState();
-    resetItemLookupState();
-  }
-
-  function bindTopButtons() {
-  if (state.buttonsBound) return;
-  state.buttonsBound = true;
-
-  $("btnRptPreview")?.addEventListener("click", preview);
-  $("btnRptSubmit")?.addEventListener("click", submit);
-
-  $("btnRptEmailCheckAll")?.addEventListener("click", () => setAllChecks(".rptEmailChk", true));
-  $("btnRptEmailClearAll")?.addEventListener("click", () => setAllChecks(".rptEmailChk", false));
-
-  $("btnRptAddPerson")?.addEventListener("click", () => {
-    collapsePreviousCompletedRow("rptPersonList");
-    const idx = document.querySelectorAll("#rptPersonList .rptRepeatCard").length + 1;
-    appendRow("rptPersonList", createPersonRowHtml(idx), "ผู้เกี่ยวข้อง");
-  });
-
-  $("btnRptAddDamage")?.addEventListener("click", () => {
-    collapsePreviousCompletedRow("rptDamageList");
-    const idx = document.querySelectorAll("#rptDamageList .rptRepeatCard").length + 1;
-    appendRow(
-      "rptDamageList",
-      createSimpleIndexedRowHtml("damage", idx, "ความเสียหาย", "รายละเอียด", "หัวข้อความเสียหาย", "รายละเอียดเพิ่มเติม"),
-      "ความเสียหาย"
-    );
-  });
-
-  $("btnRptAddStepTaken")?.addEventListener("click", () => {
-    collapsePreviousCompletedRow("rptStepTakenList");
-    const idx = document.querySelectorAll("#rptStepTakenList .rptRepeatCard").length + 1;
-    appendRow("rptStepTakenList", createStepTakenRowHtml(idx), "การดำเนินการ");
-  });
-
-  $("btnRptAddEvidence")?.addEventListener("click", () => {
-    collapsePreviousCompletedRow("rptEvidenceList");
-    const idx = document.querySelectorAll("#rptEvidenceList .rptRepeatCard").length + 1;
-    appendRow(
-      "rptEvidenceList",
-      createSimpleIndexedRowHtml("evidence", idx, "หลักฐาน", "รายละเอียด", "หัวข้อหลักฐาน", "รายละเอียดเพิ่มเติม"),
-      "หลักฐาน"
-    );
-  });
-
-  $("btnRptAddCause")?.addEventListener("click", () => {
-    collapsePreviousCompletedRow("rptCauseList");
-    const idx = document.querySelectorAll("#rptCauseList .rptRepeatCard").length + 1;
-    appendRow(
-      "rptCauseList",
-      createSimpleIndexedRowHtml("cause", idx, "สาเหตุ", "รายละเอียด", "หัวข้อสาเหตุ", "รายละเอียดเพิ่มเติม"),
-      "สาเหตุ"
-    );
-  });
-
-  $("btnRptAddPrevention")?.addEventListener("click", () => {
-    collapsePreviousCompletedRow("rptPreventionList");
-    const idx = document.querySelectorAll("#rptPreventionList .rptRepeatCard").length + 1;
-    appendRow(
-      "rptPreventionList",
-      createSimpleIndexedRowHtml("prevention", idx, "การป้องกัน", "รายละเอียด", "หัวข้อการป้องกัน", "รายละเอียดเพิ่มเติม"),
-      "การป้องกัน"
-    );
-  });
-
-  $("btnRptAddLearning")?.addEventListener("click", () => {
-    collapsePreviousCompletedRow("rptLearningList");
-    const idx = document.querySelectorAll("#rptLearningList .rptRepeatCard").length + 1;
-    appendRow(
-      "rptLearningList",
-      createSimpleIndexedRowHtml("learning", idx, "ข้อสรุป/บทเรียน", "รายละเอียด", "หัวข้อข้อสรุป", "รายละเอียดเพิ่มเติม"),
-      "ข้อสรุป/บทเรียน"
-    );
-  });
-
-  $("btnRptAddImage")?.addEventListener("click", () => {
-    collapsePreviousCompletedRow("rptImageList");
-    const idx = document.querySelectorAll("#rptImageList .rptRepeatCard").length + 1;
-    appendRow("rptImageList", createImageRowHtml(idx), "รูปภาพ");
-  });
-}
-  function bindLookupButtons() {
-    if (state.lookupButtonsBound) return;
-    state.lookupButtonsBound = true;
-
-    $("btnRptDisciplineLookup")?.addEventListener("click", openDisciplineLookupPopup);
-    $("btnRptDisciplineView")?.addEventListener("click", openAttachedDisciplinePreview);
-    $("btnRptDisciplineClear")?.addEventListener("click", clearDisciplineLookup);
-    $("btnRptItemLookup")?.addEventListener("click", openItemLookupPopup);
   }
 
   async function ensureReady() {
@@ -7048,6 +8897,7 @@ async function openItemLookupPopup() {
 
       bindTopButtons();
       bindLookupButtons();
+      bindEditButtons();
       resetForm();
 
       state.ready = true;
@@ -7059,7 +8909,10 @@ async function openItemLookupPopup() {
   window.Report500UI = {
     ensureReady,
     preview,
-    submit,
-    reset: resetForm
+    submit: submitWithEditSupport,
+    reset: resetForm,
+    loadForEdit,
+    enterEditMode,
+    cancelEditMode
   };
 })();
