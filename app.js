@@ -2153,6 +2153,3 @@ function bindResultActionButtons_(pdfUrl) {
     });
   }
 }
-
-
-
