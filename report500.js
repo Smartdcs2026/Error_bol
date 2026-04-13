@@ -7101,7 +7101,7 @@
     disciplineLookup: createEmptyDisciplineLookupState(),
     itemLookup: createEmptyItemLookupState(),
 
-    formMode: "create",
+    formMode: "create", // create | edit | recover_draft
     currentRecordId: "",
     currentParentRecordId: "",
     currentRevisionNo: 0,
@@ -7163,7 +7163,6 @@
 
     const currentYear = new Date().getFullYear() + 543;
     const years = [currentYear - 1, currentYear, currentYear + 1];
-
     el.innerHTML = years.map((y) => `<option value="${y}">${y}</option>`).join("");
     el.value = String(currentYear);
   }
@@ -7194,19 +7193,6 @@
       out.push(s);
     });
 
-    return out;
-  }
-
-  function uniqStrings(list) {
-    const seen = new Set();
-    const out = [];
-    (Array.isArray(list) ? list : []).forEach((v) => {
-      const s = String(v || "").trim();
-      if (!s) return;
-      if (seen.has(s)) return;
-      seen.add(s);
-      out.push(s);
-    });
     return out;
   }
 
@@ -7245,20 +7231,27 @@
     el.innerHTML = buildOptionsHtml(list, withPlaceholder);
   }
 
-  function bindOtherSelect(selectId, wrapId, inputId) {
+  function syncOtherSelect(selectId, wrapId, inputId) {
     const select = $(selectId);
     const wrap = $(wrapId);
     const input = $(inputId);
     if (!select || !wrap) return;
 
-    const sync = () => {
-      const show = isOther(select.value);
-      wrap.classList.toggle("hidden", !show);
-      if (!show && input) input.value = "";
-    };
+    const show = isOther(select.value);
+    wrap.classList.toggle("hidden", !show);
+    if (!show && input) input.value = "";
+  }
 
-    select.addEventListener("change", sync);
-    sync();
+  function bindOtherSelectOnce(selectId, wrapId, inputId) {
+    const select = $(selectId);
+    if (!select || select.dataset.boundOtherSelect === "1") {
+      syncOtherSelect(selectId, wrapId, inputId);
+      return;
+    }
+
+    select.dataset.boundOtherSelect = "1";
+    select.addEventListener("change", () => syncOtherSelect(selectId, wrapId, inputId));
+    syncOtherSelect(selectId, wrapId, inputId);
   }
 
   function renderOptionMatrix(rootId, name, list) {
@@ -7475,11 +7468,7 @@
       dataUrl: result.dataUrl || ""
     });
 
-    updateRptImagePreview(
-      row,
-      result.file,
-      buildRptEditedImageMeta(result.file, true)
-    );
+    updateRptImagePreview(row, result.file, buildRptEditedImageMeta(result.file, true));
   }
 
   function createSimpleIndexedRowHtml(type, index, titleLabel, detailLabel, titlePlaceholder, detailPlaceholder) {
@@ -8087,6 +8076,10 @@
       card.querySelector(".rptPersonDepartmentOther") && (card.querySelector(".rptPersonDepartmentOther").value = row.departmentOther || "");
       card.querySelector(".rptPersonRemark") && (card.querySelector(".rptPersonRemark").value = row.remark || "");
       card.querySelector(".rptPersonRemarkOther") && (card.querySelector(".rptPersonRemarkOther").value = row.remarkOther || "");
+
+      card.querySelector(".rptPersonPosition")?.dispatchEvent(new Event("change"));
+      card.querySelector(".rptPersonDepartment")?.dispatchEvent(new Event("change"));
+      card.querySelector(".rptPersonRemark")?.dispatchEvent(new Event("change"));
     });
   }
 
@@ -8118,9 +8111,7 @@
       card.querySelector(".rptDrugConfirmed") && (card.querySelector(".rptDrugConfirmed").value = row.drugConfirmed || "");
       card.querySelector(".rptDrugShortDetail") && (card.querySelector(".rptDrugShortDetail").value = row.drugShortDetail || "");
       card.querySelector(".rptStepDetail") && (card.querySelector(".rptStepDetail").value = row.detail || "");
-
-      const event = new Event("change");
-      card.querySelector(".rptStepActionType")?.dispatchEvent(event);
+      card.querySelector(".rptStepActionType")?.dispatchEvent(new Event("change"));
     });
   }
 
@@ -8167,9 +8158,9 @@
 
     if ($("rptIncidentDate")) $("rptIncidentDate").value = data.incidentDate || "";
     if ($("rptIncidentTime")) $("rptIncidentTime").value = data.incidentTime || "";
-
     if ($("rptWhereDidItHappen")) $("rptWhereDidItHappen").value = data.whereDidItHappen || "";
     if ($("rptArea")) $("rptArea").value = data.area || "";
+
     if ($("rptWhatHappen")) $("rptWhatHappen").value = data.whatHappen || "";
     if ($("rptOffenderStatement")) $("rptOffenderStatement").value = data.offenderStatement || "";
     if ($("rptSummaryText")) $("rptSummaryText").value = data.summaryText || "";
@@ -8180,8 +8171,8 @@
     setCheckedValues("rptNotifyTo", parseArray(data.notifyToJson || data.notifyTo || []));
     setWhereTypeSelections(parseArray(data.whereTypeJson || data.whereTypeSelections || []));
 
-    bindOtherSelect("rptBranch", "rptBranchOtherWrap", "rptBranchOther");
-    bindOtherSelect("rptReporterPosition", "rptReporterPositionOtherWrap", "rptReporterPositionOther");
+    syncOtherSelect("rptBranch", "rptBranchOtherWrap", "rptBranchOther");
+    syncOtherSelect("rptReporterPosition", "rptReporterPositionOtherWrap", "rptReporterPositionOther");
 
     const emailValues = uniqueEmails(
       []
@@ -8189,6 +8180,7 @@
         .concat(splitMultiEmails(data.emailRecipients || ""))
         .concat(splitMultiEmails(data.emailOther || ""))
     );
+
     document.querySelectorAll(".rptEmailChk").forEach((chk) => {
       chk.checked = emailValues.includes(String(chk.value || "").trim());
     });
@@ -8274,8 +8266,8 @@
       const base64 = await fileToBase64(file);
       out.push({
         filename: file.name,
-        caption: caption,
-        base64: base64
+        caption,
+        base64
       });
     }
 
@@ -8303,6 +8295,18 @@
     const emailOther = splitMultiEmails($("rptEmailOther")?.value || "");
     const allEmails = uniqueEmails([...emailChecked, ...emailOther]);
 
+    const reportTypes = getCheckedValues("rptReportTypes");
+    const urgencyTypes = getCheckedValues("rptUrgencyTypes");
+    const notifyTo = getCheckedValues("rptNotifyTo");
+    const whereTypeSelections = collectWhereTypeSelections();
+    const involvedPersons = collectPersonRows();
+    const damages = collectSimpleRows("rptDamageList");
+    const stepTakens = collectStepRows();
+    const evidences = collectSimpleRows("rptEvidenceList");
+    const causes = collectSimpleRows("rptCauseList");
+    const preventions = collectSimpleRows("rptPreventionList");
+    const learnings = collectSimpleRows("rptLearningList");
+
     return {
       refNo: getRefNo(),
       reportedBy: norm($("rptReportedBy")?.value),
@@ -8314,47 +8318,47 @@
       branchOther: norm($("rptBranchOther")?.value),
       subject: norm($("rptSubject")?.value),
 
-      reportTypes: getCheckedValues("rptReportTypes"),
-      reportTypesJson: JSON.stringify(getCheckedValues("rptReportTypes")),
+      reportTypes,
+      reportTypesJson: JSON.stringify(reportTypes),
 
-      urgencyTypes: getCheckedValues("rptUrgencyTypes"),
-      urgencyJson: JSON.stringify(getCheckedValues("rptUrgencyTypes")),
+      urgencyTypes,
+      urgencyJson: JSON.stringify(urgencyTypes),
 
-      notifyTo: getCheckedValues("rptNotifyTo"),
-      notifyToJson: JSON.stringify(getCheckedValues("rptNotifyTo")),
+      notifyTo,
+      notifyToJson: JSON.stringify(notifyTo),
 
       incidentDate: norm($("rptIncidentDate")?.value),
       incidentTime: norm($("rptIncidentTime")?.value),
       whereDidItHappen: norm($("rptWhereDidItHappen")?.value),
       area: norm($("rptArea")?.value),
 
-      whereTypeSelections: collectWhereTypeSelections(),
-      whereTypeJson: JSON.stringify(collectWhereTypeSelections()),
+      whereTypeSelections,
+      whereTypeJson: JSON.stringify(whereTypeSelections),
 
       whatHappen: norm($("rptWhatHappen")?.value),
       offenderStatement: norm($("rptOffenderStatement")?.value),
       summaryText: norm($("rptSummaryText")?.value),
 
-      involvedPersons: collectPersonRows(),
-      involvedPersonsJson: JSON.stringify(collectPersonRows()),
+      involvedPersons,
+      involvedPersonsJson: JSON.stringify(involvedPersons),
 
-      damages: collectSimpleRows("rptDamageList"),
-      damagesJson: JSON.stringify(collectSimpleRows("rptDamageList")),
+      damages,
+      damagesJson: JSON.stringify(damages),
 
-      stepTakens: collectStepRows(),
-      stepTakensJson: JSON.stringify(collectStepRows()),
+      stepTakens,
+      stepTakensJson: JSON.stringify(stepTakens),
 
-      evidences: collectSimpleRows("rptEvidenceList"),
-      evidencesJson: JSON.stringify(collectSimpleRows("rptEvidenceList")),
+      evidences,
+      evidencesJson: JSON.stringify(evidences),
 
-      causes: collectSimpleRows("rptCauseList"),
-      causesJson: JSON.stringify(collectSimpleRows("rptCauseList")),
+      causes,
+      causesJson: JSON.stringify(causes),
 
-      preventions: collectSimpleRows("rptPreventionList"),
-      preventionsJson: JSON.stringify(collectSimpleRows("rptPreventionList")),
+      preventions,
+      preventionsJson: JSON.stringify(preventions),
 
-      learnings: collectSimpleRows("rptLearningList"),
-      learningsJson: JSON.stringify(collectSimpleRows("rptLearningList")),
+      learnings,
+      learningsJson: JSON.stringify(learnings),
 
       disciplineMatchCount: Number(state.disciplineLookup.matchCount || 0),
       disciplineReferenceJson: JSON.stringify(state.disciplineLookup.records || []),
@@ -8461,20 +8465,6 @@
               <div class="swalKv"><div class="swalKvLabel">ระดับความเร่งด่วน</div><div class="swalKvValue">${escapeHtml((payload.urgencyTypes || []).join(" | ") || "-")}</div></div>
               <div class="swalKv"><div class="swalKvLabel">ผู้รับทราบ</div><div class="swalKvValue">${escapeHtml((payload.notifyTo || []).join(" | ") || "-")}</div></div>
               <div class="swalKv"><div class="swalKvLabel">ประเภทสถานที่</div><div class="swalKvValue">${escapeHtml((payload.whereTypeSelections || []).map(x => x.value + (x.suffix ? ` (${x.suffix})` : "")).join(" | ") || "-")}</div></div>
-            </div>
-          </div>
-
-          <div class="swalSection">
-            <div class="swalSectionTitle">สรุปจำนวนรายการ</div>
-            <div class="swalKvGrid">
-              <div class="swalKv"><div class="swalKvLabel">ผู้เกี่ยวข้อง</div><div class="swalKvValue">${payload.involvedPersons.length}</div></div>
-              <div class="swalKv"><div class="swalKvLabel">ความเสียหาย</div><div class="swalKvValue">${payload.damages.length}</div></div>
-              <div class="swalKv"><div class="swalKvLabel">การดำเนินการ</div><div class="swalKvValue">${payload.stepTakens.length}</div></div>
-              <div class="swalKv"><div class="swalKvLabel">หลักฐาน</div><div class="swalKvValue">${payload.evidences.length}</div></div>
-              <div class="swalKv"><div class="swalKvLabel">สาเหตุ</div><div class="swalKvValue">${payload.causes.length}</div></div>
-              <div class="swalKv"><div class="swalKvLabel">การป้องกัน</div><div class="swalKvValue">${payload.preventions.length}</div></div>
-              <div class="swalKv"><div class="swalKvLabel">ข้อสรุป/บทเรียน</div><div class="swalKvValue">${payload.learnings.length}</div></div>
-              <div class="swalKv"><div class="swalKvLabel">ประวัติวินัยที่แนบ</div><div class="swalKvValue">${payload.disciplineMatchCount}</div></div>
             </div>
           </div>
         </div>
@@ -8681,7 +8671,7 @@
     renderReport500EditModeUi();
   }
 
-  async function submit() {
+  async function submitCreate() {
     await ensureReady();
 
     const auth = getAuth();
@@ -8696,13 +8686,12 @@
     const files = await collectImageFilesAsBase64();
 
     const body = {
-      action: "report500Submit",
       pass: auth.pass,
-      payload: payload,
-      files: files
+      payload,
+      files
     };
 
-    const res = await fetch(apiUrl("/"), {
+    const res = await fetch(apiUrl("/report500/submit"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body)
@@ -8734,7 +8723,7 @@
     await ensureReady();
 
     if (state.formMode !== "edit") {
-      return submit();
+      return submitCreate();
     }
 
     const auth = getAuth();
@@ -8750,19 +8739,18 @@
     const editReason = norm($("report500EditReason")?.value);
 
     const body = {
-      action: "submitEdit",
       type: "report500",
       pass: auth.pass,
       baseRecordId: state.currentBaseRecordId,
       baseRevisionNo: state.currentBaseRevisionNo,
-      editReason: editReason,
-      payload: payload,
-      files: files,
+      editReason,
+      payload,
+      files,
       keepImageIds: state.keepImageIds.slice(),
       deleteImageIds: state.deleteImageIds.slice()
     };
 
-    const res = await fetch(apiUrl("/"), {
+    const res = await fetch(apiUrl("/submitEdit"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body)
@@ -8792,7 +8780,6 @@
 
   function cancelEditMode() {
     resetForm();
-    resetEditState();
   }
 
   function resetForm() {
@@ -8849,8 +8836,8 @@
     if ($("report500EditReason")) $("report500EditReason").value = "";
 
     resetEditState();
-    bindOtherSelect("rptBranch", "rptBranchOtherWrap", "rptBranchOther");
-    bindOtherSelect("rptReporterPosition", "rptReporterPositionOtherWrap", "rptReporterPositionOther");
+    syncOtherSelect("rptBranch", "rptBranchOtherWrap", "rptBranchOther");
+    syncOtherSelect("rptReporterPosition", "rptReporterPositionOtherWrap", "rptReporterPositionOther");
   }
 
   async function ensureReady() {
@@ -8892,8 +8879,8 @@
       if ($("rptReportDate")) $("rptReportDate").value = todayIsoLocal();
       if ($("rptIncidentDate")) $("rptIncidentDate").value = todayIsoLocal();
 
-      bindOtherSelect("rptBranch", "rptBranchOtherWrap", "rptBranchOther");
-      bindOtherSelect("rptReporterPosition", "rptReporterPositionOtherWrap", "rptReporterPositionOther");
+      bindOtherSelectOnce("rptBranch", "rptBranchOtherWrap", "rptBranchOther");
+      bindOtherSelectOnce("rptReporterPosition", "rptReporterPositionOtherWrap", "rptReporterPositionOther");
 
       bindTopButtons();
       bindLookupButtons();
