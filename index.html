@@ -16,7 +16,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-  <link rel="stylesheet" href="./style.css?v=edit-revision-v1">
+  <link rel="stylesheet" href="./style.css?v=edit-revision-v2">
 </head>
 <body>
   <header class="topbar">
@@ -381,6 +381,30 @@
         </div>
       </div>
 
+      <!-- REPORT EDIT TOOLS -->
+      <div class="panel rptPanel">
+        <div class="editToolsBar">
+          <div class="field">
+            <label for="editRefNoReport500">ค้นหา Ref No.</label>
+            <input id="editRefNoReport500" placeholder="เช่น 111-2569">
+          </div>
+
+          <div class="field editReasonField">
+            <label for="report500EditReason">เหตุผลที่แก้ไข</label>
+            <input id="report500EditReason" placeholder="ระบุเหตุผลเมื่อบันทึกเป็นฉบับแก้ไข">
+          </div>
+
+          <div class="editToolActions">
+            <button id="btnLoadReport500ForEdit" class="btn ghost" type="button">โหลดเพื่อแก้ไข</button>
+            <button id="btnCancelReport500Edit" class="btn ghost hidden" type="button">ยกเลิกโหมดแก้ไข</button>
+          </div>
+
+          <div id="report500ModeBadge" class="modeBadge create">โหมด: สร้างใหม่</div>
+        </div>
+
+        <div id="report500EditMeta" class="fieldHint hidden" style="margin-top:10px"></div>
+      </div>
+
       <div class="sectionTitle rptTitle">
         <span class="dot rptDot"></span>
         <div>
@@ -672,6 +696,20 @@
       <div class="sectionTitle rptTitle">
         <span class="dot rptDot"></span>
         <div>
+          <div class="sectionMain">รูปภาพเดิมจากเอกสาร</div>
+          <div class="sectionSub">ใช้ต่อหรือลบออกจากฉบับแก้ไขได้</div>
+        </div>
+      </div>
+
+      <div class="panel rptPanel">
+        <div id="rptExistingImagesContainer" class="existingAssetsGrid">
+          <div class="swalNote">ไม่มีรูปภาพเดิม</div>
+        </div>
+      </div>
+
+      <div class="sectionTitle rptTitle">
+        <span class="dot rptDot"></span>
+        <div>
           <div class="sectionMain">รูปภาพและคำบรรยาย</div>
           <div class="sectionSub">แนบหลายรูปได้ โดย 1 แถว = 1 รูป + 1 คำบรรยาย</div>
         </div>
@@ -839,16 +877,9 @@
     </div>
   </div>
 
-  <!-- Fabric.js CDN -->
   <script src="https://cdn.jsdelivr.net/npm/fabric@5.3.0/dist/fabric.min.js"></script>
-
-  <!-- Shared image editor -->
   <script src="./image-editor.js?v=1"></script>
-
-  <!-- Report script -->
-  <script src="./report500.js?v=progress-ui-3"></script>
-
-  <!-- Main app -->
-  <script src="./app.js?v=edit-revision-v1"></script>
+  <script src="./report500.js?v=edit-revision-v2"></script>
+  <script src="./app.js?v=edit-revision-v2"></script>
 </body>
 </html>
