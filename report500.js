@@ -541,7 +541,7 @@ function submitReport500_(payload, files) {
     saveCompleted: saveCompleted,
     message: message,
     timestamp: ts,
-    refNo: rowObj.refNo,
+    refNo: refNo,
     lpsName: lpsName,
     folderId: folderId,
     imageCount: savedImages.length,
@@ -951,472 +951,6 @@ function sendReport500Email_(opts) {
   var recipients = uniqueValidEmails_(opts && opts.recipients || []);
   if (!recipients.length) return { ok: false, skipped: true, recipients: [] };
 
-  var pdfFileId = norm_(opts && opts.pdfFileId);
-  var pdfUrl = norm_(opts && opts.pdfUrl);
-  var refNo = norm_(opts && opts.refNo);
-  var subjectText = norm_(opts && opts.subjectText);
-  var incidentDateTime = norm_(opts && opts.incidentDateTime);
-  var reportedBy = norm_(opts && opts.reportedBy);
-  var branch = norm_(opts && opts.branch);
-  var pdfSizeBytes = Number(opts && opts.pdfSizeBytes || 0);
-
-  if (!pdfFileId && !pdfUrl) {
-    return {
-      ok: false,
-      skipped: false,
-      recipients: recipients,
-      error: "ไม่พบไฟล์ PDF หรือ URL สำหรับส่งอีเมล"
-    };
-  }
-
-  var mailSubject = "[REPORT] " + (refNo || "-") + (subjectText ? (" - " + subjectText) : "");
-  var htmlBody = [
-    '<div style="font-family:Arial,sans-serif;line-height:1.7;color:#111">',
-      '<div style="font-size:18px;font-weight:700;margin-bottom:12px">รายงาน Report500</div>',
-      '<div><b>Ref No:</b> ' + escapeHtml_(refNo || "-") + '</div>',
-      '<div><b>เรื่อง:</b> ' + escapeHtml_(subjectText || "-") + '</div>',
-      '<div><b>วันเวลาเกิดเหตุ:</b> ' + escapeHtml_(incidentDateTime || "-") + '</div>',
-      '<div><b>รายงานโดย:</b> ' + escapeHtml_(reportedBy || "-") + '</div>',
-      '<div><b>สาขา:</b> ' + escapeHtml_(branch || "-") + '</div>',
-      '<div style="margin-top:14px">กรุณาดูรายละเอียดจากไฟล์ PDF แนบ หรือเปิดจากลิงก์ด้านล่าง</div>',
-      pdfUrl
-        ? ('<div style="margin-top:10px"><a href="' + escapeHtml_(pdfUrl) + '" target="_blank">เปิดไฟล์ PDF</a></div>')
-        : '',
-    '</div>'
-  ].join("");
-
-  try {
-    var attachmentMode = "LINK_ONLY";
-    var mailOptions = {
-      htmlBody: htmlBody,
-      name: "S&LP Smart Form"
-    };
-
-    if (pdfFileId) {
-      try {
-        var pdfFile = DriveApp.getFileById(pdfFileId);
-        var blob = pdfFile.getBlob();
-
-        // ถ้าไฟล์ไม่ใหญ่เกินไป ให้แนบไฟล์ไปด้วย
-        if (blob && pdfSizeBytes > 0 && pdfSizeBytes <= 18 * 1024 * 1024) {
-          mailOptions.attachments = [blob];
-          attachmentMode = "ATTACHED";
-        }
-      } catch (attachErr) {
-        attachmentMode = "LINK_ONLY";
-      }
-    }
-
-    GmailApp.sendEmail(
-      recipients.join(","),
-      mailSubject,
-      "ระบบอีเมลนี้รองรับ HTML กรุณาเปิดในอีเมลไคลเอนต์ที่เหมาะสม",
-      mailOptions
-    );
-
-    return {
-      ok: true,
-      skipped: false,
-      recipients: recipients,
-      attachmentMode: attachmentMode,
-      pdfUrl: pdfUrl
-    };
-
-  } catch (err) {
-    return {
-      ok: false,
-      skipped: false,
-      recipients: recipients,
-      error: report500DescribeErr_(err)
-    };
-  }
-}
-
-/** ==========================
- *  CONFIG / ROOT FOLDER
- *  ========================== */
-function getReport500Config_() {
-  return {
-    spreadsheetId: REPORT500_SPREADSHEET_ID,
-    mainSheetName: REPORT500_MAIN_SHEET_NAME,
-    rootFolderId: REPORT500_ROOT_FOLDER_ID,
-    timezone: REPORT500_TIMEZONE,
-    formType: REPORT500_FORM_TYPE,
-    logoFileId: (typeof LOGO_FILE_ID !== "undefined" ? LOGO_FILE_ID : "")
-  };
-}
-
-function resolveReport500WritableRootFolder_(cfg) {
-  var folderId = norm_(cfg && cfg.rootFolderId);
-  if (!folderId) {
-    throw new Error("ยังไม่ได้ตั้งค่า REPORT500_ROOT_FOLDER_ID");
-  }
-  return DriveApp.getFolderById(folderId);
-}
-
-function getOrCreateSubFolderSafe_(parent, name) {
-  var folderName = sanitize_(name || "folder");
-  var it = parent.getFoldersByName(folderName);
-  if (it.hasNext()) return it.next();
-  return parent.createFolder(folderName);
-}
-
-/** ==========================
- *  DISCIPLINE SNAPSHOT
- *  ========================== */
-function normalizeReport500DisciplinePayload_(payload) {
-  payload = payload || {};
-
-  var employeeCode = norm_(payload.disciplineEmployeeCode || payload.employeeCodeForDiscipline);
-  var employeeName = norm_(payload.disciplineEmployeeName || payload.employeeNameForDiscipline);
-  var rawRecords = payload.disciplineRecords || payload.disciplineReference || [];
-
-  var records = Array.isArray(rawRecords) ? rawRecords : [];
-  var cleaned = records.map(function (row) {
-    return {
-      violationDate: norm_(row && row.violationDate),
-      employeeCode: norm_(row && row.employeeCode),
-      employeeName: norm_(row && row.employeeName),
-      department: norm_(row && row.department),
-      category: norm_(row && row.category),
-      subject: norm_(row && row.subject),
-      docStatus: norm_(row && row.docStatus),
-      result: norm_(row && row.result),
-      supervisor: norm_(row && row.supervisor),
-      actionDate: norm_(row && row.actionDate)
-    };
-  }).filter(function (row) {
-    return row.employeeCode || row.employeeName || row.subject || row.result;
-  });
-
-  return {
-    disciplineEmployeeCode: employeeCode,
-    disciplineEmployeeName: employeeName,
-    disciplineMatchCount: cleaned.length,
-    disciplineReferenceJson: JSON.stringify(cleaned)
-  };
-}
-
-/** ==========================
- *  OTHER EMAILS
- *  ========================== */
-function splitReport500OtherEmails_(text) {
-  return String(text || "")
-    .split(/[\n,;]+/)
-    .map(function (x) { return String(x || "").trim(); })
-    .filter(Boolean);
-}
-
-/** ==========================
- *  HELPERS
- *  ========================== */
-function isActiveSheetValue_(value) {
-  var s = String(value == null ? "" : value).trim().toLowerCase();
-  return s === "y" || s === "yes" || s === "true" || s === "1";
-}
-
-function isTrueLike_(value) {
-  var s = String(value == null ? "" : value).trim().toLowerCase();
-  return s === "y" || s === "yes" || s === "true" || s === "1";
-}
-
-function report500DescribeErr_(err) {
-  if (!err) return "Unknown error";
-  return String(err && err.message ? err.message : err);
-}
-function report500ResolveDisplayWithOther_(value, otherText) {
-  var v = norm_(value);
-  var o = norm_(otherText);
-  if (report500IsOther_(v) && o) return o;
-  return v || o;
-}
-
-function report500IsOther_(value) {
-  var s = String(value || "").trim().toLowerCase();
-  return s === "อื่นๆ" || s === "other" || s === "others";
-}
-
-/** ==========================
- *  FILES / EMAIL
- *  ========================== */
-function saveReport500Images_(folder, files) {
-  var out = [];
-  var list = Array.isArray(files) ? files : [];
-
-  list.forEach(function (f, idx) {
-    var base64 = String(f && f.base64 || "").trim();
-    if (!base64) return;
-
-    var mimeType = String(f && f.mimeType || "image/jpeg").trim() || "image/jpeg";
-    var filename = sanitize_(String(f && (f.filename || f.name) || ("report500_image_" + (idx + 1) + ".jpg")));
-    var caption = String(f && f.caption || "").trim();
-
-    var blob = Utilities.newBlob(Utilities.base64Decode(base64), mimeType, filename);
-    var file = folder.createFile(blob);
-
-    out.push({
-      id: file.getId(),
-      filename: filename,
-      caption: caption,
-      url: driveFileIdToViewUrl_(file.getId())
-    });
-  });
-
-  return out;
-}
-
-function sendReport500Email_(opts) {
-  var recipients = uniqueValidEmails_(opts && opts.recipients || []);
-  if (!recipients.length) return { ok: false, skipped: true, recipients: [] };
-
-  var pdfFileId = norm_(opts && opts.pdfFileId);
-  var pdfUrl = norm_(opts && opts.pdfUrl);
-  var refNo = norm_(opts && opts.refNo);
-  var subjectText = norm_(opts && opts.subjectText);
-  var incidentDateTime = norm_(opts && opts.incidentDateTime);
-  var reportedBy = norm_(opts && opts.reportedBy);
-  var branch = norm_(opts && opts.branch);
-  var pdfSizeBytes = Number(opts && opts.pdfSizeBytes || 0);
-
-  if (!pdfFileId && !pdfUrl) {
-    return {
-      ok: false,
-      skipped: false,
-      recipients: recipients,
-      error: "ไม่พบไฟล์ PDF หรือ URL สำหรับส่งอีเมล"
-    };
-  }
-
-  var mailSubject = "[REPORT] " + (refNo || "-") + (subjectText ? (" - " + subjectText) : "");
-  var htmlBody = [
-    '<div style="font-family:Arial,sans-serif;line-height:1.7;color:#111">',
-      '<div style="font-size:18px;font-weight:700;margin-bottom:12px">รายงาน Report500</div>',
-      '<div><b>Ref No:</b> ' + escapeHtml_(refNo || "-") + '</div>',
-      '<div><b>เรื่อง:</b> ' + escapeHtml_(subjectText || "-") + '</div>',
-      '<div><b>วันเวลาเกิดเหตุ:</b> ' + escapeHtml_(incidentDateTime || "-") + '</div>',
-      '<div><b>รายงานโดย:</b> ' + escapeHtml_(reportedBy || "-") + '</div>',
-      '<div><b>สาขา:</b> ' + escapeHtml_(branch || "-") + '</div>',
-      '<div style="margin-top:14px">กรุณาดูรายละเอียดจากไฟล์ PDF แนบ หรือเปิดจากลิงก์ด้านล่าง</div>',
-      pdfUrl
-        ? ('<div style="margin-top:10px"><a href="' + escapeHtml_(pdfUrl) + '" target="_blank">เปิดไฟล์ PDF</a></div>')
-        : '',
-    '</div>'
-  ].join("");
-
-  try {
-    var attachmentMode = "LINK_ONLY";
-    var mailOptions = {
-      htmlBody: htmlBody,
-      name: "S&LP Smart Form"
-    };
-
-    if (pdfFileId) {
-      try {
-        var pdfFile = DriveApp.getFileById(pdfFileId);
-        var blob = pdfFile.getBlob();
-
-        if (blob && pdfSizeBytes > 0 && pdfSizeBytes <= 18 * 1024 * 1024) {
-          mailOptions.attachments = [blob];
-          attachmentMode = "ATTACHED";
-        }
-      } catch (attachErr) {
-        attachmentMode = "LINK_ONLY";
-      }
-    }
-
-    GmailApp.sendEmail(
-      recipients.join(","),
-      mailSubject,
-      "ระบบอีเมลนี้รองรับ HTML กรุณาเปิดในอีเมลไคลเอนต์ที่เหมาะสม",
-      mailOptions
-    );
-
-    return {
-      ok: true,
-      skipped: false,
-      recipients: recipients,
-      attachmentMode: attachmentMode,
-      pdfUrl: pdfUrl
-    };
-
-  } catch (err) {
-    return {
-      ok: false,
-      skipped: false,
-      recipients: recipients,
-      error: report500DescribeErr_(err)
-    };
-  }
-}
-
-/** ==========================
- *  CONFIG / ROOT FOLDER
- *  ========================== */
-function getReport500Config_() {
-  return {
-    spreadsheetId: REPORT500_SPREADSHEET_ID,
-    mainSheetName: REPORT500_MAIN_SHEET_NAME,
-    rootFolderId: REPORT500_ROOT_FOLDER_ID,
-    timezone: REPORT500_TIMEZONE,
-    formType: REPORT500_FORM_TYPE,
-    logoFileId: (typeof LOGO_FILE_ID !== "undefined" ? LOGO_FILE_ID : "")
-  };
-}
-
-function resolveReport500WritableRootFolder_(cfg) {
-  var candidates = [
-    norm_(cfg && cfg.rootFolderId),
-    (typeof REPORT500_ROOT_FOLDER_ID !== "undefined" ? norm_(REPORT500_ROOT_FOLDER_ID) : ""),
-    (typeof ROOT_FOLDER_ID !== "undefined" ? norm_(ROOT_FOLDER_ID) : "")
-  ].filter(Boolean);
-
-  var tried = [];
-  for (var i = 0; i < candidates.length; i++) {
-    var id = candidates[i];
-    try {
-      var folder = DriveApp.getFolderById(id);
-      folder.getName();
-      return folder;
-    } catch (err) {
-      tried.push(id + " => " + report500DescribeErr_(err));
-    }
-  }
-
-  throw new Error(
-    "ไม่สามารถเข้าถึงโฟลเดอร์ปลายทางได้ กรุณาตรวจสอบ REPORT500_ROOT_FOLDER_ID / ROOT_FOLDER_ID และสิทธิ์ของ Apps Script | " +
-    tried.join(" | ")
-  );
-}
-
-function getOrCreateSubFolderSafe_(parent, name) {
-  if (!parent) throw new Error("parent folder is missing");
-  var folderName = String(name || "").trim() || "Folder";
-  try {
-    var found = parent.getFoldersByName(folderName);
-    if (found.hasNext()) return found.next();
-    return parent.createFolder(folderName);
-  } catch (err) {
-    throw new Error("สร้าง/เข้าถึงโฟลเดอร์ย่อยไม่สำเร็จ [" + folderName + "] : " + report500DescribeErr_(err));
-  }
-}
-
-function report500DescribeErr_(err) {
-  if (!err) return "Unknown error";
-  if (typeof err === "string") return err;
-  return String(err.message || err);
-}
-
-function escapeHtml_(value) {
-  return String(value == null ? "" : value)
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
-}
-
-/** ==========================
- *  DISCIPLINE SNAPSHOT
- *  ========================== */
-function normalizeReport500DisciplinePayload_(payload) {
-  payload = payload || {};
-
-  const employeeCode = norm_(payload.disciplineEmployeeCode);
-  const employeeName = norm_(payload.disciplineEmployeeName);
-  const matchCountRaw = Number(payload.disciplineMatchCount || 0);
-  const matchCount = isNaN(matchCountRaw) ? 0 : Math.max(0, matchCountRaw);
-  const jsonText = norm_(payload.disciplineReferenceJson);
-
-  if (!jsonText) {
-    return {
-      disciplineEmployeeCode: "",
-      disciplineEmployeeName: "",
-      disciplineMatchCount: 0,
-      disciplineReferenceJson: ""
-    };
-  }
-
-  let parsed;
-  try {
-    parsed = JSON.parse(jsonText);
-  } catch (err) {
-    throw new Error("ข้อมูลอ้างอิงวินัยไม่ถูกต้อง");
-  }
-
-  if (!Array.isArray(parsed)) {
-    throw new Error("ข้อมูลอ้างอิงวินัยต้องเป็นรายการแบบ array");
-  }
-
-  const normalizedRows = parsed.map(function (row) {
-    row = row || {};
-    return {
-      violationDate: norm_(row.violationDate),
-      employeeCode: norm_(row.employeeCode),
-      employeeName: norm_(row.employeeName),
-      department: norm_(row.department),
-      category: norm_(row.category),
-      subject: norm_(row.subject),
-      docStatus: norm_(row.docStatus),
-      result: norm_(row.result),
-      supervisor: norm_(row.supervisor),
-      actionDate: norm_(row.actionDate)
-    };
-  }).filter(function (row) {
-    return row.employeeCode || row.employeeName || row.subject || row.result;
-  });
-
-  return {
-    disciplineEmployeeCode: employeeCode,
-    disciplineEmployeeName: employeeName,
-    disciplineMatchCount: matchCount || normalizedRows.length,
-    disciplineReferenceJson: JSON.stringify(normalizedRows)
-  };
-}
-function report500ResolveDisplayWithOther_(value, otherText) {
-  var v = norm_(value);
-  var o = norm_(otherText);
-  if (report500IsOther_(v) && o) return o;
-  return v || o;
-}
-
-function report500IsOther_(value) {
-  var s = String(value || "").trim().toLowerCase();
-  return s === "อื่นๆ" || s === "other" || s === "others";
-}
-
-/** ==========================
- *  FILES / EMAIL
- *  ========================== */
-function saveReport500Images_(folder, files) {
-  var out = [];
-  var list = Array.isArray(files) ? files : [];
-
-  list.forEach(function (f, idx) {
-    var base64 = String(f && f.base64 || "").trim();
-    if (!base64) return;
-
-    var mimeType = String(f && f.mimeType || "image/jpeg").trim() || "image/jpeg";
-    var filename = sanitize_(String(f && (f.filename || f.name) || ("report500_image_" + (idx + 1) + ".jpg")));
-    var caption = String(f && f.caption || "").trim();
-
-    var blob = Utilities.newBlob(Utilities.base64Decode(base64), mimeType, filename);
-    var file = folder.createFile(blob);
-
-    out.push({
-      id: file.getId(),
-      filename: filename,
-      caption: caption,
-      url: driveFileIdToViewUrl_(file.getId())
-    });
-  });
-
-  return out;
-}
-
-function sendReport500Email_(opts) {
-  var recipients = uniqueValidEmails_(opts && opts.recipients || []);
-  if (!recipients.length) return { ok: false, skipped: true, recipients: [] };
-
   var refNo = norm_(opts && opts.refNo);
   var subjectText = norm_(opts && opts.subjectText);
   var incidentDateTime = norm_(opts && opts.incidentDateTime);
@@ -1453,37 +987,43 @@ function sendReport500Email_(opts) {
           '<tr><td style="padding:6px 8px;border:1px solid #e5e7eb;font-weight:800;width:180px">Ref No.</td><td style="padding:6px 8px;border:1px solid #e5e7eb">' + escapeHtml_(refNo || "-") + '</td></tr>',
           '<tr><td style="padding:6px 8px;border:1px solid #e5e7eb;font-weight:800">เรื่อง</td><td style="padding:6px 8px;border:1px solid #e5e7eb">' + escapeHtml_(subjectText || "-") + '</td></tr>',
           '<tr><td style="padding:6px 8px;border:1px solid #e5e7eb;font-weight:800">วันเวลาเกิดเหตุ</td><td style="padding:6px 8px;border:1px solid #e5e7eb">' + escapeHtml_(incidentDateTime || "-") + '</td></tr>',
-          '<tr><td style="padding:6px 8px;border:1px solid #e5e7eb;font-weight:800">รายงานโดย</td><td style="padding:6px 8px;border:1px solid #e5e7eb">' + escapeHtml_(reportedBy || "-") + '</td></tr>',
+          '<tr><td style="padding:6px 8px;border:1px solid #e5e7eb;font-weight:800">ผู้รายงาน</td><td style="padding:6px 8px;border:1px solid #e5e7eb">' + escapeHtml_(reportedBy || "-") + '</td></tr>',
           '<tr><td style="padding:6px 8px;border:1px solid #e5e7eb;font-weight:800">สาขา</td><td style="padding:6px 8px;border:1px solid #e5e7eb">' + escapeHtml_(branch || "-") + '</td></tr>',
+          '<tr><td style="padding:6px 8px;border:1px solid #e5e7eb;font-weight:800">ชื่อไฟล์ PDF</td><td style="padding:6px 8px;border:1px solid #e5e7eb">' + escapeHtml_(effectivePdfName) + '</td></tr>',
+          '<tr><td style="padding:6px 8px;border:1px solid #e5e7eb;font-weight:800">ขนาดไฟล์ PDF</td><td style="padding:6px 8px;border:1px solid #e5e7eb">' + escapeHtml_(formatBytes_(pdfSizeBytes)) + '</td></tr>',
+          '<tr><td style="padding:6px 8px;border:1px solid #e5e7eb;font-weight:800">สถานะการแนบ</td><td style="padding:6px 8px;border:1px solid #e5e7eb">' + (attachPdf ? "แนบไฟล์ PDF" : "ส่งลิงก์แทนไฟล์แนบ") + '</td></tr>',
         '</table>',
-        (pdfUrl
-          ? '<div style="margin-top:14px">เปิดไฟล์ PDF: <a href="' + escapeHtml_(pdfUrl) + '" target="_blank">' + escapeHtml_(pdfUrl) + '</a></div>'
-          : ''),
-        '<div style="margin-top:14px;color:#6b7280">อีเมลฉบับนี้ถูกส่งจากระบบอัตโนมัติ</div>',
-      '</div>'
+        (pdfUrl ? '<div style="margin-top:12px">ลิงก์ไฟล์ PDF: <a href="' + escapeHtml_(pdfUrl) + '" target="_blank" rel="noopener noreferrer">' + escapeHtml_(pdfUrl) + "</a></div>" : ""),
+        (!attachPdf && pdfUrl ? '<div style="margin-top:8px;color:#92400e">ไฟล์ PDF มีขนาดใหญ่เกินเกณฑ์แนบอัตโนมัติ ระบบจึงส่งเป็นลิงก์แทน</div>' : ""),
+        '<div style="margin-top:14px;color:#64748b;font-size:12px">อีเมลฉบับนี้ส่งจากระบบอัตโนมัติ S&amp;LP</div>',
+      "</div>"
     ].join("");
 
+    var plainBody = [
+      "ระบบได้บันทึกรายงาน Reportเรียบร้อยแล้ว",
+      "Ref No.: " + (refNo || "-"),
+      "เรื่อง: " + (subjectText || "-"),
+      "วันเวลาเกิดเหตุ: " + (incidentDateTime || "-"),
+      "ผู้รายงาน: " + (reportedBy || "-"),
+      "สาขา: " + (branch || "-"),
+      "ชื่อไฟล์ PDF: " + effectivePdfName,
+      "ขนาด PDF: " + formatBytes_(pdfSizeBytes),
+      "สถานะการแนบ: " + (attachPdf ? "แนบไฟล์ PDF" : "ส่งลิงก์แทนไฟล์แนบ"),
+      "PDF: " + (pdfUrl || "-")
+    ].join("\n");
+
     var mailOptions = {
-      name: "S&LP Smart Form",
-      htmlBody: htmlBody
+      htmlBody: htmlBody,
+      name: "S&LP Report System"
     };
+    if (attachPdf) mailOptions.attachments = [pdfBlob];
 
-    if (attachPdf) {
-      mailOptions.attachments = [pdfBlob];
-    }
-
-    GmailApp.sendEmail(
-      recipients.join(","),
-      subject,
-      "ระบบได้บันทึกรายงานเรียบร้อยแล้ว",
-      mailOptions
-    );
+    GmailApp.sendEmail(recipients.join(","), subject, plainBody, mailOptions);
 
     return {
       ok: true,
       skipped: false,
       recipients: recipients,
-      pdfUrl: pdfUrl,
       attachmentMode: attachPdf ? "ATTACHED" : "LINK_ONLY",
       pdfSizeBytes: pdfSizeBytes,
       pdfSizeText: formatBytes_(pdfSizeBytes),
@@ -1586,9 +1126,18 @@ function formatBytes_(bytes) {
   return (n / (1024 * 1024)).toFixed(2) + " MB";
 }
 
-function driveFileIdToViewUrl_(id) {
-  var fid = norm_(id);
-  return fid ? ("https://drive.google.com/file/d/" + encodeURIComponent(fid) + "/view?usp=drivesdk") : "";
+function isActiveSheetValue_(v) {
+  var s = String(v || "").trim().toLowerCase();
+  return ["active", "1", "true", "yes", "y", "on", "ใช้งาน"].indexOf(s) >= 0;
+}
+
+function isTrueLike_(v) {
+  var s = String(v || "").trim().toLowerCase();
+  return ["1", "true", "yes", "y", "on"].indexOf(s) >= 0;
+}
+
+function norm_(v) {
+  return String(v == null ? "" : v).trim();
 }
 
 function sanitize_(s) {
@@ -1597,6 +1146,121 @@ function sanitize_(s) {
     .replace(/\s+/g, "_");
 }
 
-function norm_(v) {
-  return String(v == null ? "" : v).trim();
+function getOrCreateSubFolder_(parent, name) {
+  var folderName = String(name || "").trim() || "Folder";
+  var found = parent.getFoldersByName(folderName);
+  if (found.hasNext()) return found.next();
+  return parent.createFolder(folderName);
+}
+
+function driveFileIdToViewUrl_(id) {
+  var fid = norm_(id);
+  return fid ? ("https://drive.google.com/file/d/" + encodeURIComponent(fid) + "/view?usp=drivesdk") : "";
+}
+
+function resolveReport500WritableRootFolder_(cfg) {
+  var candidates = [
+    cfg && cfg.rootFolderId,
+    (typeof ROOT_FOLDER_ID !== "undefined" ? ROOT_FOLDER_ID : "")
+  ].map(function (x) { return norm_(x); }).filter(Boolean);
+
+  var tried = [];
+  for (var i = 0; i < candidates.length; i++) {
+    var id = candidates[i];
+    try {
+      var folder = DriveApp.getFolderById(id);
+      folder.getName();
+      return folder;
+    } catch (err) {
+      tried.push(id + " => " + report500DescribeErr_(err));
+    }
+  }
+
+  throw new Error(
+    "ไม่สามารถเข้าถึงโฟลเดอร์ปลายทางได้ กรุณาตรวจสอบ REPORT500_ROOT_FOLDER_ID / ROOT_FOLDER_ID และสิทธิ์ของ Apps Script | " +
+    tried.join(" | ")
+  );
+}
+
+function getOrCreateSubFolderSafe_(parent, name) {
+  if (!parent) throw new Error("parent folder is missing");
+  var folderName = String(name || "").trim() || "Folder";
+  try {
+    var found = parent.getFoldersByName(folderName);
+    if (found.hasNext()) return found.next();
+    return parent.createFolder(folderName);
+  } catch (err) {
+    throw new Error("สร้าง/เข้าถึงโฟลเดอร์ย่อยไม่สำเร็จ [" + folderName + "] : " + report500DescribeErr_(err));
+  }
+}
+
+function report500DescribeErr_(err) {
+  if (!err) return "Unknown error";
+  if (typeof err === "string") return err;
+  return String(err.message || err);
+}
+
+function escapeHtml_(value) {
+  return String(value == null ? "" : value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+/** ==========================
+ *  DISCIPLINE SNAPSHOT
+ *  ========================== */
+function normalizeReport500DisciplinePayload_(payload) {
+  payload = payload || {};
+
+  const employeeCode = norm_(payload.disciplineEmployeeCode);
+  const employeeName = norm_(payload.disciplineEmployeeName);
+  const matchCountRaw = Number(payload.disciplineMatchCount || 0);
+  const matchCount = isNaN(matchCountRaw) ? 0 : Math.max(0, matchCountRaw);
+  const jsonText = norm_(payload.disciplineReferenceJson);
+
+  if (!jsonText) {
+    return {
+      disciplineEmployeeCode: "",
+      disciplineEmployeeName: "",
+      disciplineMatchCount: 0,
+      disciplineReferenceJson: ""
+    };
+  }
+
+  let parsed;
+  try {
+    parsed = JSON.parse(jsonText);
+  } catch (err) {
+    throw new Error("ข้อมูลอ้างอิงวินัยไม่ถูกต้อง");
+  }
+
+  if (!Array.isArray(parsed)) {
+    throw new Error("ข้อมูลอ้างอิงวินัยต้องเป็นรายการแบบ array");
+  }
+
+  const normalizedRows = parsed.map(function (row) {
+    row = row || {};
+    return {
+      violationDate: norm_(row.violationDate),
+      employeeCode: norm_(row.employeeCode),
+      employeeName: norm_(row.employeeName),
+      department: norm_(row.department),
+      category: norm_(row.category),
+      subject: norm_(row.subject),
+      docStatus: norm_(row.docStatus),
+      result: norm_(row.result),
+      supervisor: norm_(row.supervisor),
+      actionDate: norm_(row.actionDate)
+    };
+  });
+
+  return {
+    disciplineEmployeeCode: employeeCode,
+    disciplineEmployeeName: employeeName || (normalizedRows[0] ? norm_(normalizedRows[0].employeeName) : ""),
+    disciplineMatchCount: matchCount || normalizedRows.length,
+    disciplineReferenceJson: JSON.stringify(normalizedRows)
+  };
 }
