@@ -2973,7 +2973,8 @@ async function init() {
 
   syncErrorReasonOtherVisibility();
   syncConfirmCauseOtherVisibility();
-  setActiveTab("error");
+
+  await setActiveTab("error");
   enterCreateMode_();
   updateEmployeeConfirmPreview();
 }
@@ -3406,18 +3407,21 @@ async function onLogin() {
   safeSetLoginMsg("");
 
   try {
-    setActiveTab("error");
+    await setActiveTab("error");
   } catch (err) {
     console.error("setActiveTab error:", err);
+    safeSetLoginMsg("เกิดข้อผิดพลาดหลังเข้าสู่ระบบ: " + (err?.message || err));
+    return;
   }
 
-  if (window.Report500UI && typeof window.Report500UI.ensureReady === "function") {
-    window.Report500UI.ensureReady().catch(err => {
-      console.error("Report500 preload failed:", err);
-    });
+  try {
+    if (window.Report500UI && typeof window.Report500UI.ensureReady === "function") {
+      await window.Report500UI.ensureReady();
+    }
+  } catch (err) {
+    console.error("Report500 preload failed:", err);
   }
 }
-
 function setLpsFromLogin(lpsName) {
   if ($("lps")) $("lps").value = lpsName || "";
   if ($("topLoginUserName")) $("topLoginUserName").textContent = lpsName || "-";
