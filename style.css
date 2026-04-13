@@ -4794,3 +4794,219 @@ body.img-editor-lock{
     font-size:10.5px;
   }
 }
+/* =========================
+   ERROR_BOL EDIT MODE PATCH
+   ใช้คู่กับ app.js + index.html เวอร์ชัน edit/revision
+========================= */
+
+.editToolsBar{
+  display:grid;
+  grid-template-columns:minmax(180px,220px) minmax(220px,1fr) auto auto;
+  gap:10px 12px;
+  align-items:end;
+}
+
+.editToolActions{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  flex-wrap:wrap;
+}
+
+.editReasonField input{
+  min-height:46px;
+}
+
+.modeBadge{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-height:42px;
+  padding:8px 14px;
+  border-radius:14px;
+  border:1.2px solid var(--line);
+  font-size:12px;
+  font-weight:900;
+  white-space:nowrap;
+  box-shadow:var(--shadow-sm);
+  background:#fff;
+  color:var(--text);
+}
+
+.modeBadge.create{
+  background:linear-gradient(180deg,#eef6ff 0%,#e5f0ff 100%);
+  border-color:#cfe0ff;
+  color:#1d4ed8;
+}
+
+.modeBadge.edit{
+  background:linear-gradient(180deg,#fff7ed 0%,#ffedd5 100%);
+  border-color:#fed7aa;
+  color:#c2410c;
+}
+
+.modeBadge.draft{
+  background:linear-gradient(180deg,#f5f3ff 0%,#ede9fe 100%);
+  border-color:#ddd6fe;
+  color:#6d28d9;
+}
+
+.revisionMetaInline{
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px 14px;
+  align-items:center;
+  padding:10px 12px;
+  border:1px dashed #c9d8ee;
+  border-radius:14px;
+  background:#f8fbff;
+  color:#334155;
+  font-size:12px;
+  font-weight:800;
+}
+
+.existingAssetsGrid{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:10px;
+}
+
+.existingAssetCard{
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+  min-width:0;
+  padding:12px;
+  border:1.3px solid var(--line);
+  border-radius:15px;
+  background:#fff;
+  box-shadow:var(--shadow-sm);
+}
+
+.existingAssetTitle{
+  font-size:12px;
+  font-weight:900;
+  color:var(--text);
+  line-height:1.35;
+}
+
+.existingAssetPreview{
+  width:100%;
+  min-height:110px;
+  max-height:180px;
+  object-fit:contain;
+  border-radius:12px;
+  border:1px solid #dbe7f7;
+  background:#fff;
+  padding:6px;
+}
+
+.signatureModeActions{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:8px;
+}
+
+.signatureModeActions .btn{
+  min-height:38px;
+  padding:8px 10px;
+  border-radius:12px;
+  font-size:11px;
+  font-weight:900;
+}
+
+.signatureModeActions .btn.active{
+  background:linear-gradient(180deg,var(--primary),var(--primary-hover));
+  color:#fff;
+  border-color:transparent;
+  box-shadow:0 8px 18px rgba(37,99,235,.16);
+}
+
+.sigModeGrid{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:10px;
+}
+
+#existingImagesContainer .fieldHint,
+#supervisorSignStateText,
+#employeeSignStateText,
+#interpreterSignStateText{
+  min-height:18px;
+  font-size:11px;
+  color:#64748b;
+  line-height:1.35;
+}
+
+#existingImagesContainer .existingAssetCard[data-file-id]{
+  position:relative;
+}
+
+#existingImagesContainer .existingAssetCard[data-file-id] .existingAssetTitle{
+  padding-right:4px;
+}
+
+#existingImagesContainer .existingAssetCard .btn{
+  min-height:38px;
+}
+
+@media (max-width:1080px){
+  .editToolsBar{
+    grid-template-columns:minmax(160px,210px) minmax(180px,1fr) auto;
+  }
+
+  .editToolsBar .modeBadge{
+    grid-column:1 / -1;
+    justify-self:start;
+  }
+
+  .existingAssetsGrid,
+  .sigModeGrid{
+    grid-template-columns:repeat(2,minmax(0,1fr));
+  }
+}
+
+@media (max-width:860px){
+  .editToolsBar{
+    grid-template-columns:1fr;
+    align-items:stretch;
+  }
+
+  .editToolActions{
+    width:100%;
+  }
+
+  .editToolActions .btn{
+    flex:1 1 0;
+    min-width:0;
+  }
+
+  .modeBadge{
+    width:100%;
+    justify-content:center;
+  }
+
+  .existingAssetsGrid,
+  .sigModeGrid{
+    grid-template-columns:1fr;
+  }
+
+  .signatureModeActions{
+    grid-template-columns:repeat(3,minmax(0,1fr));
+  }
+}
+
+@media (max-width:520px){
+  .signatureModeActions{
+    grid-template-columns:1fr;
+  }
+
+  .signatureModeActions .btn{
+    width:100%;
+  }
+
+  .revisionMetaInline{
+    display:grid;
+    gap:6px;
+  }
+}
