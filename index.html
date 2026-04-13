@@ -16,7 +16,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-  <link rel="stylesheet" href="./style.css?v=edit-revision-r500-v1">
+  <link rel="stylesheet" href="./style.css?v=edit-revision-rpt-v2">
 </head>
 <body>
   <header class="topbar">
@@ -561,6 +561,20 @@
       <div class="sectionTitle rptTitle">
         <span class="dot rptDot"></span>
         <div>
+          <div class="sectionMain">รูปภาพเดิมจากเอกสาร</div>
+          <div class="sectionSub">ใช้ต่อหรือลบออกจากฉบับแก้ไขได้</div>
+        </div>
+      </div>
+
+      <div class="panel rptPanel">
+        <div id="rptExistingImagesContainer" class="existingAssetsGrid">
+          <div class="swalNote">ไม่มีรูปภาพเดิม</div>
+        </div>
+      </div>
+
+      <div class="sectionTitle rptTitle">
+        <span class="dot rptDot"></span>
+        <div>
           <div class="sectionMain">ผู้เกี่ยวข้อง</div>
           <div class="sectionSub">เพิ่มได้หลายรายการ</div>
         </div>
@@ -690,21 +704,6 @@
         <div id="rptLearningList" class="rptRepeaterList"></div>
         <div class="rptRepeaterFooter">
           <button id="btnRptAddLearning" class="btn secondary rptAddBottomBtn" type="button">+ เพิ่มข้อสรุป / บทเรียน</button>
-        </div>
-      </div>
-
-      <!-- EXISTING IMAGES FOR EDIT -->
-      <div class="sectionTitle rptTitle">
-        <span class="dot rptDot"></span>
-        <div>
-          <div class="sectionMain">รูปภาพเดิมจากเอกสาร</div>
-          <div class="sectionSub">ใช้ต่อหรือลบออกจากฉบับแก้ไขได้</div>
-        </div>
-      </div>
-
-      <div class="panel rptPanel">
-        <div id="rptExistingImagesContainer" class="existingAssetsGrid">
-          <div class="swalNote">ไม่มีรูปภาพเดิม</div>
         </div>
       </div>
 
@@ -880,7 +879,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/fabric@5.3.0/dist/fabric.min.js"></script>
   <script src="./image-editor.js?v=1"></script>
-  <script src="./report500.js?v=edit-revision-v1"></script>
-  <script src="./app.js?v=edit-revision-v1"></script>
+  <script src="./report500.js?v=edit-revision-v2"></script>
+  <script src="./app.js?v=edit-revision-v2"></script>
 </body>
 </html>
