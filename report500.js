@@ -2686,7 +2686,7 @@
     });
   }
 
-  function ensureRepeatFooterButton(listId) {
+ function ensureRepeatFooterButton(listId) {
   const root = $(listId);
   if (!root || !root.parentElement) return;
 
@@ -3106,7 +3106,7 @@
     });
   }
 
-  function toggleEmptyState(listId, emptyLabel) {
+ function toggleEmptyState(listId, emptyLabel) {
   const root = $(listId);
   if (!root) return;
 
@@ -3132,7 +3132,6 @@
     footer.classList.toggle("hidden", count === 0);
   }
 }
-
   function collectCheckedOptionObjects(rootId, inputName) {
     const root = $(rootId);
     if (!root) return [];
