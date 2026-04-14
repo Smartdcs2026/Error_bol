@@ -4340,3 +4340,75 @@ body.img-editor-lock{
     font-size:14px;
   }
 }
+/* =========================
+   REPORT500 ADD BUTTON CLEANUP
+========================= */
+
+.rptRepeatAddBottom{
+  display:flex;
+  justify-content:center;
+  margin-top:12px;
+}
+
+.rptRepeatAddBottom.hidden{
+  display:none !important;
+}
+
+.rptRepeatAddBottomBtn{
+  min-width:220px;
+  max-width:360px;
+  width:auto !important;
+  padding:12px 18px;
+  border-radius:16px;
+  border:1.2px solid #cfe0f5;
+  background:#f8fbff;
+  color:#16325c;
+  font-weight:900;
+  box-shadow:none;
+}
+
+.rptRepeatAddBottomBtn:hover{
+  background:#eef5ff;
+  border-color:#b8d0ef;
+}
+
+.rptRepeatAddBottom .btn{
+  width:auto !important;
+}
+
+.rptListEmpty{
+  margin-top:8px;
+}
+
+.rptEmptyStateBox{
+  text-align:center;
+  border-radius:18px;
+  border:1.3px dashed #c6d7ea !important;
+  background:#f8fbff !important;
+  color:#64748b !important;
+  font-size:12px !important;
+  font-weight:900 !important;
+  line-height:1.6;
+  padding:16px 18px !important;
+}
+
+.rptEmptyStateSub{
+  font-size:11px;
+  color:#94a3b8;
+  font-weight:800;
+}
+
+@media (max-width:640px){
+  .rptRepeatAddBottom{
+    margin-top:10px;
+  }
+
+  .rptRepeatAddBottomBtn{
+    width:100% !important;
+    max-width:none;
+    min-width:0;
+    border-radius:16px;
+    padding:12px 14px;
+    font-size:14px;
+  }
+}
