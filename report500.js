@@ -2687,25 +2687,29 @@
   }
 
   function ensureRepeatFooterButton(listId) {
-    const root = $(listId);
-    if (!root || !root.parentElement) return;
+  const root = $(listId);
+  if (!root || !root.parentElement) return;
 
-    const cfg = getRepeatConfig(listId);
-    if (!cfg.addBtnId) return;
+  const cfg = getRepeatConfig(listId);
+  if (!cfg.addBtnId) return;
 
-    let footer = root.parentElement.querySelector(`.rptRepeatAddBottom[data-target="${listId}"]`);
-    if (!footer) {
-      footer = document.createElement("div");
-      footer.className = "rptRepeatAddBottom";
-      footer.setAttribute("data-target", listId);
-      footer.innerHTML = `<button type="button" class="btn ghost">+ เพิ่ม${escapeHtml(cfg.label)}</button>`;
-      root.insertAdjacentElement("afterend", footer);
+  let footer = root.parentElement.querySelector(`.rptRepeatAddBottom[data-target="${listId}"]`);
+  if (!footer) {
+    footer = document.createElement("div");
+    footer.className = "rptRepeatAddBottom hidden";
+    footer.setAttribute("data-target", listId);
+    footer.innerHTML = `
+      <button type="button" class="btn ghost rptRepeatAddBottomBtn">
+        + เพิ่ม${escapeHtml(cfg.label)}
+      </button>
+    `;
+    root.insertAdjacentElement("afterend", footer);
 
-      footer.querySelector("button")?.addEventListener("click", () => {
-        $(cfg.addBtnId)?.click();
-      });
-    }
+    footer.querySelector("button")?.addEventListener("click", () => {
+      $(cfg.addBtnId)?.click();
+    });
   }
+}
 
   function createSimpleIndexedRowHtml(type, index, titleLabel, detailLabel, titlePlaceholder, detailPlaceholder) {
     return buildRepeatCardShell({
@@ -3103,26 +3107,31 @@
   }
 
   function toggleEmptyState(listId, emptyLabel) {
-    const root = $(listId);
-    if (!root) return;
+  const root = $(listId);
+  if (!root) return;
 
-    const label = emptyLabel || getRepeatConfig(listId).label || "รายการ";
-    const count = root.querySelectorAll(".rptRepeatCard").length;
+  const label = emptyLabel || getRepeatConfig(listId).label || "รายการ";
+  const count = root.querySelectorAll(".rptRepeatCard").length;
 
-    let emptyNode = root.querySelector(".rptRepeatEmpty");
-    if (!count) {
-      if (!emptyNode) {
-        emptyNode = document.createElement("div");
-        emptyNode.className = "rptRepeatEmpty";
-        root.appendChild(emptyNode);
-      }
-      emptyNode.textContent = `ยังไม่มี${label} กดปุ่มเพิ่มเพื่อเริ่มกรอกข้อมูล`;
-    } else if (emptyNode) {
-      emptyNode.remove();
+  let emptyNode = root.querySelector(".rptRepeatEmpty");
+  if (!count) {
+    if (!emptyNode) {
+      emptyNode = document.createElement("div");
+      emptyNode.className = "rptRepeatEmpty";
+      root.appendChild(emptyNode);
     }
-
-    ensureRepeatFooterButton(listId);
+    emptyNode.textContent = `ยังไม่มี${label} กดปุ่มเพิ่มเพื่อเริ่มกรอกข้อมูล`;
+  } else if (emptyNode) {
+    emptyNode.remove();
   }
+
+  ensureRepeatFooterButton(listId);
+
+  const footer = root.parentElement?.querySelector(`.rptRepeatAddBottom[data-target="${listId}"]`);
+  if (footer) {
+    footer.classList.toggle("hidden", count === 0);
+  }
+}
 
   function collectCheckedOptionObjects(rootId, inputName) {
     const root = $(rootId);
