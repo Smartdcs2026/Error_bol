@@ -4216,3 +4216,65 @@ body.img-editor-lock{
     width:100%;
   }
 }
+/* =========================
+   REPORT500 ADD BUTTON CLEANUP
+========================= */
+
+.rptRepeatAddBottom{
+  display:flex;
+  justify-content:center;
+  margin-top:12px;
+}
+
+.rptRepeatAddBottom.hidden{
+  display:none !important;
+}
+
+.rptRepeatAddBottomBtn{
+  min-width:220px;
+  max-width:360px;
+  width:auto !important;
+  padding:12px 18px;
+  border-radius:14px;
+  border:1px solid #cfe0f5;
+  background:#f8fbff;
+  color:#16325c;
+  font-weight:800;
+  box-shadow:none;
+}
+
+.rptRepeatAddBottomBtn:hover{
+  background:#eef5ff;
+  border-color:#b8d0ef;
+}
+
+.rptRepeatAddBottom .btn{
+  width:auto !important;
+}
+
+.rptRepeatEmpty{
+  margin-top:2px;
+  padding:14px 16px;
+  border:1px dashed #c6d7ea;
+  border-radius:16px;
+  background:#f8fbff;
+  color:#64748b;
+  font-size:12px;
+  font-weight:800;
+  text-align:center;
+}
+
+@media (max-width:640px){
+  .rptRepeatAddBottom{
+    margin-top:10px;
+  }
+
+  .rptRepeatAddBottomBtn{
+    width:100% !important;
+    max-width:none;
+    min-width:0;
+    border-radius:14px;
+    padding:12px 14px;
+    font-size:14px;
+  }
+}
