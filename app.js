@@ -323,12 +323,12 @@ async function handlePickedImageForUpload(input, box) {
   EDITED_UPLOAD_STORE.delete(input);
 
   ensureEditButtonForUploadBox(box, input.id);
-updateUploadPreviewFromFile(
-  input,
-  box,
-  f,
-  `ไฟล์ที่เลือก: ${f.name} (${Math.round((f.size || 0) / 1024)} KB)`
-);
+  updateUploadPreviewFromFile(
+    input,
+    box,
+    f,
+    `ไฟล์ที่เลือก: ${f.name} (${Math.round((f.size || 0) / 1024)} KB)`
+  );
 }
 const $ = (id) => document.getElementById(id);
 
@@ -1629,6 +1629,7 @@ function countSelectedFiles() {
     return acc + ((edited || raw) ? 1 : 0);
   }, 0);
 }
+
 /** ==========================
  *  Submit
  *  ========================== */
@@ -1701,168 +1702,145 @@ async function submitForm() {
     }
 
     if (!res.ok || !json.ok) {
-      throw new Error(json?.error || `บันทึกข้อมูลไม่สำเร็จ (HTTP ${res.status})`);
+            throw new Error(json?.error || `บันทึกข้อมูลไม่สำเร็จ (HTTP ${res.status})`);
     }
 
-    ProgressUI.markDone("save", 72, "บันทึกข้อมูลลงระบบเรียบร้อย");
+    ProgressUI.markDone("save", 68, "บันทึกข้อมูลเรียบร้อย");
 
-    ProgressUI.activateOnly("pdf", 84, "กำลังสร้างไฟล์ PDF");
-    await safeDelay(180);
+    ProgressUI.activateOnly("pdf", 80, "กำลังตรวจสอบไฟล์ PDF");
+    await safeDelay(160);
+    ProgressUI.markDone(
+      "pdf",
+      90,
+      json?.pdfUrl ? "สร้าง PDF สำเร็จ" : "ยังไม่พบลิงก์ PDF"
+    );
 
-    const pdfOk = !!(json.pdfFileId || json.pdfUrl);
-    if (pdfOk) {
-      const sizeText = json.pdfSizeText ? ` (${json.pdfSizeText})` : "";
-      ProgressUI.markDone("pdf", 94, `สร้างไฟล์ PDF เรียบร้อย${sizeText}`);
-    } else {
-      ProgressUI.markError("pdf", "ไม่สามารถสร้าง PDF ได้", 94);
-    }
-
-    ProgressUI.activateOnly("email", 98, "กำลังตรวจสอบผลการส่งอีเมล");
-    await safeDelay(140);
+    ProgressUI.activateOnly("email", 94, "กำลังตรวจสอบสถานะอีเมล");
+    await safeDelay(160);
 
     const emailInfo = buildEmailStatusSummary_(json);
 
     if (emailInfo.emailOk) {
       ProgressUI.markDone("email", 100, emailInfo.emailModeText, emailInfo.emailModeText);
-      ProgressUI.success("บันทึกสำเร็จ", "ข้อมูล Error_BOL ถูกบันทึกเรียบร้อยแล้ว");
+      ProgressUI.success("บันทึกสำเร็จ", "บันทึกข้อมูล สร้าง PDF และส่งอีเมลเรียบร้อยแล้ว");
     } else if (emailInfo.emailSkipped) {
       ProgressUI.markDone("email", 100, "ไม่ได้เลือกส่งอีเมล", "ข้าม");
       ProgressUI.success("บันทึกสำเร็จ", "บันทึกข้อมูลและสร้าง PDF เรียบร้อยแล้ว");
     } else {
       ProgressUI.markError("email", "ส่งอีเมลไม่สำเร็จ", 100);
       ProgressUI.success("บันทึกสำเร็จ", "ข้อมูลและ PDF สำเร็จแล้ว แต่การส่งอีเมลไม่สำเร็จ");
-      ProgressUI.setHint(emailInfo.emailStatus || "กรุณาตรวจสอบสิทธิ์อีเมลหรือขนาดไฟล์แนบ");
+      ProgressUI.setHint(emailInfo.emailStatus || "กรุณาตรวจสอบสิทธิ์เมลหรือขนาดไฟล์ PDF");
     }
-
-    const galleryHtml = renderGalleryHtml(json.imageIds || []);
-    const pdfSizeText = String(json.pdfSizeText || "-");
-
-    const supSignThumb = signRes.supervisorBase64
-      ? `<img class="sigThumb" src="${signRes.supervisorBase64}" alt="sign supervisor">`
-      : `<div class="swalNote">ไม่มีลายเซ็น</div>`;
-
-    const empSignThumb = signRes.employeeBase64
-      ? `<img class="sigThumb" src="${signRes.employeeBase64}" alt="sign employee">`
-      : `<div class="swalNote">ไม่มีลายเซ็น</div>`;
-
-    const intSignThumb = signRes.interpreterBase64
-      ? `<img class="sigThumb" src="${signRes.interpreterBase64}" alt="sign interpreter">`
-      : `<div class="swalNote">ไม่มีลายเซ็น</div>`;
 
     ProgressUI.hide(120);
 
-await Swal.fire({
-  icon: (emailInfo.emailOk || emailInfo.emailSkipped) ? "success" : "warning",
-  title: (emailInfo.emailOk || emailInfo.emailSkipped) ? "บันทึกสำเร็จ" : "บันทึกสำเร็จบางส่วน",
-  showConfirmButton: false,
-  width: 920,
-  html: `
-    <div class="swalSummary">
-      <div class="swalHero">
-        <div class="swalHeroTitle">บันทึกรายการเรียบร้อยแล้ว</div>
-        <div class="swalHeroSub">ระบบจัดเก็บข้อมูล รูปภาพ ลายเซ็น และเอกสาร PDF เรียบร้อย</div>
-        <div class="swalPillRow">
-          <div class="swalPill primary">LPS: ${escapeHtml(AUTH.name || json.lpsName || "-")}</div>
-          <div class="swalPill">Ref: ${escapeHtml(p.refNo || "-")}</div>
-          <div class="swalPill">รูป ${Number((json.imageIds || []).length)}</div>
-        </div>
-      </div>
+    await Swal.fire({
+      icon: (emailInfo.emailOk || emailInfo.emailSkipped) ? "success" : "warning",
+      title: (emailInfo.emailOk || emailInfo.emailSkipped) ? "บันทึกสำเร็จ" : "บันทึกสำเร็จบางส่วน",
+      showConfirmButton: false,
+      width: 920,
+      html: `
+        <div class="swalSummary">
+          <div class="swalHero">
+            <div class="swalHeroTitle">บันทึกรายการเรียบร้อยแล้ว</div>
+            <div class="swalHeroSub">ระบบจัดเก็บข้อมูล รูปภาพ และไฟล์ PDF เรียบร้อย</div>
+            <div class="swalPillRow">
+              <div class="swalPill primary">Ref: ${escapeHtml(json.refNo || p.refNo || "-")}</div>
+              <div class="swalPill">LPS: ${escapeHtml(json.lpsName || AUTH.name || "-")}</div>
+              <div class="swalPill">${emailInfo.emailOk ? "ส่งอีเมลสำเร็จ" : emailInfo.emailSkipped ? "ไม่ได้ส่งอีเมล" : "อีเมลมีปัญหา"}</div>
+            </div>
+          </div>
 
-      <div class="swalSection">
-        <div class="swalSectionTitle">ข้อมูลเอกสาร</div>
-        <div class="swalKvGrid">
-          <div class="swalKv"><div class="swalKvLabel">วันที่เวลา</div><div class="swalKvValue">${escapeHtml(json.timestamp || "-")}</div></div>
-          <div class="swalKv"><div class="swalKvLabel">Ref:No.</div><div class="swalKvValue">${escapeHtml(p.refNo || "-")}</div></div>
-          <div class="swalKv"><div class="swalKvLabel">Label CID</div><div class="swalKvValue">${escapeHtml(p.labelCid || "-")}</div></div>
-          <div class="swalKv"><div class="swalKvLabel">ขนาด PDF</div><div class="swalKvValue">${escapeHtml(pdfSizeText)}</div></div>
-        </div>
-      </div>
+          <div class="swalSection">
+            <div class="swalSectionTitle">ผลการบันทึก</div>
+            <div class="swalKvGrid">
+              <div class="swalKv">
+                <div class="swalKvLabel">เวลา</div>
+                <div class="swalKvValue">${escapeHtml(json.timestamp || "-")}</div>
+              </div>
+              <div class="swalKv">
+                <div class="swalKvLabel">จำนวนรูปภาพ</div>
+                <div class="swalKvValue">${escapeHtml(String(json.imageCount ?? files.length ?? 0))}</div>
+              </div>
+              <div class="swalKv">
+                <div class="swalKvLabel">ไฟล์ PDF</div>
+                <div class="swalKvValue">${json.pdfUrl ? "สร้างแล้ว" : "ยังไม่มี"}</div>
+              </div>
+              <div class="swalKv">
+                <div class="swalKvLabel">อีเมล</div>
+                <div class="swalKvValue">${escapeHtml(emailInfo.emailModeText || "-")}</div>
+              </div>
+            </div>
+          </div>
 
-      <div class="swalSection">
-        <div class="swalSectionTitle">สถานะอีเมล</div>
-        ${
-          emailInfo.emailSkipped
-            ? `<div class="swalNote">ไม่ได้ส่งอีเมล เพราะยังไม่ได้เลือกผู้รับ</div>`
-            : emailInfo.emailOk
-              ? `<div class="swalEmailOk">ส่งอีเมลสำเร็จ ${Number(emailInfo.emailResult.count || 0)} รายการ ${emailInfo.emailResult.attachmentMode ? `• ${escapeHtml(emailInfo.emailResult.attachmentMode)}` : ""}</div>`
-              : `<div class="swalEmailFail">บันทึกข้อมูลสำเร็จ แต่ส่งอีเมลไม่สำเร็จ: ${escapeHtml(emailInfo.emailResult.error || "-")}</div>`
+          ${json.imageIds?.length ? `
+            <div class="swalSection">
+              <div class="swalSectionTitle">รูปภาพที่บันทึก</div>
+              ${renderGalleryHtml(json.imageIds)}
+            </div>
+          ` : ""}
+
+          <div class="swalActionRow" style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:16px">
+            ${json.pdfUrl ? `
+              <button
+                id="btnOpenPdfAfterSave"
+                type="button"
+                class="btn primary"
+                style="min-width:160px"
+              >
+                เปิด PDF
+              </button>
+            ` : ``}
+
+            <button
+              id="btnCloseAfterSave"
+              type="button"
+              class="btn ghost"
+              style="min-width:160px;background:#64748b"
+            >
+              ปิดหน้าต่าง
+            </button>
+          </div>
+        </div>
+      `,
+      didOpen: () => {
+        bindGalleryClickInSwal();
+
+        const btnOpen = document.getElementById("btnOpenPdfAfterSave");
+        const btnClose = document.getElementById("btnCloseAfterSave");
+
+        if (btnOpen && json.pdfUrl) {
+          btnOpen.addEventListener("click", () => {
+            window.open(json.pdfUrl, "_blank", "noopener,noreferrer");
+            Swal.close();
+          });
         }
-      </div>
 
-      <div class="swalSection">
-        <div class="swalSectionTitle">ลายเซ็น</div>
-        <div class="sigGrid">
-          <div>
-            <div class="sigBoxTitle">หัวหน้างาน</div>
-            ${supSignThumb}
-            <div class="sigName">${escapeHtml(p.otm || "-")}</div>
-          </div>
-          <div>
-            <div class="sigBoxTitle">พนักงาน</div>
-            ${empSignThumb}
-            <div class="sigName">${escapeHtml(p.employeeName || "-")}</div>
-          </div>
-          <div>
-            <div class="sigBoxTitle">ล่ามแปลภาษา</div>
-            ${intSignThumb}
-            <div class="sigName">${escapeHtml(p.interpreterName || "-")}</div>
-          </div>
-        </div>
-      </div>
-
-      <div class="swalSection">
-        <div class="swalSectionTitle">รูปภาพแนบ</div>
-        ${galleryHtml || `<div class="swalNote">ไม่มีรูปภาพแนบ</div>`}
-      </div>
-
-      <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:18px">
-        ${
-          json.pdfUrl
-            ? `<button type="button" id="btnOpenPdfAfterSave" class="swal2-confirm swal2-styled" style="background:#2563eb">เปิด PDF</button>`
-            : ``
+        if (btnClose) {
+          btnClose.addEventListener("click", () => {
+            Swal.close();
+          });
         }
-        <button type="button" id="btnCloseAfterSave" class="swal2-cancel swal2-styled" style="display:inline-block;background:#64748b">ปิดหน้าต่าง</button>
-      </div>
-    </div>
-  `,
-  didOpen: () => {
-    bindGalleryClickInSwal();
+      },
+      willClose: () => {
+        resetForm();
+      }
+    });
 
-    const btnOpen = document.getElementById("btnOpenPdfAfterSave");
-    const btnClose = document.getElementById("btnCloseAfterSave");
+  } catch (err2) {
+    console.error(err2);
+    ProgressUI.markError("save", err2?.message || "เกิดข้อผิดพลาด", 58);
+    ProgressUI.setHint("กรุณาตรวจสอบข้อมูล เครือข่าย หรือ backend แล้วลองใหม่อีกครั้ง");
 
-    if (btnOpen && json.pdfUrl) {
-      btnOpen.addEventListener("click", () => {
-       window.open(json.pdfUrl, "_blank", "noopener,noreferrer");
-Swal.close();
-      });
-    }
+    await Swal.fire({
+      icon: "error",
+      title: "บันทึกไม่สำเร็จ",
+      text: err2?.message || String(err2),
+      confirmButtonText: "ตกลง"
+    });
 
-    if (btnClose) {
-      btnClose.addEventListener("click", () => {
-        Swal.close();
-      });
-    }
-  },
-  willClose: () => {
-    resetForm();
+    ProgressUI.hide(180);
   }
-});
-
-} catch (err2) {
-  console.error(err2);
-  ProgressUI.markError("save", err2?.message || "เกิดข้อผิดพลาด", 58);
-  ProgressUI.setHint("กรุณาตรวจสอบข้อมูล เครือข่าย หรือ backend แล้วลองใหม่อีกครั้ง");
-
-  await Swal.fire({
-    icon: "error",
-    title: "บันทึกไม่สำเร็จ",
-    text: err2?.message || String(err2),
-    confirmButtonText: "ตกลง"
-  });
-
-  ProgressUI.hide(180);
-}
 }
 
 async function collectFilesAsBase64({ maxFiles = 6, maxMBEach = 4 } = {}) {
@@ -1946,7 +1924,7 @@ async function openSignatureFlow(supervisorName, employeeName, interpreterName) 
     };
   }
 
-  const intr = await signatureModal("ลายเซ็นล่ามแปลภาษา", `ผู้เซ็น: ${interpreterName || "-"}`);
+  const intr = await signatureModal("ลายเซ็นล่าม", `ผู้เซ็น: ${interpreterName || "-"}`);
   if (!intr.ok) return { ok: false };
 
   return {
@@ -2028,82 +2006,72 @@ function enableSignature(canvas) {
     };
   };
 
-  const down = (e) => {
+  const start = (e) => {
     drawing = true;
     last = getPos(e);
-    e.preventDefault();
   };
 
   const move = (e) => {
     if (!drawing) return;
+    e.preventDefault();
     const p = getPos(e);
+
     ctx.beginPath();
     ctx.moveTo(last.x, last.y);
     ctx.lineTo(p.x, p.y);
     ctx.stroke();
+
     last = p;
-    e.preventDefault();
   };
 
-  const up = (e) => {
+  const end = () => {
     drawing = false;
     last = null;
-    e.preventDefault();
   };
 
-  canvas.addEventListener("mousedown", down);
+  canvas.addEventListener("mousedown", start);
   canvas.addEventListener("mousemove", move);
-  window.addEventListener("mouseup", up);
+  window.addEventListener("mouseup", end);
 
-  canvas.addEventListener("touchstart", down, { passive: false });
+  canvas.addEventListener("touchstart", start, { passive: true });
   canvas.addEventListener("touchmove", move, { passive: false });
-  canvas.addEventListener("touchend", up, { passive: false });
+  canvas.addEventListener("touchend", end, { passive: true });
 }
 
 function isCanvasBlank(canvas) {
   if (!canvas) return true;
-  const ctx = canvas.getContext("2d");
-  const { width, height } = canvas;
-  const data = ctx.getImageData(0, 0, width, height).data;
-
-  for (let i = 3; i < data.length; i += 4) {
-    if (data[i] !== 0) return false;
-  }
-  return true;
+  const blank = document.createElement("canvas");
+  blank.width = canvas.width;
+  blank.height = canvas.height;
+  return canvas.toDataURL() === blank.toDataURL();
 }
 
-/** ==========================
- *  Reset / helpers
- *  ========================== */
 function resetForm() {
-  const ids = [
-    "refNo",
-    "labelCid",
-    "errorReasonOther",
-    "errorDescription",
-    "item",
-    "itemDisplay",
-    "errorCaseQty",
-    "employeeName",
-    "errorDate",
-    "employeeCode",
-    "interpreterName",
-    "confirmCauseOther"
-  ];
+  if ($("refNo")) $("refNo").value = "";
+  if ($("labelCid")) $("labelCid").value = "";
+  if ($("errorReason")) $("errorReason").value = "";
+  if ($("errorReasonOther")) $("errorReasonOther").value = "";
+  if ($("errorDescription")) $("errorDescription").value = "";
+  if ($("item")) $("item").value = "";
+  if ($("itemDisplay")) $("itemDisplay").value = "";
+  if ($("itemLookupHint")) $("itemLookupHint").textContent = "";
+  if ($("errorCaseQty")) $("errorCaseQty").value = "";
+  if ($("employeeName")) $("employeeName").value = "";
+  if ($("employeeCode")) $("employeeCode").value = "";
+  if ($("workAgeYear")) $("workAgeYear").value = "";
+  if ($("workAgeMonth")) $("workAgeMonth").value = "";
+  if ($("nationality")) $("nationality").value = "";
+  if ($("interpreterName")) $("interpreterName").value = "";
+  if ($("errorDate")) $("errorDate").value = "";
+  if ($("shift")) $("shift").value = "";
+  if ($("osm")) $("osm").value = "";
+  if ($("otm")) $("otm").value = "";
+  if ($("auditName")) $("auditName").value = "";
+  if ($("confirmCauseOther")) $("confirmCauseOther").value = "";
+  if ($("employeeConfirmText")) $("employeeConfirmText").value = "";
 
-  ids.forEach((id) => {
-    const el = $(id);
-    if (el) el.value = "";
-  });
-
-  ["errorReason", "auditName", "shift", "osm", "otm", "workAgeYear", "workAgeMonth", "nationality"].forEach((id) => {
-    const el = $(id);
-    if (el) el.value = "";
-  });
-
-  document.querySelectorAll(".confirmCauseChk, .emailChk").forEach((el) => {
-    el.checked = false;
-  });
+  document.querySelectorAll(".emailChk").forEach((chk) => { chk.checked = false; });
+  document.querySelectorAll(".confirmCauseChk").forEach((chk) => { chk.checked = false; });
 
   ITEM_LOOKUP_STATE = {
     item: "",
@@ -2113,43 +2081,9 @@ function resetForm() {
     loading: false
   };
 
-  renderItemLookupState(ITEM_LOOKUP_STATE);
-  buildInitialUploadFields();
   syncErrorReasonOtherVisibility();
   syncConfirmCauseOtherVisibility();
+
+  buildInitialUploadFields();
   updateEmployeeConfirmPreview();
-
-  if ($("lps")) $("lps").value = AUTH.name || "";
-}
-
-function buildResultActionButtons_(pdfUrl) {
-  const hasPdf = !!String(pdfUrl || "").trim();
-
-  return `
-    <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:18px">
-      ${
-        hasPdf
-          ? `<button type="button" id="btnOpenPdfAfterSave" class="swal2-confirm swal2-styled" style="background:#2563eb">เปิด PDF</button>`
-          : ``
-      }
-      <button type="button" id="btnCloseAfterSave" class="swal2-cancel swal2-styled" style="display:inline-block;background:#64748b">ปิดหน้าต่าง</button>
-    </div>
-  `;
-}
-
-function bindResultActionButtons_(pdfUrl) {
-  const btnOpen = document.getElementById("btnOpenPdfAfterSave");
-  const btnClose = document.getElementById("btnCloseAfterSave");
-
-  if (btnOpen && pdfUrl) {
-    btnOpen.addEventListener("click", () => {
-      window.open(pdfUrl, "_blank", "noopener,noreferrer");
-    });
-  }
-
-  if (btnClose) {
-    btnClose.addEventListener("click", () => {
-      Swal.close();
-    });
-  }
 }
