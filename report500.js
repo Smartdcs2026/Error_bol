@@ -5383,29 +5383,31 @@
   }
 
   async function searchDisciplineByEmployeeCode(employeeCode) {
-    const code = norm(employeeCode);
-    if (!code) {
-      throw new Error("กรุณาระบุรหัสพนักงาน");
-    }
-
-    const res = await fetch(apiUrl(`/disciplineLookup?employeeCode=${encodeURIComponent(code)}`), {
-      method: "GET"
-    });
-
-    let json = null;
-    try {
-      json = await res.json();
-    } catch (_) {
-      throw new Error("ระบบค้นหาวินัยไม่ส่ง JSON กลับมา");
-    }
-
-    if (!res.ok || !json || !json.ok) {
-      throw new Error(json?.error || "ค้นหาการดำเนินการทางวินัยไม่สำเร็จ");
-    }
-
-    return json;
+  const code = norm(employeeCode);
+  if (!code) {
+    throw new Error("กรุณาระบุรหัสพนักงาน");
   }
 
+  const res = await fetch(
+    apiUrl(`/disciplineLookup?employeeCode=${encodeURIComponent(code)}`),
+    { method: "GET" }
+  );
+
+  const raw = await res.text();
+
+  let json = null;
+  try {
+    json = JSON.parse(raw);
+  } catch (_) {
+    throw new Error(`ระบบค้นหาวินัยไม่ส่ง JSON กลับมา (HTTP ${res.status})`);
+  }
+
+  if (!res.ok || !json || !json.ok) {
+    throw new Error(json?.error || `ค้นหาการดำเนินการทางวินัยไม่สำเร็จ (HTTP ${res.status})`);
+  }
+
+  return json;
+}
   async function searchItemLookup(item) {
     const clean = norm(item);
     if (!clean) {
