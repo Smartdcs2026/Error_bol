@@ -2690,19 +2690,10 @@
   const root = $(listId);
   if (!root || !root.parentElement) return;
 
-  const label = emptyStateLabelFor(listId);
-  const addBtnMap = {
-    rptPersonList: "btnRptAddPerson",
-    rptDamageList: "btnRptAddDamage",
-    rptStepTakenList: "btnRptAddStepTaken",
-    rptEvidenceList: "btnRptAddEvidence",
-    rptCauseList: "btnRptAddCause",
-    rptPreventionList: "btnRptAddPrevention",
-    rptLearningList: "btnRptAddLearning",
-    rptImageList: "btnRptAddImage"
-  };
-
-  const addBtnId = addBtnMap[listId];
+  const cfg = getRepeatConfig(listId);
+  toggleEmptyState(listId, cfg.label);
+  const label = cfg.label || "รายการ";
+  const addBtnId = cfg.addBtnId;
   if (!addBtnId) return;
 
   let footer = root.parentElement.querySelector(`.rptRepeatAddBottom[data-target="${listId}"]`);
@@ -3070,6 +3061,7 @@
       const list = node.parentElement;
       const listId = list?.id || "";
       const cfg = getRepeatConfig(listId);
+      toggleEmptyState(listId, cfg.label);
 
       node.remove();
 
@@ -3101,6 +3093,7 @@
     if (!root) return;
 
     const cfg = getRepeatConfig(listId);
+toggleEmptyState(listId, cfg.label);
 
     root.querySelectorAll(".rptRepeatCard").forEach((card, idx) => {
       const no = idx + 1;
@@ -4306,8 +4299,9 @@ function initRepeatFooters() {
     "rptLearningList",
     "rptImageList"
   ].forEach((listId) => {
+    const cfg = getRepeatConfig(listId);
     ensureRepeatFooterButton(listId);
-    toggleEmptyState(listId, emptyStateLabelFor(listId));
+    toggleEmptyState(listId, cfg.label);
   });
 }
   function bindTopButtons() {
