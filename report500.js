@@ -2690,8 +2690,20 @@
   const root = $(listId);
   if (!root || !root.parentElement) return;
 
-  const cfg = getRepeatConfig(listId);
-  if (!cfg.addBtnId) return;
+  const label = emptyStateLabelFor(listId);
+  const addBtnMap = {
+    rptPersonList: "btnRptAddPerson",
+    rptDamageList: "btnRptAddDamage",
+    rptStepTakenList: "btnRptAddStepTaken",
+    rptEvidenceList: "btnRptAddEvidence",
+    rptCauseList: "btnRptAddCause",
+    rptPreventionList: "btnRptAddPrevention",
+    rptLearningList: "btnRptAddLearning",
+    rptImageList: "btnRptAddImage"
+  };
+
+  const addBtnId = addBtnMap[listId];
+  if (!addBtnId) return;
 
   let footer = root.parentElement.querySelector(`.rptRepeatAddBottom[data-target="${listId}"]`);
   if (!footer) {
@@ -2700,13 +2712,13 @@
     footer.setAttribute("data-target", listId);
     footer.innerHTML = `
       <button type="button" class="btn ghost rptRepeatAddBottomBtn">
-        + เพิ่ม${escapeHtml(cfg.label)}
+        + เพิ่ม${escapeHtml(label)}
       </button>
     `;
     root.insertAdjacentElement("afterend", footer);
 
     footer.querySelector("button")?.addEventListener("click", () => {
-      $(cfg.addBtnId)?.click();
+      $(addBtnId)?.click();
     });
   }
 }
@@ -2884,28 +2896,23 @@
   }
 
   function appendRow(listId, html, emptyLabel) {
-    const root = $(listId);
-    if (!root) return;
+  const root = $(listId);
+  if (!root) return;
 
-    const wrap = document.createElement("div");
-    wrap.innerHTML = html.trim();
-    const node = wrap.firstElementChild;
-    root.appendChild(node);
+  const wrap = document.createElement("div");
+  wrap.innerHTML = html.trim();
+  const node = wrap.firstElementChild;
+  root.appendChild(node);
 
-    bindDynamicRow(node);
-    refreshRowIndex(listId);
-    toggleEmptyState(listId, emptyLabel);
-    ensureRepeatFooterButton(listId);
+  bindDynamicRow(node);
+  refreshRowIndex(listId);
+  toggleEmptyState(listId, emptyLabel);
+  ensureRepeatFooterButton(listId);
 
-    expandOnlyThisCard(node);
-    refreshSingleCardUi(node);
-
-    setTimeout(() => {
-      node.scrollIntoView({ behavior: "smooth", block: "nearest" });
-      const firstInput = node.querySelector("input:not([type='hidden']):not([type='file']), select, textarea");
-      firstInput?.focus?.();
-    }, 40);
-  }
+  setTimeout(() => {
+    node.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }, 40);
+}
 
   function bindSelectOtherInRow(node, selectSel, wrapSel, inputSel) {
     const select = node.querySelector(selectSel);
@@ -4288,7 +4295,21 @@
       window.ProgressUI?.hide(180);
     }
   }
-
+function initRepeatFooters() {
+  [
+    "rptPersonList",
+    "rptDamageList",
+    "rptStepTakenList",
+    "rptEvidenceList",
+    "rptCauseList",
+    "rptPreventionList",
+    "rptLearningList",
+    "rptImageList"
+  ].forEach((listId) => {
+    ensureRepeatFooterButton(listId);
+    toggleEmptyState(listId, emptyStateLabelFor(listId));
+  });
+}
   function bindTopButtons() {
     if (state.buttonsBound) return;
     state.buttonsBound = true;
@@ -4471,10 +4492,11 @@
       bindOtherSelect("rptReporterPosition", "rptReporterPositionOtherWrap", "rptReporterPositionOther");
 
       bindTopButtons();
-      bindLookupButtons();
-      resetForm();
+bindLookupButtons();
+resetForm();
+initRepeatFooters();
 
-      state.ready = true;
+state.ready = true;
     } catch (err) {
       console.error("Report500 ensureReady error:", err);
 
