@@ -2073,7 +2073,6 @@
 // })();
 
 
-
 (function () {
   const $ = (id) => document.getElementById(id);
 
@@ -2145,6 +2144,7 @@
       if (img.dataset.objectUrl) {
         try { URL.revokeObjectURL(img.dataset.objectUrl); } catch (_) {}
       }
+
       const url = URL.createObjectURL(file);
       img.src = url;
       img.dataset.objectUrl = url;
@@ -2510,8 +2510,7 @@
       </div>
     `;
   }
-
-  function getCardSummary(card) {
+   function getCardSummary(card) {
     if (!card) return "แตะเพื่อกรอกข้อมูล";
 
     const type = card.getAttribute("data-type");
@@ -2879,7 +2878,8 @@
       `
     });
   }
-   function appendRow(listId, html, emptyLabel) {
+
+  function appendRow(listId, html, emptyLabel) {
     const root = $(listId);
     if (!root) return;
 
@@ -2919,8 +2919,7 @@
     select.addEventListener("change", sync);
     sync();
   }
-
-  function bindStepTakenRow(node) {
+   function bindStepTakenRow(node) {
     const typeEl = node.querySelector(".rptStepActionType");
     const otherWrap = node.querySelector(".rptStepActionTypeOtherWrap");
     const otherInput = node.querySelector(".rptStepActionTypeOther");
@@ -3293,13 +3292,11 @@
       method: "GET"
     });
 
-    const raw = await res.text();
-
     let json = null;
     try {
-      json = JSON.parse(raw);
+      json = await res.json();
     } catch (_) {
-      throw new Error(`ระบบค้นหา Item ไม่ส่ง JSON กลับมา (HTTP ${res.status})`);
+      throw new Error("ระบบค้นหา Item ไม่ส่ง JSON กลับมา");
     }
 
     if (!res.ok || !json || !json.ok) {
@@ -3579,7 +3576,243 @@
       showConfirmButton: false
     });
   }
-   function bindLookupButtons() {
+
+  async function openDisciplineLookupPopup() {
+    const initialCode = state.disciplineLookup?.employeeCode || "";
+
+    await Swal.fire({
+      customClass: { popup: "rptLookupPopup" },
+      confirmButtonText: "ปิด",
+      html: `
+        <div class="rptLookupModal">
+          <div class="rptLookupModalHead">
+            <div class="rptLookupModalBadge">DISCIPLINE LOOKUP</div>
+            <div class="rptLookupModalTitle">ค้นหาการดำเนินการทางวินัย</div>
+            <div class="rptLookupModalSub">ค้นหาประวัติการดำเนินการทางวินัยจากรหัสพนักงาน และเลือกแนบข้อมูลอ้างอิงนี้เข้ากับรายงานได้ทันที</div>
+          </div>
+
+          <div class="rptLookupToolbar rptLookupToolbarCompact">
+            <div class="field">
+              <label for="swalRptDisciplineEmployeeCode">รหัสพนักงาน</label>
+              <input id="swalRptDisciplineEmployeeCode" class="rptLookupInput" value="${escapeHtml(initialCode)}" placeholder="กรอกรหัสพนักงาน">
+            </div>
+
+            <div class="rptLookupToolbarActions rptLookupToolbarActionsCompact">
+              <button type="button" id="swalRptDisciplineSearch" class="rptLookupBtn primary">ค้นหา</button>
+              <button type="button" id="swalRptDisciplineUse" class="rptLookupBtn ghost" disabled>ใช้ข้อมูลนี้กับรายงาน</button>
+            </div>
+          </div>
+
+          <div class="rptLookupBody">
+            <div id="swalRptDisciplineResult" class="rptLookupResult">
+              <div class="rptLookupState">
+                <div class="rptLookupStateInner">
+                  <div class="rptLookupStateIcon">⌕</div>
+                  <div class="rptLookupStateTitle">พร้อมค้นหาข้อมูลวินัย</div>
+                  <div class="rptLookupStateText">กรอกรหัสพนักงานแล้วกดค้นหา ระบบจะแสดงประวัติการดำเนินการทางวินัยในพื้นที่ด้านล่าง</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      `,
+      didOpen: () => {
+        const input = document.getElementById("swalRptDisciplineEmployeeCode");
+        const btnSearch = document.getElementById("swalRptDisciplineSearch");
+        const btnUse = document.getElementById("swalRptDisciplineUse");
+        const resultBox = document.getElementById("swalRptDisciplineResult");
+
+        let latestResult = null;
+
+        const runSearch = async () => {
+          const employeeCode = norm(input?.value || "");
+          resultBox.innerHTML = `
+            <div class="rptLookupState">
+              <div class="rptLookupStateInner">
+                <div class="rptLookupStateIcon">…</div>
+                <div class="rptLookupStateTitle">กำลังค้นหา</div>
+                <div class="rptLookupStateText">ระบบกำลังค้นหาประวัติการดำเนินการทางวินัย โปรดรอสักครู่</div>
+              </div>
+            </div>
+          `;
+          btnUse.disabled = true;
+          latestResult = null;
+
+          try {
+            const json = await searchDisciplineByEmployeeCode(employeeCode);
+            latestResult = json;
+
+            const count = Number(json.count || (json.records || []).length || 0);
+            resultBox.innerHTML = renderDisciplineLookupTable(json.records || [], {
+              count,
+              employeeCode: json.employeeCode || json.normalizedEmployeeCode || "",
+              employeeName: json.employeeName || ""
+            });
+
+            btnUse.disabled = !(json.records && json.records.length);
+          } catch (err) {
+            resultBox.innerHTML = `<div class="rptLookupEmpty">${escapeHtml(err.message || String(err))}</div>`;
+          }
+        };
+
+        btnSearch?.addEventListener("click", runSearch);
+        input?.addEventListener("keydown", (ev) => {
+          if (ev.key === "Enter") {
+            ev.preventDefault();
+            runSearch();
+          }
+        });
+
+        btnUse?.addEventListener("click", () => {
+          if (!latestResult || !latestResult.records || !latestResult.records.length) return;
+          attachDisciplineLookupResult(latestResult);
+          Swal.close();
+        });
+      }
+    });
+  }
+
+  async function openItemLookupPopup() {
+    const initialItem = state.itemLookup?.item || "";
+
+    await Swal.fire({
+      customClass: { popup: "rptLookupPopup" },
+      confirmButtonText: "ปิด",
+      html: `
+        <div class="rptLookupModal">
+          <div class="rptLookupModalHead">
+            <div class="rptLookupModalBadge">ITEM LOOKUP</div>
+            <div class="rptLookupModalTitle">ค้นหารายการสินค้า</div>
+            <div class="rptLookupModalSub">ค้นหา Item เพื่อคัดลอกชื่อสินค้า หรือแทรกข้อความลงในหัวข้อเรื่องและรายละเอียดเหตุการณ์ได้ทันที</div>
+          </div>
+
+          <div class="rptLookupToolbar rptLookupToolbarCompact">
+            <div class="field">
+              <label for="swalRptItemCode">Item</label>
+              <input id="swalRptItemCode" class="rptLookupInput" value="${escapeHtml(initialItem)}" placeholder="กรอก Item เช่น 170643654">
+            </div>
+
+            <div class="rptLookupToolbarActions rptLookupToolbarActionsCompact">
+              <button type="button" id="swalRptItemSearch" class="rptLookupBtn primary">ค้นหา</button>
+            </div>
+          </div>
+
+          <div class="rptLookupBody">
+            <div id="swalRptItemResult" class="rptLookupResult">
+              <div class="rptLookupState">
+                <div class="rptLookupStateInner">
+                  <div class="rptLookupStateIcon">⌕</div>
+                  <div class="rptLookupStateTitle">พร้อมค้นหา Item</div>
+                  <div class="rptLookupStateText">กรอกหมายเลขสินค้าแล้วกดค้นหา ระบบจะแสดงชื่อสินค้าและข้อความพร้อมใช้งานในพื้นที่ด้านล่าง</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      `,
+      didOpen: () => {
+        const input = document.getElementById("swalRptItemCode");
+        const btnSearch = document.getElementById("swalRptItemSearch");
+        const resultBox = document.getElementById("swalRptItemResult");
+
+        const bindResultActions = (result) => {
+          document.getElementById("swalRptItemCopyDesc")?.addEventListener("click", () => {
+            copyTextToClipboard(result.description || "", "คัดลอกชื่อสินค้าเรียบร้อย");
+          });
+
+          document.getElementById("swalRptItemCopyFull")?.addEventListener("click", () => {
+            copyTextToClipboard(result.displayText || "", "คัดลอก Item และชื่อสินค้าเรียบร้อย");
+          });
+
+          document.getElementById("swalRptItemToSubject")?.addEventListener("click", () => {
+            insertItemTextToField("rptSubject", result.displayText || result.description || "", "replace");
+          });
+
+          document.getElementById("swalRptItemToWhat")?.addEventListener("click", () => {
+            insertItemTextToField("rptWhatHappen", result.displayText || result.description || "", "append");
+          });
+        };
+
+        const runSearch = async () => {
+          const item = norm(input?.value || "");
+          resultBox.innerHTML = `
+            <div class="rptLookupState">
+              <div class="rptLookupStateInner">
+                <div class="rptLookupStateIcon">…</div>
+                <div class="rptLookupStateTitle">กำลังค้นหา</div>
+                <div class="rptLookupStateText">ระบบกำลังค้นหารายการสินค้า โปรดรอสักครู่</div>
+              </div>
+            </div>
+          `;
+
+          try {
+            const json = await searchItemLookup(item);
+            resultBox.innerHTML = renderItemLookupResult(json);
+            bindResultActions(json);
+          } catch (err) {
+            resultBox.innerHTML = `<div class="rptLookupEmpty">${escapeHtml(err.message || String(err))}</div>`;
+          }
+        };
+
+        btnSearch?.addEventListener("click", runSearch);
+        input?.addEventListener("keydown", (ev) => {
+          if (ev.key === "Enter") {
+            ev.preventDefault();
+            runSearch();
+          }
+        });
+
+        if (state.itemLookup?.searched) {
+          const existing = {
+            item: state.itemLookup.item,
+            description: state.itemLookup.description,
+            displayText: state.itemLookup.displayText,
+            found: state.itemLookup.found
+          };
+          resultBox.innerHTML = renderItemLookupResult(existing);
+          bindResultActions(existing);
+        }
+      }
+    });
+  }
+
+  async function openAttachedDisciplinePreview() {
+    const d = state.disciplineLookup || createEmptyDisciplineLookupState();
+    if (!d.attached || !d.records.length) {
+      await Swal.fire({
+        icon: "info",
+        title: "ยังไม่มีข้อมูล",
+        text: "ยังไม่ได้แนบข้อมูลวินัยกับรายงานนี้"
+      });
+      return;
+    }
+
+    await Swal.fire({
+      title: "ข้อมูลวินัยที่แนบกับรายงาน",
+      width: 1280,
+      confirmButtonText: "ปิด",
+      customClass: {
+        popup: "rptLookupPopup rptLookupPreviewPopup",
+        title: "rptLookupPreviewTitle",
+        htmlContainer: "rptLookupPreviewHtml"
+      },
+      html: `
+        <div class="rptLookupPreviewWrap">
+          ${renderDisciplineLookupTable(d.records, {
+            count: d.matchCount,
+            employeeCode: d.employeeCode,
+            employeeName: d.employeeName
+          })}
+        </div>
+      `
+    });
+  }
+
+  function clearDisciplineLookup() {
+    resetDisciplineLookupState();
+  }
+
+  function bindLookupButtons() {
     if (state.lookupButtonsBound) return;
     state.lookupButtonsBound = true;
 
@@ -3587,6 +3820,558 @@
     $("btnRptDisciplineView")?.addEventListener("click", openAttachedDisciplinePreview);
     $("btnRptDisciplineClear")?.addEventListener("click", clearDisciplineLookup);
     $("btnRptItemLookup")?.addEventListener("click", openItemLookupPopup);
+  }
+
+  function appendDisciplinePayloadToReport500Payload(payload) {
+    const d = state.disciplineLookup || createEmptyDisciplineLookupState();
+
+    payload.disciplineEmployeeCode = d.attached ? (d.employeeCode || "") : "";
+    payload.disciplineEmployeeName = d.attached ? (d.employeeName || "") : "";
+    payload.disciplineMatchCount = d.attached ? Number(d.matchCount || d.records.length || 0) : 0;
+    payload.disciplineReferenceJson = d.attached ? JSON.stringify(d.records || []) : "";
+
+    return payload;
+  }
+
+  function collectPayload() {
+    const auth = getAuth();
+
+    const payload = {
+      refNo: getRefNo(),
+      lps: norm(auth.name),
+
+      reportedBy: norm($("rptReportedBy")?.value) || norm(auth.name),
+      reporterPosition: norm($("rptReporterPosition")?.value),
+      reporterPositionOther: norm($("rptReporterPositionOther")?.value),
+      reportDate: norm($("rptReportDate")?.value),
+
+      branch: norm($("rptBranch")?.value),
+      branchOther: norm($("rptBranchOther")?.value),
+      subject: norm($("rptSubject")?.value),
+
+      reportTypes: collectCheckedOptionObjects("rptReportTypes", "rptReportTypes"),
+      urgencyTypes: collectCheckedOptionObjects("rptUrgencyTypes", "rptUrgencyTypes"),
+      notifyTo: collectCheckedOptionObjects("rptNotifyTo", "rptNotifyTo"),
+
+      incidentDate: norm($("rptIncidentDate")?.value),
+      incidentTime: norm($("rptIncidentTime")?.value),
+      whatHappen: norm($("rptWhatHappen")?.value),
+
+      whereDidItHappen: norm($("rptWhereDidItHappen")?.value),
+      whereTypeSelections: collectWhereTypes(),
+      area: norm($("rptArea")?.value),
+
+      involvedPersons: collectPersons(),
+
+      damages: collectIndexedRows("rptDamageList"),
+      stepTakens: collectStepTakens(),
+      offenderStatement: norm($("rptOffenderStatement")?.value),
+      evidences: collectIndexedRows("rptEvidenceList"),
+      summaryText: norm($("rptSummaryText")?.value),
+      causes: collectIndexedRows("rptCauseList"),
+      preventions: collectIndexedRows("rptPreventionList"),
+      learnings: collectIndexedRows("rptLearningList"),
+
+      emailRecipients: Array.from(document.querySelectorAll(".rptEmailChk:checked"))
+        .map((el) => norm(el.value))
+        .filter(Boolean),
+      emailOther: norm($("rptEmailOther")?.value)
+    };
+
+    appendDisciplinePayloadToReport500Payload(payload);
+    validatePayload(payload);
+    return payload;
+  }
+
+  function validatePayload(p) {
+    if (!norm(p.refNo)) throw new Error("กรุณากรอก Ref No.");
+    if (!norm(p.branch)) throw new Error("กรุณาเลือกสาขา");
+    if (isOther(p.branch) && !norm(p.branchOther)) throw new Error("กรุณาระบุสาขาอื่นๆ");
+    if (!norm(p.subject)) throw new Error("กรุณากรอกเรื่อง");
+
+    if (!(p.reportTypes || []).some((x) => x.checked)) throw new Error("กรุณาเลือกประเภทรายงานอย่างน้อย 1 รายการ");
+    if (!(p.urgencyTypes || []).some((x) => x.checked)) throw new Error("กรุณาเลือกระดับความเร่งด่วนอย่างน้อย 1 รายการ");
+    if (!(p.notifyTo || []).some((x) => x.checked)) throw new Error("กรุณาเลือกผู้รับทราบอย่างน้อย 1 รายการ");
+
+    if (!norm(p.incidentDate)) throw new Error("กรุณาเลือกวันที่เกิดเหตุ");
+    if (!norm(p.whereDidItHappen)) throw new Error("กรุณาเลือกสถานที่เกิดเหตุ");
+    if (!norm(p.whatHappen)) throw new Error("กรุณากรอกรายละเอียดเหตุการณ์");
+    if (!norm(p.reportedBy)) throw new Error("ไม่พบชื่อผู้รายงาน");
+    if (!norm(p.reportDate)) throw new Error("กรุณาเลือกวันที่รายงาน");
+
+    (p.whereTypeSelections || []).forEach((x) => {
+      const isStore = /store$/i.test(norm(x.value));
+      if (x.checked && isStore && !norm(x.suffixText)) {
+        throw new Error(`กรุณากรอกข้อมูลต่อท้าย ${x.value}`);
+      }
+    });
+
+    (p.involvedPersons || []).forEach((x, idx) => {
+      if (isOther(x.position) && !norm(x.positionOther)) {
+        throw new Error(`ผู้เกี่ยวข้องลำดับ ${idx + 1}: กรุณาระบุ Position อื่นๆ`);
+      }
+      if (isOther(x.department) && !norm(x.departmentOther)) {
+        throw new Error(`ผู้เกี่ยวข้องลำดับ ${idx + 1}: กรุณาระบุ Department อื่นๆ`);
+      }
+      if (isOther(x.remark) && !norm(x.remarkOther)) {
+        throw new Error(`ผู้เกี่ยวข้องลำดับ ${idx + 1}: กรุณาระบุ Remark อื่นๆ`);
+      }
+    });
+
+    (p.stepTakens || []).forEach((x, idx) => {
+      if (x.actionType === "ตรวจวัดปริมาณแอลกอฮอล์") {
+        if (!norm(x.alcoholResult)) {
+          throw new Error(`การดำเนินการลำดับ ${idx + 1}: กรุณาเลือกผลการตรวจแอลกอฮอล์`);
+        }
+        if (norm(x.alcoholResult) === "พบ" && !norm(x.alcoholMgPercent)) {
+          throw new Error(`การดำเนินการลำดับ ${idx + 1}: กรุณากรอกค่า Mg%`);
+        }
+      }
+      if (x.actionType === "ตรวจสารเสพติดเมทแอเฟตามีน") {
+        if (!norm(x.drugConfirmed)) {
+          throw new Error(`การดำเนินการลำดับ ${idx + 1}: กรุณากรอกผลยืนยันการเสพ`);
+        }
+      }
+      if (isOther(x.actionType) && !norm(x.actionTypeOther)) {
+        throw new Error(`การดำเนินการลำดับ ${idx + 1}: กรุณาระบุการดำเนินการอื่นๆ`);
+      }
+    });
+
+    if (isOther(p.reporterPosition) && !norm(p.reporterPositionOther)) {
+      throw new Error("กรุณาระบุตำแหน่งผู้รายงานอื่นๆ");
+    }
+  }
+
+  function payloadSummaryHtml(payload, images) {
+    const selectedEmails = collectEmailRecipients();
+
+    return `
+      <div class="swalSummary">
+        <div class="swalHero">
+          <div class="swalHeroTitle">ตรวจสอบข้อมูลก่อนบันทึก</div>
+          <div class="swalHeroSub">Report</div>
+        </div>
+
+        <div class="swalSection">
+          <div class="swalSectionTitle">ข้อมูลหลัก</div>
+          <div class="swalKvGrid">
+            <div class="swalKv"><div class="swalKvLabel">Ref No.</div><div class="swalKvValue">${escapeHtml(payload.refNo)}</div></div>
+            <div class="swalKv"><div class="swalKvLabel">สาขา</div><div class="swalKvValue">${escapeHtml(payload.branch)}${payload.branchOther ? " (" + escapeHtml(payload.branchOther) + ")" : ""}</div></div>
+            <div class="swalKv"><div class="swalKvLabel">เรื่อง</div><div class="swalKvValue">${escapeHtml(payload.subject || "-")}</div></div>
+            <div class="swalKv"><div class="swalKvLabel">Reported by</div><div class="swalKvValue">${escapeHtml(payload.reportedBy || "-")}</div></div>
+          </div>
+        </div>
+
+        <div class="swalSection">
+          <div class="swalSectionTitle">เหตุการณ์</div>
+          <div class="swalKvGrid">
+            <div class="swalKv"><div class="swalKvLabel">วันที่</div><div class="swalKvValue">${escapeHtml(payload.incidentDate || "-")}</div></div>
+            <div class="swalKv"><div class="swalKvLabel">เวลา</div><div class="swalKvValue">${escapeHtml(payload.incidentTime || "-")}</div></div>
+            <div class="swalKv"><div class="swalKvLabel">สถานที่หลัก</div><div class="swalKvValue">${escapeHtml(payload.whereDidItHappen || "-")}</div></div>
+            <div class="swalKv"><div class="swalKvLabel">Area</div><div class="swalKvValue">${escapeHtml(payload.area || "-")}</div></div>
+          </div>
+        </div>
+
+        <div class="swalSection">
+          <div class="swalSectionTitle">สรุปจำนวนรายการ</div>
+          <div class="swalKvGrid">
+            <div class="swalKv"><div class="swalKvLabel">ผู้เกี่ยวข้อง</div><div class="swalKvValue">${payload.involvedPersons.length}</div></div>
+            <div class="swalKv"><div class="swalKvLabel">ความเสียหาย</div><div class="swalKvValue">${payload.damages.length}</div></div>
+            <div class="swalKv"><div class="swalKvLabel">การดำเนินการ</div><div class="swalKvValue">${payload.stepTakens.length}</div></div>
+            <div class="swalKv"><div class="swalKvLabel">หลักฐาน</div><div class="swalKvValue">${payload.evidences.length}</div></div>
+            <div class="swalKv"><div class="swalKvLabel">สาเหตุ</div><div class="swalKvValue">${payload.causes.length}</div></div>
+            <div class="swalKv"><div class="swalKvLabel">การป้องกัน</div><div class="swalKvValue">${payload.preventions.length}</div></div>
+            <div class="swalKv"><div class="swalKvLabel">ข้อสรุป/บทเรียน</div><div class="swalKvValue">${payload.learnings.length}</div></div>
+            <div class="swalKv"><div class="swalKvLabel">รูปภาพ</div><div class="swalKvValue">${images.length}</div></div>
+          </div>
+        </div>
+
+        <div class="swalSection">
+          <div class="swalSectionTitle">อีเมลปลายทาง</div>
+          <div class="swalKvValue">${selectedEmails.length} รายการ</div>
+        </div>
+      </div>
+    `;
+  }
+
+  async function preview() {
+    try {
+      const payload = collectPayload();
+      const images = await collectImages();
+
+      await Swal.fire({
+        title: "สรุปก่อนบันทึก",
+        html: payloadSummaryHtml(payload, images),
+        width: 920,
+        confirmButtonText: "ปิด"
+      });
+    } catch (err) {
+      Swal.fire({
+        icon: "warning",
+        title: "ตรวจสอบข้อมูลไม่ผ่าน",
+        text: err?.message || String(err)
+      });
+    }
+  }
+
+  function resetList(listId, label) {
+    const root = $(listId);
+    if (!root) return;
+    root.innerHTML = "";
+    toggleEmptyState(listId, label);
+  }
+
+  function resetForm() {
+    resetDisciplineLookupState();
+    resetItemLookupState();
+
+    setReadonlyValue("rptReportedBy", norm(getAuth().name));
+    if ($("rptReportDate")) $("rptReportDate").value = todayIsoLocal();
+    if ($("rptIncidentDate")) $("rptIncidentDate").value = todayIsoLocal();
+    if ($("rptIncidentTime")) $("rptIncidentTime").value = "";
+    if ($("rptSubject")) $("rptSubject").value = "";
+    if ($("rptWhatHappen")) $("rptWhatHappen").value = "";
+    if ($("rptArea")) $("rptArea").value = "";
+    if ($("rptOffenderStatement")) $("rptOffenderStatement").value = "";
+    if ($("rptSummaryText")) $("rptSummaryText").value = "";
+    if ($("rptEmailOther")) $("rptEmailOther").value = "";
+
+    if ($("rptBranch")) $("rptBranch").value = "";
+    if ($("rptBranchOther")) $("rptBranchOther").value = "";
+    if ($("rptReporterPosition")) $("rptReporterPosition").value = "";
+    if ($("rptReporterPositionOther")) $("rptReporterPositionOther").value = "";
+
+    document.querySelectorAll("#rptReportTypes input[type='checkbox'], #rptUrgencyTypes input[type='checkbox'], #rptNotifyTo input[type='checkbox'], .rptEmailChk").forEach((el) => {
+      el.checked = false;
+    });
+
+    document.querySelectorAll("#rptWhereTypeSelections .rptWhereTypeChk").forEach((el) => {
+      el.checked = false;
+    });
+    document.querySelectorAll("#rptWhereTypeSelections .rptWhereTypeSuffix").forEach((el) => {
+      el.value = "";
+    });
+    document.querySelectorAll("#rptWhereTypeSelections .optionChoiceOther").forEach((el) => {
+      el.classList.add("hidden");
+    });
+
+    bindOtherSelect("rptBranch", "rptBranchOtherWrap", "rptBranchOther");
+    bindOtherSelect("rptReporterPosition", "rptReporterPositionOtherWrap", "rptReporterPositionOther");
+
+    Object.keys(RPT_REPEAT_CONFIG).forEach((listId) => {
+      resetList(listId, getRepeatConfig(listId).label);
+      ensureRepeatFooterButton(listId);
+    });
+  }
+
+  async function submit() {
+    const auth = getAuth();
+    if (!norm(auth.pass)) {
+      Swal.fire({
+        icon: "warning",
+        title: "ยังไม่ได้เข้าสู่ระบบ",
+        text: "กรุณาเข้าสู่ระบบก่อนบันทึกข้อมูล"
+      });
+      return;
+    }
+
+    try {
+      const payload = collectPayload();
+      const images = await collectImages();
+
+      const ok = await Swal.fire({
+        icon: "question",
+        title: "ยืนยันการบันทึก Report",
+        html: payloadSummaryHtml(payload, images),
+        width: 920,
+        showCancelButton: true,
+        confirmButtonText: "ยืนยันบันทึก",
+        cancelButtonText: "ยกเลิก"
+      });
+
+      if (!ok.isConfirmed) return;
+
+      const Progress = window.ProgressUI;
+      Progress?.show(
+        "กำลังบันทึก Report",
+        "ระบบกำลังตรวจสอบข้อมูล อัปโหลดรูป สร้าง PDF และส่งอีเมล"
+      );
+
+      Progress?.activateOnly("validate", 8, "กำลังตรวจสอบข้อมูลรายงาน");
+      await (window.sleepMs ? window.sleepMs(160) : new Promise((r) => setTimeout(r, 160)));
+      Progress?.markDone("validate", 14, "ตรวจสอบข้อมูลเรียบร้อย");
+
+      Progress?.activateOnly("upload", 18, "กำลังเตรียมรูปภาพสำหรับรายงาน");
+      const uploadProg = typeof window.estimateUploadProgressByFiles === "function"
+        ? window.estimateUploadProgressByFiles(Math.max(images.length, 1), 18, 42)
+        : {
+            next: (currentIndex) => {
+              const count = Math.max(1, images.length || 1);
+              const ratio = Math.max(0, Math.min(1, currentIndex / count));
+              return Math.round(18 + ((42 - 18) * ratio));
+            }
+          };
+
+      images.forEach((_, idx) => {
+        Progress?.setProgress(uploadProg.next(idx + 1), `เตรียมรูปภาพ ${idx + 1}/${images.length || 1}`);
+      });
+
+      await (window.sleepMs ? window.sleepMs(120) : new Promise((r) => setTimeout(r, 120)));
+      Progress?.markDone("upload", 44, `เตรียมรูปภาพเรียบร้อย (${images.length} รูป)`);
+
+      Progress?.activateOnly("save", 56, "กำลังบันทึกข้อมูล Report");
+
+      const res = await fetch(apiUrl("/report500/submit"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          pass: auth.pass,
+          payload,
+          files: images
+        })
+      });
+
+      const text = await res.text();
+      let json = {};
+      try {
+        json = JSON.parse(text);
+      } catch (_) {
+        throw new Error("Backend ตอบกลับไม่ใช่ JSON");
+      }
+
+      if (!res.ok || !json.ok) {
+        throw new Error(json?.error || `บันทึกข้อมูลไม่สำเร็จ (HTTP ${res.status})`);
+      }
+
+      Progress?.markDone("save", 72, "บันทึกข้อมูลลงระบบเรียบร้อย");
+
+      Progress?.activateOnly("pdf", 84, "กำลังสร้างไฟล์ PDF");
+      await (window.sleepMs ? window.sleepMs(180) : new Promise((r) => setTimeout(r, 180)));
+
+      if (json.pdfFileId || json.pdfUrl) {
+        const sizeText = json.pdfSizeText ? ` (${json.pdfSizeText})` : "";
+        Progress?.markDone("pdf", 93, `สร้างไฟล์ PDF เรียบร้อย${sizeText}`);
+      } else {
+        Progress?.markDone("pdf", 93, "สร้างไฟล์ PDF เรียบร้อย");
+      }
+
+      Progress?.activateOnly("email", 97, "กำลังตรวจสอบผลการส่งอีเมล");
+      await (window.sleepMs ? window.sleepMs(160) : new Promise((r) => setTimeout(r, 160)));
+
+      const emailResult = json.emailResult || {};
+      const emailOk = !!emailResult.ok;
+      const emailSkipped = !!emailResult.skipped;
+      const attachmentMode = String(emailResult.attachmentMode || "").trim();
+      const emailErr = String(emailResult.error || "").trim();
+
+      let emailText = "ส่งอีเมลเรียบร้อย";
+      if (attachmentMode === "LINK_ONLY") emailText = "ส่งอีเมลพร้อมลิงก์ PDF";
+      if (attachmentMode === "ATTACHED") emailText = "ส่งอีเมลพร้อมไฟล์ PDF";
+
+      if (emailOk) {
+        Progress?.markDone("email", 100, emailText, emailText);
+        Progress?.success("บันทึกสำเร็จ", "รายงานถูกบันทึกเรียบร้อยแล้ว");
+      } else if (emailSkipped) {
+        Progress?.markDone("email", 100, "ไม่ได้เลือกส่งอีเมล", "ข้าม");
+        Progress?.success("บันทึกสำเร็จ", "บันทึกข้อมูลและสร้าง PDF เรียบร้อยแล้ว");
+      } else {
+        Progress?.markError("email", "ส่งอีเมลไม่สำเร็จ", 100);
+        Progress?.success("บันทึกสำเร็จ", "ข้อมูลและ PDF สำเร็จแล้ว แต่การส่งอีเมลไม่สำเร็จ");
+        Progress?.setHint(emailErr || "กรุณาตรวจสอบสิทธิ์เมลหรือขนาดไฟล์ PDF");
+      }
+
+      Progress?.hide(120);
+
+      const pdfOpenUrl = json.pdfUrl
+        ? String(json.pdfUrl)
+        : (json.refNo ? apiUrl(`/report500/pdf/${encodeURIComponent(json.refNo)}`) : "");
+
+      await Swal.fire({
+        icon: (emailOk || emailSkipped) ? "success" : "warning",
+        title: (emailOk || emailSkipped) ? "บันทึก Report สำเร็จ" : "บันทึก Report สำเร็จบางส่วน",
+        showConfirmButton: false,
+        width: 820,
+        html: `
+          <div class="swalSummary">
+            <div class="swalHero">
+              <div class="swalHeroTitle">บันทึกรายงานเรียบร้อยแล้ว</div>
+              <div class="swalHeroSub">ระบบจัดเก็บข้อมูล รูปภาพ และไฟล์ PDF เรียบร้อย</div>
+              <div class="swalPillRow">
+                <div class="swalPill primary">Ref: ${escapeHtml(json.refNo || payload.refNo || "-")}</div>
+                <div class="swalPill">รูป ${Number(json.imageCount || images.length || 0)}</div>
+                <div class="swalPill">${emailOk ? "ส่งอีเมลสำเร็จ" : emailSkipped ? "ไม่ได้ส่งอีเมล" : "อีเมลไม่สำเร็จ"}</div>
+              </div>
+            </div>
+
+            <div class="swalSection">
+              <div class="swalSectionTitle">สรุปผลการบันทึก</div>
+              <div class="swalKvGrid">
+                <div class="swalKv">
+                  <div class="swalKvLabel">Ref No.</div>
+                  <div class="swalKvValue">${escapeHtml(json.refNo || payload.refNo || "-")}</div>
+                </div>
+                <div class="swalKv">
+                  <div class="swalKvLabel">ผู้บันทึก</div>
+                  <div class="swalKvValue">${escapeHtml(payload.reportedBy || auth.name || "-")}</div>
+                </div>
+                <div class="swalKv">
+                  <div class="swalKvLabel">จำนวนรูปภาพ</div>
+                  <div class="swalKvValue">${escapeHtml(String(Number(json.imageCount || images.length || 0)))}</div>
+                </div>
+                <div class="swalKv">
+                  <div class="swalKvLabel">สถานะอีเมล</div>
+                  <div class="swalKvValue">${escapeHtml(emailOk ? emailText : emailSkipped ? "ไม่ได้เลือกส่งอีเมล" : (emailErr || "ส่งอีเมลไม่สำเร็จ"))}</div>
+                </div>
+              </div>
+            </div>
+
+            ${pdfOpenUrl ? `
+              <div class="swalSection">
+                <div class="swalSectionTitle">ไฟล์ PDF</div>
+                <div class="swalActionRow" style="display:flex;gap:10px;flex-wrap:wrap">
+                  <button type="button" id="btnOpenPdfAfterSave" class="btn primary">เปิด PDF</button>
+                  <button type="button" id="btnCloseAfterSave" class="btn ghost">ปิดหน้าต่าง</button>
+                </div>
+              </div>
+            ` : `
+              <div class="swalSection">
+                <div class="swalActionRow" style="display:flex;gap:10px;flex-wrap:wrap">
+                  <button type="button" id="btnCloseAfterSave" class="btn ghost">ปิดหน้าต่าง</button>
+                </div>
+              </div>
+            `}
+          </div>
+        `,
+        didOpen: () => {
+          const btnOpen = document.getElementById("btnOpenPdfAfterSave");
+          const btnClose = document.getElementById("btnCloseAfterSave");
+
+          if (btnOpen && pdfOpenUrl) {
+            btnOpen.addEventListener("click", () => {
+              window.open(pdfOpenUrl, "_blank", "noopener,noreferrer");
+              Swal.close();
+            });
+          }
+
+          if (btnClose) {
+            btnClose.addEventListener("click", () => {
+              Swal.close();
+            });
+          }
+        },
+        willClose: () => {
+          resetForm();
+          if ($("rptRefNo")) $("rptRefNo").value = "";
+        }
+      });
+
+    } catch (err) {
+      console.error(err);
+      window.ProgressUI?.markError("save", err?.message || "เกิดข้อผิดพลาด", 100);
+      window.ProgressUI?.setHint("กรุณาตรวจสอบข้อมูล เครือข่าย หรือ backend แล้วลองใหม่อีกครั้ง");
+
+      await Swal.fire({
+        icon: "error",
+        title: "บันทึกไม่สำเร็จ",
+        text: err?.message || String(err),
+        confirmButtonText: "ตกลง"
+      });
+
+      window.ProgressUI?.hide(180);
+    }
+  }
+
+  function bindTopButtons() {
+    if (state.buttonsBound) return;
+    state.buttonsBound = true;
+
+    $("btnRptPreview")?.addEventListener("click", preview);
+    $("btnRptSubmit")?.addEventListener("click", submit);
+    $("btnRptReset")?.addEventListener("click", async () => {
+      const ok = await Swal.fire({
+        icon: "question",
+        title: "ล้างข้อมูลฟอร์ม",
+        text: "ต้องการล้างข้อมูลในฟอร์ม Report ใช่หรือไม่",
+        showCancelButton: true,
+        confirmButtonText: "ล้างข้อมูล",
+        cancelButtonText: "ยกเลิก"
+      });
+      if (ok.isConfirmed) resetForm();
+    });
+
+    $("btnRptAllReportTypes")?.addEventListener("click", () => setAllChecks('#rptReportTypes input[type="checkbox"]', true));
+    $("btnRptClearReportTypes")?.addEventListener("click", () => setAllChecks('#rptReportTypes input[type="checkbox"]', false));
+
+    $("btnRptAllUrgency")?.addEventListener("click", () => setAllChecks('#rptUrgencyTypes input[type="checkbox"]', true));
+    $("btnRptClearUrgency")?.addEventListener("click", () => setAllChecks('#rptUrgencyTypes input[type="checkbox"]', false));
+
+    $("btnRptAllNotifyTo")?.addEventListener("click", () => setAllChecks('#rptNotifyTo input[type="checkbox"]', true));
+    $("btnRptClearNotifyTo")?.addEventListener("click", () => setAllChecks('#rptNotifyTo input[type="checkbox"]', false));
+
+    $("btnRptAllEmails")?.addEventListener("click", () => setAllChecks(".rptEmailChk", true));
+    $("btnRptClearEmails")?.addEventListener("click", () => setAllChecks(".rptEmailChk", false));
+
+    $("btnRptAddPerson")?.addEventListener("click", () => {
+      const idx = document.querySelectorAll("#rptPersonList .rptRepeatCard").length + 1;
+      appendRow("rptPersonList", createPersonRowHtml(idx), "ผู้เกี่ยวข้อง");
+    });
+
+    $("btnRptAddDamage")?.addEventListener("click", () => {
+      const idx = document.querySelectorAll("#rptDamageList .rptRepeatCard").length + 1;
+      appendRow(
+        "rptDamageList",
+        createSimpleIndexedRowHtml("damage", idx, "ความเสียหาย", "รายละเอียด", "หัวข้อความเสียหาย", "รายละเอียดเพิ่มเติม"),
+        "ความเสียหาย"
+      );
+    });
+
+    $("btnRptAddStepTaken")?.addEventListener("click", () => {
+      const idx = document.querySelectorAll("#rptStepTakenList .rptRepeatCard").length + 1;
+      appendRow("rptStepTakenList", createStepTakenRowHtml(idx), "การดำเนินการ");
+    });
+
+    $("btnRptAddEvidence")?.addEventListener("click", () => {
+      const idx = document.querySelectorAll("#rptEvidenceList .rptRepeatCard").length + 1;
+      appendRow(
+        "rptEvidenceList",
+        createSimpleIndexedRowHtml("evidence", idx, "หลักฐาน", "รายละเอียด", "หัวข้อหลักฐาน", "รายละเอียดเพิ่มเติม"),
+        "หลักฐาน"
+      );
+    });
+
+    $("btnRptAddCause")?.addEventListener("click", () => {
+      const idx = document.querySelectorAll("#rptCauseList .rptRepeatCard").length + 1;
+      appendRow(
+        "rptCauseList",
+        createSimpleIndexedRowHtml("cause", idx, "สาเหตุ", "รายละเอียด", "หัวข้อสาเหตุ", "รายละเอียดเพิ่มเติม"),
+        "สาเหตุ"
+      );
+    });
+
+    $("btnRptAddPrevention")?.addEventListener("click", () => {
+      const idx = document.querySelectorAll("#rptPreventionList .rptRepeatCard").length + 1;
+      appendRow(
+        "rptPreventionList",
+        createSimpleIndexedRowHtml("prevention", idx, "การป้องกัน", "รายละเอียด", "หัวข้อการป้องกัน", "รายละเอียดเพิ่มเติม"),
+        "การป้องกัน"
+      );
+    });
+
+    $("btnRptAddLearning")?.addEventListener("click", () => {
+      const idx = document.querySelectorAll("#rptLearningList .rptRepeatCard").length + 1;
+      appendRow(
+        "rptLearningList",
+        createSimpleIndexedRowHtml("learning", idx, "ข้อสรุป/บทเรียน", "รายละเอียด", "หัวข้อข้อสรุป", "รายละเอียดเพิ่มเติม"),
+        "ข้อสรุป/บทเรียน"
+      );
+    });
+
+    $("btnRptAddImage")?.addEventListener("click", () => {
+      const idx = document.querySelectorAll("#rptImageList .rptRepeatCard").length + 1;
+      appendRow("rptImageList", createImageRowHtml(idx), "รูปภาพ");
+    });
+
+    Object.keys(RPT_REPEAT_CONFIG).forEach((listId) => ensureRepeatFooterButton(listId));
   }
 
   function normalizeReport500OptionsResponse(json) {
@@ -3620,7 +4405,16 @@
   }
 
   async function ensureReady() {
-    if (state.ready || state.loading) return;
+    if (state.loading) return;
+
+    if (state.ready && state.options) {
+      const hasSomeOptions =
+        Array.isArray(state.options.branchList) && state.options.branchList.length > 0 &&
+        Array.isArray(state.options.reportTypeList) && state.options.reportTypeList.length > 0;
+
+      if (hasSomeOptions) return;
+    }
+
     state.loading = true;
 
     try {
@@ -3645,6 +4439,7 @@
       state.options = normalizeReport500OptionsResponse(json);
 
       console.log("Report500 options loaded:", state.options);
+      console.log("Worker debug:", json?.workerDebug || null);
 
       renderSelect("rptBranch", state.options.branchList, true);
       renderOptionMatrix("rptReportTypes", "rptReportTypes", state.options.reportTypeList);
