@@ -3993,3 +3993,226 @@ body.img-editor-lock{
     font-size:10.5px;
   }
 }
+
+
+/* =========================
+   REPORT500 REPEATER ACCORDION
+========================= */
+.rptRepeaterList{
+  display:grid;
+  gap:12px;
+}
+
+.rptRepeatCard{
+  border:1.25px solid #d8e5f6;
+  border-radius:18px;
+  background:linear-gradient(180deg,#ffffff 0%,#fbfdff 100%);
+  box-shadow:0 6px 18px rgba(15,23,42,.05);
+  overflow:hidden;
+}
+
+.rptRepeatCard.is-collapsed .rptCardBody{
+  display:none;
+}
+
+.rptRepeatCard.is-complete{
+  border-color:#b7e3c5;
+  box-shadow:0 6px 18px rgba(22,163,74,.08);
+}
+
+.rptRepeatCard.is-partial{
+  border-color:#f4d29c;
+  box-shadow:0 6px 18px rgba(217,119,6,.08);
+}
+
+.rptRepeatCard.is-empty{
+  border-color:#d8e5f6;
+}
+
+.rptCardHead{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:12px;
+  padding:12px 14px;
+  background:linear-gradient(180deg,#f8fbff 0%,#f2f7ff 100%);
+  border-bottom:1px solid #e3edf9;
+  cursor:pointer;
+}
+
+.rptCardHeadMain{
+  min-width:0;
+  flex:1 1 auto;
+  display:grid;
+  gap:6px;
+}
+
+.rptCardTitleRow{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  flex-wrap:wrap;
+}
+
+.rptCardTitle{
+  font-size:13px;
+  font-weight:900;
+  color:#0f172a;
+  line-height:1.25;
+}
+
+.rptRowIndex{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-width:34px;
+  height:30px;
+  padding:0 10px;
+  border-radius:999px;
+  background:#eef4ff;
+  color:#1d4ed8;
+  border:1px solid #d8e5fb;
+  font-size:11px;
+  font-weight:900;
+}
+
+.rptCardStatus{
+  display:inline-flex;
+  align-items:center;
+  min-height:24px;
+  padding:3px 9px;
+  border-radius:999px;
+  font-size:10.5px;
+  font-weight:900;
+  border:1px solid #d9e4f1;
+  color:#475569;
+  background:#f8fbff;
+}
+
+.rptRepeatCard.is-complete .rptCardStatus{
+  background:#ecfdf3;
+  border-color:#b7e3c5;
+  color:#15803d;
+}
+
+.rptRepeatCard.is-partial .rptCardStatus{
+  background:#fff7ed;
+  border-color:#f4d29c;
+  color:#b45309;
+}
+
+.rptCardSummary{
+  min-height:18px;
+  color:#475569;
+  font-size:11.5px;
+  line-height:1.45;
+  word-break:break-word;
+}
+
+.rptCardHeadActions{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  flex:0 0 auto;
+}
+
+.rptToggleBtn{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-width:38px;
+  height:38px;
+  border:none;
+  border-radius:12px;
+  background:#ffffff;
+  border:1px solid #d8e5fb;
+  color:#1d4ed8;
+  font-size:18px;
+  font-weight:900;
+  box-shadow:0 3px 10px rgba(15,23,42,.05);
+  cursor:pointer;
+}
+
+.rptRepeatCard.is-collapsed .rptToggleBtn::before{
+  content:"+";
+}
+
+.rptRepeatCard:not(.is-collapsed) .rptToggleBtn::before{
+  content:"−";
+}
+
+.rptCardBody{
+  padding:14px;
+}
+
+.rptCardBody .panelActions{
+  justify-content:flex-end;
+  margin-top:12px;
+}
+
+.rptCardFooterActions{
+  display:flex;
+  flex-wrap:wrap;
+  justify-content:flex-end;
+  gap:8px;
+  margin-top:12px;
+}
+
+.rptRepeatAddBottom{
+  display:flex;
+  justify-content:center;
+  margin-top:10px;
+}
+
+.rptRepeatAddBottom .btn{
+  width:100%;
+}
+
+.rptRepeatEmpty{
+  padding:14px 15px;
+  border:1px dashed #bfd1e6;
+  border-radius:16px;
+  background:#f8fbff;
+  color:#64748b;
+  font-size:12px;
+  font-weight:800;
+  text-align:center;
+}
+
+@media (max-width:640px){
+  .rptCardHead{
+    padding:11px 11px;
+    gap:10px;
+  }
+
+  .rptCardBody{
+    padding:11px;
+  }
+
+  .rptCardTitle{
+    font-size:12.5px;
+  }
+
+  .rptCardSummary{
+    font-size:10.8px;
+  }
+
+  .rptCardHeadActions{
+    gap:6px;
+  }
+
+  .rptToggleBtn{
+    min-width:34px;
+    height:34px;
+    border-radius:11px;
+    font-size:16px;
+  }
+
+  .rptCardFooterActions{
+    flex-direction:column;
+  }
+
+  .rptCardFooterActions .btn{
+    width:100%;
+  }
+}
