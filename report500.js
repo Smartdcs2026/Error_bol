@@ -2691,7 +2691,6 @@
   if (!root || !root.parentElement) return;
 
   const cfg = getRepeatConfig(listId);
-  toggleEmptyState(listId, cfg.label);
   const label = cfg.label || "รายการ";
   const addBtnId = cfg.addBtnId;
   if (!addBtnId) return;
@@ -3049,25 +3048,24 @@
     });
 
     node.querySelector(".rptRemoveRow")?.addEventListener("click", () => {
-      if (node.getAttribute("data-type") === "image") {
-        clearRptEditedImageState(node);
-      } else {
-        const img = node.querySelector(".rptImagePreview");
-        if (img && img.dataset.objectUrl) {
-          try { URL.revokeObjectURL(img.dataset.objectUrl); } catch (_) {}
-        }
-      }
+  if (node.getAttribute("data-type") === "image") {
+    clearRptEditedImageState(node);
+  } else {
+    const img = node.querySelector(".rptImagePreview");
+    if (img && img.dataset.objectUrl) {
+      try { URL.revokeObjectURL(img.dataset.objectUrl); } catch (_) {}
+    }
+  }
 
-      const list = node.parentElement;
-      const listId = list?.id || "";
-      const cfg = getRepeatConfig(listId);
-      toggleEmptyState(listId, cfg.label);
+  const list = node.parentElement;
+  const listId = list?.id || "";
+  const cfg = getRepeatConfig(listId);
 
-      node.remove();
+  node.remove();
 
-      refreshRowIndex(listId);
-      toggleEmptyState(listId, cfg.label);
-    });
+  refreshRowIndex(listId);
+  toggleEmptyState(listId, cfg.label);
+});
 
     if (node.getAttribute("data-type") === "person") {
       bindSelectOtherInRow(node, ".rptPersonPosition", ".rptPersonPositionOtherWrap", ".rptPersonPositionOther");
