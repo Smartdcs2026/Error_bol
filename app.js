@@ -197,10 +197,20 @@ let ITEM_LOOKUP_STATE = {
   loading: false
 };
 
+let ERROR_BOL_EDIT_STATE = {
+  active: false,
+  meta: null
+};
+
 const ITEM_LOCAL_CACHE = new Map();
 let itemLookupTimer = null;
 const EDITED_UPLOAD_STORE = new WeakMap();
 
+const $ = (id) => document.getElementById(id);
+
+/** ==========================
+ *  IMAGE EDIT SUPPORT
+ *  ========================== */
 function buildEditedImageBadgeHtml(file) {
   const sizeKb = file?.size ? Math.round(file.size / 1024) : 0;
   return `ไฟล์แก้ไขแล้ว: ${file?.name || "edited-image.jpg"} (${sizeKb} KB)`;
@@ -319,18 +329,16 @@ async function handlePickedImageForUpload(input, box) {
     return;
   }
 
-  // เปลี่ยนรูปใหม่ ให้ล้างสถานะไฟล์ที่เคยแก้ไว้ก่อน
   EDITED_UPLOAD_STORE.delete(input);
-
   ensureEditButtonForUploadBox(box, input.id);
-updateUploadPreviewFromFile(
-  input,
-  box,
-  f,
-  `ไฟล์ที่เลือก: ${f.name} (${Math.round((f.size || 0) / 1024)} KB)`
-);
+
+  updateUploadPreviewFromFile(
+    input,
+    box,
+    f,
+    `ไฟล์ที่เลือก: ${f.name} (${Math.round((f.size || 0) / 1024)} KB)`
+  );
 }
-const $ = (id) => document.getElementById(id);
 
 /** ==========================
  *  URL / BASIC HELPERS
@@ -452,6 +460,114 @@ function getRptRefNoValue() {
 }
 
 /** ==========================
+ *  ERROR_BOL EDIT MODE
+ *  ========================== */
+function setErrorBolEditMode(meta) {
+  ERROR_BOL_EDIT_STATE.active = !!meta;
+  ERROR_BOL_EDIT_STATE.meta = meta || null;
+
+  const badge = $("editModeBadge");
+  const btnCancel = $("btnCancelEditMode");
+
+  if (badge) {
+    if (meta) {
+      badge.classList.remove("hidden");
+      badge.textContent = `โหมดแก้ไข Rev ${Number(meta.baseRevNo || 0)} → ใหม่`;
+    } else {
+      badge.classList.add("hidden");
+      badge.textContent = "";
+    }
+  }
+
+  if (btnCancel) {
+    btnCancel.classList.toggle("hidden", !meta);
+  }
+}
+
+async function loadErrorBolByRefForEdit() {
+  const refNo = getRefNoValue();
+  if (!refNo) {
+    await Swal.fire({
+      icon: "warning",
+      title: "ยังไม่ได้ระบุ Ref",
+      text: "กรุณากรอก Ref ก่อน"
+    });
+    return;
+  }
+
+  const res = await fetch(apiUrl(`/loadByRef?type=errorbol&refNo=${encodeURIComponent(refNo)}`), {
+    method: "GET",
+    cache: "no-store"
+  });
+
+  const json = await res.text().then((t) => {
+    try { return JSON.parse(t); } catch (_) { return {}; }
+  });
+
+  if (!res.ok || !json.ok) {
+    throw new Error(json?.error || `โหลดข้อมูลไม่สำเร็จ (HTTP ${res.status})`);
+  }
+
+  applyLoadedErrorBolData(json.data || {});
+}
+
+function applyLoadedErrorBolData(data) {
+  if (!data) return;
+
+  const refText = String(data.refNo || "");
+  const m = refText.match(/^(\d+)[\-\/](\d{4})$/);
+  if (m) {
+    if ($("refNo")) $("refNo").value = m[1];
+    if ($("refYear")) $("refYear").value = m[2];
+  }
+
+  const setVal = (id, v) => {
+    const el = $(id);
+    if (el) el.value = v == null ? "" : v;
+  };
+
+  setVal("labelCid", data.labelCid);
+  setVal("errorDescription", data.errorDescription);
+  setVal("item", data.item);
+  setVal("itemDisplay", data.itemDisplay);
+  setVal("errorCaseQty", data.errorCaseQty);
+  setVal("employeeName", data.employeeName);
+  setVal("employeeCode", data.employeeCode);
+  setVal("workAgeYear", data.workAgeYear);
+  setVal("workAgeMonth", data.workAgeMonth);
+  setVal("nationality", data.nationality);
+  setVal("interpreterName", data.interpreterName);
+  setVal("errorDate", data.errorDate);
+  setVal("shift", data.shift);
+  setVal("osm", data.osm);
+  setVal("otm", data.otm);
+  setVal("auditName", data.auditName);
+  setVal("confirmCauseOther", data.confirmCauseOther);
+  setVal("employeeConfirmText", data.employeeConfirmText);
+
+  if ($("errorReason")) $("errorReason").value = data.errorReason || "";
+
+  document.querySelectorAll(".confirmCauseChk").forEach((el) => {
+    el.checked = Array.isArray(data.confirmCauseSelected) && data.confirmCauseSelected.includes(el.value);
+  });
+
+  if (typeof syncErrorReasonOtherVisibility === "function") syncErrorReasonOtherVisibility();
+  if (typeof syncConfirmCauseOtherVisibility === "function") syncConfirmCauseOtherVisibility();
+  if (typeof updateEmployeeConfirmPreview === "function") updateEmployeeConfirmPreview();
+
+  ITEM_LOOKUP_STATE = {
+    item: String(data.item || "").trim(),
+    description: String(data.itemDescription || "").trim(),
+    displayText: String(data.itemDisplay || "").trim(),
+    found: !!String(data.itemDisplay || "").trim(),
+    loading: false
+  };
+
+  renderItemLookupState(ITEM_LOOKUP_STATE);
+  setErrorBolEditMode(data._edit || null);
+}
+
+/** ==========================
  *  GALLERY
  *  ========================== */
 function renderGalleryHtml(imageIds = []) {
@@ -545,7 +661,7 @@ async function init() {
 }
 
 /** ==========================
- *  Tabs
+ *  TABS
  *  ========================== */
 function bindTabs() {
   $("tabErrorBol")?.addEventListener("click", async () => {
@@ -593,7 +709,7 @@ async function setActiveTab(which) {
 window.setActiveTab = setActiveTab;
 
 /** ==========================
- *  Events
+ *  EVENTS
  *  ========================== */
 function bindEvents() {
   $("btnLogin")?.addEventListener("click", onLogin);
@@ -606,6 +722,27 @@ function bindEvents() {
 
   $("btnEmailCheckAll")?.addEventListener("click", () => setAllEmailChecks(true));
   $("btnEmailClearAll")?.addEventListener("click", () => setAllEmailChecks(false));
+
+  $("btnLoadRefForEdit")?.addEventListener("click", async () => {
+    try {
+      await loadErrorBolByRefForEdit();
+      await Swal.fire({
+        icon: "success",
+        title: "โหลดข้อมูลสำเร็จ",
+        text: "สามารถแก้ไขแล้วบันทึกเป็น revision ใหม่ได้"
+      });
+    } catch (err) {
+      await Swal.fire({
+        icon: "error",
+        title: "โหลดข้อมูลไม่สำเร็จ",
+        text: err?.message || String(err)
+      });
+    }
+  });
+
+  $("btnCancelEditMode")?.addEventListener("click", () => {
+    setErrorBolEditMode(null);
+  });
 
   $("loginPass")?.addEventListener("keydown", (e) => {
     if (e.key === "Enter") onLogin();
@@ -633,7 +770,7 @@ function bindEvents() {
 }
 
 /** ==========================
- *  Load options
+ *  LOAD OPTIONS
  *  ========================== */
 async function loadOptions() {
   const res = await fetch(apiUrl("/options"), { method: "GET" });
@@ -720,7 +857,6 @@ function buildWorkAgeOptions() {
 function buildShiftOptions() {
   const shift = $("shift");
   if (!shift) return;
-
   if (shift.options.length > 0) return;
 
   shift.innerHTML = `
@@ -734,7 +870,7 @@ function buildShiftOptions() {
 }
 
 /** ==========================
- *  Confirm Cause / Error Reason
+ *  CONFIRM CAUSE / ERROR REASON
  *  ========================== */
 function syncErrorReasonOtherVisibility() {
   const v = $("errorReason")?.value || "";
@@ -746,9 +882,7 @@ function syncErrorReasonOtherVisibility() {
   const show = v === "อื่นๆ";
   wrap.classList.toggle("hidden", !show);
 
-  if (!show && input) {
-    input.value = "";
-  }
+  if (!show && input) input.value = "";
 }
 
 function syncConfirmCauseOtherVisibility() {
@@ -757,7 +891,6 @@ function syncConfirmCauseOtherVisibility() {
   if (!wrap) return;
 
   const checkedList = Array.from(document.querySelectorAll(".confirmCauseChk:checked"));
-
   const show = checkedList.some((el) => {
     const value = String(el.value || "").trim();
     const requiresText =
@@ -768,10 +901,7 @@ function syncConfirmCauseOtherVisibility() {
   });
 
   wrap.classList.toggle("hidden", !show);
-
-  if (!show && input) {
-    input.value = "";
-  }
+  if (!show && input) input.value = "";
 }
 
 function onErrorReasonChange() {
@@ -869,7 +999,7 @@ function composeConfirmCauseSummary(selected, otherText) {
 }
 
 /** ==========================
- *  Email Selector
+ *  EMAIL SELECTOR
  *  ========================== */
 function renderEmailSelector() {
   const root = $("emailSelector");
@@ -903,7 +1033,7 @@ function setAllEmailChecks(flag) {
 }
 
 /** ==========================
- *  Login
+ *  LOGIN
  *  ========================== */
 async function onLogin() {
   safeSetLoginMsg("");
@@ -977,7 +1107,7 @@ function setLpsFromLogin(lpsName) {
 }
 
 /** ==========================
- *  Basic sanitizers
+ *  BASIC SANITIZERS
  *  ========================== */
 function numericOnly(el) {
   if (!el) return;
@@ -1182,7 +1312,7 @@ function getItemDisplayText() {
 }
 
 /** ==========================
- *  Upload fields
+ *  UPLOAD FIELDS
  *  ========================== */
 function buildInitialUploadFields() {
   const list = $("uploadList");
@@ -1305,7 +1435,7 @@ function addUploadField(label, opts = {}) {
 }
 
 /** ==========================
- *  Payload
+ *  PAYLOAD
  *  ========================== */
 function collectPayloadBase() {
   return {
@@ -1402,6 +1532,23 @@ function collectPayload() {
     confirmCauseOther: p.confirmCauseOther,
     itemDisplay: p.itemDisplay
   });
+
+  if (ERROR_BOL_EDIT_STATE.active && ERROR_BOL_EDIT_STATE.meta) {
+    p._edit = {
+      mode: "update",
+      refNo: ERROR_BOL_EDIT_STATE.meta.refNo || p.refNo,
+      baseRowNumber: ERROR_BOL_EDIT_STATE.meta.baseRowNumber || "",
+      baseRevNo: ERROR_BOL_EDIT_STATE.meta.baseRevNo || 0,
+      inheritImageIds: Array.isArray(ERROR_BOL_EDIT_STATE.meta.inheritImageIds)
+        ? ERROR_BOL_EDIT_STATE.meta.inheritImageIds
+        : [],
+      inheritSupervisorSignImageId: ERROR_BOL_EDIT_STATE.meta.inheritSupervisorSignImageId || "",
+      inheritEmployeeSignImageId: ERROR_BOL_EDIT_STATE.meta.inheritEmployeeSignImageId || "",
+      inheritInterpreterSignImageId: ERROR_BOL_EDIT_STATE.meta.inheritInterpreterSignImageId || "",
+      editNote: ""
+    };
+  }
+
   return p;
 }
 
@@ -1456,7 +1603,7 @@ function validatePayload(p) {
 }
 
 /** ==========================
- *  Preview
+ *  PREVIEW
  *  ========================== */
 async function previewSummary() {
   const p = collectPayload();
@@ -1536,38 +1683,14 @@ async function previewSummary() {
         <div class="swalSection">
           <div class="swalSectionTitle">ข้อมูลพนักงาน / ผู้เกี่ยวข้อง</div>
           <div class="swalKvGrid">
-            <div class="swalKv">
-              <div class="swalKvLabel">ชื่อพนักงาน</div>
-              <div class="swalKvValue">${escapeHtml(p.employeeName || "-")}</div>
-            </div>
-            <div class="swalKv">
-              <div class="swalKvLabel">รหัสพนักงาน</div>
-              <div class="swalKvValue">${escapeHtml(p.employeeCode || "-")}</div>
-            </div>
-            <div class="swalKv">
-              <div class="swalKvLabel">อายุงาน</div>
-              <div class="swalKvValue">${escapeHtml(`${p.workAgeYear} ปี ${p.workAgeMonth} เดือน`)}</div>
-            </div>
-            <div class="swalKv">
-              <div class="swalKvLabel">สัญชาติ</div>
-              <div class="swalKvValue">${escapeHtml(p.nationality || "-")}</div>
-            </div>
-            <div class="swalKv">
-              <div class="swalKvLabel">OSM</div>
-              <div class="swalKvValue">${escapeHtml(p.osm || "-")}</div>
-            </div>
-            <div class="swalKv">
-              <div class="swalKvLabel">OTM</div>
-              <div class="swalKvValue">${escapeHtml(p.otm || "-")}</div>
-            </div>
-            <div class="swalKv">
-              <div class="swalKvLabel">ล่ามแปลภาษา</div>
-              <div class="swalKvValue">${escapeHtml(p.interpreterName || "-")}</div>
-            </div>
-            <div class="swalKv">
-              <div class="swalKvLabel">AUDIT</div>
-              <div class="swalKvValue">${escapeHtml(p.auditName || "-")}</div>
-            </div>
+            <div class="swalKv"><div class="swalKvLabel">ชื่อพนักงาน</div><div class="swalKvValue">${escapeHtml(p.employeeName || "-")}</div></div>
+            <div class="swalKv"><div class="swalKvLabel">รหัสพนักงาน</div><div class="swalKvValue">${escapeHtml(p.employeeCode || "-")}</div></div>
+            <div class="swalKv"><div class="swalKvLabel">อายุงาน</div><div class="swalKvValue">${escapeHtml(`${p.workAgeYear} ปี ${p.workAgeMonth} เดือน`)}</div></div>
+            <div class="swalKv"><div class="swalKvLabel">สัญชาติ</div><div class="swalKvValue">${escapeHtml(p.nationality || "-")}</div></div>
+            <div class="swalKv"><div class="swalKvLabel">OSM</div><div class="swalKvValue">${escapeHtml(p.osm || "-")}</div></div>
+            <div class="swalKv"><div class="swalKvLabel">OTM</div><div class="swalKvValue">${escapeHtml(p.otm || "-")}</div></div>
+            <div class="swalKv"><div class="swalKvLabel">ล่ามแปลภาษา</div><div class="swalKvValue">${escapeHtml(p.interpreterName || "-")}</div></div>
+            <div class="swalKv"><div class="swalKvLabel">AUDIT</div><div class="swalKvValue">${escapeHtml(p.auditName || "-")}</div></div>
           </div>
         </div>
 
@@ -1629,8 +1752,9 @@ function countSelectedFiles() {
     return acc + ((edited || raw) ? 1 : 0);
   }, 0);
 }
+
 /** ==========================
- *  Submit
+ *  SUBMIT
  *  ========================== */
 async function submitForm() {
   const p = collectPayload();
@@ -1751,118 +1875,120 @@ async function submitForm() {
 
     ProgressUI.hide(120);
 
-await Swal.fire({
-  icon: (emailInfo.emailOk || emailInfo.emailSkipped) ? "success" : "warning",
-  title: (emailInfo.emailOk || emailInfo.emailSkipped) ? "บันทึกสำเร็จ" : "บันทึกสำเร็จบางส่วน",
-  showConfirmButton: false,
-  width: 920,
-  html: `
-    <div class="swalSummary">
-      <div class="swalHero">
-        <div class="swalHeroTitle">บันทึกรายการเรียบร้อยแล้ว</div>
-        <div class="swalHeroSub">ระบบจัดเก็บข้อมูล รูปภาพ ลายเซ็น และเอกสาร PDF เรียบร้อย</div>
-        <div class="swalPillRow">
-          <div class="swalPill primary">LPS: ${escapeHtml(AUTH.name || json.lpsName || "-")}</div>
-          <div class="swalPill">Ref: ${escapeHtml(p.refNo || "-")}</div>
-          <div class="swalPill">รูป ${Number((json.imageIds || []).length)}</div>
-        </div>
-      </div>
+    await Swal.fire({
+      icon: (emailInfo.emailOk || emailInfo.emailSkipped) ? "success" : "warning",
+      title: (emailInfo.emailOk || emailInfo.emailSkipped) ? "บันทึกสำเร็จ" : "บันทึกสำเร็จบางส่วน",
+      showConfirmButton: false,
+      width: 920,
+      html: `
+        <div class="swalSummary">
+          <div class="swalHero">
+            <div class="swalHeroTitle">บันทึกรายการเรียบร้อยแล้ว</div>
+            <div class="swalHeroSub">ระบบจัดเก็บข้อมูล รูปภาพ ลายเซ็น และเอกสาร PDF เรียบร้อย</div>
+            <div class="swalPillRow">
+              <div class="swalPill primary">LPS: ${escapeHtml(AUTH.name || json.lpsName || "-")}</div>
+              <div class="swalPill">Ref: ${escapeHtml(p.refNo || "-")}</div>
+              <div class="swalPill">รูป ${Number((json.imageIds || []).length)}</div>
+              <div class="swalPill">${json.mode === "update" ? `Rev ${Number(json.revNo || 0)}` : "สร้างใหม่"}</div>
+            </div>
+          </div>
 
-      <div class="swalSection">
-        <div class="swalSectionTitle">ข้อมูลเอกสาร</div>
-        <div class="swalKvGrid">
-          <div class="swalKv"><div class="swalKvLabel">วันที่เวลา</div><div class="swalKvValue">${escapeHtml(json.timestamp || "-")}</div></div>
-          <div class="swalKv"><div class="swalKvLabel">Ref:No.</div><div class="swalKvValue">${escapeHtml(p.refNo || "-")}</div></div>
-          <div class="swalKv"><div class="swalKvLabel">Label CID</div><div class="swalKvValue">${escapeHtml(p.labelCid || "-")}</div></div>
-          <div class="swalKv"><div class="swalKvLabel">ขนาด PDF</div><div class="swalKvValue">${escapeHtml(pdfSizeText)}</div></div>
-        </div>
-      </div>
+          <div class="swalSection">
+            <div class="swalSectionTitle">ข้อมูลเอกสาร</div>
+            <div class="swalKvGrid">
+              <div class="swalKv"><div class="swalKvLabel">วันที่เวลา</div><div class="swalKvValue">${escapeHtml(json.timestamp || "-")}</div></div>
+              <div class="swalKv"><div class="swalKvLabel">Ref:No.</div><div class="swalKvValue">${escapeHtml(p.refNo || "-")}</div></div>
+              <div class="swalKv"><div class="swalKvLabel">Label CID</div><div class="swalKvValue">${escapeHtml(p.labelCid || "-")}</div></div>
+              <div class="swalKv"><div class="swalKvLabel">ขนาด PDF</div><div class="swalKvValue">${escapeHtml(pdfSizeText)}</div></div>
+            </div>
+          </div>
 
-      <div class="swalSection">
-        <div class="swalSectionTitle">สถานะอีเมล</div>
-        ${
-          emailInfo.emailSkipped
-            ? `<div class="swalNote">ไม่ได้ส่งอีเมล เพราะยังไม่ได้เลือกผู้รับ</div>`
-            : emailInfo.emailOk
-              ? `<div class="swalEmailOk">ส่งอีเมลสำเร็จ ${Number(emailInfo.emailResult.count || 0)} รายการ ${emailInfo.emailResult.attachmentMode ? `• ${escapeHtml(emailInfo.emailResult.attachmentMode)}` : ""}</div>`
-              : `<div class="swalEmailFail">บันทึกข้อมูลสำเร็จ แต่ส่งอีเมลไม่สำเร็จ: ${escapeHtml(emailInfo.emailResult.error || "-")}</div>`
+          <div class="swalSection">
+            <div class="swalSectionTitle">สถานะอีเมล</div>
+            ${
+              emailInfo.emailSkipped
+                ? `<div class="swalNote">ไม่ได้ส่งอีเมล เพราะยังไม่ได้เลือกผู้รับ</div>`
+                : emailInfo.emailOk
+                  ? `<div class="swalEmailOk">ส่งอีเมลสำเร็จ ${Number(emailInfo.emailResult.count || 0)} รายการ ${emailInfo.emailResult.attachmentMode ? `• ${escapeHtml(emailInfo.emailResult.attachmentMode)}` : ""}</div>`
+                  : `<div class="swalEmailFail">บันทึกข้อมูลสำเร็จ แต่ส่งอีเมลไม่สำเร็จ: ${escapeHtml(emailInfo.emailResult.error || "-")}</div>`
+            }
+          </div>
+
+          <div class="swalSection">
+            <div class="swalSectionTitle">ลายเซ็น</div>
+            <div class="sigGrid">
+              <div>
+                <div class="sigBoxTitle">หัวหน้างาน</div>
+                ${supSignThumb}
+                <div class="sigName">${escapeHtml(p.otm || "-")}</div>
+              </div>
+              <div>
+                <div class="sigBoxTitle">พนักงาน</div>
+                ${empSignThumb}
+                <div class="sigName">${escapeHtml(p.employeeName || "-")}</div>
+              </div>
+              <div>
+                <div class="sigBoxTitle">ล่ามแปลภาษา</div>
+                ${intSignThumb}
+                <div class="sigName">${escapeHtml(p.interpreterName || "-")}</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="swalSection">
+            <div class="swalSectionTitle">รูปภาพแนบ</div>
+            ${galleryHtml || `<div class="swalNote">ไม่มีรูปภาพแนบ</div>`}
+          </div>
+
+          <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:18px">
+            ${
+              json.pdfUrl
+                ? `<button type="button" id="btnOpenPdfAfterSave" class="swal2-confirm swal2-styled" style="background:#2563eb">เปิด PDF</button>`
+                : ``
+            }
+            <button type="button" id="btnCloseAfterSave" class="swal2-cancel swal2-styled" style="display:inline-block;background:#64748b">ปิดหน้าต่าง</button>
+          </div>
+        </div>
+      `,
+      didOpen: () => {
+        bindGalleryClickInSwal();
+
+        const btnOpen = document.getElementById("btnOpenPdfAfterSave");
+        const btnClose = document.getElementById("btnCloseAfterSave");
+
+        if (btnOpen && json.pdfUrl) {
+          btnOpen.addEventListener("click", () => {
+            window.open(json.pdfUrl, "_blank", "noopener,noreferrer");
+            Swal.close();
+          });
         }
-      </div>
 
-      <div class="swalSection">
-        <div class="swalSectionTitle">ลายเซ็น</div>
-        <div class="sigGrid">
-          <div>
-            <div class="sigBoxTitle">หัวหน้างาน</div>
-            ${supSignThumb}
-            <div class="sigName">${escapeHtml(p.otm || "-")}</div>
-          </div>
-          <div>
-            <div class="sigBoxTitle">พนักงาน</div>
-            ${empSignThumb}
-            <div class="sigName">${escapeHtml(p.employeeName || "-")}</div>
-          </div>
-          <div>
-            <div class="sigBoxTitle">ล่ามแปลภาษา</div>
-            ${intSignThumb}
-            <div class="sigName">${escapeHtml(p.interpreterName || "-")}</div>
-          </div>
-        </div>
-      </div>
-
-      <div class="swalSection">
-        <div class="swalSectionTitle">รูปภาพแนบ</div>
-        ${galleryHtml || `<div class="swalNote">ไม่มีรูปภาพแนบ</div>`}
-      </div>
-
-      <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:18px">
-        ${
-          json.pdfUrl
-            ? `<button type="button" id="btnOpenPdfAfterSave" class="swal2-confirm swal2-styled" style="background:#2563eb">เปิด PDF</button>`
-            : ``
+        if (btnClose) {
+          btnClose.addEventListener("click", () => {
+            Swal.close();
+          });
         }
-        <button type="button" id="btnCloseAfterSave" class="swal2-cancel swal2-styled" style="display:inline-block;background:#64748b">ปิดหน้าต่าง</button>
-      </div>
-    </div>
-  `,
-  didOpen: () => {
-    bindGalleryClickInSwal();
+      },
+      willClose: () => {
+        resetForm();
+      }
+    });
 
-    const btnOpen = document.getElementById("btnOpenPdfAfterSave");
-    const btnClose = document.getElementById("btnCloseAfterSave");
+    setErrorBolEditMode(null);
+  } catch (err2) {
+    console.error(err2);
+    ProgressUI.markError("save", err2?.message || "เกิดข้อผิดพลาด", 58);
+    ProgressUI.setHint("กรุณาตรวจสอบข้อมูล เครือข่าย หรือ backend แล้วลองใหม่อีกครั้ง");
 
-    if (btnOpen && json.pdfUrl) {
-      btnOpen.addEventListener("click", () => {
-       window.open(json.pdfUrl, "_blank", "noopener,noreferrer");
-Swal.close();
-      });
-    }
+    await Swal.fire({
+      icon: "error",
+      title: "บันทึกไม่สำเร็จ",
+      text: err2?.message || String(err2),
+      confirmButtonText: "ตกลง"
+    });
 
-    if (btnClose) {
-      btnClose.addEventListener("click", () => {
-        Swal.close();
-      });
-    }
-  },
-  willClose: () => {
-    resetForm();
+    ProgressUI.hide(180);
   }
-});
-
-} catch (err2) {
-  console.error(err2);
-  ProgressUI.markError("save", err2?.message || "เกิดข้อผิดพลาด", 58);
-  ProgressUI.setHint("กรุณาตรวจสอบข้อมูล เครือข่าย หรือ backend แล้วลองใหม่อีกครั้ง");
-
-  await Swal.fire({
-    icon: "error",
-    title: "บันทึกไม่สำเร็จ",
-    text: err2?.message || String(err2),
-    confirmButtonText: "ตกลง"
-  });
-
-  ProgressUI.hide(180);
-}
 }
 
 async function collectFilesAsBase64({ maxFiles = 6, maxMBEach = 4 } = {}) {
@@ -1927,7 +2053,7 @@ function fileToBase64(file) {
 }
 
 /** ==========================
- *  Signature Flow
+ *  SIGNATURE FLOW
  *  ========================== */
 async function openSignatureFlow(supervisorName, employeeName, interpreterName) {
   const sup = await signatureModal("ลายเซ็นหัวหน้างาน", `ผู้เซ็น: ${supervisorName || "-"}`);
@@ -1969,15 +2095,16 @@ async function signatureModal(title, subtitle) {
         <div style="border:1px solid #d7e4f3;border-radius:18px;padding:10px;background:#fff">
           <canvas id="${canvasId}" class="sigCanvasElmLarge" width="900" height="320"></canvas>
         </div>
-        <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:10px;flex-wrap:wrap">
-          <div style="font-size:12px;color:#64748b">กรุณาเซ็นในช่องด้านบน</div>
-          <button id="${clearId}" type="button" class="btn ghost sigBtn">ล้างลายเซ็น</button>
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:10px">
+          <button type="button" id="${clearId}" class="swal2-cancel swal2-styled" style="display:inline-block;background:#64748b">ล้างลายเซ็น</button>
+          <div style="font-size:12px;color:#64748b">กรุณาเซ็นในกรอบด้านบน</div>
         </div>
       </div>
     `,
-    width: 900,
+    width: 960,
+    confirmButtonText: "ยืนยัน",
+    confirmButtonColor: "#2563eb",
     showCancelButton: true,
-    confirmButtonText: "ยืนยันลายเซ็น",
     cancelButtonText: "ยกเลิก",
     didOpen: () => {
       const canvas = document.getElementById(canvasId);
@@ -2048,7 +2175,7 @@ function enableSignature(canvas) {
   const up = (e) => {
     drawing = false;
     last = null;
-    e.preventDefault();
+    if (e) e.preventDefault();
   };
 
   canvas.addEventListener("mousedown", down);
@@ -2073,7 +2200,7 @@ function isCanvasBlank(canvas) {
 }
 
 /** ==========================
- *  Reset / helpers
+ *  RESET / HELPERS
  *  ========================== */
 function resetForm() {
   const ids = [
@@ -2085,10 +2212,11 @@ function resetForm() {
     "itemDisplay",
     "errorCaseQty",
     "employeeName",
-    "errorDate",
     "employeeCode",
     "interpreterName",
-    "confirmCauseOther"
+    "errorDate",
+    "confirmCauseOther",
+    "employeeConfirmText"
   ];
 
   ids.forEach((id) => {
@@ -2096,14 +2224,13 @@ function resetForm() {
     if (el) el.value = "";
   });
 
-  ["errorReason", "auditName", "shift", "osm", "otm", "workAgeYear", "workAgeMonth", "nationality"].forEach((id) => {
+  ["errorReason", "workAgeYear", "workAgeMonth", "nationality", "shift", "osm", "otm", "auditName"].forEach((id) => {
     const el = $(id);
-    if (el) el.value = "";
+    if (el) el.selectedIndex = 0;
   });
 
-  document.querySelectorAll(".confirmCauseChk, .emailChk").forEach((el) => {
-    el.checked = false;
-  });
+  document.querySelectorAll(".emailChk").forEach((el) => { el.checked = false; });
+  document.querySelectorAll(".confirmCauseChk").forEach((el) => { el.checked = false; });
 
   ITEM_LOOKUP_STATE = {
     item: "",
@@ -2113,43 +2240,25 @@ function resetForm() {
     loading: false
   };
 
+  itemLookupTimer && clearTimeout(itemLookupTimer);
   renderItemLookupState(ITEM_LOOKUP_STATE);
+
+  const uploadList = $("uploadList");
+  if (uploadList) {
+    uploadList.querySelectorAll('input[type="file"]').forEach((input) => {
+      EDITED_UPLOAD_STORE.delete(input);
+    });
+  }
+
   buildInitialUploadFields();
   syncErrorReasonOtherVisibility();
   syncConfirmCauseOtherVisibility();
   updateEmployeeConfirmPreview();
-
-  if ($("lps")) $("lps").value = AUTH.name || "";
+  setErrorBolEditMode(null);
 }
 
-function buildResultActionButtons_(pdfUrl) {
-  const hasPdf = !!String(pdfUrl || "").trim();
-
-  return `
-    <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:18px">
-      ${
-        hasPdf
-          ? `<button type="button" id="btnOpenPdfAfterSave" class="swal2-confirm swal2-styled" style="background:#2563eb">เปิด PDF</button>`
-          : ``
-      }
-      <button type="button" id="btnCloseAfterSave" class="swal2-cancel swal2-styled" style="display:inline-block;background:#64748b">ปิดหน้าต่าง</button>
-    </div>
-  `;
-}
-
-function bindResultActionButtons_(pdfUrl) {
-  const btnOpen = document.getElementById("btnOpenPdfAfterSave");
-  const btnClose = document.getElementById("btnCloseAfterSave");
-
-  if (btnOpen && pdfUrl) {
-    btnOpen.addEventListener("click", () => {
-      window.open(pdfUrl, "_blank", "noopener,noreferrer");
-    });
-  }
-
-  if (btnClose) {
-    btnClose.addEventListener("click", () => {
-      Swal.close();
-    });
-  }
-}
+/** ==========================
+ *  EXPOSE
+ *  ========================== */
+window.getRefNoValue = getRefNoValue;
+window.getRptRefNoValue = getRptRefNoValue;
