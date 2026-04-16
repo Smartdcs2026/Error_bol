@@ -16,7 +16,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-  <link rel="stylesheet" href="./style.css?v=mobile-2col-v5">
+  <link rel="stylesheet" href="./style.css?v=edit-rev-ui-1">
 </head>
 <body>
   <header class="topbar">
@@ -57,7 +57,7 @@
           loading="eager"
         >
         <h1>เข้าสู่ระบบ</h1>
-        <p>ฟอร์มError_BOL และ Report</p>
+        <p>ฟอร์ม Error_BOL และ Report</p>
       </div>
 
       <div class="loginForm">
@@ -99,14 +99,19 @@
               <select id="refYear"></select>
             </div>
           </div>
-          <div class="inlineEditTools">
-  <button type="button" id="btnLoadRefForEdit" class="btn ghost">เรียกข้อมูลมาแก้ไข</button>
-  <button type="button" id="btnCancelEditMode" class="btn ghost hidden">ยกเลิกโหมดแก้ไข</button>
-  <span id="editModeBadge" class="editModeBadge hidden"></span>
-</div>
+
           <div class="field">
             <label for="lps">ชื่อผู้เข้าใช้งาน</label>
             <input id="lps" placeholder="ระบบแสดงอัตโนมัติหลังเข้าสู่ระบบ" readonly>
+          </div>
+
+          <div class="field fieldSpan2">
+            <label>การเรียกข้อมูลเดิม</label>
+            <div class="inlineEditTools">
+              <button type="button" id="btnLoadRefForEdit" class="btn ghost">เรียกข้อมูลมาแก้ไข</button>
+              <button type="button" id="btnCancelEditMode" class="btn ghost hidden">ยกเลิกโหมดแก้ไข</button>
+              <span id="editModeBadge" class="editModeBadge hidden"></span>
+            </div>
           </div>
         </div>
       </div>
@@ -159,11 +164,7 @@
 
           <div class="field fieldSpan2">
             <label for="errorDescription">รายละเอียดสาเหตุ</label>
-            <textarea
-              id="errorDescription"
-              rows="4"
-              placeholder="กรอกรายละเอียดเพิ่มเติมของสาเหตุ / เหตุการณ์"
-            ></textarea>
+            <textarea id="errorDescription" rows="4" placeholder="กรอกรายละเอียดเพิ่มเติมของสาเหตุ / เหตุการณ์"></textarea>
           </div>
         </div>
       </div>
@@ -292,7 +293,7 @@
       </div>
     </section>
 
-    <!-- REPORT500 -->
+    <!-- REPORT -->
     <section id="under500Card" class="card hidden">
       <div class="sectionTitle rptTitle">
         <span class="dot rptDot"></span>
@@ -300,10 +301,8 @@
           <div class="sectionMain">Report</div>
           <div class="sectionSub">แบบฟอร์มรายงานเหตุการณ์</div>
         </div>
-       
-        
       </div>
-    
+
       <div class="sectionTitle rptTitle">
         <span class="dot rptDot"></span>
         <div>
@@ -322,11 +321,7 @@
               <select id="rptRefYear"></select>
             </div>
           </div>
-        <div class="inlineEditTools">
-  <button type="button" id="btnRptLoadRefForEdit" class="btn ghost">เรียกข้อมูลมาแก้ไข</button>
-  <button type="button" id="btnRptCancelEditMode" class="btn ghost hidden">ยกเลิกโหมดแก้ไข</button>
-  <span id="rptEditModeBadge" class="editModeBadge hidden"></span>
-</div>
+
           <div class="field">
             <label for="rptBranch">สาขา</label>
             <select id="rptBranch"></select>
@@ -341,6 +336,15 @@
             <label for="rptSubject">เรื่อง</label>
             <input id="rptSubject" placeholder="กรอกหัวข้อเรื่องของรายงาน">
           </div>
+
+          <div class="field fieldSpan2">
+            <label>การเรียกข้อมูลเดิม</label>
+            <div class="inlineEditTools">
+              <button type="button" id="btnRptLoadRefForEdit" class="btn ghost">เรียกข้อมูลมาแก้ไข</button>
+              <button type="button" id="btnRptCancelEditMode" class="btn ghost hidden">ยกเลิกโหมดแก้ไข</button>
+              <span id="rptEditModeBadge" class="editModeBadge hidden"></span>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -348,11 +352,11 @@
         <span class="dot rptDot"></span>
         <div>
           <div class="sectionMain">เครื่องมือช่วยค้นหา</div>
-         
           <div class="sectionSub">ค้นหาวินัยและค้นหา Item เพื่อช่วยจัดทำรายงาน</div>
         </div>
       </div>
-    <div class="panel rptPanel">
+
+      <div class="panel rptPanel">
         <div class="rptUtilityBar">
           <button id="btnRptDisciplineLookup" class="btn ghost" type="button">ค้นหาวินัย</button>
           <button id="btnRptItemLookup" class="btn ghost" type="button">ค้นหา Item</button>
@@ -370,7 +374,7 @@
           </div>
         </div>
       </div>
-      
+
       <div class="sectionTitle rptTitle">
         <span class="dot rptDot"></span>
         <div>
@@ -378,7 +382,6 @@
           <div class="sectionSub">ประเภทรายงาน ระดับความเร่งด่วน และผู้รับทราบ</div>
         </div>
       </div>
-
 
       <div class="panel rptPanel">
         <div class="field">
@@ -639,11 +642,7 @@
 
         <div class="field fieldBlock">
           <label for="rptEmailOther">อีเมลเพิ่มเติม</label>
-          <textarea
-            id="rptEmailOther"
-            rows="3"
-            placeholder="กรอกอีเมลเพิ่มเติม คั่นด้วย comma หรือขึ้นบรรทัดใหม่"
-          ></textarea>
+          <textarea id="rptEmailOther" rows="3" placeholder="กรอกอีเมลเพิ่มเติม คั่นด้วย comma หรือขึ้นบรรทัดใหม่"></textarea>
         </div>
       </div>
 
@@ -683,25 +682,21 @@
           <span class="stage-label">ตรวจสอบข้อมูล</span>
           <span class="stage-status">รอ</span>
         </div>
-
         <div class="progress-stage" id="stage-upload">
           <span class="stage-dot"></span>
           <span class="stage-label">เตรียมและอัปโหลดรูปภาพ</span>
           <span class="stage-status">รอ</span>
         </div>
-
         <div class="progress-stage" id="stage-save">
           <span class="stage-dot"></span>
           <span class="stage-label">บันทึกข้อมูลลงระบบ</span>
           <span class="stage-status">รอ</span>
         </div>
-
         <div class="progress-stage" id="stage-pdf">
           <span class="stage-dot"></span>
           <span class="stage-label">สร้างไฟล์ PDF</span>
           <span class="stage-status">รอ</span>
         </div>
-
         <div class="progress-stage" id="stage-email">
           <span class="stage-dot"></span>
           <span class="stage-label">ส่งอีเมล / แนบไฟล์ / ส่งลิงก์</span>
@@ -718,14 +713,12 @@
   <!-- IMAGE EDITOR MODAL -->
   <div id="imgEditorModal" class="imgEditorModal hidden" aria-hidden="true">
     <div class="imgEditorBackdrop"></div>
-
     <div class="imgEditorDialog" role="dialog" aria-modal="true" aria-labelledby="imgEditorTitle">
       <div class="imgEditorHeader">
         <div class="imgEditorHeaderText">
           <div id="imgEditorTitle" class="imgEditorTitle">แก้ไขภาพก่อนบันทึก</div>
           <div class="imgEditorSub">ซูม หมุน ปรับแสง วาด shape และพิมพ์ข้อความได้ก่อนนำภาพเข้าระบบ</div>
         </div>
-
         <button type="button" id="imgEditorCloseBtn" class="btn ghost imgEditorCloseBtn">ปิด</button>
       </div>
 
@@ -791,16 +784,9 @@
     </div>
   </div>
 
-  <!-- Fabric.js CDN -->
   <script src="https://cdn.jsdelivr.net/npm/fabric@5.3.0/dist/fabric.min.js"></script>
-
-  <!-- Shared image editor -->
   <script src="./image-editor.js?v=1"></script>
-
-  <!-- Report script -->
-  <script src="./report500.js?v=progress-ui-3"></script>
-
-  <!-- Main app -->
-  <script src="./app.js?v=progress-ui-2"></script>
+  <script src="./report500.js?v=edit-rev-ui-1"></script>
+  <script src="./app.js?v=edit-rev-ui-1"></script>
 </body>
 </html>
