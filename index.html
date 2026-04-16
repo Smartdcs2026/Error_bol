@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>ฟอร์มบันทึก Error_BOL / Report- S&amp;LP</title>
+  <title>ฟอร์มบันทึก Error_BOL / Report - S&amp;LP</title>
 
   <link rel="icon" type="image/png" sizes="16x16" href="./assets/favicon-16.png">
   <link rel="icon" type="image/png" sizes="32x32" href="./assets/favicon-32.png">
@@ -57,7 +57,7 @@
           loading="eager"
         >
         <h1>เข้าสู่ระบบ</h1>
-        <p>ฟอร์มError_BOL และ Report</p>
+        <p>ฟอร์ม Error_BOL และ Report</p>
       </div>
 
       <div class="loginForm">
@@ -73,7 +73,7 @@
 
     <!-- ERROR_BOL -->
     <section id="formCard" class="card hidden">
-            <div class="revisionPanel" id="errorBolRevisionPanel">
+      <div class="revisionPanel" id="errorBolRevisionPanel">
         <div class="revisionPanelHead">
           <div>
             <div class="revisionPanelTitle">แก้ไขรายงานเดิม</div>
@@ -112,6 +112,7 @@
           <input type="hidden" id="errorBolRevisionNo" value="">
         </div>
       </div>
+
       <div class="sectionTitle">
         <span class="dot"></span>
         <div>
@@ -329,7 +330,7 @@
 
     <!-- REPORT500 -->
     <section id="under500Card" class="card hidden">
-            <div class="revisionPanel revisionPanelRpt" id="report500RevisionPanel">
+      <div class="revisionPanel revisionPanelRpt" id="report500RevisionPanel">
         <div class="revisionPanelHead">
           <div>
             <div class="revisionPanelTitle">แก้ไขรายงานเดิม</div>
@@ -368,16 +369,15 @@
           <input type="hidden" id="report500RevisionNo" value="">
         </div>
       </div>
+
       <div class="sectionTitle rptTitle">
         <span class="dot rptDot"></span>
         <div>
           <div class="sectionMain">Report</div>
           <div class="sectionSub">แบบฟอร์มรายงานเหตุการณ์</div>
         </div>
-       
-        
       </div>
-    
+
       <div class="sectionTitle rptTitle">
         <span class="dot rptDot"></span>
         <div>
@@ -418,11 +418,11 @@
         <span class="dot rptDot"></span>
         <div>
           <div class="sectionMain">เครื่องมือช่วยค้นหา</div>
-         
           <div class="sectionSub">ค้นหาวินัยและค้นหา Item เพื่อช่วยจัดทำรายงาน</div>
         </div>
       </div>
-    <div class="panel rptPanel">
+
+      <div class="panel rptPanel">
         <div class="rptUtilityBar">
           <button id="btnRptDisciplineLookup" class="btn ghost" type="button">ค้นหาวินัย</button>
           <button id="btnRptItemLookup" class="btn ghost" type="button">ค้นหา Item</button>
@@ -440,7 +440,7 @@
           </div>
         </div>
       </div>
-      
+
       <div class="sectionTitle rptTitle">
         <span class="dot rptDot"></span>
         <div>
@@ -448,7 +448,6 @@
           <div class="sectionSub">ประเภทรายงาน ระดับความเร่งด่วน และผู้รับทราบ</div>
         </div>
       </div>
-
 
       <div class="panel rptPanel">
         <div class="field">
@@ -705,7 +704,7 @@
           <button id="btnRptEmailClearAll" class="btn ghost" type="button">ล้างทั้งหมด</button>
         </div>
 
-        <div id="rptEmailSelector" class="checkList"></div>
+        <div id="rptEmailSelector" class="emailSelector"></div>
 
         <div class="field fieldBlock">
           <label for="rptEmailOther">อีเมลเพิ่มเติม</label>
@@ -861,20 +860,16 @@
     </div>
   </div>
 
-  <!-- Fabric.js CDN -->
+  <!-- Libraries -->
   <script src="https://cdn.jsdelivr.net/npm/fabric@5.3.0/dist/fabric.min.js"></script>
 
-  <!-- Shared image editor -->
+  <!-- Core scripts -->
   <script src="./image-editor.js?v=1"></script>
-
-  <!-- Report script -->
   <script src="./report500.js?v=progress-ui-3"></script>
-
-  <!-- Main app -->
   <script src="./app.js?v=progress-ui-2"></script>
 
-
-    <script src="./revision-ui.js?v=rev-1"></script>
+  <!-- Revision scripts -->
+  <script src="./revision-ui.js?v=rev-1"></script>
   <script src="./errorbol-revision.js?v=rev-1"></script>
   <script src="./report500-revision.js?v=rev-1"></script>
 </body>
