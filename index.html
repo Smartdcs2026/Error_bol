@@ -73,6 +73,45 @@
 
     <!-- ERROR_BOL -->
     <section id="formCard" class="card hidden">
+            <div class="revisionPanel" id="errorBolRevisionPanel">
+        <div class="revisionPanelHead">
+          <div>
+            <div class="revisionPanelTitle">แก้ไขรายงานเดิม</div>
+            <div class="revisionPanelSub">โหลดข้อมูลจาก Ref เดิมเพื่อแก้ไข และระบบจะสร้าง Rev ใหม่อัตโนมัติ</div>
+          </div>
+          <div id="errorBolEditBadge" class="revisionBadge hidden">โหมดแก้ไข</div>
+        </div>
+
+        <div class="revisionPanelBody">
+          <div class="revisionRefRow">
+            <div class="field">
+              <label for="errorBolLoadRefNo">Ref เดิม (Error_BOL)</label>
+              <input
+                id="errorBolLoadRefNo"
+                type="text"
+                inputmode="numeric"
+                placeholder="เช่น 123-2569"
+                autocomplete="off"
+              >
+            </div>
+
+            <div class="revisionActionGroup">
+              <button id="btnLoadErrorBolRef" class="btn secondary" type="button">โหลดข้อมูล</button>
+              <button id="btnResetErrorBolRevision" class="btn ghost" type="button">สร้างใหม่</button>
+            </div>
+          </div>
+
+          <div id="errorBolRevisionHint" class="revisionHint">
+            หากกรอก Ref เดิมแล้วกดโหลด ระบบจะดึงข้อมูลฉบับล่าสุดกลับขึ้นมาให้แก้ไข
+          </div>
+
+          <input type="hidden" id="errorBolEditMode" value="new">
+          <input type="hidden" id="errorBolBaseRecordId" value="">
+          <input type="hidden" id="errorBolPreviousRecordId" value="">
+          <input type="hidden" id="errorBolRecordId" value="">
+          <input type="hidden" id="errorBolRevisionNo" value="">
+        </div>
+      </div>
       <div class="sectionTitle">
         <span class="dot"></span>
         <div>
@@ -290,6 +329,45 @@
 
     <!-- REPORT500 -->
     <section id="under500Card" class="card hidden">
+            <div class="revisionPanel revisionPanelRpt" id="report500RevisionPanel">
+        <div class="revisionPanelHead">
+          <div>
+            <div class="revisionPanelTitle">แก้ไขรายงานเดิม</div>
+            <div class="revisionPanelSub">โหลดข้อมูล Report จาก Ref เดิมเพื่อแก้ไข และระบบจะสร้าง Rev ใหม่อัตโนมัติ</div>
+          </div>
+          <div id="report500EditBadge" class="revisionBadge hidden">โหมดแก้ไข</div>
+        </div>
+
+        <div class="revisionPanelBody">
+          <div class="revisionRefRow">
+            <div class="field">
+              <label for="report500LoadRefNo">Ref เดิม (Report)</label>
+              <input
+                id="report500LoadRefNo"
+                type="text"
+                inputmode="numeric"
+                placeholder="เช่น 456-2569"
+                autocomplete="off"
+              >
+            </div>
+
+            <div class="revisionActionGroup">
+              <button id="btnLoadReport500Ref" class="btn secondary" type="button">โหลดข้อมูล</button>
+              <button id="btnResetReport500Revision" class="btn ghost" type="button">สร้างใหม่</button>
+            </div>
+          </div>
+
+          <div id="report500RevisionHint" class="revisionHint">
+            เมื่อโหลดสำเร็จ ระบบจะใช้ข้อมูลฉบับล่าสุดของ Ref นี้ในการแก้ไข
+          </div>
+
+          <input type="hidden" id="report500EditMode" value="new">
+          <input type="hidden" id="report500BaseRecordId" value="">
+          <input type="hidden" id="report500PreviousRecordId" value="">
+          <input type="hidden" id="report500RecordId" value="">
+          <input type="hidden" id="report500RevisionNo" value="">
+        </div>
+      </div>
       <div class="sectionTitle rptTitle">
         <span class="dot rptDot"></span>
         <div>
@@ -794,5 +872,10 @@
 
   <!-- Main app -->
   <script src="./app.js?v=progress-ui-2"></script>
+
+
+    <script src="./revision-ui.js?v=rev-1"></script>
+  <script src="./errorbol-revision.js?v=rev-1"></script>
+  <script src="./report500-revision.js?v=rev-1"></script>
 </body>
 </html>
