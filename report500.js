@@ -33,6 +33,10 @@
     itemLookup: createEmptyItemLookupState()
   };
 
+  const REPORT500_REVISION_HOOKS = {
+    initialized: false
+  };
+
   const RPT_EDITED_IMAGE_STORE = new WeakMap();
 
   const RPT_REPEAT_CONFIG = {
@@ -45,6 +49,55 @@
     rptLearningList: { label: "ข้อสรุป/บทเรียน", addBtnId: "btnRptAddLearning", emptyText: "ยังไม่มีรายการข้อสรุป/บทเรียน" },
     rptImageList: { label: "รูปภาพ", addBtnId: "btnRptAddImage", emptyText: "ยังไม่มีรูปภาพ" }
   };
+
+  function initReport500RevisionHooks_() {
+    if (REPORT500_REVISION_HOOKS.initialized) return;
+    REPORT500_REVISION_HOOKS.initialized = true;
+
+    try {
+      if (window.Report500Revision && typeof window.Report500Revision.init === "function") {
+        window.Report500Revision.init();
+      }
+    } catch (err) {
+      console.error("initReport500RevisionHooks_ error:", err);
+    }
+  }
+
+  function resetReport500RevisionUiState_(options) {
+    try {
+      if (window.Report500Revision && typeof window.Report500Revision.reset === "function") {
+        window.Report500Revision.reset(options || {});
+      }
+    } catch (err) {
+      console.error("resetReport500RevisionUiState_ error:", err);
+    }
+  }
+
+  function getReport500RevisionMeta_() {
+    try {
+      if (window.Report500Revision && typeof window.Report500Revision.buildRevisionMeta === "function") {
+        return window.Report500Revision.buildRevisionMeta();
+      }
+    } catch (err) {
+      console.error("getReport500RevisionMeta_ error:", err);
+    }
+
+    return {
+      editMode: "new",
+      isRevision: false,
+      refNo: "",
+      recordId: "",
+      baseRecordId: "",
+      previousRecordId: "",
+      revisionNo: "",
+      revisionLabel: "",
+      existingAssets: {
+        imageIds: [],
+        pdfFileId: "",
+        pdfUrl: ""
+      }
+    };
+  }
 
   function buildRptEditedImageMeta(file, isEdited = false) {
     if (!file) return "";
@@ -435,7 +488,8 @@
       </div>
     `;
   }
-   function getCardSummary(card) {
+
+  function getCardSummary(card) {
     if (!card) return "แตะเพื่อกรอกข้อมูล";
 
     const type = card.getAttribute("data-type");
@@ -611,32 +665,32 @@
     });
   }
 
- function ensureRepeatFooterButton(listId) {
-  const root = $(listId);
-  if (!root || !root.parentElement) return;
+  function ensureRepeatFooterButton(listId) {
+    const root = $(listId);
+    if (!root || !root.parentElement) return;
 
-  const cfg = getRepeatConfig(listId);
-  const label = cfg.label || "รายการ";
-  const addBtnId = cfg.addBtnId;
-  if (!addBtnId) return;
+    const cfg = getRepeatConfig(listId);
+    const label = cfg.label || "รายการ";
+    const addBtnId = cfg.addBtnId;
+    if (!addBtnId) return;
 
-  let footer = root.parentElement.querySelector(`.rptRepeatAddBottom[data-target="${listId}"]`);
-  if (!footer) {
-    footer = document.createElement("div");
-    footer.className = "rptRepeatAddBottom hidden";
-    footer.setAttribute("data-target", listId);
-    footer.innerHTML = `
-      <button type="button" class="btn ghost rptRepeatAddBottomBtn">
-        + เพิ่ม${escapeHtml(label)}
-      </button>
-    `;
-    root.insertAdjacentElement("afterend", footer);
+    let footer = root.parentElement.querySelector(`.rptRepeatAddBottom[data-target="${listId}"]`);
+    if (!footer) {
+      footer = document.createElement("div");
+      footer.className = "rptRepeatAddBottom hidden";
+      footer.setAttribute("data-target", listId);
+      footer.innerHTML = `
+        <button type="button" class="btn ghost rptRepeatAddBottomBtn">
+          + เพิ่ม${escapeHtml(label)}
+        </button>
+      `;
+      root.insertAdjacentElement("afterend", footer);
 
-    footer.querySelector("button")?.addEventListener("click", () => {
-      $(addBtnId)?.click();
-    });
+      footer.querySelector("button")?.addEventListener("click", () => {
+        $(addBtnId)?.click();
+      });
+    }
   }
-}
 
   function createSimpleIndexedRowHtml(type, index, titleLabel, detailLabel, titlePlaceholder, detailPlaceholder) {
     return buildRepeatCardShell({
@@ -811,23 +865,23 @@
   }
 
   function appendRow(listId, html, emptyLabel) {
-  const root = $(listId);
-  if (!root) return;
+    const root = $(listId);
+    if (!root) return;
 
-  const wrap = document.createElement("div");
-  wrap.innerHTML = html.trim();
-  const node = wrap.firstElementChild;
-  root.appendChild(node);
+    const wrap = document.createElement("div");
+    wrap.innerHTML = html.trim();
+    const node = wrap.firstElementChild;
+    root.appendChild(node);
 
-  bindDynamicRow(node);
-  refreshRowIndex(listId);
-  toggleEmptyState(listId, emptyLabel);
-  ensureRepeatFooterButton(listId);
+    bindDynamicRow(node);
+    refreshRowIndex(listId);
+    toggleEmptyState(listId, emptyLabel);
+    ensureRepeatFooterButton(listId);
 
-  setTimeout(() => {
-    node.scrollIntoView({ behavior: "smooth", block: "nearest" });
-  }, 40);
-}
+    setTimeout(() => {
+      node.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }, 40);
+  }
 
   function bindSelectOtherInRow(node, selectSel, wrapSel, inputSel) {
     const select = node.querySelector(selectSel);
@@ -845,7 +899,8 @@
     select.addEventListener("change", sync);
     sync();
   }
-   function bindStepTakenRow(node) {
+
+  function bindStepTakenRow(node) {
     const typeEl = node.querySelector(".rptStepActionType");
     const otherWrap = node.querySelector(".rptStepActionTypeOtherWrap");
     const otherInput = node.querySelector(".rptStepActionTypeOther");
@@ -973,24 +1028,24 @@
     });
 
     node.querySelector(".rptRemoveRow")?.addEventListener("click", () => {
-  if (node.getAttribute("data-type") === "image") {
-    clearRptEditedImageState(node);
-  } else {
-    const img = node.querySelector(".rptImagePreview");
-    if (img && img.dataset.objectUrl) {
-      try { URL.revokeObjectURL(img.dataset.objectUrl); } catch (_) {}
-    }
-  }
+      if (node.getAttribute("data-type") === "image") {
+        clearRptEditedImageState(node);
+      } else {
+        const img = node.querySelector(".rptImagePreview");
+        if (img && img.dataset.objectUrl) {
+          try { URL.revokeObjectURL(img.dataset.objectUrl); } catch (_) {}
+        }
+      }
 
-  const list = node.parentElement;
-  const listId = list?.id || "";
-  const cfg = getRepeatConfig(listId);
+      const list = node.parentElement;
+      const listId = list?.id || "";
+      const cfg = getRepeatConfig(listId);
 
-  node.remove();
+      node.remove();
 
-  refreshRowIndex(listId);
-  toggleEmptyState(listId, cfg.label);
-});
+      refreshRowIndex(listId);
+      toggleEmptyState(listId, cfg.label);
+    });
 
     if (node.getAttribute("data-type") === "person") {
       bindSelectOtherInRow(node, ".rptPersonPosition", ".rptPersonPositionOtherWrap", ".rptPersonPositionOther");
@@ -1016,7 +1071,7 @@
     if (!root) return;
 
     const cfg = getRepeatConfig(listId);
-toggleEmptyState(listId, cfg.label);
+    toggleEmptyState(listId, cfg.label);
 
     root.querySelectorAll(".rptRepeatCard").forEach((card, idx) => {
       const no = idx + 1;
@@ -1029,32 +1084,33 @@ toggleEmptyState(listId, cfg.label);
     });
   }
 
- function toggleEmptyState(listId, emptyLabel) {
-  const root = $(listId);
-  if (!root) return;
+  function toggleEmptyState(listId, emptyLabel) {
+    const root = $(listId);
+    if (!root) return;
 
-  const label = emptyLabel || getRepeatConfig(listId).label || "รายการ";
-  const count = root.querySelectorAll(".rptRepeatCard").length;
+    const label = emptyLabel || getRepeatConfig(listId).label || "รายการ";
+    const count = root.querySelectorAll(".rptRepeatCard").length;
 
-  let emptyNode = root.querySelector(".rptRepeatEmpty");
-  if (!count) {
-    if (!emptyNode) {
-      emptyNode = document.createElement("div");
-      emptyNode.className = "rptRepeatEmpty";
-      root.appendChild(emptyNode);
+    let emptyNode = root.querySelector(".rptRepeatEmpty");
+    if (!count) {
+      if (!emptyNode) {
+        emptyNode = document.createElement("div");
+        emptyNode.className = "rptRepeatEmpty";
+        root.appendChild(emptyNode);
+      }
+      emptyNode.textContent = `ยังไม่มี${label} กดปุ่มเพิ่มเพื่อเริ่มกรอกข้อมูล`;
+    } else if (emptyNode) {
+      emptyNode.remove();
     }
-    emptyNode.textContent = `ยังไม่มี${label} กดปุ่มเพิ่มเพื่อเริ่มกรอกข้อมูล`;
-  } else if (emptyNode) {
-    emptyNode.remove();
+
+    ensureRepeatFooterButton(listId);
+
+    const footer = root.parentElement?.querySelector(`.rptRepeatAddBottom[data-target="${listId}"]`);
+    if (footer) {
+      footer.classList.toggle("hidden", count === 0);
+    }
   }
 
-  ensureRepeatFooterButton(listId);
-
-  const footer = root.parentElement?.querySelector(`.rptRepeatAddBottom[data-target="${listId}"]`);
-  if (footer) {
-    footer.classList.toggle("hidden", count === 0);
-  }
-}
   function collectCheckedOptionObjects(rootId, inputName) {
     const root = $(rootId);
     if (!root) return [];
@@ -1810,6 +1866,12 @@ toggleEmptyState(listId, cfg.label);
     };
 
     appendDisciplinePayloadToReport500Payload(payload);
+
+    const revisionMeta = getReport500RevisionMeta_();
+    payload.editMode = revisionMeta.editMode || "new";
+    payload.revisionMeta = revisionMeta;
+    payload.refNo = payload.refNo || revisionMeta.refNo || "";
+
     validatePayload(payload);
     return payload;
   }
@@ -1850,76 +1912,187 @@ toggleEmptyState(listId, cfg.label);
     });
 
     (p.stepTakens || []).forEach((x, idx) => {
-      if (x.actionType === "ตรวจวัดปริมาณแอลกอฮอล์") {
-        if (!norm(x.alcoholResult)) {
-          throw new Error(`การดำเนินการลำดับ ${idx + 1}: กรุณาเลือกผลการตรวจแอลกอฮอล์`);
-        }
-        if (norm(x.alcoholResult) === "พบ" && !norm(x.alcoholMgPercent)) {
-          throw new Error(`การดำเนินการลำดับ ${idx + 1}: กรุณากรอกค่า Mg%`);
-        }
-      }
-      if (x.actionType === "ตรวจสารเสพติดเมทแอเฟตามีน") {
-        if (!norm(x.drugConfirmed)) {
-          throw new Error(`การดำเนินการลำดับ ${idx + 1}: กรุณากรอกผลยืนยันการเสพ`);
-        }
-      }
       if (isOther(x.actionType) && !norm(x.actionTypeOther)) {
-        throw new Error(`การดำเนินการลำดับ ${idx + 1}: กรุณาระบุการดำเนินการอื่นๆ`);
+        throw new Error(`การดำเนินการลำดับ ${idx + 1}: กรุณาระบุประเภทอื่นๆ`);
+      }
+      if (norm(x.actionType) === "ตรวจวัดปริมาณแอลกอฮอล์" && norm(x.alcoholResult) === "พบ" && !norm(x.alcoholMgPercent)) {
+        throw new Error(`การดำเนินการลำดับ ${idx + 1}: กรุณาระบุค่า Mg%`);
+      }
+      if (norm(x.actionType) === "ตรวจสารเสพติดเมทแอเฟตามีน" && !norm(x.drugConfirmed)) {
+        throw new Error(`การดำเนินการลำดับ ${idx + 1}: กรุณาระบุผลยืนยันการเสพ`);
       }
     });
-
-    if (isOther(p.reporterPosition) && !norm(p.reporterPositionOther)) {
-      throw new Error("กรุณาระบุตำแหน่งผู้รายงานอื่นๆ");
-    }
   }
 
   function payloadSummaryHtml(payload, images) {
-    const selectedEmails = collectEmailRecipients();
+    const reportTypes = (payload.reportTypes || []).filter((x) => x.checked).map((x) => escapeHtml(x.value)).join(", ") || "-";
+    const urgency = (payload.urgencyTypes || []).filter((x) => x.checked).map((x) => escapeHtml(x.value)).join(", ") || "-";
+    const notify = (payload.notifyTo || []).filter((x) => x.checked).map((x) => escapeHtml(x.value)).join(", ") || "-";
+    const revisionMeta = getReport500RevisionMeta_();
+    const revisionLabel = norm(revisionMeta.revisionLabel || (revisionMeta.revisionNo !== "" ? `Rev.${revisionMeta.revisionNo}` : ""));
+    const modeText = revisionMeta.editMode === "revision" ? "แก้ไขรายงานเดิม" : "สร้างรายงานใหม่";
 
     return `
       <div class="swalSummary">
-        <div class="swalHero">
-          <div class="swalHeroTitle">ตรวจสอบข้อมูลก่อนบันทึก</div>
-          <div class="swalHeroSub">Report</div>
-        </div>
-
         <div class="swalSection">
-          <div class="swalSectionTitle">ข้อมูลหลัก</div>
+          <div class="swalSectionTitle">ข้อมูลสรุปรายงาน</div>
           <div class="swalKvGrid">
-            <div class="swalKv"><div class="swalKvLabel">Ref No.</div><div class="swalKvValue">${escapeHtml(payload.refNo)}</div></div>
-            <div class="swalKv"><div class="swalKvLabel">สาขา</div><div class="swalKvValue">${escapeHtml(payload.branch)}${payload.branchOther ? " (" + escapeHtml(payload.branchOther) + ")" : ""}</div></div>
+            <div class="swalKv"><div class="swalKvLabel">Ref</div><div class="swalKvValue">${escapeHtml(payload.refNo || "-")}</div></div>
+            <div class="swalKv"><div class="swalKvLabel">โหมด</div><div class="swalKvValue">${escapeHtml(modeText)}</div></div>
+            <div class="swalKv"><div class="swalKvLabel">Revision</div><div class="swalKvValue">${escapeHtml(revisionLabel || "-")}</div></div>
+            <div class="swalKv"><div class="swalKvLabel">ผู้รายงาน</div><div class="swalKvValue">${escapeHtml(payload.reportedBy || "-")}</div></div>
+            <div class="swalKv"><div class="swalKvLabel">สาขา</div><div class="swalKvValue">${escapeHtml(payload.branch || "-")}</div></div>
             <div class="swalKv"><div class="swalKvLabel">เรื่อง</div><div class="swalKvValue">${escapeHtml(payload.subject || "-")}</div></div>
-            <div class="swalKv"><div class="swalKvLabel">Reported by</div><div class="swalKvValue">${escapeHtml(payload.reportedBy || "-")}</div></div>
-          </div>
-        </div>
-
-        <div class="swalSection">
-          <div class="swalSectionTitle">เหตุการณ์</div>
-          <div class="swalKvGrid">
-            <div class="swalKv"><div class="swalKvLabel">วันที่</div><div class="swalKvValue">${escapeHtml(payload.incidentDate || "-")}</div></div>
-            <div class="swalKv"><div class="swalKvLabel">เวลา</div><div class="swalKvValue">${escapeHtml(payload.incidentTime || "-")}</div></div>
-            <div class="swalKv"><div class="swalKvLabel">สถานที่หลัก</div><div class="swalKvValue">${escapeHtml(payload.whereDidItHappen || "-")}</div></div>
-            <div class="swalKv"><div class="swalKvLabel">Area</div><div class="swalKvValue">${escapeHtml(payload.area || "-")}</div></div>
-          </div>
-        </div>
-
-        <div class="swalSection">
-          <div class="swalSectionTitle">สรุปจำนวนรายการ</div>
-          <div class="swalKvGrid">
-            <div class="swalKv"><div class="swalKvLabel">ผู้เกี่ยวข้อง</div><div class="swalKvValue">${payload.involvedPersons.length}</div></div>
-            <div class="swalKv"><div class="swalKvLabel">ความเสียหาย</div><div class="swalKvValue">${payload.damages.length}</div></div>
-            <div class="swalKv"><div class="swalKvLabel">การดำเนินการ</div><div class="swalKvValue">${payload.stepTakens.length}</div></div>
-            <div class="swalKv"><div class="swalKvLabel">หลักฐาน</div><div class="swalKvValue">${payload.evidences.length}</div></div>
-            <div class="swalKv"><div class="swalKvLabel">สาเหตุ</div><div class="swalKvValue">${payload.causes.length}</div></div>
-            <div class="swalKv"><div class="swalKvLabel">การป้องกัน</div><div class="swalKvValue">${payload.preventions.length}</div></div>
-            <div class="swalKv"><div class="swalKvLabel">ข้อสรุป/บทเรียน</div><div class="swalKvValue">${payload.learnings.length}</div></div>
+            <div class="swalKv"><div class="swalKvLabel">ประเภทรายงาน</div><div class="swalKvValue">${reportTypes}</div></div>
+            <div class="swalKv"><div class="swalKvLabel">ความเร่งด่วน</div><div class="swalKvValue">${urgency}</div></div>
+            <div class="swalKv"><div class="swalKvLabel">ผู้รับทราบ</div><div class="swalKvValue">${notify}</div></div>
             <div class="swalKv"><div class="swalKvLabel">รูปภาพ</div><div class="swalKvValue">${images.length}</div></div>
           </div>
         </div>
+      </div>
+    `;
+  }
 
+  function normalizeReport500OptionsResponse(json) {
+    const src = (json && typeof json === "object")
+      ? ((json.data && typeof json.data === "object") ? json.data : json)
+      : {};
+
+    const toArray = (v) => Array.isArray(v) ? v : [];
+
+    return {
+      branchList: toArray(src.branchList),
+      reportTypeList: toArray(src.reportTypeList),
+      urgencyList: toArray(src.urgencyList),
+      notifyToList: toArray(src.notifyToList),
+
+      locationList: toArray(src.locationList),
+      whereDidItHappenDefault: norm(src.whereDidItHappenDefault || ""),
+
+      whereTypeList: toArray(src.whereTypeList),
+
+      personPositionList: toArray(src.personPositionList),
+      personDepartmentList: toArray(src.personDepartmentList),
+      personRemarkList: toArray(src.personRemarkList),
+
+      actionTypeList: toArray(src.actionTypeList),
+      alcoholResultList: toArray(src.alcoholResultList),
+
+      reporterPositionList: toArray(src.reporterPositionList),
+      emailList: toArray(src.emailList)
+    };
+  }
+
+  function initRepeatFooters() {
+    Object.keys(RPT_REPEAT_CONFIG).forEach((listId) => ensureRepeatFooterButton(listId));
+  }
+
+  function bindTopButtons() {
+    if (state.buttonsBound) return;
+    state.buttonsBound = true;
+
+    $("btnRptPreview")?.addEventListener("click", preview);
+    $("btnRptSubmit")?.addEventListener("click", submit);
+    $("btnRptReset")?.addEventListener("click", () => {
+      resetForm();
+      resetReport500RevisionUiState_({ keepInput: false, showNewBadge: true });
+      if ($("rptRefNo")) $("rptRefNo").value = "";
+    });
+
+    $("btnRptAddPerson")?.addEventListener("click", () => {
+      const idx = document.querySelectorAll("#rptPersonList .rptRepeatCard").length + 1;
+      appendRow("rptPersonList", createPersonRowHtml(idx), "ผู้เกี่ยวข้อง");
+    });
+
+    $("btnRptAddDamage")?.addEventListener("click", () => {
+      const idx = document.querySelectorAll("#rptDamageList .rptRepeatCard").length + 1;
+      appendRow(
+        "rptDamageList",
+        createSimpleIndexedRowHtml("damage", idx, "ความเสียหาย", "รายละเอียด", "หัวข้อความเสียหาย", "รายละเอียดเพิ่มเติม"),
+        "ความเสียหาย"
+      );
+    });
+
+    $("btnRptAddStepTaken")?.addEventListener("click", () => {
+      const idx = document.querySelectorAll("#rptStepTakenList .rptRepeatCard").length + 1;
+      appendRow("rptStepTakenList", createStepTakenRowHtml(idx), "การดำเนินการ");
+    });
+
+    $("btnRptAddEvidence")?.addEventListener("click", () => {
+      const idx = document.querySelectorAll("#rptEvidenceList .rptRepeatCard").length + 1;
+      appendRow(
+        "rptEvidenceList",
+        createSimpleIndexedRowHtml("evidence", idx, "หลักฐาน", "รายละเอียด", "หัวข้อหลักฐาน", "รายละเอียดเพิ่มเติม"),
+        "หลักฐาน"
+      );
+    });
+
+    $("btnRptAddCause")?.addEventListener("click", () => {
+      const idx = document.querySelectorAll("#rptCauseList .rptRepeatCard").length + 1;
+      appendRow(
+        "rptCauseList",
+        createSimpleIndexedRowHtml("cause", idx, "สาเหตุ", "รายละเอียด", "หัวข้อสาเหตุ", "รายละเอียดเพิ่มเติม"),
+        "สาเหตุ"
+      );
+    });
+
+    $("btnRptAddPrevention")?.addEventListener("click", () => {
+      const idx = document.querySelectorAll("#rptPreventionList .rptRepeatCard").length + 1;
+      appendRow(
+        "rptPreventionList",
+        createSimpleIndexedRowHtml("prevention", idx, "การป้องกัน", "รายละเอียด", "หัวข้อการป้องกัน", "รายละเอียดเพิ่มเติม"),
+        "การป้องกัน"
+      );
+    });
+
+    $("btnRptAddLearning")?.addEventListener("click", () => {
+      const idx = document.querySelectorAll("#rptLearningList .rptRepeatCard").length + 1;
+      appendRow(
+        "rptLearningList",
+        createSimpleIndexedRowHtml("learning", idx, "ข้อสรุป/บทเรียน", "รายละเอียด", "หัวข้อข้อสรุป", "รายละเอียดเพิ่มเติม"),
+        "ข้อสรุป/บทเรียน"
+      );
+    });
+
+    $("btnRptAddImage")?.addEventListener("click", () => {
+      const idx = document.querySelectorAll("#rptImageList .rptRepeatCard").length + 1;
+      appendRow("rptImageList", createImageRowHtml(idx), "รูปภาพ");
+    });
+
+    Object.keys(RPT_REPEAT_CONFIG).forEach((listId) => ensureRepeatFooterButton(listId));
+  }
+
+  function buildPreviewHtml(payload) {
+    const persons = (payload.involvedPersons || []).length;
+    const damages = (payload.damages || []).length;
+    const steps = (payload.stepTakens || []).length;
+    const evidences = (payload.evidences || []).length;
+    const causes = (payload.causes || []).length;
+    const preventions = (payload.preventions || []).length;
+    const learnings = (payload.learnings || []).length;
+    const emails = collectEmailRecipients();
+    const whereTypes = (payload.whereTypeSelections || []).filter((x) => x.checked).map((x) => x.value + (x.suffixText ? ` (${x.suffixText})` : "")).join(", ") || "-";
+
+    return `
+      <div class="swalSummary">
         <div class="swalSection">
-          <div class="swalSectionTitle">อีเมลปลายทาง</div>
-          <div class="swalKvValue">${selectedEmails.length} รายการ</div>
+          <div class="swalSectionTitle">Preview Report</div>
+          <div class="swalKvGrid">
+            <div class="swalKv"><div class="swalKvLabel">Ref</div><div class="swalKvValue">${escapeHtml(payload.refNo || "-")}</div></div>
+            <div class="swalKv"><div class="swalKvLabel">สาขา</div><div class="swalKvValue">${escapeHtml(payload.branch || "-")}</div></div>
+            <div class="swalKv"><div class="swalKvLabel">เรื่อง</div><div class="swalKvValue">${escapeHtml(payload.subject || "-")}</div></div>
+            <div class="swalKv"><div class="swalKvLabel">วันที่เกิดเหตุ</div><div class="swalKvValue">${escapeHtml(payload.incidentDate || "-")} ${escapeHtml(payload.incidentTime || "")}</div></div>
+            <div class="swalKv"><div class="swalKvLabel">สถานที่</div><div class="swalKvValue">${escapeHtml(payload.whereDidItHappen || "-")}</div></div>
+            <div class="swalKv"><div class="swalKvLabel">ประเภทสถานที่</div><div class="swalKvValue">${escapeHtml(whereTypes)}</div></div>
+            <div class="swalKv"><div class="swalKvLabel">ผู้เกี่ยวข้อง</div><div class="swalKvValue">${persons}</div></div>
+            <div class="swalKv"><div class="swalKvLabel">ความเสียหาย</div><div class="swalKvValue">${damages}</div></div>
+            <div class="swalKv"><div class="swalKvLabel">การดำเนินการ</div><div class="swalKvValue">${steps}</div></div>
+            <div class="swalKv"><div class="swalKvLabel">หลักฐาน</div><div class="swalKvValue">${evidences}</div></div>
+            <div class="swalKv"><div class="swalKvLabel">สาเหตุ</div><div class="swalKvValue">${causes}</div></div>
+            <div class="swalKv"><div class="swalKvLabel">การป้องกัน</div><div class="swalKvValue">${preventions}</div></div>
+            <div class="swalKv"><div class="swalKvLabel">ข้อสรุป/บทเรียน</div><div class="swalKvValue">${learnings}</div></div>
+            <div class="swalKv"><div class="swalKvLabel">อีเมลปลายทาง</div><div class="swalKvValue">${escapeHtml(emails.join(", ") || "-")}</div></div>
+          </div>
         </div>
       </div>
     `;
@@ -1928,28 +2101,27 @@ toggleEmptyState(listId, cfg.label);
   async function preview() {
     try {
       const payload = collectPayload();
-      const images = await collectImages();
-
       await Swal.fire({
-        title: "สรุปก่อนบันทึก",
-        html: payloadSummaryHtml(payload, images),
-        width: 920,
-        confirmButtonText: "ปิด"
+        title: "Preview รายงาน",
+        width: 980,
+        confirmButtonText: "ปิด",
+        html: buildPreviewHtml(payload)
       });
     } catch (err) {
-      Swal.fire({
+      await Swal.fire({
         icon: "warning",
-        title: "ตรวจสอบข้อมูลไม่ผ่าน",
+        title: "Preview ไม่สำเร็จ",
         text: err?.message || String(err)
       });
     }
   }
 
-  function resetList(listId, label) {
+  function resetList(listId, emptyLabel) {
     const root = $(listId);
     if (!root) return;
     root.innerHTML = "";
-    toggleEmptyState(listId, label);
+    toggleEmptyState(listId, emptyLabel || getRepeatConfig(listId).label);
+    ensureRepeatFooterButton(listId);
   }
 
   function resetForm() {
@@ -1993,6 +2165,8 @@ toggleEmptyState(listId, cfg.label);
       resetList(listId, getRepeatConfig(listId).label);
       ensureRepeatFooterButton(listId);
     });
+
+    resetReport500RevisionUiState_({ keepInput: false, showNewBadge: false });
   }
 
   async function submit() {
@@ -2064,6 +2238,7 @@ toggleEmptyState(listId, cfg.label);
 
       const text = await res.text();
       let json = {};
+
       try {
         json = JSON.parse(text);
       } catch (_) {
@@ -2074,85 +2249,56 @@ toggleEmptyState(listId, cfg.label);
         throw new Error(json?.error || `บันทึกข้อมูลไม่สำเร็จ (HTTP ${res.status})`);
       }
 
-      Progress?.markDone("save", 72, "บันทึกข้อมูลลงระบบเรียบร้อย");
+      Progress?.markDone("save", 68, "บันทึกข้อมูลเรียบร้อย");
+      Progress?.activateOnly("pdf", 78, "กำลังตรวจสอบไฟล์ PDF");
 
-      Progress?.activateOnly("pdf", 84, "กำลังสร้างไฟล์ PDF");
-      await (window.sleepMs ? window.sleepMs(180) : new Promise((r) => setTimeout(r, 180)));
+      await (window.sleepMs ? window.sleepMs(120) : new Promise((r) => setTimeout(r, 120)));
+      Progress?.markDone("pdf", 88, json?.pdfUrl ? "สร้าง PDF เรียบร้อย" : "ยังไม่พบ PDF");
 
-      if (json.pdfFileId || json.pdfUrl) {
-        const sizeText = json.pdfSizeText ? ` (${json.pdfSizeText})` : "";
-        Progress?.markDone("pdf", 93, `สร้างไฟล์ PDF เรียบร้อย${sizeText}`);
-      } else {
-        Progress?.markDone("pdf", 93, "สร้างไฟล์ PDF เรียบร้อย");
-      }
+      const emailSummary = typeof window.buildEmailStatusSummary_ === "function"
+        ? window.buildEmailStatusSummary_(json)
+        : {
+            emailOk: !!json?.emailResult?.ok,
+            emailSkipped: !!json?.emailResult?.skipped,
+            emailModeText: json?.emailResult?.ok ? "ส่งอีเมลเรียบร้อย" : "ไม่ได้ส่งอีเมล"
+          };
 
-      Progress?.activateOnly("email", 97, "กำลังตรวจสอบผลการส่งอีเมล");
-      await (window.sleepMs ? window.sleepMs(160) : new Promise((r) => setTimeout(r, 160)));
+      Progress?.activateOnly("email", 94, "กำลังสรุปผลการส่งอีเมล");
+      await (window.sleepMs ? window.sleepMs(100) : new Promise((r) => setTimeout(r, 100)));
+      Progress?.markDone("email", 100, emailSummary.emailModeText || "เสร็จสิ้น");
+      Progress?.success("บันทึก Report สำเร็จ", "ระบบบันทึกข้อมูลเรียบร้อยแล้ว");
 
-      const emailResult = json.emailResult || {};
-      const emailOk = !!emailResult.ok;
-      const emailSkipped = !!emailResult.skipped;
-      const attachmentMode = String(emailResult.attachmentMode || "").trim();
-      const emailErr = String(emailResult.error || "").trim();
-
-      let emailText = "ส่งอีเมลเรียบร้อย";
-      if (attachmentMode === "LINK_ONLY") emailText = "ส่งอีเมลพร้อมลิงก์ PDF";
-      if (attachmentMode === "ATTACHED") emailText = "ส่งอีเมลพร้อมไฟล์ PDF";
-
-      if (emailOk) {
-        Progress?.markDone("email", 100, emailText, emailText);
-        Progress?.success("บันทึกสำเร็จ", "รายงานถูกบันทึกเรียบร้อยแล้ว");
-      } else if (emailSkipped) {
-        Progress?.markDone("email", 100, "ไม่ได้เลือกส่งอีเมล", "ข้าม");
-        Progress?.success("บันทึกสำเร็จ", "บันทึกข้อมูลและสร้าง PDF เรียบร้อยแล้ว");
-      } else {
-        Progress?.markError("email", "ส่งอีเมลไม่สำเร็จ", 100);
-        Progress?.success("บันทึกสำเร็จ", "ข้อมูลและ PDF สำเร็จแล้ว แต่การส่งอีเมลไม่สำเร็จ");
-        Progress?.setHint(emailErr || "กรุณาตรวจสอบสิทธิ์เมลหรือขนาดไฟล์ PDF");
-      }
-
-      Progress?.hide(120);
-
-      const pdfOpenUrl = json.pdfUrl
-        ? String(json.pdfUrl)
-        : (json.refNo ? apiUrl(`/report500/pdf/${encodeURIComponent(json.refNo)}`) : "");
+      const pdfOpenUrl = json?.refNo ? apiUrl(`/report500/pdf/${encodeURIComponent(json.refNo)}`) : "";
+      const revisionInfo = json?.revision?.meta || null;
+      const revisionText = revisionInfo
+        ? `${revisionInfo.RevisionLabel || revisionInfo.revisionLabel || ""}`.trim()
+        : "";
 
       await Swal.fire({
-        icon: (emailOk || emailSkipped) ? "success" : "warning",
-        title: (emailOk || emailSkipped) ? "บันทึก Report สำเร็จ" : "บันทึก Report สำเร็จบางส่วน",
-        showConfirmButton: false,
-        width: 820,
+        icon: emailSummary.emailOk || emailSummary.emailSkipped ? "success" : "warning",
+        title: emailSummary.emailOk || emailSummary.emailSkipped ? "บันทึกสำเร็จ" : "บันทึกสำเร็จบางส่วน",
+        width: 920,
+        confirmButtonText: "ปิดหน้าต่าง",
         html: `
           <div class="swalSummary">
             <div class="swalHero">
               <div class="swalHeroTitle">บันทึกรายงานเรียบร้อยแล้ว</div>
-              <div class="swalHeroSub">ระบบจัดเก็บข้อมูล รูปภาพ และไฟล์ PDF เรียบร้อย</div>
-              <div class="swalPillRow">
-                <div class="swalPill primary">Ref: ${escapeHtml(json.refNo || payload.refNo || "-")}</div>
-                <div class="swalPill">รูป ${Number(json.imageCount || images.length || 0)}</div>
-                <div class="swalPill">${emailOk ? "ส่งอีเมลสำเร็จ" : emailSkipped ? "ไม่ได้ส่งอีเมล" : "อีเมลไม่สำเร็จ"}</div>
-              </div>
+              <div class="swalHeroSub">ระบบจัดเก็บข้อมูล สร้าง PDF และประมวลผลการส่งอีเมลแล้ว</div>
+            </div>
+
+            <div class="swalPillRow">
+              <div class="swalPill">Ref: ${json?.refNo || "-"}</div>
+              <div class="swalPill">ผู้บันทึก: ${json?.lpsName || payload.reportedBy || "-"}</div>
+              ${revisionText ? `<div class="swalPill">Revision: ${revisionText}</div>` : ""}
             </div>
 
             <div class="swalSection">
-              <div class="swalSectionTitle">สรุปผลการบันทึก</div>
+              <div class="swalSectionTitle">ผลการทำงาน</div>
               <div class="swalKvGrid">
-                <div class="swalKv">
-                  <div class="swalKvLabel">Ref No.</div>
-                  <div class="swalKvValue">${escapeHtml(json.refNo || payload.refNo || "-")}</div>
-                </div>
-                <div class="swalKv">
-                  <div class="swalKvLabel">ผู้บันทึก</div>
-                  <div class="swalKvValue">${escapeHtml(payload.reportedBy || auth.name || "-")}</div>
-                </div>
-                <div class="swalKv">
-                  <div class="swalKvLabel">จำนวนรูปภาพ</div>
-                  <div class="swalKvValue">${escapeHtml(String(Number(json.imageCount || images.length || 0)))}</div>
-                </div>
-                <div class="swalKv">
-                  <div class="swalKvLabel">สถานะอีเมล</div>
-                  <div class="swalKvValue">${escapeHtml(emailOk ? emailText : emailSkipped ? "ไม่ได้เลือกส่งอีเมล" : (emailErr || "ส่งอีเมลไม่สำเร็จ"))}</div>
-                </div>
+                <div class="swalKv"><div class="swalKvLabel">ข้อความ</div><div class="swalKvValue">${json?.message || "-"}</div></div>
+                <div class="swalKv"><div class="swalKvLabel">รูปภาพ</div><div class="swalKvValue">${json?.imageCount ?? images.length}</div></div>
+                <div class="swalKv"><div class="swalKvLabel">PDF</div><div class="swalKvValue">${json?.pdfUrl ? "พร้อมใช้งาน" : "ไม่พร้อมใช้งาน"}</div></div>
+                <div class="swalKv"><div class="swalKvLabel">อีเมล</div><div class="swalKvValue">${emailSummary.emailModeText || "-"}</div></div>
               </div>
             </div>
 
@@ -2192,6 +2338,7 @@ toggleEmptyState(listId, cfg.label);
         },
         willClose: () => {
           resetForm();
+          resetReport500RevisionUiState_({ keepInput: false, showNewBadge: true });
           if ($("rptRefNo")) $("rptRefNo").value = "";
         }
       });
@@ -2210,144 +2357,6 @@ toggleEmptyState(listId, cfg.label);
 
       window.ProgressUI?.hide(180);
     }
-  }
-function initRepeatFooters() {
-  [
-    "rptPersonList",
-    "rptDamageList",
-    "rptStepTakenList",
-    "rptEvidenceList",
-    "rptCauseList",
-    "rptPreventionList",
-    "rptLearningList",
-    "rptImageList"
-  ].forEach((listId) => {
-    const cfg = getRepeatConfig(listId);
-    ensureRepeatFooterButton(listId);
-    toggleEmptyState(listId, cfg.label);
-  });
-}
-  function bindTopButtons() {
-    if (state.buttonsBound) return;
-    state.buttonsBound = true;
-
-    $("btnRptPreview")?.addEventListener("click", preview);
-    $("btnRptSubmit")?.addEventListener("click", submit);
-    $("btnRptReset")?.addEventListener("click", async () => {
-      const ok = await Swal.fire({
-        icon: "question",
-        title: "ล้างข้อมูลฟอร์ม",
-        text: "ต้องการล้างข้อมูลในฟอร์ม Report ใช่หรือไม่",
-        showCancelButton: true,
-        confirmButtonText: "ล้างข้อมูล",
-        cancelButtonText: "ยกเลิก"
-      });
-      if (ok.isConfirmed) resetForm();
-    });
-
-    $("btnRptAllReportTypes")?.addEventListener("click", () => setAllChecks('#rptReportTypes input[type="checkbox"]', true));
-    $("btnRptClearReportTypes")?.addEventListener("click", () => setAllChecks('#rptReportTypes input[type="checkbox"]', false));
-
-    $("btnRptAllUrgency")?.addEventListener("click", () => setAllChecks('#rptUrgencyTypes input[type="checkbox"]', true));
-    $("btnRptClearUrgency")?.addEventListener("click", () => setAllChecks('#rptUrgencyTypes input[type="checkbox"]', false));
-
-    $("btnRptAllNotifyTo")?.addEventListener("click", () => setAllChecks('#rptNotifyTo input[type="checkbox"]', true));
-    $("btnRptClearNotifyTo")?.addEventListener("click", () => setAllChecks('#rptNotifyTo input[type="checkbox"]', false));
-
-    $("btnRptAllEmails")?.addEventListener("click", () => setAllChecks(".rptEmailChk", true));
-    $("btnRptClearEmails")?.addEventListener("click", () => setAllChecks(".rptEmailChk", false));
-
-    $("btnRptAddPerson")?.addEventListener("click", () => {
-      const idx = document.querySelectorAll("#rptPersonList .rptRepeatCard").length + 1;
-      appendRow("rptPersonList", createPersonRowHtml(idx), "ผู้เกี่ยวข้อง");
-    });
-
-    $("btnRptAddDamage")?.addEventListener("click", () => {
-      const idx = document.querySelectorAll("#rptDamageList .rptRepeatCard").length + 1;
-      appendRow(
-        "rptDamageList",
-        createSimpleIndexedRowHtml("damage", idx, "ความเสียหาย", "รายละเอียด", "หัวข้อความเสียหาย", "รายละเอียดเพิ่มเติม"),
-        "ความเสียหาย"
-      );
-    });
-
-    $("btnRptAddStepTaken")?.addEventListener("click", () => {
-      const idx = document.querySelectorAll("#rptStepTakenList .rptRepeatCard").length + 1;
-      appendRow("rptStepTakenList", createStepTakenRowHtml(idx), "การดำเนินการ");
-    });
-
-    $("btnRptAddEvidence")?.addEventListener("click", () => {
-      const idx = document.querySelectorAll("#rptEvidenceList .rptRepeatCard").length + 1;
-      appendRow(
-        "rptEvidenceList",
-        createSimpleIndexedRowHtml("evidence", idx, "หลักฐาน", "รายละเอียด", "หัวข้อหลักฐาน", "รายละเอียดเพิ่มเติม"),
-        "หลักฐาน"
-      );
-    });
-
-    $("btnRptAddCause")?.addEventListener("click", () => {
-      const idx = document.querySelectorAll("#rptCauseList .rptRepeatCard").length + 1;
-      appendRow(
-        "rptCauseList",
-        createSimpleIndexedRowHtml("cause", idx, "สาเหตุ", "รายละเอียด", "หัวข้อสาเหตุ", "รายละเอียดเพิ่มเติม"),
-        "สาเหตุ"
-      );
-    });
-
-    $("btnRptAddPrevention")?.addEventListener("click", () => {
-      const idx = document.querySelectorAll("#rptPreventionList .rptRepeatCard").length + 1;
-      appendRow(
-        "rptPreventionList",
-        createSimpleIndexedRowHtml("prevention", idx, "การป้องกัน", "รายละเอียด", "หัวข้อการป้องกัน", "รายละเอียดเพิ่มเติม"),
-        "การป้องกัน"
-      );
-    });
-
-    $("btnRptAddLearning")?.addEventListener("click", () => {
-      const idx = document.querySelectorAll("#rptLearningList .rptRepeatCard").length + 1;
-      appendRow(
-        "rptLearningList",
-        createSimpleIndexedRowHtml("learning", idx, "ข้อสรุป/บทเรียน", "รายละเอียด", "หัวข้อข้อสรุป", "รายละเอียดเพิ่มเติม"),
-        "ข้อสรุป/บทเรียน"
-      );
-    });
-
-    $("btnRptAddImage")?.addEventListener("click", () => {
-      const idx = document.querySelectorAll("#rptImageList .rptRepeatCard").length + 1;
-      appendRow("rptImageList", createImageRowHtml(idx), "รูปภาพ");
-    });
-
-    Object.keys(RPT_REPEAT_CONFIG).forEach((listId) => ensureRepeatFooterButton(listId));
-  }
-
-  function normalizeReport500OptionsResponse(json) {
-    const src = (json && typeof json === "object")
-      ? ((json.data && typeof json.data === "object") ? json.data : json)
-      : {};
-
-    const toArray = (v) => Array.isArray(v) ? v : [];
-
-    return {
-      branchList: toArray(src.branchList),
-      reportTypeList: toArray(src.reportTypeList),
-      urgencyList: toArray(src.urgencyList),
-      notifyToList: toArray(src.notifyToList),
-
-      locationList: toArray(src.locationList),
-      whereDidItHappenDefault: norm(src.whereDidItHappenDefault || ""),
-
-      whereTypeList: toArray(src.whereTypeList),
-
-      personPositionList: toArray(src.personPositionList),
-      personDepartmentList: toArray(src.personDepartmentList),
-      personRemarkList: toArray(src.personRemarkList),
-
-      actionTypeList: toArray(src.actionTypeList),
-      alcoholResultList: toArray(src.alcoholResultList),
-
-      reporterPositionList: toArray(src.reporterPositionList),
-      emailList: toArray(src.emailList)
-    };
   }
 
   async function ensureReady() {
@@ -2384,9 +2393,6 @@ function initRepeatFooters() {
 
       state.options = normalizeReport500OptionsResponse(json);
 
-      console.log("Report500 options loaded:", state.options);
-      console.log("Worker debug:", json?.workerDebug || null);
-
       renderSelect("rptBranch", state.options.branchList, true);
       renderOptionMatrix("rptReportTypes", "rptReportTypes", state.options.reportTypeList);
       renderOptionMatrix("rptUrgencyTypes", "rptUrgencyTypes", state.options.urgencyList);
@@ -2401,27 +2407,16 @@ function initRepeatFooters() {
       renderSelect("rptReporterPosition", state.options.reporterPositionList, true);
       renderEmailSelector();
 
-      setReadonlyValue("rptReportedBy", norm(getAuth().name));
-      if ($("rptReportDate")) $("rptReportDate").value = todayIsoLocal();
-      if ($("rptIncidentDate")) $("rptIncidentDate").value = todayIsoLocal();
-
       bindOtherSelect("rptBranch", "rptBranchOtherWrap", "rptBranchOther");
       bindOtherSelect("rptReporterPosition", "rptReporterPositionOtherWrap", "rptReporterPositionOther");
 
       bindTopButtons();
-bindLookupButtons();
-resetForm();
-initRepeatFooters();
+      bindLookupButtons();
+      resetForm();
+      initRepeatFooters();
+      initReport500RevisionHooks_();
 
-state.ready = true;
-    } catch (err) {
-      console.error("Report500 ensureReady error:", err);
-
-      await Swal.fire({
-        icon: "error",
-        title: "โหลดตัวเลือกไม่สำเร็จ",
-        text: err?.message || String(err)
-      });
+      state.ready = true;
     } finally {
       state.loading = false;
     }
@@ -2431,6 +2426,31 @@ state.ready = true;
     ensureReady,
     preview,
     submit,
-    reset: resetForm
+    reset: resetForm,
+
+    collectPayload,
+    getRepeatConfig,
+    ensureRepeatFooterButton,
+    refreshSingleCardUi
   };
+
+  window.Report500Module = window.Report500Module || {};
+  window.Report500Module.ensureReady = ensureReady;
+  window.Report500Module.preview = preview;
+  window.Report500Module.submit = submit;
+  window.Report500Module.reset = resetForm;
+  window.Report500Module.collectPayload = collectPayload;
+  window.Report500Module.getRepeatConfig = getRepeatConfig;
+  window.Report500Module.ensureRepeatFooterButton = ensureRepeatFooterButton;
+  window.Report500Module.refreshSingleCardUi = refreshSingleCardUi;
+  window.Report500Module.RPT_REPEAT_CONFIG = RPT_REPEAT_CONFIG;
+  window.Report500Module.initReport500RevisionHooks = initReport500RevisionHooks_;
+  window.Report500Module.resetReport500RevisionUiState = resetReport500RevisionUiState_;
+  window.Report500Module.getReport500RevisionMeta = getReport500RevisionMeta_;
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", ensureReady);
+  } else {
+    ensureReady();
+  }
 })();
