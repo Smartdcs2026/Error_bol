@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>ฟอร์มบันทึก Error_BOL / Report - S&amp;LP</title>
+  <title>ฟอร์มบันทึก Error_BOL / Report- S&amp;LP</title>
 
   <link rel="icon" type="image/png" sizes="16x16" href="./assets/favicon-16.png">
   <link rel="icon" type="image/png" sizes="32x32" href="./assets/favicon-32.png">
@@ -57,7 +57,7 @@
           loading="eager"
         >
         <h1>เข้าสู่ระบบ</h1>
-        <p>ฟอร์ม Error_BOL และ Report</p>
+        <p>ฟอร์มError_BOL และ Report</p>
       </div>
 
       <div class="loginForm">
@@ -73,46 +73,6 @@
 
     <!-- ERROR_BOL -->
     <section id="formCard" class="card hidden">
-      <div class="revisionPanel" id="errorBolRevisionPanel">
-        <div class="revisionPanelHead">
-          <div>
-            <div class="revisionPanelTitle">แก้ไขรายงานเดิม</div>
-            <div class="revisionPanelSub">โหลดข้อมูลจาก Ref เดิมเพื่อแก้ไข และระบบจะสร้าง Rev ใหม่อัตโนมัติ</div>
-          </div>
-          <div id="errorBolEditBadge" class="revisionBadge hidden">โหมดแก้ไข</div>
-        </div>
-
-        <div class="revisionPanelBody">
-          <div class="revisionRefRow">
-            <div class="field">
-              <label for="errorBolLoadRefNo">Ref เดิม (Error_BOL)</label>
-              <input
-                id="errorBolLoadRefNo"
-                type="text"
-                inputmode="numeric"
-                placeholder="เช่น 123-2569"
-                autocomplete="off"
-              >
-            </div>
-
-            <div class="revisionActionGroup">
-              <button id="btnLoadErrorBolRef" class="btn secondary" type="button">โหลดข้อมูล</button>
-              <button id="btnResetErrorBolRevision" class="btn ghost" type="button">สร้างใหม่</button>
-            </div>
-          </div>
-
-          <div id="errorBolRevisionHint" class="revisionHint">
-            หากกรอก Ref เดิมแล้วกดโหลด ระบบจะดึงข้อมูลฉบับล่าสุดกลับขึ้นมาให้แก้ไข
-          </div>
-
-          <input type="hidden" id="errorBolEditMode" value="new">
-          <input type="hidden" id="errorBolBaseRecordId" value="">
-          <input type="hidden" id="errorBolPreviousRecordId" value="">
-          <input type="hidden" id="errorBolRecordId" value="">
-          <input type="hidden" id="errorBolRevisionNo" value="">
-        </div>
-      </div>
-
       <div class="sectionTitle">
         <span class="dot"></span>
         <div>
@@ -139,7 +99,11 @@
               <select id="refYear"></select>
             </div>
           </div>
-
+          <div class="inlineEditTools">
+  <button type="button" id="btnLoadRefForEdit" class="btn ghost">เรียกข้อมูลมาแก้ไข</button>
+  <button type="button" id="btnCancelEditMode" class="btn ghost hidden">ยกเลิกโหมดแก้ไข</button>
+  <span id="editModeBadge" class="editModeBadge hidden"></span>
+</div>
           <div class="field">
             <label for="lps">ชื่อผู้เข้าใช้งาน</label>
             <input id="lps" placeholder="ระบบแสดงอัตโนมัติหลังเข้าสู่ระบบ" readonly>
@@ -330,54 +294,16 @@
 
     <!-- REPORT500 -->
     <section id="under500Card" class="card hidden">
-      <div class="revisionPanel revisionPanelRpt" id="report500RevisionPanel">
-        <div class="revisionPanelHead">
-          <div>
-            <div class="revisionPanelTitle">แก้ไขรายงานเดิม</div>
-            <div class="revisionPanelSub">โหลดข้อมูล Report จาก Ref เดิมเพื่อแก้ไข และระบบจะสร้าง Rev ใหม่อัตโนมัติ</div>
-          </div>
-          <div id="report500EditBadge" class="revisionBadge hidden">โหมดแก้ไข</div>
-        </div>
-
-        <div class="revisionPanelBody">
-          <div class="revisionRefRow">
-            <div class="field">
-              <label for="report500LoadRefNo">Ref เดิม (Report)</label>
-              <input
-                id="report500LoadRefNo"
-                type="text"
-                inputmode="numeric"
-                placeholder="เช่น 456-2569"
-                autocomplete="off"
-              >
-            </div>
-
-            <div class="revisionActionGroup">
-              <button id="btnLoadReport500Ref" class="btn secondary" type="button">โหลดข้อมูล</button>
-              <button id="btnResetReport500Revision" class="btn ghost" type="button">สร้างใหม่</button>
-            </div>
-          </div>
-
-          <div id="report500RevisionHint" class="revisionHint">
-            เมื่อโหลดสำเร็จ ระบบจะใช้ข้อมูลฉบับล่าสุดของ Ref นี้ในการแก้ไข
-          </div>
-
-          <input type="hidden" id="report500EditMode" value="new">
-          <input type="hidden" id="report500BaseRecordId" value="">
-          <input type="hidden" id="report500PreviousRecordId" value="">
-          <input type="hidden" id="report500RecordId" value="">
-          <input type="hidden" id="report500RevisionNo" value="">
-        </div>
-      </div>
-
       <div class="sectionTitle rptTitle">
         <span class="dot rptDot"></span>
         <div>
           <div class="sectionMain">Report</div>
           <div class="sectionSub">แบบฟอร์มรายงานเหตุการณ์</div>
         </div>
+       
+        
       </div>
-
+    
       <div class="sectionTitle rptTitle">
         <span class="dot rptDot"></span>
         <div>
@@ -418,11 +344,11 @@
         <span class="dot rptDot"></span>
         <div>
           <div class="sectionMain">เครื่องมือช่วยค้นหา</div>
+         
           <div class="sectionSub">ค้นหาวินัยและค้นหา Item เพื่อช่วยจัดทำรายงาน</div>
         </div>
       </div>
-
-      <div class="panel rptPanel">
+    <div class="panel rptPanel">
         <div class="rptUtilityBar">
           <button id="btnRptDisciplineLookup" class="btn ghost" type="button">ค้นหาวินัย</button>
           <button id="btnRptItemLookup" class="btn ghost" type="button">ค้นหา Item</button>
@@ -440,7 +366,7 @@
           </div>
         </div>
       </div>
-
+      
       <div class="sectionTitle rptTitle">
         <span class="dot rptDot"></span>
         <div>
@@ -448,6 +374,7 @@
           <div class="sectionSub">ประเภทรายงาน ระดับความเร่งด่วน และผู้รับทราบ</div>
         </div>
       </div>
+
 
       <div class="panel rptPanel">
         <div class="field">
@@ -704,7 +631,7 @@
           <button id="btnRptEmailClearAll" class="btn ghost" type="button">ล้างทั้งหมด</button>
         </div>
 
-        <div id="rptEmailSelector" class="emailSelector"></div>
+        <div id="rptEmailSelector" class="checkList"></div>
 
         <div class="field fieldBlock">
           <label for="rptEmailOther">อีเมลเพิ่มเติม</label>
@@ -860,17 +787,16 @@
     </div>
   </div>
 
-  <!-- Libraries -->
+  <!-- Fabric.js CDN -->
   <script src="https://cdn.jsdelivr.net/npm/fabric@5.3.0/dist/fabric.min.js"></script>
 
-  <!-- Core scripts -->
+  <!-- Shared image editor -->
   <script src="./image-editor.js?v=1"></script>
-  <script src="./report500.js?v=progress-ui-3"></script>
-  <script src="./app.js?v=progress-ui-2"></script>
 
-  <!-- Revision scripts -->
-  <script src="./revision-ui.js?v=rev-1"></script>
-  <script src="./errorbol-revision.js?v=rev-1"></script>
-  <script src="./report500-revision.js?v=rev-1"></script>
+  <!-- Report script -->
+  <script src="./report500.js?v=progress-ui-3"></script>
+
+  <!-- Main app -->
+  <script src="./app.js?v=progress-ui-2"></script>
 </body>
 </html>
