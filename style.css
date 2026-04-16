@@ -4432,20 +4432,19 @@ body.img-editor-lock{
   font-weight:900;
 }
 /* =========================================================
-   EDIT MODE / REVISION UI
+   EDIT MODE / REVISION
 ========================================================= */
 .inlineEditTools{
   display:flex;
   gap:8px;
   flex-wrap:wrap;
   align-items:center;
-  margin-top:8px;
 }
 
 .editModeBadge{
   display:inline-flex;
   align-items:center;
-  min-height:38px;
+  min-height:40px;
   padding:0 12px;
   border-radius:999px;
   background:#fff7ed;
@@ -4458,7 +4457,7 @@ body.img-editor-lock{
 }
 
 /* =========================================================
-   REPORT500 REPEAT CARD / COLLAPSE UI
+   REPORT CARD COLLAPSE UI
 ========================================================= */
 .rptRepeaterList{
   display:grid;
@@ -4466,28 +4465,15 @@ body.img-editor-lock{
 }
 
 .rptRepeatCard{
-  border:1.3px solid var(--line);
+  border:1.3px solid #d9e4f1;
   border-radius:18px;
   background:linear-gradient(180deg,#ffffff 0%,#fbfdff 100%);
-  box-shadow:var(--shadow-sm);
+  box-shadow:0 4px 14px rgba(15,23,42,.04);
   overflow:hidden;
-  transition:border-color .18s ease, box-shadow .18s ease, background .18s ease;
-}
-
-.rptRepeatCard:hover{
-  border-color:#c8d9ef;
 }
 
 .rptRepeatCard.is-collapsed .rptCardBody{
   display:none;
-}
-
-.rptRepeatCard.is-collapsed .rptToggleBtn::before{
-  transform:rotate(-90deg);
-}
-
-.rptRepeatCard .rptCardBody{
-  padding:12px 12px 14px;
 }
 
 .rptCardHead{
@@ -4495,21 +4481,15 @@ body.img-editor-lock{
   align-items:flex-start;
   justify-content:space-between;
   gap:10px;
-  padding:12px 12px 10px;
+  padding:12px;
   background:linear-gradient(180deg,#f9fbff 0%,#f3f8ff 100%);
   border-bottom:1px solid #e5edf8;
   cursor:pointer;
-  user-select:none;
-}
-
-.rptCardHead:focus{
-  outline:none;
-  box-shadow:inset 0 0 0 2px rgba(37,99,235,.14);
 }
 
 .rptCardHeadMain{
-  min-width:0;
   flex:1 1 auto;
+  min-width:0;
 }
 
 .rptCardTitleRow{
@@ -4517,14 +4497,13 @@ body.img-editor-lock{
   align-items:center;
   gap:8px;
   flex-wrap:wrap;
-  min-width:0;
 }
 
 .rptCardTitle{
   font-size:13px;
   font-weight:900;
+  color:#0f172a;
   line-height:1.2;
-  color:var(--text);
 }
 
 .rptCardSummary{
@@ -4532,46 +4511,11 @@ body.img-editor-lock{
   font-size:12px;
   line-height:1.45;
   color:#64748b;
-  min-height:18px;
   word-break:break-word;
 }
 
-.rptCardHeadActions{
-  flex:0 0 auto;
-  display:flex;
-  align-items:center;
-}
-
-.rptToggleBtn{
-  width:36px;
-  height:36px;
-  border:none;
-  border-radius:12px;
-  background:#ffffff;
-  border:1px solid #dbe6f7;
-  box-shadow:0 2px 8px rgba(15,23,42,.04);
-  cursor:pointer;
-  position:relative;
-  transition:background .18s ease, border-color .18s ease, transform .18s ease;
-}
-
-.rptToggleBtn:hover{
-  background:#f8fbff;
-  border-color:#bfd1e6;
-}
-
-.rptToggleBtn::before{
-  content:"⌃";
-  position:absolute;
-  inset:0;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  color:#1d4ed8;
-  font-size:15px;
-  font-weight:900;
-  transform:rotate(0deg);
-  transition:transform .18s ease;
+.rptCardBody{
+  padding:12px;
 }
 
 .rptCardStatus{
@@ -4582,11 +4526,9 @@ body.img-editor-lock{
   border-radius:999px;
   font-size:11px;
   font-weight:900;
-  line-height:1;
   border:1px solid #e2e8f0;
   background:#f8fafc;
   color:#64748b;
-  white-space:nowrap;
 }
 
 .rptCardStatus.is-complete{
@@ -4607,31 +4549,40 @@ body.img-editor-lock{
   color:#64748b;
 }
 
-/* =========================================================
-   REPORT500 REPEATER SPACING
-========================================================= */
-.rptRepeaterList .panelActions{
+.rptCardHeadActions{
+  flex:0 0 auto;
+}
+
+.rptToggleBtn{
+  width:36px;
+  height:36px;
+  border:none;
+  border-radius:12px;
+  background:#fff;
+  border:1px solid #dbe6f7;
+  position:relative;
+  cursor:pointer;
+}
+
+.rptToggleBtn::before{
+  content:"⌃";
+  position:absolute;
+  inset:0;
   display:flex;
-  justify-content:flex-end;
   align-items:center;
-  gap:8px;
-  flex-wrap:wrap;
+  justify-content:center;
+  color:#1d4ed8;
+  font-size:15px;
+  font-weight:900;
+  transition:transform .18s ease;
 }
 
-.rptRepeaterList .field{
-  min-width:0;
-}
-
-.rptRepeaterList textarea{
-  min-height:88px;
-}
-
-.rptRepeaterList .gridCompact{
-  align-items:start;
+.rptRepeatCard.is-collapsed .rptToggleBtn::before{
+  transform:rotate(-90deg);
 }
 
 /* =========================================================
-   LOOKUP SUMMARY BAR
+   LOOKUP SUMMARY
 ========================================================= */
 .rptLookupSummary{
   margin-top:12px;
@@ -4654,14 +4605,13 @@ body.img-editor-lock{
 .rptLookupSummaryTitle{
   font-size:13px;
   font-weight:900;
-  line-height:1.2;
 }
 
 .rptLookupSummaryMeta{
   margin-top:4px;
   font-size:12px;
   color:#64748b;
-  line-height:1.4;
+  line-height:1.45;
   word-break:break-word;
 }
 
@@ -4672,26 +4622,26 @@ body.img-editor-lock{
 }
 
 /* =========================================================
-   MOBILE TUNING
+   MOBILE
 ========================================================= */
 @media (max-width: 768px){
   .inlineEditTools{
-    margin-top:10px;
+    margin-top:2px;
   }
 
   .editModeBadge{
-    min-height:34px;
-    padding:0 10px;
+    min-height:36px;
     font-size:11px;
+    padding:0 10px;
   }
 
   .rptCardHead{
-    padding:10px 10px 9px;
+    padding:10px;
     gap:8px;
   }
 
   .rptCardBody{
-    padding:10px 10px 12px;
+    padding:10px;
   }
 
   .rptCardTitle{
@@ -4700,31 +4650,17 @@ body.img-editor-lock{
 
   .rptCardSummary{
     font-size:11px;
-    margin-top:6px;
   }
 
   .rptCardStatus{
     min-height:24px;
-    padding:3px 9px;
     font-size:10px;
+    padding:3px 9px;
   }
 
   .rptToggleBtn{
     width:34px;
     height:34px;
-    border-radius:11px;
-  }
-
-  .rptLookupSummary{
-    padding:10px 12px;
-  }
-
-  .rptLookupSummaryTitle{
-    font-size:12px;
-  }
-
-  .rptLookupSummaryMeta{
-    font-size:11px;
   }
 }
 
@@ -4739,20 +4675,8 @@ body.img-editor-lock{
   }
 
   .editModeBadge{
+    width:100%;
     justify-content:center;
-    width:100%;
-  }
-
-  .rptCardTitleRow{
-    gap:6px;
-  }
-
-  .rptCardTitle{
-    width:100%;
-  }
-
-  .rptCardStatus{
-    order:3;
   }
 
   .rptLookupSummary{
