@@ -8348,22 +8348,7 @@ let ITEM_LOOKUP_STATE = {
 const ITEM_LOCAL_CACHE = new Map();
 let itemLookupTimer = null;
 const EDITED_UPLOAD_STORE = new WeakMap();
-const ERROR_BOL_REVISION_HOOKS = {
-  initialized: false
-};
 
-function initErrorBolRevisionHooks_() {
-  if (ERROR_BOL_REVISION_HOOKS.initialized) return;
-  ERROR_BOL_REVISION_HOOKS.initialized = true;
-
-  try {
-    if (window.ErrorBolRevision && typeof window.ErrorBolRevision.init === "function") {
-      window.ErrorBolRevision.init();
-    }
-  } catch (err) {
-    console.error("initErrorBolRevisionHooks_ error:", err);
-  }
-}
 function buildEditedImageBadgeHtml(file) {
   const sizeKb = file?.size ? Math.round(file.size / 1024) : 0;
   return `ไฟล์แก้ไขแล้ว: ${file?.name || "edited-image.jpg"} (${sizeKb} KB)`;
@@ -9564,10 +9549,6 @@ function collectPayload() {
     confirmCauseSelected: getSelectedConfirmCausesForNarrative(),
     confirmCauseOther: p.confirmCauseOther,
     itemDisplay: p.itemDisplay
-      const revisionMeta = getErrorBolRevisionMeta_();
-  payload.editMode = revisionMeta.editMode || "new";
-  payload.revisionMeta = revisionMeta;
-  payload.refNo = payload.refNo || revisionMeta.refNo || "";
   });
   return p;
 }
@@ -10320,51 +10301,3 @@ function bindResultActionButtons_(pdfUrl) {
     });
   }
 }
-
-function resetErrorBolRevisionUiState_(options) {
-  try {
-    if (window.ErrorBolRevision && typeof window.ErrorBolRevision.reset === "function") {
-      window.ErrorBolRevision.reset(options || {});
-    }
-  } catch (err) {
-    console.error("resetErrorBolRevisionUiState_ error:", err);
-  }
-}
-
-function getErrorBolRevisionMeta_() {
-  try {
-    if (window.ErrorBolRevision && typeof window.ErrorBolRevision.buildRevisionMeta === "function") {
-      return window.ErrorBolRevision.buildRevisionMeta();
-    }
-  } catch (err) {
-    console.error("getErrorBolRevisionMeta_ error:", err);
-  }
-  return {
-    editMode: "new",
-    isRevision: false,
-    refNo: "",
-    recordId: "",
-    baseRecordId: "",
-    previousRecordId: "",
-    revisionNo: "",
-    revisionLabel: "",
-    existingAssets: {
-      imageIds: [],
-      supervisorSignImageId: "",
-      employeeSignImageId: "",
-      interpreterSignImageId: "",
-      pdfFileId: "",
-      pdfUrl: ""
-    }
-  };
-}
-
-if (document.readyState === "loading") {
-  document.addEventListener("DOMContentLoaded", initErrorBolRevisionHooks_);
-} else {
-  initErrorBolRevisionHooks_();
-}
-  resetErrorBolRevisionUiState_({ keepInput: false, showNewBadge: false });
-window.getErrorBolRevisionMeta = getErrorBolRevisionMeta_;
-window.resetErrorBolRevisionUiState = resetErrorBolRevisionUiState_;
-window.initErrorBolRevisionHooks = initErrorBolRevisionHooks_;
