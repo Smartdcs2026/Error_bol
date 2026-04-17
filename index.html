@@ -16,7 +16,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-  <link rel="stylesheet" href="./style.css?v=mobile-2col-v5">
+  <link rel="stylesheet" href="./style.css?v=edit-ref-ui-1">
 </head>
 <body>
   <header class="topbar">
@@ -57,7 +57,7 @@
           loading="eager"
         >
         <h1>เข้าสู่ระบบ</h1>
-        <p>ฟอร์มError_BOL และ Report</p>
+        <p>ฟอร์ม Error_BOL และ Report</p>
       </div>
 
       <div class="loginForm">
@@ -104,8 +104,53 @@
             <label for="lps">ชื่อผู้เข้าใช้งาน</label>
             <input id="lps" placeholder="ระบบแสดงอัตโนมัติหลังเข้าสู่ระบบ" readonly>
           </div>
+
+          <div class="field">
+            <label>&nbsp;</label>
+            <button id="btnOpenErrorBolEditInline" type="button" class="btn ghost wide btnEditRefInline">
+              แก้ไข Ref
+            </button>
+          </div>
         </div>
       </div>
+
+      <div id="errorBolEditTools" class="panel editToolsPanel hidden">
+        <div class="editToolsHead">
+          <div class="editToolsHeadText">
+            <div class="editToolsTitle">แก้ไขข้อมูลเดิม</div>
+            <div class="editToolsSub">ดึงข้อมูลจาก Ref เดิมกลับมาแก้ไขในฟอร์ม Error_BOL เดิม</div>
+          </div>
+        </div>
+
+        <div id="errorBolEditPanel" class="editInlineBar hidden">
+          <div class="gridCompact">
+            <div class="field">
+              <label for="errorBolEditRefInput">Ref ที่ต้องการแก้ไข</label>
+              <input
+                id="errorBolEditRefInput"
+                type="text"
+                placeholder="เช่น 123-2569"
+                autocomplete="off"
+              >
+              <div class="fieldHint">ระบบจะดึงข้อมูลล่าสุดของ Ref นี้กลับมาเติมในฟอร์ม</div>
+            </div>
+
+            <div class="field">
+              <label>&nbsp;</label>
+              <div class="panelActions editInlineActions">
+                <button id="btnLoadErrorBolForEdit" type="button" class="btn primary">ดึงข้อมูล</button>
+                <button id="btnCancelErrorBolEdit" type="button" class="btn ghost">ยกเลิก</button>
+              </div>
+            </div>
+
+            <div class="field fieldSpan2">
+              <div id="errorBolEditStatus" class="editStatusBox hidden"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="errorBolEditModeBadge" class="editModeBadge hidden"></div>
 
       <div class="sectionTitle">
         <span class="dot"></span>
@@ -296,10 +341,8 @@
           <div class="sectionMain">Report</div>
           <div class="sectionSub">แบบฟอร์มรายงานเหตุการณ์</div>
         </div>
-       
-        
       </div>
-    
+
       <div class="sectionTitle rptTitle">
         <span class="dot rptDot"></span>
         <div>
@@ -333,18 +376,63 @@
             <label for="rptSubject">เรื่อง</label>
             <input id="rptSubject" placeholder="กรอกหัวข้อเรื่องของรายงาน">
           </div>
+
+          <div class="field">
+            <label>&nbsp;</label>
+            <button id="btnOpenReportEditInline" type="button" class="btn ghost wide btnEditRefInline">
+              แก้ไข Ref
+            </button>
+          </div>
         </div>
       </div>
+
+      <div id="reportEditTools" class="panel editToolsPanel hidden">
+        <div class="editToolsHead">
+          <div class="editToolsHeadText">
+            <div class="editToolsTitle">แก้ไขข้อมูลเดิม</div>
+            <div class="editToolsSub">ดึงข้อมูลจาก Ref เดิมกลับมาแก้ไขในฟอร์ม Report เดิม</div>
+          </div>
+        </div>
+
+        <div id="reportEditPanel" class="editInlineBar hidden">
+          <div class="gridCompact">
+            <div class="field">
+              <label for="reportEditRefInput">Ref ที่ต้องการแก้ไข</label>
+              <input
+                id="reportEditRefInput"
+                type="text"
+                placeholder="เช่น 123-2569"
+                autocomplete="off"
+              >
+              <div class="fieldHint">ระบบจะดึงข้อมูลล่าสุดของ Ref นี้กลับมาเติมในฟอร์ม Report</div>
+            </div>
+
+            <div class="field">
+              <label>&nbsp;</label>
+              <div class="panelActions editInlineActions">
+                <button id="btnLoadReportForEdit" type="button" class="btn primary">ดึงข้อมูล</button>
+                <button id="btnCancelReportEdit" type="button" class="btn ghost">ยกเลิก</button>
+              </div>
+            </div>
+
+            <div class="field fieldSpan2">
+              <div id="reportEditStatus" class="editStatusBox hidden"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="reportEditModeBadge" class="editModeBadge hidden"></div>
 
       <div class="sectionTitle rptTitle">
         <span class="dot rptDot"></span>
         <div>
           <div class="sectionMain">เครื่องมือช่วยค้นหา</div>
-         
           <div class="sectionSub">ค้นหาวินัยและค้นหา Item เพื่อช่วยจัดทำรายงาน</div>
         </div>
       </div>
-    <div class="panel rptPanel">
+
+      <div class="panel rptPanel">
         <div class="rptUtilityBar">
           <button id="btnRptDisciplineLookup" class="btn ghost" type="button">ค้นหาวินัย</button>
           <button id="btnRptItemLookup" class="btn ghost" type="button">ค้นหา Item</button>
@@ -362,7 +450,7 @@
           </div>
         </div>
       </div>
-      
+
       <div class="sectionTitle rptTitle">
         <span class="dot rptDot"></span>
         <div>
@@ -370,7 +458,6 @@
           <div class="sectionSub">ประเภทรายงาน ระดับความเร่งด่วน และผู้รับทราบ</div>
         </div>
       </div>
-
 
       <div class="panel rptPanel">
         <div class="field">
