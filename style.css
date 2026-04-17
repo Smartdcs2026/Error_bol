@@ -279,8 +279,7 @@ textarea{
 
 .loginHero{
   padding:20px 20px 14px;
-  background:
-    linear-gradient(180deg,#ffffff 0%,#f8fbff 100%);
+  background:linear-gradient(180deg,#ffffff 0%,#f8fbff 100%);
   border-bottom:1px solid #e5edf8;
   display:grid;
   gap:12px;
@@ -511,6 +510,18 @@ input[type="time"]{
   box-shadow:var(--shadow-sm);
 }
 
+.btn.danger{
+  background:linear-gradient(180deg,#ef4444,#dc2626);
+  color:#fff;
+  border:1px solid transparent;
+  box-shadow:0 8px 20px rgba(220,38,38,.18);
+}
+
+.btn.danger:hover{
+  transform:translateY(-1px);
+  box-shadow:0 10px 24px rgba(220,38,38,.22);
+}
+
 .actions{
   display:grid;
   grid-template-columns:repeat(2,minmax(0,1fr));
@@ -724,6 +735,14 @@ input[type="time"]{
   gap:8px;
 }
 
+.optionChoiceOther,
+.rptWhereTypeSuffixWrap,
+.rptWhereTypeRow .field,
+.rptWhereTypeRow .optionChoiceOther{
+  grid-column:1 / -1;
+  width:100%;
+}
+
 /* =========================
    UPLOAD
 ========================= */
@@ -775,8 +794,7 @@ input[type="time"]{
 ========================= */
 .rptRepeaterList{
   display:grid;
-  grid-template-columns:repeat(2,minmax(0,1fr));
-  gap:10px;
+  gap:12px;
 }
 
 .rptRepeaterList:empty{
@@ -786,10 +804,11 @@ input[type="time"]{
 .rptBlock,
 .rptRepeatCard{
   background:#fff;
-  border:1.3px solid var(--line);
-  border-radius:15px;
+  border:1.25px solid #d8e5f6;
+  border-radius:18px;
   padding:11px;
-  box-shadow:var(--shadow-sm);
+  box-shadow:0 6px 18px rgba(15,23,42,.05);
+  overflow:hidden;
 }
 
 .rptRepeatCard .field + .field,
@@ -814,6 +833,222 @@ input[type="time"]{
   padding:8px 12px;
   font-size:12px;
   border-radius:12px;
+}
+
+.rptRepeatCard.is-collapsed .rptCardBody{
+  display:none;
+}
+
+.rptRepeatCard.is-complete{
+  border-color:#b7e3c5;
+  box-shadow:0 6px 18px rgba(22,163,74,.08);
+}
+
+.rptRepeatCard.is-partial{
+  border-color:#f4d29c;
+  box-shadow:0 6px 18px rgba(217,119,6,.08);
+}
+
+.rptRepeatCard.is-empty{
+  border-color:#d8e5f6;
+}
+
+.rptCardHead{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:12px;
+  padding:12px 14px;
+  background:linear-gradient(180deg,#f8fbff 0%,#f2f7ff 100%);
+  border-bottom:1px solid #e3edf9;
+  cursor:pointer;
+}
+
+.rptCardHeadMain{
+  min-width:0;
+  flex:1 1 auto;
+  display:grid;
+  gap:6px;
+}
+
+.rptCardTitleRow{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  flex-wrap:wrap;
+}
+
+.rptCardTitle{
+  font-size:13px;
+  font-weight:900;
+  color:#0f172a;
+  line-height:1.25;
+}
+
+.rptRowIndex{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-width:34px;
+  height:30px;
+  padding:0 10px;
+  border-radius:999px;
+  background:#eef4ff;
+  color:#1d4ed8;
+  border:1px solid #d8e5fb;
+  font-size:11px;
+  font-weight:900;
+}
+
+.rptCardStatus{
+  display:inline-flex;
+  align-items:center;
+  min-height:24px;
+  padding:3px 9px;
+  border-radius:999px;
+  font-size:10.5px;
+  font-weight:900;
+  border:1px solid #d9e4f1;
+  color:#475569;
+  background:#f8fbff;
+}
+
+.rptRepeatCard.is-complete .rptCardStatus{
+  background:#ecfdf3;
+  border-color:#b7e3c5;
+  color:#15803d;
+}
+
+.rptRepeatCard.is-partial .rptCardStatus{
+  background:#fff7ed;
+  border-color:#f4d29c;
+  color:#b45309;
+}
+
+.rptCardSummary{
+  min-height:18px;
+  color:#475569;
+  font-size:11.5px;
+  line-height:1.45;
+  word-break:break-word;
+}
+
+.rptCardHeadActions{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  flex:0 0 auto;
+}
+
+.rptToggleBtn{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-width:38px;
+  height:38px;
+  border:none;
+  border-radius:12px;
+  background:#ffffff;
+  border:1px solid #d8e5fb;
+  color:#1d4ed8;
+  font-size:18px;
+  font-weight:900;
+  box-shadow:0 3px 10px rgba(15,23,42,.05);
+  cursor:pointer;
+}
+
+.rptRepeatCard.is-collapsed .rptToggleBtn::before{
+  content:"+";
+}
+
+.rptRepeatCard:not(.is-collapsed) .rptToggleBtn::before{
+  content:"−";
+}
+
+.rptCardBody{
+  padding:14px;
+}
+
+.rptCardBody .panelActions{
+  justify-content:flex-end;
+  margin-top:12px;
+}
+
+.rptCardFooterActions{
+  display:flex;
+  flex-wrap:wrap;
+  justify-content:flex-end;
+  gap:8px;
+  margin-top:12px;
+}
+
+/* =========================
+   REPORT500 EMPTY / ADD BUTTON
+========================= */
+.rptRepeatAddBottom{
+  display:flex;
+  justify-content:center;
+  margin-top:12px;
+}
+
+.rptRepeatAddBottom.hidden{
+  display:none !important;
+}
+
+.rptRepeatAddBottom .btn{
+  width:auto !important;
+}
+
+.rptRepeatAddBottomBtn{
+  min-width:220px;
+  max-width:360px;
+  width:auto !important;
+  padding:12px 18px;
+  border-radius:16px;
+  border:1.2px solid #cfe0f5;
+  background:#f8fbff;
+  color:#16325c;
+  font-weight:900;
+  box-shadow:none;
+}
+
+.rptRepeatAddBottomBtn:hover{
+  background:#eef5ff;
+  border-color:#b8d0ef;
+}
+
+.rptRepeatEmpty{
+  margin-top:2px;
+  padding:14px 16px;
+  border:1px dashed #c6d7ea;
+  border-radius:16px;
+  background:#f8fbff;
+  color:#64748b;
+  font-size:12px;
+  font-weight:800;
+  text-align:center;
+}
+
+.rptListEmpty{
+  margin-top:8px;
+}
+
+.rptEmptyStateBox{
+  text-align:center;
+  border-radius:18px;
+  border:1.3px dashed #c6d7ea !important;
+  background:#f8fbff !important;
+  color:#64748b !important;
+  font-size:12px !important;
+  font-weight:900 !important;
+  line-height:1.6;
+  padding:16px 18px !important;
+}
+
+.rptEmptyStateSub{
+  font-size:11px;
+  color:#94a3b8;
+  font-weight:800;
 }
 
 /* =========================
@@ -1076,1091 +1311,248 @@ input[type="time"]{
 }
 
 /* =========================
-   RESPONSIVE
+   PROGRESS OVERLAY
 ========================= */
-@media (max-width:1080px){
-  .container{
-    padding-inline:10px;
-  }
-
-  .optionMatrix{
-    grid-template-columns:repeat(2,minmax(0,1fr));
-  }
-
-  .galGrid{
-    grid-template-columns:repeat(2,minmax(0,1fr));
-  }
-}
-
-@media (max-width:860px){
-  /* มือถือ/แท็บเล็ตเล็ก: เน้น 2 คอลัมน์เหมือนภาพตัวอย่าง */
-  .gridCompact,
-  .gridEmployee,
-  .emailSelector,
-  .checkList,
-  .confirmCauseGrid,
-  .uploadGrid,
-  .galGrid,
-  .optionMatrix,
-  .rptRepeaterList,
-  .sigGrid,
-  .swalKvGrid{
-    grid-template-columns:repeat(2,minmax(0,1fr));
-    gap:8px 10px;
-  }
-
-  /* Report500: list ที่ข้อมูลแน่น ให้คง 1 คอลัมน์ */
-  #rptPersonList,
-  #rptDamageList,
-  #rptStepTakenList,
-  #rptEvidenceList,
-  #rptCauseList,
-  #rptPreventionList,
-  #rptLearningList,
-  #rptImageList{
-    grid-template-columns:1fr;
-    gap:10px;
-  }
-
-  /* Report500: ช่องกรอกภายใน card ของ list ข้างต้น ให้เป็นแถวละ 1 ช่อง */
-  #rptPersonList .gridCompact,
-  #rptPersonList .gridEmployee,
-  #rptDamageList .gridCompact,
-  #rptDamageList .gridEmployee,
-  #rptStepTakenList .gridCompact,
-  #rptStepTakenList .gridEmployee,
-  #rptEvidenceList .gridCompact,
-  #rptEvidenceList .gridEmployee,
-  #rptCauseList .gridCompact,
-  #rptCauseList .gridEmployee,
-  #rptPreventionList .gridCompact,
-  #rptPreventionList .gridEmployee,
-  #rptLearningList .gridCompact,
-  #rptLearningList .gridEmployee,
-  #rptImageList .gridCompact,
-  #rptImageList .gridEmployee{
-    grid-template-columns:1fr;
-    gap:10px;
-  }
-
-  .actions{
-    grid-template-columns:1fr;
-  }
-
-  .refRow{
-    grid-template-columns:minmax(0,1fr) 16px 92px;
-  }
-
-  .loginHeroLogo{
-    width:190px;
-    max-width:72%;
-  }
-
-  .emailItem,
-  .confirmCauseCard,
-  .optionChoiceCard,
-  .rptRepeatCard,
-  .rptBlock{
-    border-radius:13px;
-  }
-
-  .emailItem,
-  .confirmCauseCard,
-  .optionChoiceCard{
-    min-height:46px;
-    padding:9px 10px;
-  }
-
-  .emailText,
-  .confirmCauseText,
-  .optionChoiceText{
-    font-size:11.5px;
-    line-height:1.35;
-  }
-
-  .emailCheckBox,
-  .confirmCauseMark,
-  .optionChoiceMark{
-    width:17px;
-    height:17px;
-    flex:0 0 17px;
-  }
-
-  .panelActions{
-    gap:8px;
-  }
-
-  .panelActions .btn{
-    flex:1 1 calc(50% - 8px);
-  }
-
-  .gridCompact .fieldSpan2,
-  .gridEmployee .fieldSpan2{
-    grid-column:1 / -1;
-  }
-
-  textarea,
-  .field textarea{
-    min-height:96px;
-  }
-
-  /* ช่องกรอกเพิ่มใต้ตัวเลือก ให้เต็มแถว */
-  .optionChoiceOther,
-  .rptWhereTypeSuffixWrap,
-  .rptWhereTypeRow .field,
-  .rptWhereTypeRow .optionChoiceOther{
-    grid-column:1 / -1;
-    width:100%;
-  }
-}
-
-@media (max-width:640px){
-  :root{
-    --input-h:44px;
-    --radius-card:18px;
-    --radius-panel:15px;
-    --radius-input:13px;
-  }
-
-  .topbar{
-    grid-template-columns:minmax(0,1fr) auto;
-    gap:8px;
-    padding:8px 9px;
-  }
-
-  .brandTextInline{
-    gap:6px;
-  }
-
-  .brandTextInline .subtitle{
-    display:none;
-  }
-
-  .brandTextInline .title{
-    font-size:12px;
-  }
-
-  .tab{
-    min-height:34px;
-    padding:6px 12px;
-    font-size:11px;
-  }
-
-  .container{
-    padding:12px 10px 24px;
-  }
-
-  .card{
-    padding:14px;
-    border-radius:18px;
-  }
-
-  .panel,
-  .emailPanel,
-  .rptPanel{
-    padding:12px;
-    border-radius:15px;
-  }
-
-  .sectionTitle{
-    gap:9px;
-    margin:12px 0 8px;
-    padding-bottom:8px;
-  }
-
-  .sectionMain{
-    font-size:14px;
-  }
-
-  .sectionSub{
-    font-size:10px;
-  }
-
-  /* ยังยืน 2 คอลัมน์ไว้ */
-  .gridCompact,
-  .gridEmployee,
-  .emailSelector,
-  .checkList,
-  .confirmCauseGrid,
-  .uploadGrid,
-  .galGrid,
-  .optionMatrix,
-  .rptRepeaterList,
-  .sigGrid,
-  .swalKvGrid{
-    grid-template-columns:repeat(2,minmax(0,1fr));
-    gap:8px;
-  }
-
-  /* Report500: list ที่ข้อมูลแน่น ให้คง 1 คอลัมน์ */
-  #rptPersonList,
-  #rptDamageList,
-  #rptStepTakenList,
-  #rptEvidenceList,
-  #rptCauseList,
-  #rptPreventionList,
-  #rptLearningList,
-  #rptImageList{
-    grid-template-columns:1fr;
-    gap:10px;
-  }
-
-  /* Report500: ช่องกรอกภายใน card ของ list ข้างต้น ให้เป็นแถวละ 1 ช่อง */
-  #rptPersonList .gridCompact,
-  #rptPersonList .gridEmployee,
-  #rptDamageList .gridCompact,
-  #rptDamageList .gridEmployee,
-  #rptStepTakenList .gridCompact,
-  #rptStepTakenList .gridEmployee,
-  #rptEvidenceList .gridCompact,
-  #rptEvidenceList .gridEmployee,
-  #rptCauseList .gridCompact,
-  #rptCauseList .gridEmployee,
-  #rptPreventionList .gridCompact,
-  #rptPreventionList .gridEmployee,
-  #rptLearningList .gridCompact,
-  #rptLearningList .gridEmployee,
-  #rptImageList .gridCompact,
-  #rptImageList .gridEmployee{
-    grid-template-columns:1fr;
-    gap:10px;
-  }
-
-  .confirmCauseCard,
-  .optionChoiceCard,
-  .emailItem{
-    min-height:44px;
-    padding:8px 9px;
-  }
-
-  label{
-    font-size:11.5px;
-  }
-
-  .fieldHint,
-  .small,
-  .sectionSub{
-    font-size:10.5px;
-  }
-
-  input,
-  select,
-  textarea{
-    font-size:13px;
-    padding:10px 11px;
-  }
-
-  textarea{
-    min-height:88px;
-  }
-
-  .btn{
-    min-height:40px;
-    font-size:13px;
-    border-radius:13px;
-  }
-
-  .panelActions{
-    gap:6px;
-  }
-
-  .panelActions .btn{
-    flex:1 1 100%;
-  }
-
-  .loginHero{
-    padding:18px 16px 12px;
-    gap:10px;
-  }
-
-  .loginHeroLogo{
-    width:170px;
-    max-width:78%;
-  }
-
-  .loginHero h1{
-    font-size:18px;
-  }
-
-  .loginHero p{
-    font-size:13px;
-    line-height:1.55;
-  }
-
-  .loginForm{
-    padding:14px 16px 16px;
-    gap:10px;
-  }
-
-  .topLoginUserWrap{
-    font-size:10px;
-    min-height:26px;
-    padding:4px 8px;
-  }
-}
-
-@media (max-width:480px){
-  /* มือถือเล็กมาก ยังพยายามคง 2 ช่องไว้ */
-  .gridCompact,
-  .gridEmployee,
-  .emailSelector,
-  .checkList,
-  .confirmCauseGrid,
-  .uploadGrid,
-  .galGrid,
-  .optionMatrix,
-  .rptRepeaterList,
-  .sigGrid,
-  .swalKvGrid{
-    grid-template-columns:repeat(2,minmax(0,1fr));
-    gap:7px;
-  }
-
-  /* Report500: list ที่ข้อมูลแน่น ให้คง 1 คอลัมน์ */
-  #rptPersonList,
-  #rptDamageList,
-  #rptStepTakenList,
-  #rptEvidenceList,
-  #rptCauseList,
-  #rptPreventionList,
-  #rptLearningList,
-  #rptImageList{
-    grid-template-columns:1fr;
-    gap:10px;
-  }
-
-  /* Report500: ช่องกรอกภายใน card ของ list ข้างต้น ให้เป็นแถวละ 1 ช่อง */
-  #rptPersonList .gridCompact,
-  #rptPersonList .gridEmployee,
-  #rptDamageList .gridCompact,
-  #rptDamageList .gridEmployee,
-  #rptStepTakenList .gridCompact,
-  #rptStepTakenList .gridEmployee,
-  #rptEvidenceList .gridCompact,
-  #rptEvidenceList .gridEmployee,
-  #rptCauseList .gridCompact,
-  #rptCauseList .gridEmployee,
-  #rptPreventionList .gridCompact,
-  #rptPreventionList .gridEmployee,
-  #rptLearningList .gridCompact,
-  #rptLearningList .gridEmployee,
-  #rptImageList .gridCompact,
-  #rptImageList .gridEmployee{
-    grid-template-columns:1fr;
-    gap:10px;
-  }
-
-  .refRow{
-    grid-template-columns:minmax(0,1fr) 14px 82px;
-    gap:6px;
-  }
-
-  .refDash{
-    font-size:22px;
-  }
-
-  .card{
-    padding:10px;
-  }
-
-  .panel,
-  .emailPanel,
-  .rptPanel{
-    padding:10px;
-  }
-
-  .emailItem,
-  .confirmCauseCard,
-  .optionChoiceCard{
-    min-height:42px;
-    padding:8px 8px;
-  }
-
-  .emailText,
-  .confirmCauseText,
-  .optionChoiceText{
-    font-size:10.8px;
-    line-height:1.3;
-  }
-
-  .swalSection{
-    padding:10px;
-  }
-
-  .swalKv,
-  .swalDesc{
-    padding:8px 9px;
-  }
-}
-
-@media (max-width:380px){
-  /* เล็กมากจริง ๆ ค่อยยุบเป็น 1 คอลัมน์ */
-  .topbar{
-    grid-template-columns:1fr;
-    align-items:flex-start;
-  }
-
-  .tabsInline{
-    width:100%;
-    justify-content:flex-start;
-    overflow:auto;
-    padding-bottom:2px;
-  }
-
-  .brandInline{
-    gap:8px;
-  }
-
-  .logo,
-  .brandLogoImg{
-    width:28px;
-    height:28px;
-    flex-basis:28px;
-  }
-
-  .gridCompact,
-  .gridEmployee,
-  .emailSelector,
-  .checkList,
-  .confirmCauseGrid,
-  .uploadGrid,
-  .galGrid,
-  .optionMatrix,
-  .rptRepeaterList,
-  .sigGrid,
-  .swalKvGrid{
-    grid-template-columns:1fr;
-  }
-
-  /* กลุ่ม Report500 ที่กำหนดไว้ ยังคง 1 คอลัมน์ต่อไป */
-  #rptPersonList,
-  #rptDamageList,
-  #rptStepTakenList,
-  #rptEvidenceList,
-  #rptCauseList,
-  #rptPreventionList,
-  #rptLearningList,
-  #rptImageList,
-  #rptPersonList .gridCompact,
-  #rptPersonList .gridEmployee,
-  #rptDamageList .gridCompact,
-  #rptDamageList .gridEmployee,
-  #rptStepTakenList .gridCompact,
-  #rptStepTakenList .gridEmployee,
-  #rptEvidenceList .gridCompact,
-  #rptEvidenceList .gridEmployee,
-  #rptCauseList .gridCompact,
-  #rptCauseList .gridEmployee,
-  #rptPreventionList .gridCompact,
-  #rptPreventionList .gridEmployee,
-  #rptLearningList .gridCompact,
-  #rptLearningList .gridEmployee,
-  #rptImageList .gridCompact,
-  #rptImageList .gridEmployee{
-    grid-template-columns:1fr;
-    gap:10px;
-  }
-
-  .btn{
-    min-height:38px;
-    padding:8px 12px;
-    font-size:12px;
-  }
-
-  .panelActions .btn{
-    flex:1 1 100%;
-  }
-
-  .loginHero{
-    padding:16px 14px 12px;
-  }
-
-  .loginForm{
-    padding:12px 14px 14px;
-  }
-
-  .loginHeroLogo{
-    width:150px;
-    max-width:82%;
-  }
-
-  .loginHero h1{
-    font-size:17px;
-  }
-
-  .loginHero p{
-    font-size:12px;
-  }
-
-  input,
-  select,
-  textarea{
-    font-size:12.5px;
-  }
-
-  textarea{
-    min-height:82px;
-  }
-}
-
-  /* ช่องกรอกเพิ่มใต้ตัวเลือก ให้เต็มแถว */
-  .optionChoiceOther,
-  .rptWhereTypeSuffixWrap,
-  .rptWhereTypeRow .field,
-  .rptWhereTypeRow .optionChoiceOther{
-    grid-column:1 / -1;
-    width:100%;
-  }
-}
-
-@media (max-width:640px){
-  :root{
-    --input-h:44px;
-    --radius-card:18px;
-    --radius-panel:15px;
-    --radius-input:13px;
-  }
-
-  .topbar{
-    grid-template-columns:minmax(0,1fr) auto;
-    gap:8px;
-    padding:8px 9px;
-  }
-
-  .brandTextInline{
-    gap:6px;
-  }
-
-  .brandTextInline .subtitle{
-    display:none;
-  }
-
-  .brandTextInline .title{
-    font-size:12px;
-  }
-
-  .tab{
-    min-height:34px;
-    padding:6px 12px;
-    font-size:11px;
-  }
-
-  .container{
-    padding:12px 10px 24px;
-  }
-
-  .card{
-    padding:14px;
-    border-radius:18px;
-  }
-
-  .panel,
-  .emailPanel,
-  .rptPanel{
-    padding:12px;
-    border-radius:15px;
-  }
-
-  .sectionTitle{
-    gap:9px;
-    margin:12px 0 8px;
-    padding-bottom:8px;
-  }
-
-  .sectionMain{
-    font-size:14px;
-  }
-
-  .sectionSub{
-    font-size:10px;
-  }
-
-  /* ยังยืน 2 คอลัมน์ไว้ */
-  .gridCompact,
-  .gridEmployee,
-  .emailSelector,
-  .checkList,
-  .confirmCauseGrid,
-  .uploadGrid,
-  .galGrid,
-  .optionMatrix,
-  .rptRepeaterList,
-  .sigGrid,
-  .swalKvGrid{
-    grid-template-columns:repeat(2,minmax(0,1fr));
-    gap:8px;
-  }
-
-  .confirmCauseCard,
-  .optionChoiceCard,
-  .emailItem{
-    min-height:44px;
-    padding:8px 9px;
-  }
-
-  label{
-    font-size:11.5px;
-  }
-
-  .fieldHint,
-  .small,
-  .sectionSub{
-    font-size:10.5px;
-  }
-
-  input,
-  select,
-  textarea{
-    font-size:13px;
-    padding:10px 11px;
-  }
-
-  textarea{
-    min-height:88px;
-  }
-
-  .btn{
-    min-height:40px;
-    font-size:13px;
-    border-radius:13px;
-  }
-
-  .panelActions{
-    gap:6px;
-  }
-
-  .panelActions .btn{
-    flex:1 1 100%;
-  }
-
-  .loginHero{
-    padding:18px 16px 12px;
-    gap:10px;
-  }
-
-  .loginHeroLogo{
-    width:170px;
-    max-width:78%;
-  }
-
-  .loginHero h1{
-    font-size:18px;
-  }
-
-  .loginHero p{
-    font-size:13px;
-    line-height:1.55;
-  }
-
-  .loginForm{
-    padding:14px 16px 16px;
-    gap:10px;
-  }
-
-  .topLoginUserWrap{
-    font-size:10px;
-    min-height:26px;
-    padding:4px 8px;
-  }
-}
-
-@media (max-width:480px){
-  /* มือถือเล็กมาก ยังพยายามคง 2 ช่องไว้ */
-  .gridCompact,
-  .gridEmployee,
-  .emailSelector,
-  .checkList,
-  .confirmCauseGrid,
-  .uploadGrid,
-  .galGrid,
-  .optionMatrix,
-  .rptRepeaterList,
-  .sigGrid,
-  .swalKvGrid{
-    grid-template-columns:repeat(2,minmax(0,1fr));
-    gap:7px;
-  }
-
-  .refRow{
-    grid-template-columns:minmax(0,1fr) 14px 82px;
-    gap:6px;
-  }
-
-  .refDash{
-    font-size:22px;
-  }
-
-  .card{
-    padding:10px;
-  }
-
-  .panel,
-  .emailPanel,
-  .rptPanel{
-    padding:10px;
-  }
-
-  .emailItem,
-  .confirmCauseCard,
-  .optionChoiceCard{
-    min-height:42px;
-    padding:8px 8px;
-  }
-
-  .emailText,
-  .confirmCauseText,
-  .optionChoiceText{
-    font-size:10.8px;
-    line-height:1.3;
-  }
-
-  .swalSection{
-    padding:10px;
-  }
-
-  .swalKv,
-  .swalDesc{
-    padding:8px 9px;
-  }
-}
-
-@media (max-width:380px){
-  /* เล็กมากจริง ๆ ค่อยยุบเป็น 1 คอลัมน์ */
-  .topbar{
-    grid-template-columns:1fr;
-    align-items:flex-start;
-  }
-
-  .tabsInline{
-    width:100%;
-    justify-content:flex-start;
-    overflow:auto;
-    padding-bottom:2px;
-  }
-
-  .brandInline{
-    gap:8px;
-  }
-
-  .logo,
-  .brandLogoImg{
-    width:28px;
-    height:28px;
-    flex-basis:28px;
-  }
-
-  .gridCompact,
-  .gridEmployee,
-  .emailSelector,
-  .checkList,
-  .confirmCauseGrid,
-  .uploadGrid,
-  .galGrid,
-  .optionMatrix,
-  .rptRepeaterList,
-  .sigGrid,
-  .swalKvGrid{
-    grid-template-columns:1fr;
-  }
-
-  .btn{
-    min-height:38px;
-    padding:8px 12px;
-    font-size:12px;
-  }
-
-  .panelActions .btn{
-    flex:1 1 100%;
-  }
-
-  .loginHero{
-    padding:16px 14px 12px;
-  }
-
-  .loginForm{
-    padding:12px 14px 14px;
-  }
-
-  .loginHeroLogo{
-    width:150px;
-    max-width:82%;
-  }
-
-  .loginHero h1{
-    font-size:17px;
-  }
-
-  .loginHero p{
-    font-size:12px;
-  }
-
-  input,
-  select,
-  textarea{
-    font-size:12.5px;
-  }
-
-  textarea{
-    min-height:82px;
-  }
-}
 .progress-overlay{
-  position: fixed;
-  inset: 0;
-  z-index: 99999;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 20px;
-  background: rgba(15, 23, 42, 0.52);
-  backdrop-filter: blur(7px);
+  position:fixed;
+  inset:0;
+  z-index:99999;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:20px;
+  background:rgba(15,23,42,0.52);
+  backdrop-filter:blur(7px);
 }
 
 .progress-overlay.hidden{
-  display: none;
+  display:none;
 }
 
 .progress-card{
-  width: min(100%, 580px);
-  background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
-  border-radius: 24px;
-  box-shadow: 0 24px 70px rgba(15,23,42,.22);
-  border: 1px solid #dbe7f5;
-  padding: 22px 20px 18px;
-  animation: progressPop .22s ease-out;
+  width:min(100%,580px);
+  background:linear-gradient(180deg,#ffffff 0%,#f8fbff 100%);
+  border-radius:24px;
+  box-shadow:0 24px 70px rgba(15,23,42,.22);
+  border:1px solid #dbe7f5;
+  padding:22px 20px 18px;
+  animation:progressPop .22s ease-out;
 }
 
 @keyframes progressPop{
-  from{ transform: translateY(10px) scale(.985); opacity: 0; }
-  to{ transform: translateY(0) scale(1); opacity: 1; }
+  from{ transform:translateY(10px) scale(.985); opacity:0; }
+  to{ transform:translateY(0) scale(1); opacity:1; }
 }
 
 .progress-head{
-  display: flex;
-  gap: 14px;
-  align-items: center;
-  margin-bottom: 14px;
+  display:flex;
+  gap:14px;
+  align-items:center;
+  margin-bottom:14px;
 }
 
 .progress-icon-wrap{
-  width: 54px;
-  height: 54px;
-  border-radius: 18px;
-  background: linear-gradient(135deg, #e8f1ff, #f4f8ff);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex: 0 0 auto;
-  border: 1px solid #d7e5fa;
+  width:54px;
+  height:54px;
+  border-radius:18px;
+  background:linear-gradient(135deg,#e8f1ff,#f4f8ff);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  flex:0 0 auto;
+  border:1px solid #d7e5fa;
 }
 
 .progress-spinner{
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  border: 3px solid #c9daf7;
-  border-top-color: #2563eb;
-  animation: spin 1s linear infinite;
+  width:24px;
+  height:24px;
+  border-radius:50%;
+  border:3px solid #c9daf7;
+  border-top-color:#2563eb;
+  animation:spin 1s linear infinite;
 }
 
 @keyframes spin{
-  to{ transform: rotate(360deg); }
+  to{ transform:rotate(360deg); }
 }
 
 .progress-head-text h3{
-  margin: 0 0 4px;
-  font-size: 20px;
-  line-height: 1.2;
-  color: #0f172a;
+  margin:0 0 4px;
+  font-size:20px;
+  line-height:1.2;
+  color:#0f172a;
 }
 
 .progress-head-text p{
-  margin: 0;
-  color: #475569;
-  font-size: 14px;
+  margin:0;
+  color:#475569;
+  font-size:14px;
 }
 
 .progress-percent-row{
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin: 8px 0 8px;
-  gap: 12px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin:8px 0;
+  gap:12px;
 }
 
 #progressPercentText{
-  font-size: 24px;
-  font-weight: 800;
-  color: #2563eb;
+  font-size:24px;
+  font-weight:800;
+  color:#2563eb;
 }
 
 #progressStepText{
-  font-size: 13px;
-  color: #475569;
-  text-align: right;
+  font-size:13px;
+  color:#475569;
+  text-align:right;
 }
 
 .progress-bar-shell{
-  position: relative;
-  height: 14px;
-  border-radius: 999px;
-  background: #e8eef7;
-  overflow: hidden;
-  margin-bottom: 16px;
-  border: 1px solid #d6e0ee;
+  position:relative;
+  height:14px;
+  border-radius:999px;
+  background:#e8eef7;
+  overflow:hidden;
+  margin-bottom:16px;
+  border:1px solid #d6e0ee;
 }
 
 .progress-bar-fill{
-  position: absolute;
-  inset: 0 auto 0 0;
-  width: 0%;
-  border-radius: inherit;
-  background: linear-gradient(90deg, #2563eb 0%, #3b82f6 45%, #60a5fa 100%);
-  transition: width .35s ease;
+  position:absolute;
+  inset:0 auto 0 0;
+  width:0%;
+  border-radius:inherit;
+  background:linear-gradient(90deg,#2563eb 0%,#3b82f6 45%,#60a5fa 100%);
+  transition:width .35s ease;
 }
 
 .progress-bar-glow{
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  width: 90px;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,.42), transparent);
-  animation: glowMove 1.6s linear infinite;
+  position:absolute;
+  top:0;
+  bottom:0;
+  width:90px;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.42),transparent);
+  animation:glowMove 1.6s linear infinite;
 }
 
 @keyframes glowMove{
-  from{ transform: translateX(-120px); }
-  to{ transform: translateX(700px); }
+  from{ transform:translateX(-120px); }
+  to{ transform:translateX(700px); }
 }
 
 .progress-stage-list{
-  display: grid;
-  gap: 10px;
-  margin-top: 8px;
+  display:grid;
+  gap:10px;
+  margin-top:8px;
 }
 
 .progress-stage{
-  display: grid;
-  grid-template-columns: 16px 1fr auto;
-  gap: 10px;
-  align-items: center;
-  background: #fff;
-  border: 1px solid #e4ebf5;
-  border-radius: 14px;
-  padding: 10px 12px;
+  display:grid;
+  grid-template-columns:16px 1fr auto;
+  gap:10px;
+  align-items:center;
+  background:#fff;
+  border:1px solid #e4ebf5;
+  border-radius:14px;
+  padding:10px 12px;
 }
 
 .stage-dot{
-  width: 12px;
-  height: 12px;
-  border-radius: 999px;
-  background: #cbd5e1;
-  box-shadow: inset 0 0 0 2px #fff;
+  width:12px;
+  height:12px;
+  border-radius:999px;
+  background:#cbd5e1;
+  box-shadow:inset 0 0 0 2px #fff;
 }
 
 .stage-label{
-  color: #0f172a;
-  font-size: 14px;
-  font-weight: 500;
+  color:#0f172a;
+  font-size:14px;
+  font-weight:500;
 }
 
 .stage-status{
-  font-size: 12px;
-  color: #64748b;
-  font-weight: 700;
+  font-size:12px;
+  color:#64748b;
+  font-weight:700;
 }
 
 .progress-stage.active{
-  border-color: #93c5fd;
-  background: #eff6ff;
+  border-color:#93c5fd;
+  background:#eff6ff;
 }
 
 .progress-stage.active .stage-dot{
-  background: #2563eb;
-  animation: pulseDot 1.2s infinite;
+  background:#2563eb;
+  animation:pulseDot 1.2s infinite;
 }
 
 @keyframes pulseDot{
-  0%{ box-shadow: 0 0 0 0 rgba(37,99,235,.35), inset 0 0 0 2px #fff; }
-  70%{ box-shadow: 0 0 0 8px rgba(37,99,235,0), inset 0 0 0 2px #fff; }
-  100%{ box-shadow: 0 0 0 0 rgba(37,99,235,0), inset 0 0 0 2px #fff; }
+  0%{ box-shadow:0 0 0 0 rgba(37,99,235,.35), inset 0 0 0 2px #fff; }
+  70%{ box-shadow:0 0 0 8px rgba(37,99,235,0), inset 0 0 0 2px #fff; }
+  100%{ box-shadow:0 0 0 0 rgba(37,99,235,0), inset 0 0 0 2px #fff; }
 }
 
 .progress-stage.done{
-  border-color: #bbf7d0;
-  background: #f0fdf4;
+  border-color:#bbf7d0;
+  background:#f0fdf4;
 }
 
 .progress-stage.done .stage-dot{
-  background: #16a34a;
+  background:#16a34a;
 }
 
 .progress-stage.done .stage-status{
-  color: #15803d;
+  color:#15803d;
 }
 
 .progress-stage.error{
-  border-color: #fecaca;
-  background: #fef2f2;
+  border-color:#fecaca;
+  background:#fef2f2;
 }
 
 .progress-stage.error .stage-dot{
-  background: #dc2626;
+  background:#dc2626;
 }
 
 .progress-stage.error .stage-status{
-  color: #b91c1c;
+  color:#b91c1c;
 }
 
 .progress-hint{
-  margin-top: 14px;
-  text-align: center;
-  color: #64748b;
-  font-size: 12px;
+  margin-top:14px;
+  text-align:center;
+  color:#64748b;
+  font-size:12px;
 }
 
 .progress-card.success .progress-spinner{
-  animation: none;
-  border: 3px solid #bbf7d0;
-  border-top-color: #16a34a;
+  animation:none;
+  border:3px solid #bbf7d0;
+  border-top-color:#16a34a;
 }
 
 .progress-card.error .progress-spinner{
-  animation: none;
-  border: 3px solid #fecaca;
-  border-top-color: #dc2626;
+  animation:none;
+  border:3px solid #fecaca;
+  border-top-color:#dc2626;
 }
 
 body.progress-lock{
-  overflow: hidden !important;
-}
-
-@media (max-width: 640px){
-  .progress-card{
-    border-radius: 20px;
-    padding: 18px 16px 16px;
-  }
-
-  .progress-head-text h3{
-    font-size: 18px;
-  }
-
-  #progressPercentText{
-    font-size: 22px;
-  }
-
-  .progress-stage{
-    padding: 10px;
-    border-radius: 12px;
-  }
+  overflow:hidden !important;
 }
 
 /* =========================
    IMAGE EDITOR
 ========================= */
-/* =========================
-   IMAGE EDITOR - PRO FLOAT PANEL
-========================= */
+body.img-editor-lock{
+  overflow:hidden !important;
+  touch-action:none;
+  overscroll-behavior:none;
+}
+
 .imgEditorModal{
   position:fixed;
   inset:0;
@@ -2169,12 +1561,14 @@ body.progress-lock{
   align-items:center;
   justify-content:center;
   padding:8px;
+  overscroll-behavior:contain;
+  -webkit-overflow-scrolling:auto;
 }
 
 .imgEditorBackdrop{
   position:absolute;
   inset:0;
-  background:rgba(15,23,42,.58);
+  background:rgba(15,23,42,.62);
   backdrop-filter:blur(6px);
 }
 
@@ -2195,6 +1589,13 @@ body.progress-lock{
   border-radius:24px;
   box-shadow:0 24px 72px rgba(15,23,42,.24);
   overflow:hidden;
+  transform:translateZ(0);
+  will-change:transform, opacity;
+}
+
+.imgEditorModal.is-preparing .imgEditorDialog{
+  opacity:0;
+  pointer-events:none;
 }
 
 /* HEADER */
@@ -2245,6 +1646,8 @@ body.progress-lock{
   padding:12px;
   background:linear-gradient(180deg,#f8fbff 0%,#f1f6ff 100%);
   overflow:hidden;
+  transform:translateZ(0);
+  backface-visibility:hidden;
 }
 
 .imgEditorCanvasWrap{
@@ -2261,6 +1664,8 @@ body.progress-lock{
   background:
     linear-gradient(45deg,#f8fafc 25%,#eef4fb 25%,#eef4fb 50%,#f8fafc 50%,#f8fafc 75%,#eef4fb 75%,#eef4fb 100%);
   background-size:24px 24px;
+  transform:translateZ(0);
+  backface-visibility:hidden;
 }
 
 .imgEditorCanvasWrap canvas{
@@ -2273,6 +1678,11 @@ body.progress-lock{
   max-width:100%;
   max-height:100%;
   flex:0 0 auto;
+}
+
+#imgEditorCanvas{
+  transform:translateZ(0);
+  backface-visibility:hidden;
 }
 
 /* FLOATING PENCIL BUTTON */
@@ -2336,10 +1746,12 @@ body.progress-lock{
   width:10px;
   height:10px;
 }
+
 .ieFloatingPanel::-webkit-scrollbar-thumb{
   background:#c9d8eb;
   border-radius:999px;
 }
+
 .ieFloatingPanel::-webkit-scrollbar-track{
   background:transparent;
 }
@@ -2358,7 +1770,6 @@ body.progress-lock{
   display:block;
 }
 
-/* vertical compact sections */
 .imgEditorToolbarGrid,
 .ieToolbarGridEnhanced{
   width:100%;
@@ -2599,206 +2010,6 @@ body.progress-lock{
   white-space:nowrap;
 }
 
-/* TABLET */
-@media (max-width:1180px){
-  .ieFloatingPanel{
-    width:310px;
-  }
-}
-
-/* MOBILE / TABLET */
-@media (max-width:950px){
-  .imgEditorModal{
-    padding:6px;
-  }
-
-  .imgEditorDialog{
-    width:100%;
-    height:calc(100dvh - 12px);
-    max-height:calc(100dvh - 12px);
-    border-radius:18px;
-  }
-
-  .imgEditorHeader{
-    padding:10px 12px 8px;
-    gap:10px;
-  }
-
-  .imgEditorTitle{
-    font-size:16px;
-  }
-
-  .imgEditorSub{
-    font-size:11px;
-    line-height:1.35;
-  }
-
-  .imgEditorCloseBtn{
-    min-width:58px;
-    min-height:38px;
-    padding:7px 12px;
-    border-radius:12px;
-    font-size:12px;
-  }
-
-  .imgEditorBody{
-    padding:8px;
-  }
-
-  .imgEditorCanvasWrap{
-    min-height:0;
-    height:100%;
-    border-radius:14px;
-  }
-
-  .ieFloatingToggle{
-    top:10px;
-    right:10px;
-    width:44px;
-    height:44px;
-  }
-
-  .ieFloatingPanel{
-    top:58px;
-    right:8px;
-    width:300px;
-    max-width:calc(100% - 16px);
-    max-height:min(50vh,360px);
-    padding:8px;
-    border-radius:16px;
-  }
-
-  .imgEditorToolbar .btn,
-  .ieToolbarSection .btn{
-    min-height:48px;
-    height:48px;
-    font-size:9px;
-  }
-
-  .imgEditorToolbar .btn::before,
-  .ieToolbarSection .btn::before{
-    font-size:15px;
-  }
-
-  .ieButtonGridEffects,
-  .ieButtonGridView,
-  .ieSectionManage .ieButtonGridView{
-    grid-template-columns:repeat(3,minmax(0,1fr));
-  }
-
-  .imgEditorFooter{
-    grid-template-columns:1fr;
-    gap:8px;
-    padding:8px 10px 10px;
-  }
-
-  .imgEditorStatus{
-    font-size:11px;
-  }
-
-  .imgEditorActions{
-    width:100%;
-    grid-template-columns:repeat(4,minmax(0,1fr));
-    gap:6px;
-  }
-
-  .imgEditorActions .btn{
-    width:100%;
-    min-height:38px;
-    height:38px;
-    padding:7px 8px;
-    border-radius:11px;
-    font-size:11px;
-  }
-}
-
-/* SMALL MOBILE */
-@media (max-width:560px){
-  .imgEditorHeader{
-    padding:9px 10px 7px;
-  }
-
-  .imgEditorTitle{
-    font-size:15px;
-  }
-
-  .imgEditorSub{
-    display:none;
-  }
-
-  .imgEditorBody{
-    padding:6px;
-  }
-
-  .ieFloatingToggle{
-    width:40px;
-    height:40px;
-    top:8px;
-    right:8px;
-  }
-
-  .ieFloatingPanel{
-    top:52px;
-    right:8px;
-    width:min(280px,calc(100vw - 16px));
-    max-height:min(48vh,320px);
-    padding:7px;
-    border-radius:14px;
-  }
-
-  .ieToolbarSection{
-    padding:7px;
-    border-radius:13px;
-  }
-
-  .imgEditorToolbar .btn,
-  .ieToolbarSection .btn{
-    min-height:44px;
-    height:44px;
-    padding:4px 3px;
-    border-radius:10px;
-    font-size:8.5px;
-  }
-
-  .imgEditorToolbar .btn::before,
-  .ieToolbarSection .btn::before{
-    font-size:14px;
-  }
-
-  .ieButtonGridEffects,
-  .ieButtonGridView,
-  .ieSectionManage .ieButtonGridView{
-    grid-template-columns:repeat(2,minmax(0,1fr));
-  }
-
-  .imgEditorToolbarWrap .ieField,
-  .ieField{
-    grid-template-columns:34px minmax(0,1fr);
-    min-height:32px;
-    padding:4px 5px;
-    border-radius:10px;
-    font-size:9px;
-    gap:5px;
-  }
-
-  .imgEditorToolbarWrap .ieField input[type="color"],
-  .ieField input[type="color"]{
-    height:20px;
-    min-height:20px;
-  }
-
-  .imgEditorActions{
-    grid-template-columns:repeat(3,minmax(0,1fr));
-  }
-
-  .imgEditorActions .btn{
-    min-height:36px;
-    height:36px;
-    border-radius:10px;
-    font-size:10.5px;
-  }
-}
-
 .btnEditImage{
   min-height:38px;
   padding:8px 14px;
@@ -2806,163 +2017,6 @@ body.progress-lock{
   font-size:12px;
   font-weight:900;
   white-space:nowrap;
-}
-
-@media (max-width:640px){
-  .btnEditImage{
-    min-height:36px;
-    padding:7px 12px;
-    border-radius:11px;
-    font-size:11px;
-  }
-}
-
-/* =========================
-   IMAGE EDITOR - STABILITY PATCH
-========================= */
-
-body.progress-lock,
-body.img-editor-lock{
-  overflow:hidden !important;
-  touch-action:none;
-  overscroll-behavior:none;
-}
-
-.imgEditorModal{
-  overscroll-behavior:contain;
-  -webkit-overflow-scrolling:auto;
-}
-
-.imgEditorDialog{
-  transform:translateZ(0);
-  will-change:transform, opacity;
-}
-
-.imgEditorCanvasWrap,
-.imgEditorBody,
-#imgEditorCanvas{
-  transform:translateZ(0);
-  backface-visibility:hidden;
-}
-
-.imgEditorBackdrop{
-  background:rgba(15,23,42,.62);
-}
-
-/* ซ่อนช่วงกำลังเตรียม canvas เพื่อตัดอาการวาบ */
-.imgEditorModal.is-preparing .imgEditorDialog{
-  opacity:0;
-  pointer-events:none;
-}
-
-@media (max-width: 768px){
-  .imgEditorModal{
-    padding:0;
-  }
-
-  .imgEditorDialog{
-    width:100%;
-    height:100dvh;
-    max-height:100dvh;
-    border-radius:0;
-    border:none;
-    box-shadow:none;
-  }
-
-  .imgEditorBackdrop{
-    backdrop-filter:none;
-    -webkit-backdrop-filter:none;
-  }
-
-  .ieFloatingPanel{
-    background:#ffffff;
-    backdrop-filter:none;
-    -webkit-backdrop-filter:none;
-  }
-}
-
-/* REPORT image row */
-.rptImageActions{
-  display:flex;
-  justify-content:flex-end;
-  gap:8px;
-  margin-top:10px;
-  flex-wrap:wrap;
-}
-
-.rptImagePreviewWrap{
-  margin-top:10px;
-}
-
-.rptImagePreviewEmpty,
-.rptImagePreview{
-  width:100%;
-}
-
-.rptImagePreview{
-  display:block;
-  max-height:260px;
-  object-fit:contain;
-  border-radius:14px;
-  border:1px solid #d9e4f1;
-  background:#fff;
-  padding:6px;
-}
-
-.rptImagePreview.hidden{
-  display:none !important;
-}
-
-.rptImageMeta.is-edited{
-  color:#1d4ed8;
-  font-weight:900;
-}
-
-/* ลด repaint บนมือถือ */
-@media (max-width: 768px){
-  .imgEditorModal{
-    padding:0;
-  }
-
-  .imgEditorDialog{
-    width:100%;
-    height:100dvh;
-    max-height:100dvh;
-    border-radius:0;
-    border:none;
-    box-shadow:none;
-  }
-
-  .imgEditorBackdrop{
-    backdrop-filter:none;
-    -webkit-backdrop-filter:none;
-  }
-
-  .ieFloatingPanel{
-    background:#ffffff;
-    backdrop-filter:none;
-    -webkit-backdrop-filter:none;
-    box-shadow:0 16px 32px rgba(15,23,42,.18);
-    max-height:52vh;
-  }
-
-  .rptImageActions .btn{
-    flex:1 1 calc(50% - 8px);
-  }
-}
-
-@media (max-width: 420px){
-  .rptImageActions .btn{
-    flex:1 1 100%;
-  }
-
-  .imgEditorHeader{
-    padding:10px 12px 10px;
-  }
-
-  .imgEditorFooter{
-    padding:10px 12px;
-  }
 }
 
 /* ===== Image Editor Toolbar Tone ===== */
@@ -3044,14 +2098,50 @@ body.img-editor-lock{
 #ieDeleteBtn:hover{
   background:#fee2e2;
 }
+
+/* REPORT image row */
+.rptImageActions{
+  display:flex;
+  justify-content:flex-end;
+  gap:8px;
+  margin-top:10px;
+  flex-wrap:wrap;
+}
+
+.rptImagePreviewWrap{
+  margin-top:10px;
+}
+
+.rptImagePreviewEmpty,
+.rptImagePreview{
+  width:100%;
+}
+
+.rptImagePreview{
+  display:block;
+  max-height:260px;
+  object-fit:contain;
+  border-radius:14px;
+  border:1px solid #d9e4f1;
+  background:#fff;
+  padding:6px;
+}
+
+.rptImagePreview.hidden{
+  display:none !important;
+}
+
+.rptImageMeta.is-edited{
+  color:#1d4ed8;
+  font-weight:900;
+}
+
 /* =========================
    REPORT500 LOOKUP / DISCIPLINE
-   FINAL VERSION - compact row layout
 ========================= */
-
 .rptUtilityBar{
   display:grid;
-  grid-template-columns:repeat(2, minmax(0,1fr));
+  grid-template-columns:repeat(2,minmax(0,1fr));
   gap:10px;
   align-items:stretch;
 }
@@ -3106,22 +2196,9 @@ body.img-editor-lock{
   justify-content:flex-end;
 }
 
-.btn.danger{
-  background:linear-gradient(180deg,#ef4444,#dc2626);
-  color:#fff;
-  border:1px solid transparent;
-  box-shadow:0 8px 20px rgba(220,38,38,.18);
-}
-
-.btn.danger:hover{
-  transform:translateY(-1px);
-  box-shadow:0 10px 24px rgba(220,38,38,.22);
-}
-
 /* =========================
    LOOKUP POPUP
 ========================= */
-
 .swal2-popup.rptLookupPopup{
   width:min(920px, calc(100vw - 14px)) !important;
   max-width:none !important;
@@ -3163,7 +2240,7 @@ body.img-editor-lock{
 .rptLookupModal{
   display:grid;
   grid-template-rows:auto auto 1fr;
-  min-height:min(74vh, 700px);
+  min-height:min(74vh,700px);
   background:
     radial-gradient(circle at top right, rgba(37,99,235,.06), transparent 24%),
     linear-gradient(180deg,#ffffff 0%,#f8fbff 100%);
@@ -3320,7 +2397,7 @@ body.img-editor-lock{
 }
 
 .rptLookupStateInner{
-  width:min(100%, 520px);
+  width:min(100%,520px);
   text-align:center;
 }
 
@@ -3534,7 +2611,6 @@ body.img-editor-lock{
 /* =========================
    DISCIPLINE HYBRID VIEW
 ========================= */
-
 .rptLookupDesktopView{
   display:block;
 }
@@ -3634,7 +2710,6 @@ body.img-editor-lock{
 /* =========================
    ATTACHED DISCIPLINE PREVIEW
 ========================= */
-
 .swal2-popup.rptLookupPreviewPopup{
   width:min(1320px, calc(100vw - 10px)) !important;
   max-width:none !important;
@@ -3704,7 +2779,7 @@ body.img-editor-lock{
 .rptLookupPreviewWrap .rptLookupTableWrap,
 .rptLookupPreviewWrap .rptLookupTableWrapCompact{
   border-radius:13px;
-  max-height:min(68vh, 700px);
+  max-height:min(68vh,700px);
   overflow:auto;
 }
 
@@ -3739,31 +2814,249 @@ body.img-editor-lock{
 }
 
 /* =========================
-   MOBILE / TABLET
+   RESPONSIVE
 ========================= */
-
-@media (max-width:768px){
-  .rptUtilityBar{
-    grid-template-columns:repeat(2, minmax(0,1fr));
-    gap:8px;
+@media (max-width:1080px){
+  .container{
+    padding-inline:10px;
   }
 
-  .rptUtilityBar .btn{
-    min-height:44px;
-    padding:10px 8px;
+  .optionMatrix{
+    grid-template-columns:repeat(2,minmax(0,1fr));
+  }
+
+  .galGrid{
+    grid-template-columns:repeat(2,minmax(0,1fr));
+  }
+}
+
+@media (max-width:1180px){
+  .ieFloatingPanel{
+    width:310px;
+  }
+}
+
+@media (max-width:950px){
+  .imgEditorModal{
+    padding:6px;
+  }
+
+  .imgEditorDialog{
+    width:100%;
+    height:calc(100dvh - 12px);
+    max-height:calc(100dvh - 12px);
+    border-radius:18px;
+  }
+
+  .imgEditorHeader{
+    padding:10px 12px 8px;
+    gap:10px;
+  }
+
+  .imgEditorTitle{
+    font-size:16px;
+  }
+
+  .imgEditorSub{
+    font-size:11px;
+    line-height:1.35;
+  }
+
+  .imgEditorCloseBtn{
+    min-width:58px;
+    min-height:38px;
+    padding:7px 12px;
+    border-radius:12px;
     font-size:12px;
-    letter-spacing:0;
+  }
+
+  .imgEditorBody{
+    padding:8px;
+  }
+
+  .imgEditorCanvasWrap{
+    min-height:0;
+    height:100%;
+    border-radius:14px;
+  }
+
+  .ieFloatingToggle{
+    top:10px;
+    right:10px;
+    width:44px;
+    height:44px;
+  }
+
+  .ieFloatingPanel{
+    top:58px;
+    right:8px;
+    width:300px;
+    max-width:calc(100% - 16px);
+    max-height:min(50vh,360px);
+    padding:8px;
+    border-radius:16px;
+  }
+
+  .imgEditorToolbar .btn,
+  .ieToolbarSection .btn{
+    min-height:48px;
+    height:48px;
+    font-size:9px;
+  }
+
+  .imgEditorToolbar .btn::before,
+  .ieToolbarSection .btn::before{
+    font-size:15px;
+  }
+
+  .ieButtonGridEffects,
+  .ieButtonGridView,
+  .ieSectionManage .ieButtonGridView{
+    grid-template-columns:repeat(3,minmax(0,1fr));
+  }
+
+  .imgEditorFooter{
+    grid-template-columns:1fr;
+    gap:8px;
+    padding:8px 10px 10px;
+  }
+
+  .imgEditorStatus{
+    font-size:11px;
+  }
+
+  .imgEditorActions{
+    width:100%;
+    grid-template-columns:repeat(4,minmax(0,1fr));
+    gap:6px;
+  }
+
+  .imgEditorActions .btn{
+    width:100%;
+    min-height:38px;
+    height:38px;
+    padding:7px 8px;
+    border-radius:11px;
+    font-size:11px;
   }
 }
 
 @media (max-width:860px){
+  .gridCompact,
+  .gridEmployee,
+  .emailSelector,
+  .checkList,
+  .confirmCauseGrid,
+  .uploadGrid,
+  .galGrid,
+  .optionMatrix,
+  .rptRepeaterList,
+  .sigGrid,
+  .swalKvGrid{
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:8px 10px;
+  }
+
+  #rptPersonList,
+  #rptDamageList,
+  #rptStepTakenList,
+  #rptEvidenceList,
+  #rptCauseList,
+  #rptPreventionList,
+  #rptLearningList,
+  #rptImageList{
+    grid-template-columns:1fr;
+    gap:10px;
+  }
+
+  #rptPersonList .gridCompact,
+  #rptPersonList .gridEmployee,
+  #rptDamageList .gridCompact,
+  #rptDamageList .gridEmployee,
+  #rptStepTakenList .gridCompact,
+  #rptStepTakenList .gridEmployee,
+  #rptEvidenceList .gridCompact,
+  #rptEvidenceList .gridEmployee,
+  #rptCauseList .gridCompact,
+  #rptCauseList .gridEmployee,
+  #rptPreventionList .gridCompact,
+  #rptPreventionList .gridEmployee,
+  #rptLearningList .gridCompact,
+  #rptLearningList .gridEmployee,
+  #rptImageList .gridCompact,
+  #rptImageList .gridEmployee{
+    grid-template-columns:1fr;
+    gap:10px;
+  }
+
+  .actions{
+    grid-template-columns:1fr;
+  }
+
+  .refRow{
+    grid-template-columns:minmax(0,1fr) 16px 92px;
+  }
+
+  .loginHeroLogo{
+    width:190px;
+    max-width:72%;
+  }
+
+  .emailItem,
+  .confirmCauseCard,
+  .optionChoiceCard,
+  .rptRepeatCard,
+  .rptBlock{
+    border-radius:13px;
+  }
+
+  .emailItem,
+  .confirmCauseCard,
+  .optionChoiceCard{
+    min-height:46px;
+    padding:9px 10px;
+  }
+
+  .emailText,
+  .confirmCauseText,
+  .optionChoiceText{
+    font-size:11.5px;
+    line-height:1.35;
+  }
+
+  .emailCheckBox,
+  .confirmCauseMark,
+  .optionChoiceMark{
+    width:17px;
+    height:17px;
+    flex:0 0 17px;
+  }
+
+  .panelActions{
+    gap:8px;
+  }
+
+  .panelActions .btn{
+    flex:1 1 calc(50% - 8px);
+  }
+
+  .gridCompact .fieldSpan2,
+  .gridEmployee .fieldSpan2{
+    grid-column:1 / -1;
+  }
+
+  textarea,
+  .field textarea{
+    min-height:96px;
+  }
+
   .swal2-popup.rptLookupPopup{
     width:calc(100vw - 10px) !important;
     border-radius:18px !important;
   }
 
   .rptLookupModal{
-    min-height:min(84vh, 760px);
+    min-height:min(84vh,760px);
   }
 
   .rptLookupModalHead{
@@ -3843,11 +3136,395 @@ body.img-editor-lock{
 
   .rptLookupPreviewWrap .rptLookupTableWrap,
   .rptLookupPreviewWrap .rptLookupTableWrapCompact{
-    max-height:min(64vh, 560px);
+    max-height:min(64vh,560px);
+  }
+}
+
+@media (max-width:768px){
+  .imgEditorModal{
+    padding:0;
+  }
+
+  .imgEditorDialog{
+    width:100%;
+    height:100dvh;
+    max-height:100dvh;
+    border-radius:0;
+    border:none;
+    box-shadow:none;
+  }
+
+  .imgEditorBackdrop{
+    backdrop-filter:none;
+    -webkit-backdrop-filter:none;
+  }
+
+  .ieFloatingPanel{
+    background:#ffffff;
+    backdrop-filter:none;
+    -webkit-backdrop-filter:none;
+    box-shadow:0 16px 32px rgba(15,23,42,.18);
+    max-height:52vh;
+  }
+
+  .rptImageActions .btn{
+    flex:1 1 calc(50% - 8px);
+  }
+
+  .rptUtilityBar{
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:8px;
+  }
+
+  .rptUtilityBar .btn{
+    min-height:44px;
+    padding:10px 8px;
+    font-size:12px;
+    letter-spacing:0;
+  }
+}
+
+@media (max-width:640px){
+  :root{
+    --input-h:44px;
+    --radius-card:18px;
+    --radius-panel:15px;
+    --radius-input:13px;
+  }
+
+  .topbar{
+    grid-template-columns:minmax(0,1fr) auto;
+    gap:8px;
+    padding:8px 9px;
+  }
+
+  .brandTextInline{
+    gap:6px;
+  }
+
+  .brandTextInline .subtitle{
+    display:none;
+  }
+
+  .brandTextInline .title{
+    font-size:12px;
+  }
+
+  .tab{
+    min-height:34px;
+    padding:6px 12px;
+    font-size:11px;
+  }
+
+  .container{
+    padding:12px 10px 24px;
+  }
+
+  .card{
+    padding:14px;
+    border-radius:18px;
+  }
+
+  .panel,
+  .emailPanel,
+  .rptPanel{
+    padding:12px;
+    border-radius:15px;
+  }
+
+  .sectionTitle{
+    gap:9px;
+    margin:12px 0 8px;
+    padding-bottom:8px;
+  }
+
+  .sectionMain{
+    font-size:14px;
+  }
+
+  .sectionSub{
+    font-size:10px;
+  }
+
+  .gridCompact,
+  .gridEmployee,
+  .emailSelector,
+  .checkList,
+  .confirmCauseGrid,
+  .uploadGrid,
+  .galGrid,
+  .optionMatrix,
+  .rptRepeaterList,
+  .sigGrid,
+  .swalKvGrid{
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:8px;
+  }
+
+  #rptPersonList,
+  #rptDamageList,
+  #rptStepTakenList,
+  #rptEvidenceList,
+  #rptCauseList,
+  #rptPreventionList,
+  #rptLearningList,
+  #rptImageList{
+    grid-template-columns:1fr;
+    gap:10px;
+  }
+
+  #rptPersonList .gridCompact,
+  #rptPersonList .gridEmployee,
+  #rptDamageList .gridCompact,
+  #rptDamageList .gridEmployee,
+  #rptStepTakenList .gridCompact,
+  #rptStepTakenList .gridEmployee,
+  #rptEvidenceList .gridCompact,
+  #rptEvidenceList .gridEmployee,
+  #rptCauseList .gridCompact,
+  #rptCauseList .gridEmployee,
+  #rptPreventionList .gridCompact,
+  #rptPreventionList .gridEmployee,
+  #rptLearningList .gridCompact,
+  #rptLearningList .gridEmployee,
+  #rptImageList .gridCompact,
+  #rptImageList .gridEmployee{
+    grid-template-columns:1fr;
+    gap:10px;
+  }
+
+  .confirmCauseCard,
+  .optionChoiceCard,
+  .emailItem{
+    min-height:44px;
+    padding:8px 9px;
+  }
+
+  label{
+    font-size:11.5px;
+  }
+
+  .fieldHint,
+  .small,
+  .sectionSub{
+    font-size:10.5px;
+  }
+
+  input,
+  select,
+  textarea{
+    font-size:13px;
+    padding:10px 11px;
+  }
+
+  textarea{
+    min-height:88px;
+  }
+
+  .btn{
+    min-height:40px;
+    font-size:13px;
+    border-radius:13px;
+  }
+
+  .panelActions{
+    gap:6px;
+  }
+
+  .panelActions .btn{
+    flex:1 1 100%;
+  }
+
+  .loginHero{
+    padding:18px 16px 12px;
+    gap:10px;
+  }
+
+  .loginHeroLogo{
+    width:170px;
+    max-width:78%;
+  }
+
+  .loginHero h1{
+    font-size:18px;
+  }
+
+  .loginHero p{
+    font-size:13px;
+    line-height:1.55;
+  }
+
+  .loginForm{
+    padding:14px 16px 16px;
+    gap:10px;
+  }
+
+  .topLoginUserWrap{
+    font-size:10px;
+    min-height:26px;
+    padding:4px 8px;
+  }
+
+  .rptCardHead{
+    padding:11px 11px;
+    gap:10px;
+  }
+
+  .rptCardBody{
+    padding:11px;
+  }
+
+  .rptCardTitle{
+    font-size:12.5px;
+  }
+
+  .rptCardSummary{
+    font-size:10.8px;
+  }
+
+  .rptCardHeadActions{
+    gap:6px;
+  }
+
+  .rptToggleBtn{
+    min-width:34px;
+    height:34px;
+    border-radius:11px;
+    font-size:16px;
+  }
+
+  .rptCardFooterActions{
+    flex-direction:column;
+  }
+
+  .rptCardFooterActions .btn{
+    width:100%;
+  }
+
+  .rptRepeatAddBottom{
+    margin-top:10px;
+  }
+
+  .rptRepeatAddBottomBtn{
+    width:100% !important;
+    max-width:none;
+    min-width:0;
+    border-radius:16px;
+    padding:12px 14px;
+    font-size:14px;
+  }
+
+  .progress-card{
+    border-radius:20px;
+    padding:18px 16px 16px;
+  }
+
+  .progress-head-text h3{
+    font-size:18px;
+  }
+
+  #progressPercentText{
+    font-size:22px;
+  }
+
+  .progress-stage{
+    padding:10px;
+    border-radius:12px;
+  }
+
+  .btnEditImage{
+    min-height:36px;
+    padding:7px 12px;
+    border-radius:11px;
+    font-size:11px;
   }
 }
 
 @media (max-width:560px){
+  .imgEditorHeader{
+    padding:9px 10px 7px;
+  }
+
+  .imgEditorTitle{
+    font-size:15px;
+  }
+
+  .imgEditorSub{
+    display:none;
+  }
+
+  .imgEditorBody{
+    padding:6px;
+  }
+
+  .ieFloatingToggle{
+    width:40px;
+    height:40px;
+    top:8px;
+    right:8px;
+  }
+
+  .ieFloatingPanel{
+    top:52px;
+    right:8px;
+    width:min(280px,calc(100vw - 16px));
+    max-height:min(48vh,320px);
+    padding:7px;
+    border-radius:14px;
+  }
+
+  .ieToolbarSection{
+    padding:7px;
+    border-radius:13px;
+  }
+
+  .imgEditorToolbar .btn,
+  .ieToolbarSection .btn{
+    min-height:44px;
+    height:44px;
+    padding:4px 3px;
+    border-radius:10px;
+    font-size:8.5px;
+  }
+
+  .imgEditorToolbar .btn::before,
+  .ieToolbarSection .btn::before{
+    font-size:14px;
+  }
+
+  .ieButtonGridEffects,
+  .ieButtonGridView,
+  .ieSectionManage .ieButtonGridView{
+    grid-template-columns:repeat(2,minmax(0,1fr));
+  }
+
+  .imgEditorToolbarWrap .ieField,
+  .ieField{
+    grid-template-columns:34px minmax(0,1fr);
+    min-height:32px;
+    padding:4px 5px;
+    border-radius:10px;
+    font-size:9px;
+    gap:5px;
+  }
+
+  .imgEditorToolbarWrap .ieField input[type="color"],
+  .ieField input[type="color"]{
+    height:20px;
+    min-height:20px;
+  }
+
+  .imgEditorActions{
+    grid-template-columns:repeat(3,minmax(0,1fr));
+  }
+
+  .imgEditorActions .btn{
+    min-height:36px;
+    height:36px;
+    border-radius:10px;
+    font-size:10.5px;
+  }
+
   .rptLookupBtn{
     min-height:40px;
     font-size:12px;
@@ -3933,7 +3610,110 @@ body.img-editor-lock{
   }
 }
 
+@media (max-width:480px){
+  .gridCompact,
+  .gridEmployee,
+  .emailSelector,
+  .checkList,
+  .confirmCauseGrid,
+  .uploadGrid,
+  .galGrid,
+  .optionMatrix,
+  .rptRepeaterList,
+  .sigGrid,
+  .swalKvGrid{
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:7px;
+  }
+
+  #rptPersonList,
+  #rptDamageList,
+  #rptStepTakenList,
+  #rptEvidenceList,
+  #rptCauseList,
+  #rptPreventionList,
+  #rptLearningList,
+  #rptImageList{
+    grid-template-columns:1fr;
+    gap:10px;
+  }
+
+  #rptPersonList .gridCompact,
+  #rptPersonList .gridEmployee,
+  #rptDamageList .gridCompact,
+  #rptDamageList .gridEmployee,
+  #rptStepTakenList .gridCompact,
+  #rptStepTakenList .gridEmployee,
+  #rptEvidenceList .gridCompact,
+  #rptEvidenceList .gridEmployee,
+  #rptCauseList .gridCompact,
+  #rptCauseList .gridEmployee,
+  #rptPreventionList .gridCompact,
+  #rptPreventionList .gridEmployee,
+  #rptLearningList .gridCompact,
+  #rptLearningList .gridEmployee,
+  #rptImageList .gridCompact,
+  #rptImageList .gridEmployee{
+    grid-template-columns:1fr;
+    gap:10px;
+  }
+
+  .refRow{
+    grid-template-columns:minmax(0,1fr) 14px 82px;
+    gap:6px;
+  }
+
+  .refDash{
+    font-size:22px;
+  }
+
+  .card{
+    padding:10px;
+  }
+
+  .panel,
+  .emailPanel,
+  .rptPanel{
+    padding:10px;
+  }
+
+  .emailItem,
+  .confirmCauseCard,
+  .optionChoiceCard{
+    min-height:42px;
+    padding:8px 8px;
+  }
+
+  .emailText,
+  .confirmCauseText,
+  .optionChoiceText{
+    font-size:10.8px;
+    line-height:1.3;
+  }
+
+  .swalSection{
+    padding:10px;
+  }
+
+  .swalKv,
+  .swalDesc{
+    padding:8px 9px;
+  }
+}
+
 @media (max-width:420px){
+  .rptImageActions .btn{
+    flex:1 1 100%;
+  }
+
+  .imgEditorHeader{
+    padding:10px 12px 10px;
+  }
+
+  .imgEditorFooter{
+    padding:10px 12px;
+  }
+
   .rptUtilityBar .btn{
     min-height:42px;
     font-size:11.5px;
@@ -3994,421 +3774,110 @@ body.img-editor-lock{
   }
 }
 
+@media (max-width:380px){
+  .topbar{
+    grid-template-columns:1fr;
+    align-items:flex-start;
+  }
 
-/* =========================
-   REPORT500 REPEATER ACCORDION
-========================= */
-.rptRepeaterList{
-  display:grid;
-  gap:12px;
-}
+  .tabsInline{
+    width:100%;
+    justify-content:flex-start;
+    overflow:auto;
+    padding-bottom:2px;
+  }
 
-.rptRepeatCard{
-  border:1.25px solid #d8e5f6;
-  border-radius:18px;
-  background:linear-gradient(180deg,#ffffff 0%,#fbfdff 100%);
-  box-shadow:0 6px 18px rgba(15,23,42,.05);
-  overflow:hidden;
-}
+  .brandInline{
+    gap:8px;
+  }
 
-.rptRepeatCard.is-collapsed .rptCardBody{
-  display:none;
-}
+  .logo,
+  .brandLogoImg{
+    width:28px;
+    height:28px;
+    flex-basis:28px;
+  }
 
-.rptRepeatCard.is-complete{
-  border-color:#b7e3c5;
-  box-shadow:0 6px 18px rgba(22,163,74,.08);
-}
+  .gridCompact,
+  .gridEmployee,
+  .emailSelector,
+  .checkList,
+  .confirmCauseGrid,
+  .uploadGrid,
+  .galGrid,
+  .optionMatrix,
+  .rptRepeaterList,
+  .sigGrid,
+  .swalKvGrid{
+    grid-template-columns:1fr;
+  }
 
-.rptRepeatCard.is-partial{
-  border-color:#f4d29c;
-  box-shadow:0 6px 18px rgba(217,119,6,.08);
-}
-
-.rptRepeatCard.is-empty{
-  border-color:#d8e5f6;
-}
-
-.rptCardHead{
-  display:flex;
-  align-items:flex-start;
-  justify-content:space-between;
-  gap:12px;
-  padding:12px 14px;
-  background:linear-gradient(180deg,#f8fbff 0%,#f2f7ff 100%);
-  border-bottom:1px solid #e3edf9;
-  cursor:pointer;
-}
-
-.rptCardHeadMain{
-  min-width:0;
-  flex:1 1 auto;
-  display:grid;
-  gap:6px;
-}
-
-.rptCardTitleRow{
-  display:flex;
-  align-items:center;
-  gap:8px;
-  flex-wrap:wrap;
-}
-
-.rptCardTitle{
-  font-size:13px;
-  font-weight:900;
-  color:#0f172a;
-  line-height:1.25;
-}
-
-.rptRowIndex{
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-  min-width:34px;
-  height:30px;
-  padding:0 10px;
-  border-radius:999px;
-  background:#eef4ff;
-  color:#1d4ed8;
-  border:1px solid #d8e5fb;
-  font-size:11px;
-  font-weight:900;
-}
-
-.rptCardStatus{
-  display:inline-flex;
-  align-items:center;
-  min-height:24px;
-  padding:3px 9px;
-  border-radius:999px;
-  font-size:10.5px;
-  font-weight:900;
-  border:1px solid #d9e4f1;
-  color:#475569;
-  background:#f8fbff;
-}
-
-.rptRepeatCard.is-complete .rptCardStatus{
-  background:#ecfdf3;
-  border-color:#b7e3c5;
-  color:#15803d;
-}
-
-.rptRepeatCard.is-partial .rptCardStatus{
-  background:#fff7ed;
-  border-color:#f4d29c;
-  color:#b45309;
-}
-
-.rptCardSummary{
-  min-height:18px;
-  color:#475569;
-  font-size:11.5px;
-  line-height:1.45;
-  word-break:break-word;
-}
-
-.rptCardHeadActions{
-  display:flex;
-  align-items:center;
-  gap:8px;
-  flex:0 0 auto;
-}
-
-.rptToggleBtn{
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-  min-width:38px;
-  height:38px;
-  border:none;
-  border-radius:12px;
-  background:#ffffff;
-  border:1px solid #d8e5fb;
-  color:#1d4ed8;
-  font-size:18px;
-  font-weight:900;
-  box-shadow:0 3px 10px rgba(15,23,42,.05);
-  cursor:pointer;
-}
-
-.rptRepeatCard.is-collapsed .rptToggleBtn::before{
-  content:"+";
-}
-
-.rptRepeatCard:not(.is-collapsed) .rptToggleBtn::before{
-  content:"−";
-}
-
-.rptCardBody{
-  padding:14px;
-}
-
-.rptCardBody .panelActions{
-  justify-content:flex-end;
-  margin-top:12px;
-}
-
-.rptCardFooterActions{
-  display:flex;
-  flex-wrap:wrap;
-  justify-content:flex-end;
-  gap:8px;
-  margin-top:12px;
-}
-
-.rptRepeatAddBottom{
-  display:flex;
-  justify-content:center;
-  margin-top:10px;
-}
-
-.rptRepeatAddBottom .btn{
-  width:100%;
-}
-
-.rptRepeatEmpty{
-  padding:14px 15px;
-  border:1px dashed #bfd1e6;
-  border-radius:16px;
-  background:#f8fbff;
-  color:#64748b;
-  font-size:12px;
-  font-weight:800;
-  text-align:center;
-}
-
-@media (max-width:640px){
-  .rptCardHead{
-    padding:11px 11px;
+  #rptPersonList,
+  #rptDamageList,
+  #rptStepTakenList,
+  #rptEvidenceList,
+  #rptCauseList,
+  #rptPreventionList,
+  #rptLearningList,
+  #rptImageList,
+  #rptPersonList .gridCompact,
+  #rptPersonList .gridEmployee,
+  #rptDamageList .gridCompact,
+  #rptDamageList .gridEmployee,
+  #rptStepTakenList .gridCompact,
+  #rptStepTakenList .gridEmployee,
+  #rptEvidenceList .gridCompact,
+  #rptEvidenceList .gridEmployee,
+  #rptCauseList .gridCompact,
+  #rptCauseList .gridEmployee,
+  #rptPreventionList .gridCompact,
+  #rptPreventionList .gridEmployee,
+  #rptLearningList .gridCompact,
+  #rptLearningList .gridEmployee,
+  #rptImageList .gridCompact,
+  #rptImageList .gridEmployee{
+    grid-template-columns:1fr;
     gap:10px;
   }
 
-  .rptCardBody{
-    padding:11px;
+  .btn{
+    min-height:38px;
+    padding:8px 12px;
+    font-size:12px;
   }
 
-  .rptCardTitle{
+  .panelActions .btn{
+    flex:1 1 100%;
+  }
+
+  .loginHero{
+    padding:16px 14px 12px;
+  }
+
+  .loginForm{
+    padding:12px 14px 14px;
+  }
+
+  .loginHeroLogo{
+    width:150px;
+    max-width:82%;
+  }
+
+  .loginHero h1{
+    font-size:17px;
+  }
+
+  .loginHero p{
+    font-size:12px;
+  }
+
+  input,
+  select,
+  textarea{
     font-size:12.5px;
   }
 
-  .rptCardSummary{
-    font-size:10.8px;
-  }
-
-  .rptCardHeadActions{
-    gap:6px;
-  }
-
-  .rptToggleBtn{
-    min-width:34px;
-    height:34px;
-    border-radius:11px;
-    font-size:16px;
-  }
-
-  .rptCardFooterActions{
-    flex-direction:column;
-  }
-
-  .rptCardFooterActions .btn{
-    width:100%;
-  }
-}
-/* =========================
-   REPORT500 ADD BUTTON CLEANUP
-========================= */
-
-.rptRepeatAddBottom{
-  display:flex;
-  justify-content:center;
-  margin-top:12px;
-}
-
-.rptRepeatAddBottom.hidden{
-  display:none !important;
-}
-
-.rptRepeatAddBottomBtn{
-  min-width:220px;
-  max-width:360px;
-  width:auto !important;
-  padding:12px 18px;
-  border-radius:14px;
-  border:1px solid #cfe0f5;
-  background:#f8fbff;
-  color:#16325c;
-  font-weight:800;
-  box-shadow:none;
-}
-
-.rptRepeatAddBottomBtn:hover{
-  background:#eef5ff;
-  border-color:#b8d0ef;
-}
-
-.rptRepeatAddBottom .btn{
-  width:auto !important;
-}
-
-.rptRepeatEmpty{
-  margin-top:2px;
-  padding:14px 16px;
-  border:1px dashed #c6d7ea;
-  border-radius:16px;
-  background:#f8fbff;
-  color:#64748b;
-  font-size:12px;
-  font-weight:800;
-  text-align:center;
-}
-
-@media (max-width:640px){
-  .rptRepeatAddBottom{
-    margin-top:10px;
-  }
-
-  .rptRepeatAddBottomBtn{
-    width:100% !important;
-    max-width:none;
-    min-width:0;
-    border-radius:14px;
-    padding:12px 14px;
-    font-size:14px;
-  }
-}
-/* =========================
-   REPORT500 ADD BUTTON CLEANUP
-========================= */
-
-.rptRepeatAddBottom{
-  display:flex;
-  justify-content:center;
-  margin-top:12px;
-}
-
-.rptRepeatAddBottom.hidden{
-  display:none !important;
-}
-
-.rptRepeatAddBottomBtn{
-  min-width:220px;
-  max-width:360px;
-  width:auto !important;
-  padding:12px 18px;
-  border-radius:14px;
-  border:1px solid #cfe0f5;
-  background:#f8fbff;
-  color:#16325c;
-  font-weight:800;
-  box-shadow:none;
-}
-
-.rptRepeatAddBottomBtn:hover{
-  background:#eef5ff;
-  border-color:#b8d0ef;
-}
-
-.rptRepeatAddBottom .btn{
-  width:auto !important;
-}
-
-.rptRepeatEmpty{
-  margin-top:2px;
-  padding:14px 16px;
-  border:1px dashed #c6d7ea;
-  border-radius:16px;
-  background:#f8fbff;
-  color:#64748b;
-  font-size:12px;
-  font-weight:800;
-  text-align:center;
-}
-
-@media (max-width:640px){
-  .rptRepeatAddBottom{
-    margin-top:10px;
-  }
-
-  .rptRepeatAddBottomBtn{
-    width:100% !important;
-    max-width:none;
-    min-width:0;
-    border-radius:14px;
-    padding:12px 14px;
-    font-size:14px;
-  }
-}
-/* =========================
-   REPORT500 ADD BUTTON CLEANUP
-========================= */
-
-.rptRepeatAddBottom{
-  display:flex;
-  justify-content:center;
-  margin-top:12px;
-}
-
-.rptRepeatAddBottom.hidden{
-  display:none !important;
-}
-
-.rptRepeatAddBottomBtn{
-  min-width:220px;
-  max-width:360px;
-  width:auto !important;
-  padding:12px 18px;
-  border-radius:16px;
-  border:1.2px solid #cfe0f5;
-  background:#f8fbff;
-  color:#16325c;
-  font-weight:900;
-  box-shadow:none;
-}
-
-.rptRepeatAddBottomBtn:hover{
-  background:#eef5ff;
-  border-color:#b8d0ef;
-}
-
-.rptRepeatAddBottom .btn{
-  width:auto !important;
-}
-
-.rptListEmpty{
-  margin-top:8px;
-}
-
-.rptEmptyStateBox{
-  text-align:center;
-  border-radius:18px;
-  border:1.3px dashed #c6d7ea !important;
-  background:#f8fbff !important;
-  color:#64748b !important;
-  font-size:12px !important;
-  font-weight:900 !important;
-  line-height:1.6;
-  padding:16px 18px !important;
-}
-
-.rptEmptyStateSub{
-  font-size:11px;
-  color:#94a3b8;
-  font-weight:800;
-}
-
-@media (max-width:640px){
-  .rptRepeatAddBottom{
-    margin-top:10px;
-  }
-
-  .rptRepeatAddBottomBtn{
-    width:100% !important;
-    max-width:none;
-    min-width:0;
-    border-radius:16px;
-    padding:12px 14px;
-    font-size:14px;
+  textarea{
+    min-height:82px;
   }
 }
