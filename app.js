@@ -503,11 +503,18 @@ function setRefDuplicateHint_(formType, message, isError = false) {
 
   if (!el) return;
 
-  el.textContent = message || "";
-  el.classList.toggle("hidden", !message);
-  el.classList.toggle("error", !!(message && isError));
-}
+  const text = String(message || "")
+    .replace(/เลขอ้างอิงซ้ำ\s*/g, "")
+    .replace(/Ref ที่กรอก:/g, "\nRef ที่กรอก:")
+    .replace(/Ref มาตรฐาน:/g, "\nRef มาตรฐาน:")
+    .replace(/ซ้ำกับเอกสาร Error_BOL เดิม:/g, "\nซ้ำกับเอกสาร Error_BOL เดิม:\n")
+    .replace(/ซ้ำกับ Report เดิม:/g, "\nซ้ำกับ Report เดิม:\n")
+    .trim();
 
+  el.textContent = text || "";
+  el.classList.toggle("hidden", !text);
+  el.classList.toggle("error", !!(text && isError));
+}
 function setRefFieldInvalidState_(formType, invalid) {
   const runningEl = formType === "report500"
     ? document.getElementById("rptRefNo")
