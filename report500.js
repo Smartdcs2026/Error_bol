@@ -184,47 +184,15 @@
     return window.AUTH || { name: "", pass: "" };
   }
 
-  function getReportRefHintEl_() {
+function getReportRefHintEl_() {
   return document.getElementById("rptRefDuplicateHint");
 }
 
-function setReportRefDuplicateUi_(message, invalid) {
-  const hint = getReportRefHintEl_();
-  if (hint) {
-    const raw = String(message || "").trim();
-
-    if (!raw) {
-      hint.innerHTML = "";
-      hint.classList.add("hidden");
-      hint.classList.toggle("error", false);
-    } else {
-      const formatted = raw
-        .replace(/^เลขอ้างอิงซ้ำ\s*/i, "")
-        .replace(/Ref ที่กรอก:/g, '||Ref ที่กรอก:')
-        .replace(/Ref มาตรฐาน:/g, '||Ref มาตรฐาน:')
-        .replace(/ซ้ำกับ Report เดิม:/g, '||ซ้ำกับ Report เดิม:')
-        .split("||")
-        .map(s => s.trim())
-        .filter(Boolean);
-
-      hint.innerHTML = formatted.map((line, idx) => {
-        const cls = idx < 2 ? "refDupLine refDupMain" : "refDupLine refDupMeta";
-        const block = idx === 2 ? " refDupBlock" : "";
-        return `<span class="${cls}${block}">${escapeHtml(line)}</span>`;
-      }).join("");
-
-      hint.classList.remove("hidden");
-      hint.classList.toggle("error", !!invalid);
-    }
-  }
-
-  $("rptRefNo")?.classList.toggle("is-invalid", !!invalid);
-  $("rptRefYear")?.classList.toggle("is-invalid", !!invalid);
+function getReportRefWrapEl_() {
+  return document.getElementById("rptRefDuplicateWrap");
 }
 
-function resetReportRefDuplicateUi_() {
-  setReportRefDuplicateUi_("", false);
-}
+
 
 async function checkReportRefDuplicate_(opts = {}) {
   const refNo = getRefNo();
@@ -331,10 +299,32 @@ function bindReportRefDuplicateCheck_() {
 
 function setReportRefDuplicateUi_(message, invalid) {
   const hint = getReportRefHintEl_();
-  if (hint) {
-    hint.textContent = message || "";
-    hint.classList.toggle("hidden", !message);
-    hint.classList.toggle("error", !!(message && invalid));
+  const wrap = getReportRefWrapEl_();
+
+  if (hint && wrap) {
+    const raw = String(message || "").trim();
+
+    if (!raw) {
+      hint.innerHTML = "";
+      wrap.classList.add("hidden");
+    } else {
+      const formatted = raw
+        .replace(/^เลขอ้างอิงซ้ำ\s*/i, "")
+        .replace(/Ref ที่กรอก:/g, "||Ref ที่กรอก:")
+        .replace(/Ref มาตรฐาน:/g, "||Ref มาตรฐาน:")
+        .replace(/ซ้ำกับ Report เดิม:/g, "||ซ้ำกับ Report เดิม:")
+        .split("||")
+        .map(s => s.trim())
+        .filter(Boolean);
+
+      hint.innerHTML = formatted.map((line, idx) => {
+        const cls = idx < 2 ? "refDupLine refDupMain" : "refDupLine refDupMeta";
+        const block = idx === 2 ? " refDupBlock" : "";
+        return `<span class="${cls}${block}">${escapeHtml(line)}</span>`;
+      }).join("");
+
+      wrap.classList.remove("hidden");
+    }
   }
 
   $("rptRefNo")?.classList.toggle("is-invalid", !!invalid);
@@ -342,9 +332,15 @@ function setReportRefDuplicateUi_(message, invalid) {
 }
 
 function resetReportRefDuplicateUi_() {
-  setReportRefDuplicateUi_("", false);
-}
+  const hint = getReportRefHintEl_();
+  const wrap = getReportRefWrapEl_();
 
+  if (hint) hint.innerHTML = "";
+  if (wrap) wrap.classList.add("hidden");
+
+  $("rptRefNo")?.classList.remove("is-invalid");
+  $("rptRefYear")?.classList.remove("is-invalid");
+}
 async function checkReportRefDuplicate_(opts = {}) {
   const refNo = getRefNo();
 
