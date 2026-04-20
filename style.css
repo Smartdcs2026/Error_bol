@@ -3882,105 +3882,86 @@ body.img-editor-lock{
   }
 }
 /* ==========================
-   REF DUPLICATE / REF DETAIL HIGHLIGHT
-   เพิ่มท้าย style.css
+   REF DUPLICATE DISPLAY - STRONG VERSION
    ========================== */
 
-.fieldHint{
-  margin-top:8px;
-  font-size:13px;
-  line-height:1.55;
+/* base */
+#refDuplicateHint,
+#rptRefDuplicateHint{
+  display:none;
+  margin-top:10px;
+  padding:12px 14px;
   border-radius:12px;
-  padding:0;
+  font-size:14px;
+  line-height:1.65;
+  white-space:pre-line;
+  word-break:break-word;
   transition:all .18s ease;
 }
 
-.fieldHint.hidden{
-  display:none !important;
-}
-
-.fieldHint.error,
-#refDuplicateHint,
-#rptRefDuplicateHint{
-  color:#b91c1c;
-  font-weight:800;
-  letter-spacing:.1px;
-}
-
+/* show when JS removes .hidden */
 #refDuplicateHint:not(.hidden),
 #rptRefDuplicateHint:not(.hidden){
   display:block;
-  padding:12px 14px;
-  margin-top:10px;
-  border:1.5px solid #fca5a5;
-  background:linear-gradient(180deg,#fff5f5 0%, #fee2e2 100%);
-  box-shadow:0 8px 20px rgba(220,38,38,.08);
-  white-space:pre-line;
 }
 
+/* strong duplicate style */
+#refDuplicateHint:not(.hidden),
+#rptRefDuplicateHint:not(.hidden),
+#refDuplicateHint.error,
+#rptRefDuplicateHint.error{
+  color:#b91c1c !important;
+  background:#fff1f2 !important;
+  border:2px solid #ef4444 !important;
+  box-shadow:0 8px 18px rgba(239,68,68,.12) !important;
+  font-weight:800 !important;
+}
+
+/* headline */
 #refDuplicateHint:not(.hidden)::before,
 #rptRefDuplicateHint:not(.hidden)::before{
-  content:"เลขอ้างอิงซ้ำ";
+  content:"พบเลข Ref ซ้ำ";
   display:block;
+  margin-bottom:6px;
+  color:#991b1b;
   font-size:12px;
   font-weight:900;
-  color:#991b1b;
+  letter-spacing:.3px;
   text-transform:uppercase;
-  letter-spacing:.4px;
-  margin-bottom:6px;
 }
 
-.is-invalid{
-  border-color:#dc2626 !important;
-  box-shadow:0 0 0 3px rgba(220,38,38,.14) !important;
-  background:#fff7f7 !important;
-}
-
+/* invalid input */
 #refNo.is-invalid,
 #refYear.is-invalid,
 #rptRefNo.is-invalid,
 #rptRefYear.is-invalid{
+  border:2px solid #ef4444 !important;
+  background:#fff5f5 !important;
   color:#991b1b !important;
-  font-weight:800;
+  font-weight:800 !important;
+  box-shadow:0 0 0 4px rgba(239,68,68,.12) !important;
 }
 
+/* highlight row */
 .refRow:has(#refNo.is-invalid),
 .refRow:has(#rptRefNo.is-invalid){
   padding:8px;
   border-radius:14px;
-  background:rgba(220,38,38,.06);
+  background:rgba(239,68,68,.08);
 }
 
+/* make slash stand out too */
+.refRow:has(#refNo.is-invalid) .refDash,
+.refRow:has(#rptRefNo.is-invalid) .refDash{
+  color:#b91c1c;
+  font-weight:900;
+}
+
+/* mobile */
 @media (max-width: 768px){
-  #refDuplicateHint:not(.hidden),
-  #rptRefDuplicateHint:not(.hidden){
-    font-size:12px;
+  #refDuplicateHint,
+  #rptRefDuplicateHint{
+    font-size:13px;
     padding:10px 12px;
-    border-radius:10px;
   }
-}
-/* ==========================
-   Swal duplicate detail emphasis
-   ========================== */
-
-.swalSummary .swalSectionTitle{
-  color:#991b1b;
-  font-weight:900;
-}
-
-.swalSummary .swalKvLabel{
-  color:#7f1d1d;
-  font-weight:800;
-}
-
-.swalSummary .swalKvValue{
-  color:#b91c1c;
-  font-weight:900;
-  word-break:break-word;
-}
-
-.swalEmailFail,
-.swalErrorText{
-  color:#b91c1c;
-  font-weight:800;
 }
