@@ -191,9 +191,16 @@
 function setReportRefDuplicateUi_(message, invalid) {
   const hint = getReportRefHintEl_();
   if (hint) {
-    hint.textContent = message || "";
-    hint.classList.toggle("hidden", !message);
-    hint.classList.toggle("error", !!(message && invalid));
+    const text = String(message || "")
+      .replace(/เลขอ้างอิงซ้ำ\s*/g, "")
+      .replace(/Ref ที่กรอก:/g, "\nRef ที่กรอก:")
+      .replace(/Ref มาตรฐาน:/g, "\nRef มาตรฐาน:")
+      .replace(/ซ้ำกับ Report เดิม:/g, "\nซ้ำกับ Report เดิม:\n")
+      .trim();
+
+    hint.textContent = text || "";
+    hint.classList.toggle("hidden", !text);
+    hint.classList.toggle("error", !!(text && invalid));
   }
 
   $("rptRefNo")?.classList.toggle("is-invalid", !!invalid);
