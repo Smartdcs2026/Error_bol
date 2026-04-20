@@ -3881,3 +3881,106 @@ body.img-editor-lock{
     min-height:82px;
   }
 }
+/* ==========================
+   REF DUPLICATE / REF DETAIL HIGHLIGHT
+   เพิ่มท้าย style.css
+   ========================== */
+
+.fieldHint{
+  margin-top:8px;
+  font-size:13px;
+  line-height:1.55;
+  border-radius:12px;
+  padding:0;
+  transition:all .18s ease;
+}
+
+.fieldHint.hidden{
+  display:none !important;
+}
+
+.fieldHint.error,
+#refDuplicateHint,
+#rptRefDuplicateHint{
+  color:#b91c1c;
+  font-weight:800;
+  letter-spacing:.1px;
+}
+
+#refDuplicateHint:not(.hidden),
+#rptRefDuplicateHint:not(.hidden){
+  display:block;
+  padding:12px 14px;
+  margin-top:10px;
+  border:1.5px solid #fca5a5;
+  background:linear-gradient(180deg,#fff5f5 0%, #fee2e2 100%);
+  box-shadow:0 8px 20px rgba(220,38,38,.08);
+  white-space:pre-line;
+}
+
+#refDuplicateHint:not(.hidden)::before,
+#rptRefDuplicateHint:not(.hidden)::before{
+  content:"เลขอ้างอิงซ้ำ";
+  display:block;
+  font-size:12px;
+  font-weight:900;
+  color:#991b1b;
+  text-transform:uppercase;
+  letter-spacing:.4px;
+  margin-bottom:6px;
+}
+
+.is-invalid{
+  border-color:#dc2626 !important;
+  box-shadow:0 0 0 3px rgba(220,38,38,.14) !important;
+  background:#fff7f7 !important;
+}
+
+#refNo.is-invalid,
+#refYear.is-invalid,
+#rptRefNo.is-invalid,
+#rptRefYear.is-invalid{
+  color:#991b1b !important;
+  font-weight:800;
+}
+
+.refRow:has(#refNo.is-invalid),
+.refRow:has(#rptRefNo.is-invalid){
+  padding:8px;
+  border-radius:14px;
+  background:rgba(220,38,38,.06);
+}
+
+@media (max-width: 768px){
+  #refDuplicateHint:not(.hidden),
+  #rptRefDuplicateHint:not(.hidden){
+    font-size:12px;
+    padding:10px 12px;
+    border-radius:10px;
+  }
+}
+/* ==========================
+   Swal duplicate detail emphasis
+   ========================== */
+
+.swalSummary .swalSectionTitle{
+  color:#991b1b;
+  font-weight:900;
+}
+
+.swalSummary .swalKvLabel{
+  color:#7f1d1d;
+  font-weight:800;
+}
+
+.swalSummary .swalKvValue{
+  color:#b91c1c;
+  font-weight:900;
+  word-break:break-word;
+}
+
+.swalEmailFail,
+.swalErrorText{
+  color:#b91c1c;
+  font-weight:800;
+}
