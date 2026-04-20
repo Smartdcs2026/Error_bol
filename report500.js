@@ -184,6 +184,271 @@
     return window.AUTH || { name: "", pass: "" };
   }
 
+  function getReportRefHintEl_() {
+  return document.getElementById("rptRefDuplicateHint");
+}
+
+function setReportRefDuplicateUi_(message, invalid) {
+  const hint = getReportRefHintEl_();
+  if (hint) {
+    hint.textContent = message || "";
+    hint.classList.toggle("hidden", !message);
+    hint.classList.toggle("error", !!(message && invalid));
+  }
+
+  $("rptRefNo")?.classList.toggle("is-invalid", !!invalid);
+  $("rptRefYear")?.classList.toggle("is-invalid", !!invalid);
+}
+
+function resetReportRefDuplicateUi_() {
+  setReportRefDuplicateUi_("", false);
+}
+
+async function checkReportRefDuplicate_(opts = {}) {
+  const refNo = getRefNo();
+  if (!norm(refNo)) {
+    resetReportRefDuplicateUi_();
+    return {
+      ok: true,
+      duplicated: false,
+      skipped: true,
+      result: null
+    };
+  }
+
+  const url = `${apiUrl("/checkRefDuplicate")}?formType=${encodeURIComponent("report500")}&refNo=${encodeURIComponent(refNo)}`;
+
+  const res = await fetch(url, {
+    method: "GET",
+    cache: "no-store"
+  });
+
+  const text = await res.text();
+  let json = {};
+  try {
+    json = JSON.parse(text);
+  } catch (_) {
+    throw new Error("Backend ตอบกลับไม่ใช่ JSON");
+  }
+
+  if (!res.ok || !json.ok) {
+    throw new Error(json?.message || json?.error || `ตรวจสอบ Ref ไม่สำเร็จ (HTTP ${res.status})`);
+  }
+
+  if (json.duplicated) {
+    setReportRefDuplicateUi_(json.message || "เลขอ้างอิงซ้ำ", true);
+  } else {
+    resetReportRefDuplicateUi_();
+  }
+
+  return {
+    ok: true,
+    duplicated: !!json.duplicated,
+    result: json
+  };
+}
+
+async function showReportDuplicateAlert_(result) {
+  const matched = result?.matched || {};
+  await Swal.fire({
+    icon: "warning",
+    title: "เลขอ้างอิงซ้ำ",
+    html: `
+      <div class="swalSummary" style="text-align:left">
+        <div class="swalSection">
+          <div class="swalSectionTitle">ไม่สามารถบันทึก Report ได้</div>
+          <div class="swalKvGrid">
+            <div class="swalKv"><div class="swalKvLabel">Ref ที่กรอก</div><div class="swalKvValue">${escapeHtml(result?.inputRefNo || "-")}</div></div>
+            <div class="swalKv"><div class="swalKvLabel">Ref มาตรฐาน</div><div class="swalKvValue">${escapeHtml(result?.rootRefComparable || "-")}</div></div>
+            <div class="swalKv"><div class="swalKvLabel">Ref เดิม</div><div class="swalKvValue">${escapeHtml(matched.refNo || "-")}</div></div>
+            <div class="swalKv"><div class="swalKvLabel">Revision</div><div class="swalKvValue">${escapeHtml(matched.revisionLabel || "-")}</div></div>
+            <div class="swalKv"><div class="swalKvLabel">เรื่อง</div><div class="swalKvValue">${escapeHtml(matched.subject || "-")}</div></div>
+            <div class="swalKv"><div class="swalKvLabel">Reported by</div><div class="swalKvValue">${escapeHtml(matched.reportedBy || "-")}</div></div>
+            <div class="swalKv"><div class="swalKvLabel">วันที่เกิดเหตุ</div><div class="swalKvValue">${escapeHtml(matched.incidentDate || "-")}</div></div>
+            <div class="swalKv"><div class="swalKvLabel">สถานที่</div><div class="swalKvValue">${escapeHtml(matched.whereDidItHappen || "-")}</div></div>
+          </div>
+        </div>
+      </div>
+    `,
+    width: 920,
+    confirmButtonText: "กลับไปแก้ไข Ref"
+  });
+}
+
+function bindReportRefDuplicateCheck_() {
+  const runningEl = $("rptRefNo");
+  const yearEl = $("rptRefYear");
+  if (!runningEl || !yearEl) return;
+
+  let timer = null;
+
+  const schedule = () => {
+    if (timer) clearTimeout(timer);
+
+    if (!norm(getRefNo())) {
+      resetReportRefDuplicateUi_();
+      return;
+    }
+
+    timer = setTimeout(async () => {
+      try {
+        await checkReportRefDuplicate_({ force: true });
+      } catch (err) {
+        console.error("checkReportRefDuplicate failed:", err);
+      }
+    }, 320);
+  };
+
+  runningEl.addEventListener("input", schedule);
+  runningEl.addEventListener("change", schedule);
+  yearEl.addEventListener("change", schedule);
+}
+  function getReportRefHintEl_() {
+  return document.getElementById("rptRefDuplicateHint");
+}
+
+function setReportRefDuplicateUi_(message, invalid) {
+  const hint = getReportRefHintEl_();
+  if (hint) {
+    hint.textContent = message || "";
+    hint.classList.toggle("hidden", !message);
+    hint.classList.toggle("error", !!(message && invalid));
+  }
+
+  $("rptRefNo")?.classList.toggle("is-invalid", !!invalid);
+  $("rptRefYear")?.classList.toggle("is-invalid", !!invalid);
+}
+
+function resetReportRefDuplicateUi_() {
+  setReportRefDuplicateUi_("", false);
+}
+
+async function checkReportRefDuplicate_(opts = {}) {
+  const refNo = getRefNo();
+
+  if (!norm(refNo)) {
+    resetReportRefDuplicateUi_();
+    return {
+      ok: true,
+      duplicated: false,
+      skipped: true,
+      result: null
+    };
+  }
+
+  const url = `${apiUrl("/checkRefDuplicate")}?formType=${encodeURIComponent("report500")}&refNo=${encodeURIComponent(refNo)}`;
+
+  const res = await fetch(url, {
+    method: "GET",
+    cache: "no-store"
+  });
+
+  const text = await res.text();
+  let json = {};
+
+  try {
+    json = JSON.parse(text);
+  } catch (_) {
+    throw new Error("Backend ตอบกลับไม่ใช่ JSON");
+  }
+
+  if (!res.ok || !json.ok) {
+    throw new Error(json?.message || json?.error || `ตรวจสอบ Ref ไม่สำเร็จ (HTTP ${res.status})`);
+  }
+
+  if (json.duplicated) {
+    setReportRefDuplicateUi_(json.message || "เลขอ้างอิงซ้ำ", true);
+  } else {
+    resetReportRefDuplicateUi_();
+  }
+
+  return {
+    ok: true,
+    duplicated: !!json.duplicated,
+    result: json
+  };
+}
+
+async function showReportDuplicateAlert_(result) {
+  const matched = result?.matched || {};
+
+  await Swal.fire({
+    icon: "warning",
+    title: "เลขอ้างอิงซ้ำ",
+    html: `
+      <div class="swalSummary" style="text-align:left">
+        <div class="swalSection">
+          <div class="swalSectionTitle">ไม่สามารถบันทึก Report ได้</div>
+          <div class="swalKvGrid">
+            <div class="swalKv">
+              <div class="swalKvLabel">Ref ที่กรอก</div>
+              <div class="swalKvValue">${escapeHtml(result?.inputRefNo || "-")}</div>
+            </div>
+            <div class="swalKv">
+              <div class="swalKvLabel">Ref มาตรฐาน</div>
+              <div class="swalKvValue">${escapeHtml(result?.rootRefComparable || "-")}</div>
+            </div>
+            <div class="swalKv">
+              <div class="swalKvLabel">Ref เดิม</div>
+              <div class="swalKvValue">${escapeHtml(matched.refNo || "-")}</div>
+            </div>
+            <div class="swalKv">
+              <div class="swalKvLabel">Revision</div>
+              <div class="swalKvValue">${escapeHtml(matched.revisionLabel || "-")}</div>
+            </div>
+            <div class="swalKv">
+              <div class="swalKvLabel">เรื่อง</div>
+              <div class="swalKvValue">${escapeHtml(matched.subject || "-")}</div>
+            </div>
+            <div class="swalKv">
+              <div class="swalKvLabel">Reported by</div>
+              <div class="swalKvValue">${escapeHtml(matched.reportedBy || "-")}</div>
+            </div>
+            <div class="swalKv">
+              <div class="swalKvLabel">วันที่เกิดเหตุ</div>
+              <div class="swalKvValue">${escapeHtml(matched.incidentDate || "-")}</div>
+            </div>
+            <div class="swalKv">
+              <div class="swalKvLabel">สถานที่</div>
+              <div class="swalKvValue">${escapeHtml(matched.whereDidItHappen || "-")}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    `,
+    width: 920,
+    confirmButtonText: "กลับไปแก้ไข Ref"
+  });
+}
+
+function bindReportRefDuplicateCheck_() {
+  const runningEl = $("rptRefNo");
+  const yearEl = $("rptRefYear");
+  if (!runningEl || !yearEl) return;
+
+  let timer = null;
+
+  const schedule = () => {
+    if (timer) clearTimeout(timer);
+
+    if (!norm(getRefNo())) {
+      resetReportRefDuplicateUi_();
+      return;
+    }
+
+    timer = setTimeout(async () => {
+      try {
+        await checkReportRefDuplicate_({ force: true });
+      } catch (err) {
+        console.error("checkReportRefDuplicate failed:", err);
+      }
+    }, 320);
+  };
+
+  runningEl.addEventListener("input", schedule);
+  runningEl.addEventListener("change", schedule);
+  yearEl.addEventListener("change", schedule);
+}
   function getRefNo() {
     if (typeof window.getRptRefNoValue === "function") return window.getRptRefNoValue();
     const running = String($("rptRefNo")?.value || "").replace(/[^\d]/g, "").trim();
@@ -1995,222 +2260,242 @@ toggleEmptyState(listId, cfg.label);
     });
   }
 
-  async function submit() {
-    const auth = getAuth();
-    if (!norm(auth.pass)) {
-      Swal.fire({
-        icon: "warning",
-        title: "ยังไม่ได้เข้าสู่ระบบ",
-        text: "กรุณาเข้าสู่ระบบก่อนบันทึกข้อมูล"
-      });
+ async function submit() {
+  const auth = getAuth();
+  if (!norm(auth.pass)) {
+    Swal.fire({
+      icon: "warning",
+      title: "ยังไม่ได้เข้าสู่ระบบ",
+      text: "กรุณาเข้าสู่ระบบก่อนบันทึกข้อมูล"
+    });
+    return;
+  }
+
+  try {
+    const payload = collectPayload();
+
+    const dup = await checkReportRefDuplicate_({ force: true });
+    if (dup.duplicated) {
+      await showReportDuplicateAlert_(dup.result);
+      $("rptRefNo")?.focus();
       return;
     }
 
-    try {
-      const payload = collectPayload();
-      const images = await collectImages();
+    const images = await collectImages();
 
-      const ok = await Swal.fire({
-        icon: "question",
-        title: "ยืนยันการบันทึก Report",
-        html: payloadSummaryHtml(payload, images),
-        width: 920,
-        showCancelButton: true,
-        confirmButtonText: "ยืนยันบันทึก",
-        cancelButtonText: "ยกเลิก"
-      });
+    const ok = await Swal.fire({
+      icon: "question",
+      title: "ยืนยันการบันทึก Report",
+      html: payloadSummaryHtml(payload, images),
+      width: 920,
+      showCancelButton: true,
+      confirmButtonText: "ยืนยันบันทึก",
+      cancelButtonText: "ยกเลิก"
+    });
 
-      if (!ok.isConfirmed) return;
+    if (!ok.isConfirmed) return;
 
-      const Progress = window.ProgressUI;
-      Progress?.show(
-        "กำลังบันทึก Report",
-        "ระบบกำลังตรวจสอบข้อมูล อัปโหลดรูป สร้าง PDF และส่งอีเมล"
-      );
+    const Progress = window.ProgressUI;
+    Progress?.show(
+      "กำลังบันทึก Report",
+      "ระบบกำลังตรวจสอบข้อมูล อัปโหลดรูป สร้าง PDF และส่งอีเมล"
+    );
 
-      Progress?.activateOnly("validate", 8, "กำลังตรวจสอบข้อมูลรายงาน");
-      await (window.sleepMs ? window.sleepMs(160) : new Promise((r) => setTimeout(r, 160)));
-      Progress?.markDone("validate", 14, "ตรวจสอบข้อมูลเรียบร้อย");
+    Progress?.activateOnly("validate", 8, "กำลังตรวจสอบเลขอ้างอิงและข้อมูลรายงาน");
 
-      Progress?.activateOnly("upload", 18, "กำลังเตรียมรูปภาพสำหรับรายงาน");
-      const uploadProg = typeof window.estimateUploadProgressByFiles === "function"
-        ? window.estimateUploadProgressByFiles(Math.max(images.length, 1), 18, 42)
-        : {
-            next: (currentIndex) => {
-              const count = Math.max(1, images.length || 1);
-              const ratio = Math.max(0, Math.min(1, currentIndex / count));
-              return Math.round(18 + ((42 - 18) * ratio));
-            }
-          };
-
-      images.forEach((_, idx) => {
-        Progress?.setProgress(uploadProg.next(idx + 1), `เตรียมรูปภาพ ${idx + 1}/${images.length || 1}`);
-      });
-
-      await (window.sleepMs ? window.sleepMs(120) : new Promise((r) => setTimeout(r, 120)));
-      Progress?.markDone("upload", 44, `เตรียมรูปภาพเรียบร้อย (${images.length} รูป)`);
-
-      Progress?.activateOnly("save", 56, "กำลังบันทึกข้อมูล Report");
-
-      const res = await fetch(apiUrl("/report500/submit"), {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          pass: auth.pass,
-          payload,
-          files: images
-        })
-      });
-
-      const text = await res.text();
-      let json = {};
-      try {
-        json = JSON.parse(text);
-      } catch (_) {
-        throw new Error("Backend ตอบกลับไม่ใช่ JSON");
-      }
-
-      if (!res.ok || !json.ok) {
-        throw new Error(json?.error || `บันทึกข้อมูลไม่สำเร็จ (HTTP ${res.status})`);
-      }
-
-      Progress?.markDone("save", 72, "บันทึกข้อมูลลงระบบเรียบร้อย");
-
-      Progress?.activateOnly("pdf", 84, "กำลังสร้างไฟล์ PDF");
-      await (window.sleepMs ? window.sleepMs(180) : new Promise((r) => setTimeout(r, 180)));
-
-      if (json.pdfFileId || json.pdfUrl) {
-        const sizeText = json.pdfSizeText ? ` (${json.pdfSizeText})` : "";
-        Progress?.markDone("pdf", 93, `สร้างไฟล์ PDF เรียบร้อย${sizeText}`);
-      } else {
-        Progress?.markDone("pdf", 93, "สร้างไฟล์ PDF เรียบร้อย");
-      }
-
-      Progress?.activateOnly("email", 97, "กำลังตรวจสอบผลการส่งอีเมล");
-      await (window.sleepMs ? window.sleepMs(160) : new Promise((r) => setTimeout(r, 160)));
-
-      const emailResult = json.emailResult || {};
-      const emailOk = !!emailResult.ok;
-      const emailSkipped = !!emailResult.skipped;
-      const attachmentMode = String(emailResult.attachmentMode || "").trim();
-      const emailErr = String(emailResult.error || "").trim();
-
-      let emailText = "ส่งอีเมลเรียบร้อย";
-      if (attachmentMode === "LINK_ONLY") emailText = "ส่งอีเมลพร้อมลิงก์ PDF";
-      if (attachmentMode === "ATTACHED") emailText = "ส่งอีเมลพร้อมไฟล์ PDF";
-
-      if (emailOk) {
-        Progress?.markDone("email", 100, emailText, emailText);
-        Progress?.success("บันทึกสำเร็จ", "รายงานถูกบันทึกเรียบร้อยแล้ว");
-      } else if (emailSkipped) {
-        Progress?.markDone("email", 100, "ไม่ได้เลือกส่งอีเมล", "ข้าม");
-        Progress?.success("บันทึกสำเร็จ", "บันทึกข้อมูลและสร้าง PDF เรียบร้อยแล้ว");
-      } else {
-        Progress?.markError("email", "ส่งอีเมลไม่สำเร็จ", 100);
-        Progress?.success("บันทึกสำเร็จ", "ข้อมูลและ PDF สำเร็จแล้ว แต่การส่งอีเมลไม่สำเร็จ");
-        Progress?.setHint(emailErr || "กรุณาตรวจสอบสิทธิ์เมลหรือขนาดไฟล์ PDF");
-      }
-
-      Progress?.hide(120);
-
-      const pdfOpenUrl = json.pdfUrl
-        ? String(json.pdfUrl)
-        : (json.refNo ? apiUrl(`/report500/pdf/${encodeURIComponent(json.refNo)}`) : "");
-
-      await Swal.fire({
-        icon: (emailOk || emailSkipped) ? "success" : "warning",
-        title: (emailOk || emailSkipped) ? "บันทึก Report สำเร็จ" : "บันทึก Report สำเร็จบางส่วน",
-        showConfirmButton: false,
-        width: 820,
-        html: `
-          <div class="swalSummary">
-            <div class="swalHero">
-              <div class="swalHeroTitle">บันทึกรายงานเรียบร้อยแล้ว</div>
-              <div class="swalHeroSub">ระบบจัดเก็บข้อมูล รูปภาพ และไฟล์ PDF เรียบร้อย</div>
-              <div class="swalPillRow">
-                <div class="swalPill primary">Ref: ${escapeHtml(json.refNo || payload.refNo || "-")}</div>
-                <div class="swalPill">รูป ${Number(json.imageCount || images.length || 0)}</div>
-                <div class="swalPill">${emailOk ? "ส่งอีเมลสำเร็จ" : emailSkipped ? "ไม่ได้ส่งอีเมล" : "อีเมลไม่สำเร็จ"}</div>
-              </div>
-            </div>
-
-            <div class="swalSection">
-              <div class="swalSectionTitle">สรุปผลการบันทึก</div>
-              <div class="swalKvGrid">
-                <div class="swalKv">
-                  <div class="swalKvLabel">Ref No.</div>
-                  <div class="swalKvValue">${escapeHtml(json.refNo || payload.refNo || "-")}</div>
-                </div>
-                <div class="swalKv">
-                  <div class="swalKvLabel">ผู้บันทึก</div>
-                  <div class="swalKvValue">${escapeHtml(payload.reportedBy || auth.name || "-")}</div>
-                </div>
-                <div class="swalKv">
-                  <div class="swalKvLabel">จำนวนรูปภาพ</div>
-                  <div class="swalKvValue">${escapeHtml(String(Number(json.imageCount || images.length || 0)))}</div>
-                </div>
-                <div class="swalKv">
-                  <div class="swalKvLabel">สถานะอีเมล</div>
-                  <div class="swalKvValue">${escapeHtml(emailOk ? emailText : emailSkipped ? "ไม่ได้เลือกส่งอีเมล" : (emailErr || "ส่งอีเมลไม่สำเร็จ"))}</div>
-                </div>
-              </div>
-            </div>
-
-            ${pdfOpenUrl ? `
-              <div class="swalSection">
-                <div class="swalSectionTitle">ไฟล์ PDF</div>
-                <div class="swalActionRow" style="display:flex;gap:10px;flex-wrap:wrap">
-                  <button type="button" id="btnOpenPdfAfterSave" class="btn primary">เปิด PDF</button>
-                  <button type="button" id="btnCloseAfterSave" class="btn ghost">ปิดหน้าต่าง</button>
-                </div>
-              </div>
-            ` : `
-              <div class="swalSection">
-                <div class="swalActionRow" style="display:flex;gap:10px;flex-wrap:wrap">
-                  <button type="button" id="btnCloseAfterSave" class="btn ghost">ปิดหน้าต่าง</button>
-                </div>
-              </div>
-            `}
-          </div>
-        `,
-        didOpen: () => {
-          const btnOpen = document.getElementById("btnOpenPdfAfterSave");
-          const btnClose = document.getElementById("btnCloseAfterSave");
-
-          if (btnOpen && pdfOpenUrl) {
-            btnOpen.addEventListener("click", () => {
-              window.open(pdfOpenUrl, "_blank", "noopener,noreferrer");
-              Swal.close();
-            });
-          }
-
-          if (btnClose) {
-            btnClose.addEventListener("click", () => {
-              Swal.close();
-            });
-          }
-        },
-        willClose: () => {
-          resetForm();
-          if ($("rptRefNo")) $("rptRefNo").value = "";
-        }
-      });
-
-    } catch (err) {
-      console.error(err);
-      window.ProgressUI?.markError("save", err?.message || "เกิดข้อผิดพลาด", 100);
-      window.ProgressUI?.setHint("กรุณาตรวจสอบข้อมูล เครือข่าย หรือ backend แล้วลองใหม่อีกครั้ง");
-
-      await Swal.fire({
-        icon: "error",
-        title: "บันทึกไม่สำเร็จ",
-        text: err?.message || String(err),
-        confirmButtonText: "ตกลง"
-      });
-
-      window.ProgressUI?.hide(180);
+    const dupBeforeSend = await checkReportRefDuplicate_({ force: true });
+    if (dupBeforeSend.duplicated) {
+      Progress?.markError("validate", "เลขอ้างอิงซ้ำ", 8);
+      Progress?.hide(150);
+      await showReportDuplicateAlert_(dupBeforeSend.result);
+      $("rptRefNo")?.focus();
+      return;
     }
+
+    await (window.sleepMs ? window.sleepMs(160) : new Promise((r) => setTimeout(r, 160)));
+    Progress?.markDone("validate", 14, "ตรวจสอบข้อมูลเรียบร้อย");
+
+    Progress?.activateOnly("upload", 18, "กำลังเตรียมรูปภาพสำหรับรายงาน");
+    const uploadProg = typeof window.estimateUploadProgressByFiles === "function"
+      ? window.estimateUploadProgressByFiles(Math.max(images.length, 1), 18, 42)
+      : {
+          next: (currentIndex) => {
+            const count = Math.max(1, images.length || 1);
+            const ratio = Math.max(0, Math.min(1, currentIndex / count));
+            return Math.round(18 + ((42 - 18) * ratio));
+          }
+        };
+
+    images.forEach((_, idx) => {
+      Progress?.setProgress(uploadProg.next(idx + 1), `เตรียมรูปภาพ ${idx + 1}/${images.length || 1}`);
+    });
+
+    await (window.sleepMs ? window.sleepMs(120) : new Promise((r) => setTimeout(r, 120)));
+    Progress?.markDone("upload", 44, `เตรียมรูปภาพเรียบร้อย (${images.length} รูป)`);
+
+    Progress?.activateOnly("save", 56, "กำลังบันทึกข้อมูล Report");
+
+    const res = await fetch(apiUrl("/report500/submit"), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        pass: auth.pass,
+        payload,
+        files: images
+      })
+    });
+
+    const text = await res.text();
+    let json = {};
+    try {
+      json = JSON.parse(text);
+    } catch (_) {
+      throw new Error("Backend ตอบกลับไม่ใช่ JSON");
+    }
+
+    if (!res.ok || !json.ok) {
+      throw new Error(json?.error || `บันทึกข้อมูลไม่สำเร็จ (HTTP ${res.status})`);
+    }
+
+    Progress?.markDone("save", 72, "บันทึกข้อมูลลงระบบเรียบร้อย");
+
+    Progress?.activateOnly("pdf", 84, "กำลังสร้างไฟล์ PDF");
+    await (window.sleepMs ? window.sleepMs(180) : new Promise((r) => setTimeout(r, 180)));
+
+    if (json.pdfFileId || json.pdfUrl) {
+      const sizeText = json.pdfSizeText ? ` (${json.pdfSizeText})` : "";
+      Progress?.markDone("pdf", 93, `สร้างไฟล์ PDF เรียบร้อย${sizeText}`);
+    } else {
+      Progress?.markDone("pdf", 93, "สร้างไฟล์ PDF เรียบร้อย");
+    }
+
+    Progress?.activateOnly("email", 97, "กำลังตรวจสอบผลการส่งอีเมล");
+    await (window.sleepMs ? window.sleepMs(160) : new Promise((r) => setTimeout(r, 160)));
+
+    const emailResult = json.emailResult || {};
+    const emailOk = !!emailResult.ok;
+    const emailSkipped = !!emailResult.skipped;
+    const attachmentMode = String(emailResult.attachmentMode || "").trim();
+    const emailErr = String(emailResult.error || "").trim();
+
+    let emailText = "ส่งอีเมลเรียบร้อย";
+    if (attachmentMode === "LINK_ONLY") emailText = "ส่งอีเมลพร้อมลิงก์ PDF";
+    if (attachmentMode === "ATTACHED") emailText = "ส่งอีเมลพร้อมไฟล์ PDF";
+
+    if (emailOk) {
+      Progress?.markDone("email", 100, emailText, emailText);
+      Progress?.success("บันทึกสำเร็จ", "รายงานถูกบันทึกเรียบร้อยแล้ว");
+    } else if (emailSkipped) {
+      Progress?.markDone("email", 100, "ไม่ได้เลือกส่งอีเมล", "ข้าม");
+      Progress?.success("บันทึกสำเร็จ", "บันทึกข้อมูลและสร้าง PDF เรียบร้อยแล้ว");
+    } else {
+      Progress?.markError("email", "ส่งอีเมลไม่สำเร็จ", 100);
+      Progress?.success("บันทึกสำเร็จ", "ข้อมูลและ PDF สำเร็จแล้ว แต่การส่งอีเมลไม่สำเร็จ");
+      Progress?.setHint(emailErr || "กรุณาตรวจสอบสิทธิ์เมลหรือขนาดไฟล์ PDF");
+    }
+
+    Progress?.hide(120);
+
+    const pdfOpenUrl = json.pdfUrl
+      ? String(json.pdfUrl)
+      : (json.refNo ? apiUrl(`/report500/pdf/${encodeURIComponent(json.refNo)}`) : "");
+
+    await Swal.fire({
+      icon: (emailOk || emailSkipped) ? "success" : "warning",
+      title: (emailOk || emailSkipped) ? "บันทึก Report สำเร็จ" : "บันทึก Report สำเร็จบางส่วน",
+      showConfirmButton: false,
+      width: 820,
+      html: `
+        <div class="swalSummary">
+          <div class="swalHero">
+            <div class="swalHeroTitle">บันทึกรายงานเรียบร้อยแล้ว</div>
+            <div class="swalHeroSub">ระบบจัดเก็บข้อมูล รูปภาพ และไฟล์ PDF เรียบร้อย</div>
+            <div class="swalPillRow">
+              <div class="swalPill primary">Ref: ${escapeHtml(json.refNo || payload.refNo || "-")}</div>
+              <div class="swalPill">รูป ${Number(json.imageCount || images.length || 0)}</div>
+              <div class="swalPill">${emailOk ? "ส่งอีเมลสำเร็จ" : emailSkipped ? "ไม่ได้ส่งอีเมล" : "อีเมลไม่สำเร็จ"}</div>
+            </div>
+          </div>
+
+          <div class="swalSection">
+            <div class="swalSectionTitle">สรุปผลการบันทึก</div>
+            <div class="swalKvGrid">
+              <div class="swalKv">
+                <div class="swalKvLabel">Ref No.</div>
+                <div class="swalKvValue">${escapeHtml(json.refNo || payload.refNo || "-")}</div>
+              </div>
+              <div class="swalKv">
+                <div class="swalKvLabel">ผู้บันทึก</div>
+                <div class="swalKvValue">${escapeHtml(payload.reportedBy || auth.name || "-")}</div>
+              </div>
+              <div class="swalKv">
+                <div class="swalKvLabel">จำนวนรูปภาพ</div>
+                <div class="swalKvValue">${escapeHtml(String(Number(json.imageCount || images.length || 0)))}</div>
+              </div>
+              <div class="swalKv">
+                <div class="swalKvLabel">สถานะอีเมล</div>
+                <div class="swalKvValue">${escapeHtml(emailOk ? emailText : emailSkipped ? "ไม่ได้เลือกส่งอีเมล" : (emailErr || "ส่งอีเมลไม่สำเร็จ"))}</div>
+              </div>
+            </div>
+          </div>
+
+          ${pdfOpenUrl ? `
+            <div class="swalSection">
+              <div class="swalSectionTitle">ไฟล์ PDF</div>
+              <div class="swalActionRow" style="display:flex;gap:10px;flex-wrap:wrap">
+                <button type="button" id="btnOpenPdfAfterSave" class="btn primary">เปิด PDF</button>
+                <button type="button" id="btnCloseAfterSave" class="btn ghost">ปิดหน้าต่าง</button>
+              </div>
+            </div>
+          ` : `
+            <div class="swalSection">
+              <div class="swalActionRow" style="display:flex;gap:10px;flex-wrap:wrap">
+                <button type="button" id="btnCloseAfterSave" class="btn ghost">ปิดหน้าต่าง</button>
+              </div>
+            </div>
+          `}
+        </div>
+      `,
+      didOpen: () => {
+        const btnOpen = document.getElementById("btnOpenPdfAfterSave");
+        const btnClose = document.getElementById("btnCloseAfterSave");
+
+        if (btnOpen && pdfOpenUrl) {
+          btnOpen.addEventListener("click", () => {
+            window.open(pdfOpenUrl, "_blank", "noopener,noreferrer");
+            Swal.close();
+          });
+        }
+
+        if (btnClose) {
+          btnClose.addEventListener("click", () => {
+            Swal.close();
+          });
+        }
+      },
+      willClose: () => {
+        resetReportRefDuplicateUi_();
+        resetForm();
+        if ($("rptRefNo")) $("rptRefNo").value = "";
+      }
+    });
+
+    return json;
+  } catch (err) {
+    console.error(err);
+    window.ProgressUI?.markError("save", err?.message || "เกิดข้อผิดพลาด", 100);
+    window.ProgressUI?.setHint("กรุณาตรวจสอบข้อมูล เครือข่าย หรือ backend แล้วลองใหม่อีกครั้ง");
+
+    await Swal.fire({
+      icon: "error",
+      title: "บันทึกไม่สำเร็จ",
+      text: err?.message || String(err),
+      confirmButtonText: "ตกลง"
+    });
+
+    window.ProgressUI?.hide(180);
   }
+}
 function initRepeatFooters() {
   [
     "rptPersonList",
@@ -2392,11 +2677,12 @@ function initRepeatFooters() {
       renderOptionMatrix("rptUrgencyTypes", "rptUrgencyTypes", state.options.urgencyList);
       renderOptionMatrix("rptNotifyTo", "rptNotifyTo", state.options.notifyToList);
 
-      renderSelect("rptWhereDidItHappen", state.options.locationList, true);
-
+   renderSelect("rptWhereDidItHappen", state.options.locationList, true);
 if ($("rptWhereDidItHappen")) {
   $("rptWhereDidItHappen").value = "";
 }
+
+bindReportRefDuplicateCheck_();
 
       renderWhereTypeSelections();
       renderSelect("rptReporterPosition", state.options.reporterPositionList, true);
