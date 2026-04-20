@@ -503,17 +503,32 @@ function setRefDuplicateHint_(formType, message, isError = false) {
 
   if (!el) return;
 
-  const text = String(message || "")
-    .replace(/เลขอ้างอิงซ้ำ\s*/g, "")
-    .replace(/Ref ที่กรอก:/g, "\nRef ที่กรอก:")
-    .replace(/Ref มาตรฐาน:/g, "\nRef มาตรฐาน:")
-    .replace(/ซ้ำกับเอกสาร Error_BOL เดิม:/g, "\nซ้ำกับเอกสาร Error_BOL เดิม:\n")
-    .replace(/ซ้ำกับ Report เดิม:/g, "\nซ้ำกับ Report เดิม:\n")
-    .trim();
+  const raw = String(message || "").trim();
+  if (!raw) {
+    el.innerHTML = "";
+    el.classList.add("hidden");
+    el.classList.toggle("error", false);
+    return;
+  }
 
-  el.textContent = text || "";
-  el.classList.toggle("hidden", !text);
-  el.classList.toggle("error", !!(text && isError));
+  const formatted = raw
+    .replace(/^เลขอ้างอิงซ้ำ\s*/i, "")
+    .replace(/Ref ที่กรอก:/g, '||Ref ที่กรอก:')
+    .replace(/Ref มาตรฐาน:/g, '||Ref มาตรฐาน:')
+    .replace(/ซ้ำกับเอกสาร Error_BOL เดิม:/g, '||ซ้ำกับเอกสาร Error_BOL เดิม:')
+    .replace(/ซ้ำกับ Report เดิม:/g, '||ซ้ำกับ Report เดิม:')
+    .split("||")
+    .map(s => s.trim())
+    .filter(Boolean);
+
+  el.innerHTML = formatted.map((line, idx) => {
+    const cls = idx < 2 ? "refDupLine refDupMain" : "refDupLine refDupMeta";
+    const block = idx === 2 ? " refDupBlock" : "";
+    return `<span class="${cls}${block}">${escapeHtml(line)}</span>`;
+  }).join("");
+
+  el.classList.remove("hidden");
+  el.classList.toggle("error", !!isError);
 }
 function setRefFieldInvalidState_(formType, invalid) {
   const runningEl = formType === "report500"
