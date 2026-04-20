@@ -3882,86 +3882,198 @@ body.img-editor-lock{
   }
 }
 /* ==========================
-   REF DUPLICATE DISPLAY - STRONG VERSION
+   REF DUPLICATE DISPLAY - RESPONSIVE CLEAN VERSION
    ========================== */
 
-/* base */
-#refDuplicateHint,
-#rptRefDuplicateHint{
-  display:none;
-  margin-top:10px;
-  padding:12px 14px;
-  border-radius:12px;
-  font-size:14px;
-  line-height:1.65;
-  white-space:pre-line;
-  word-break:break-word;
-  transition:all .18s ease;
+/* container ของฟิลด์ ref */
+.field:has(#refDuplicateHint),
+.field:has(#rptRefDuplicateHint){
+  min-width:0;
 }
 
-/* show when JS removes .hidden */
-#refDuplicateHint:not(.hidden),
-#rptRefDuplicateHint:not(.hidden){
-  display:block;
+/* แถว ref */
+.refRow{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) 26px 110px;
+  gap:10px;
+  align-items:center;
+  min-width:0;
 }
 
-/* strong duplicate style */
-#refDuplicateHint:not(.hidden),
-#rptRefDuplicateHint:not(.hidden),
-#refDuplicateHint.error,
-#rptRefDuplicateHint.error{
-  color:#b91c1c !important;
-  background:#fff1f2 !important;
-  border:2px solid #ef4444 !important;
-  box-shadow:0 8px 18px rgba(239,68,68,.12) !important;
-  font-weight:800 !important;
-}
-
-/* headline */
-#refDuplicateHint:not(.hidden)::before,
-#rptRefDuplicateHint:not(.hidden)::before{
-  content:"พบเลข Ref ซ้ำ";
-  display:block;
-  margin-bottom:6px;
-  color:#991b1b;
-  font-size:12px;
+.refDash{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:28px;
   font-weight:900;
-  letter-spacing:.3px;
-  text-transform:uppercase;
+  line-height:1;
+  color:#64748b;
 }
 
-/* invalid input */
+/* highlight ตอน invalid */
+.refRow:has(#refNo.is-invalid),
+.refRow:has(#rptRefNo.is-invalid){
+  padding:8px;
+  border-radius:16px;
+  background:rgba(239,68,68,.06);
+}
+
+/* input invalid */
 #refNo.is-invalid,
 #refYear.is-invalid,
 #rptRefNo.is-invalid,
 #rptRefYear.is-invalid{
   border:2px solid #ef4444 !important;
-  background:#fff5f5 !important;
+  background:#fff7f7 !important;
   color:#991b1b !important;
   font-weight:800 !important;
-  box-shadow:0 0 0 4px rgba(239,68,68,.12) !important;
+  box-shadow:0 0 0 4px rgba(239,68,68,.10) !important;
 }
 
-/* highlight row */
-.refRow:has(#refNo.is-invalid),
-.refRow:has(#rptRefNo.is-invalid){
-  padding:8px;
-  border-radius:14px;
-  background:rgba(239,68,68,.08);
-}
-
-/* make slash stand out too */
 .refRow:has(#refNo.is-invalid) .refDash,
 .refRow:has(#rptRefNo.is-invalid) .refDash{
-  color:#b91c1c;
+  color:#dc2626;
+}
+
+/* hint base */
+#refDuplicateHint,
+#rptRefDuplicateHint{
+  display:none;
+  width:100%;
+  margin-top:12px;
+  padding:14px 16px;
+  border-radius:14px;
+  border:1.5px solid transparent;
+  font-size:14px;
+  line-height:1.75;
+  letter-spacing:.1px;
+  word-break:break-word;
+  overflow-wrap:anywhere;
+  white-space:normal;
+  box-sizing:border-box;
+}
+
+/* แสดงเมื่อ JS เอา hidden ออก */
+#refDuplicateHint:not(.hidden),
+#rptRefDuplicateHint:not(.hidden){
+  display:block;
+  color:#b91c1c !important;
+  background:linear-gradient(180deg,#fff8f8 0%, #feecec 100%) !important;
+  border-color:#ef4444 !important;
+  box-shadow:0 10px 24px rgba(239,68,68,.10);
+}
+
+/* หัวข้อ */
+#refDuplicateHint:not(.hidden)::before,
+#rptRefDuplicateHint:not(.hidden)::before{
+  content:"พบเลข Ref ซ้ำ";
+  display:block;
+  margin-bottom:8px;
+  padding-bottom:6px;
+  border-bottom:1px solid rgba(239,68,68,.22);
+  color:#991b1b;
+  font-size:12px;
+  font-weight:900;
+  letter-spacing:.35px;
+  text-transform:uppercase;
+}
+
+/* ทำให้ข้อความข้างในอ่านง่ายขึ้น */
+#refDuplicateHint strong,
+#rptRefDuplicateHint strong{
+  display:inline;
+  color:#7f1d1d;
+  font-size:15px;
   font-weight:900;
 }
 
-/* mobile */
-@media (max-width: 768px){
+/* ถ้า JS ใช้ class error อยู่ด้วย */
+#refDuplicateHint.error,
+#rptRefDuplicateHint.error{
+  color:#b91c1c !important;
+}
+
+/* บังคับให้กล่อง hint ไม่แคบเกินใน field ที่อยู่ซ้าย */
+.gridCompact .field #refDuplicateHint,
+.gridCompact .field #rptRefDuplicateHint{
+  max-width:100%;
+}
+
+/* ช่วยให้ input/select ไม่ดัน layout */
+#refNo,
+#rptRefNo,
+#refYear,
+#rptRefYear{
+  min-width:0;
+}
+
+/* Tablet */
+@media (max-width: 1024px){
+  .refRow{
+    grid-template-columns:minmax(0,1fr) 22px 96px;
+    gap:8px;
+  }
+
+  .refDash{
+    font-size:24px;
+  }
+
   #refDuplicateHint,
   #rptRefDuplicateHint{
     font-size:13px;
-    padding:10px 12px;
+    line-height:1.7;
+    padding:13px 14px;
+  }
+}
+
+/* Mobile */
+@media (max-width: 768px){
+  .refRow{
+    grid-template-columns:minmax(0,1fr) 18px 86px;
+    gap:6px;
+  }
+
+  .refDash{
+    font-size:20px;
+  }
+
+  #refDuplicateHint,
+  #rptRefDuplicateHint{
+    margin-top:10px;
+    padding:12px 12px;
+    border-radius:12px;
+    font-size:12.5px;
+    line-height:1.65;
+  }
+
+  #refDuplicateHint:not(.hidden)::before,
+  #rptRefDuplicateHint:not(.hidden)::before{
+    font-size:11px;
+    margin-bottom:6px;
+    padding-bottom:5px;
+  }
+
+  #refDuplicateHint strong,
+  #rptRefDuplicateHint strong{
+    font-size:13px;
+  }
+}
+
+/* จอเล็กมาก */
+@media (max-width: 480px){
+  .refRow{
+    grid-template-columns:minmax(0,1fr) 14px 74px;
+    gap:5px;
+  }
+
+  .refDash{
+    font-size:18px;
+  }
+
+  #refDuplicateHint,
+  #rptRefDuplicateHint{
+    font-size:12px;
+    line-height:1.6;
+    padding:10px 10px;
   }
 }
