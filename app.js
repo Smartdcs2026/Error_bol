@@ -492,8 +492,16 @@ function getErrorBolRefHintEl_() {
   return document.getElementById("refDuplicateHint");
 }
 
+function getErrorBolRefWrapEl_() {
+  return document.getElementById("refDuplicateWrap");
+}
+
 function getReportRefHintEl_() {
   return document.getElementById("rptRefDuplicateHint");
+}
+
+function getReportRefWrapEl_() {
+  return document.getElementById("rptRefDuplicateWrap");
 }
 
 function setRefDuplicateHint_(formType, message, isError = false) {
@@ -501,22 +509,26 @@ function setRefDuplicateHint_(formType, message, isError = false) {
     ? getReportRefHintEl_()
     : getErrorBolRefHintEl_();
 
-  if (!el) return;
+  const wrap = formType === "report500"
+    ? getReportRefWrapEl_()
+    : getErrorBolRefWrapEl_();
+
+  if (!el || !wrap) return;
 
   const raw = String(message || "").trim();
+
   if (!raw) {
     el.innerHTML = "";
-    el.classList.add("hidden");
-    el.classList.toggle("error", false);
+    wrap.classList.add("hidden");
     return;
   }
 
   const formatted = raw
     .replace(/^เลขอ้างอิงซ้ำ\s*/i, "")
-    .replace(/Ref ที่กรอก:/g, '||Ref ที่กรอก:')
-    .replace(/Ref มาตรฐาน:/g, '||Ref มาตรฐาน:')
-    .replace(/ซ้ำกับเอกสาร Error_BOL เดิม:/g, '||ซ้ำกับเอกสาร Error_BOL เดิม:')
-    .replace(/ซ้ำกับ Report เดิม:/g, '||ซ้ำกับ Report เดิม:')
+    .replace(/Ref ที่กรอก:/g, "||Ref ที่กรอก:")
+    .replace(/Ref มาตรฐาน:/g, "||Ref มาตรฐาน:")
+    .replace(/ซ้ำกับเอกสาร Error_BOL เดิม:/g, "||ซ้ำกับเอกสาร Error_BOL เดิม:")
+    .replace(/ซ้ำกับ Report เดิม:/g, "||ซ้ำกับ Report เดิม:")
     .split("||")
     .map(s => s.trim())
     .filter(Boolean);
@@ -527,8 +539,7 @@ function setRefDuplicateHint_(formType, message, isError = false) {
     return `<span class="${cls}${block}">${escapeHtml(line)}</span>`;
   }).join("");
 
-  el.classList.remove("hidden");
-  el.classList.toggle("error", !!isError);
+  wrap.classList.remove("hidden");
 }
 function setRefFieldInvalidState_(formType, invalid) {
   const runningEl = formType === "report500"
@@ -552,10 +563,19 @@ function resetRefDuplicateUi_(formType) {
   state.checked = false;
   state.result = null;
 
-  setRefDuplicateHint_(formType, "", false);
+  const hintEl = formType === "report500"
+    ? getReportRefHintEl_()
+    : getErrorBolRefHintEl_();
+
+  const wrapEl = formType === "report500"
+    ? getReportRefWrapEl_()
+    : getErrorBolRefWrapEl_();
+
+  if (hintEl) hintEl.innerHTML = "";
+  if (wrapEl) wrapEl.classList.add("hidden");
+
   setRefFieldInvalidState_(formType, false);
 }
-
 function buildDuplicateDetailHtml_(result) {
   const matched = result?.matched || {};
   const system = String(result?.system || "").trim().toUpperCase();
@@ -608,12 +628,7 @@ async function checkRefDuplicate_(formType, refNo, opts = {}) {
   const normalizedRef = normalizeFrontendRefNo_(refNo);
 
   if (!normalizedRef) {
-    state.lastRefNo = "";
-    state.duplicated = false;
-    state.checked = false;
-    state.result = null;
-    setRefDuplicateHint_(formType, "", false);
-    setRefFieldInvalidState_(formType, false);
+    resetRefDuplicateUi_(formType);
     return {
       ok: true,
       duplicated: false,
@@ -627,8 +642,7 @@ async function checkRefDuplicate_(formType, refNo, opts = {}) {
       setRefDuplicateHint_(formType, state.result.message || "เลขอ้างอิงซ้ำ", true);
       setRefFieldInvalidState_(formType, true);
     } else {
-      setRefDuplicateHint_(formType, "", false);
-      setRefFieldInvalidState_(formType, false);
+      resetRefDuplicateUi_(formType);
     }
     return {
       ok: true,
@@ -666,8 +680,7 @@ async function checkRefDuplicate_(formType, refNo, opts = {}) {
     setRefDuplicateHint_(formType, json.message || "เลขอ้างอิงซ้ำ", true);
     setRefFieldInvalidState_(formType, true);
   } else {
-    setRefDuplicateHint_(formType, "", false);
-    setRefFieldInvalidState_(formType, false);
+    resetRefDuplicateUi_(formType);
   }
 
   return {
