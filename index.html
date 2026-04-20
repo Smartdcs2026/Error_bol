@@ -16,7 +16,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-<link rel="stylesheet" href="./style.css?v=mobile-2col-v8">
+  <link rel="stylesheet" href="./style.css?v=mobile-2col-v9">
 </head>
 <body>
   <header class="topbar">
@@ -90,7 +90,7 @@
       </div>
 
       <div class="panel">
-        <div class="gridCompact">
+        <div class="gridCompact refTopGrid">
           <div class="field">
             <label for="refNo">Ref No.</label>
             <div class="refRow">
@@ -98,13 +98,16 @@
               <span class="refDash">/</span>
               <select id="refYear"></select>
             </div>
-            <div id="refDuplicateHint" class="fieldHint hidden"></div>
           </div>
 
           <div class="field">
             <label for="lps">ชื่อผู้เข้าใช้งาน</label>
             <input id="lps" placeholder="ระบบแสดงอัตโนมัติหลังเข้าสู่ระบบ" readonly>
           </div>
+        </div>
+
+        <div id="refDuplicateWrap" class="refDuplicateWrap hidden">
+          <div id="refDuplicateHint" class="refDuplicateHintBox"></div>
         </div>
       </div>
 
@@ -308,7 +311,7 @@
       </div>
 
       <div class="panel rptPanel">
-        <div class="gridCompact">
+        <div class="gridCompact refTopGrid">
           <div class="field">
             <label for="rptRefNo">Ref No.</label>
             <div class="refRow">
@@ -316,7 +319,6 @@
               <span class="refDash">/</span>
               <select id="rptRefYear"></select>
             </div>
-            <div id="rptRefDuplicateHint" class="fieldHint hidden"></div>
           </div>
 
           <div class="field">
@@ -333,6 +335,10 @@
             <label for="rptSubject">เรื่อง</label>
             <input id="rptSubject" placeholder="กรอกหัวข้อเรื่องของรายงาน">
           </div>
+        </div>
+
+        <div id="rptRefDuplicateWrap" class="refDuplicateWrap hidden">
+          <div id="rptRefDuplicateHint" class="refDuplicateHintBox"></div>
         </div>
       </div>
 
