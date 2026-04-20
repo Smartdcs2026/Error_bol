@@ -4049,3 +4049,11 @@ body.img-editor-lock{
     border-radius:14px;
   }
 }
+.gridCompact .field{
+  min-width:0;
+}
+
+.gridCompact .field:has(#refDuplicateHint),
+.gridCompact .field:has(#rptRefDuplicateHint){
+  width:100%;
+}
