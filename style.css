@@ -31,6 +31,9 @@
   --container:1120px;
 }
 
+/* =========================
+   RESET / BASE
+========================= */
 *,
 *::before,
 *::after{
@@ -341,7 +344,7 @@ textarea{
 }
 
 /* =========================
-   GRID / FIELD
+   GRID / FIELD / INPUT
 ========================= */
 .gridCompact,
 .gridEmployee{
@@ -371,7 +374,6 @@ label{
   line-height:1.25;
   font-weight:900;
   color:var(--text);
-  min-height:auto;
 }
 
 .fieldHint{
@@ -428,23 +430,6 @@ textarea[readonly]{
   color:#334155;
 }
 
-.refRow{
-  display:grid;
-  grid-template-columns:minmax(0,1fr) 18px 102px;
-  align-items:center;
-  gap:8px;
-}
-
-.refDash{
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  color:#64748b;
-  font-size:28px;
-  font-weight:900;
-  line-height:1;
-}
-
 #refYear,
 #rptRefYear{
   text-align:center;
@@ -466,7 +451,127 @@ input[type="time"]{
 }
 
 /* =========================
-   BUTTONS
+   REF DUPLICATE
+========================= */
+.refTopGrid{
+  gap:14px;
+}
+
+.refRow{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) 22px 120px;
+  gap:10px;
+  align-items:center;
+  min-width:0;
+}
+
+.refDash{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:30px;
+  line-height:1;
+  font-weight:900;
+  color:var(--muted);
+}
+
+#refNo,
+#rptRefNo,
+#refYear,
+#rptRefYear{
+  min-width:0;
+}
+
+#refNo.is-invalid,
+#refYear.is-invalid,
+#rptRefNo.is-invalid,
+#rptRefYear.is-invalid{
+  border:2px solid #ef4444 !important;
+  background:#fff8f8 !important;
+  color:#991b1b !important;
+  font-weight:800 !important;
+  box-shadow:0 0 0 4px rgba(239,68,68,.10) !important;
+}
+
+.refRow:has(#refNo.is-invalid),
+.refRow:has(#rptRefNo.is-invalid){
+  padding:8px;
+  border-radius:16px;
+  background:rgba(239,68,68,.06);
+}
+
+.refRow:has(#refNo.is-invalid) .refDash,
+.refRow:has(#rptRefNo.is-invalid) .refDash{
+  color:#dc2626;
+}
+
+.refDuplicateWrap{
+  width:100%;
+  margin-top:14px;
+}
+
+.refDuplicateWrap.hidden{
+  display:none !important;
+}
+
+.refDuplicateHintBox{
+  width:min(100%,760px);
+  max-width:100%;
+  box-sizing:border-box;
+  padding:16px 18px;
+  border-radius:18px;
+  border:2px solid #ef4444;
+  background:linear-gradient(180deg,#fff8f8 0%,#fff1f2 100%);
+  box-shadow:0 12px 26px rgba(239,68,68,.10);
+  color:#b91c1c;
+  line-height:1.7;
+  font-size:14px;
+  font-weight:700;
+  word-break:break-word;
+  overflow-wrap:anywhere;
+}
+
+.refDuplicateHintBox::before{
+  content:"พบเลข Ref ซ้ำ";
+  display:block;
+  margin-bottom:10px;
+  padding-bottom:8px;
+  border-bottom:1px solid rgba(239,68,68,.20);
+  color:#991b1b;
+  font-size:12px;
+  font-weight:900;
+  letter-spacing:.35px;
+  text-transform:uppercase;
+}
+
+.refDupLine{
+  display:block;
+  margin:0 0 6px 0;
+}
+
+.refDupLine:last-child{
+  margin-bottom:0;
+}
+
+.refDupMain{
+  color:#991b1b;
+  font-size:15px;
+  font-weight:900;
+}
+
+.refDupMeta{
+  color:#b91c1c;
+  font-weight:700;
+}
+
+.refDupBlock{
+  margin-top:10px;
+  padding-top:10px;
+  border-top:1px dashed rgba(239,68,68,.25);
+}
+
+/* =========================
+   BUTTONS / ACTIONS
 ========================= */
 .btn{
   display:inline-flex;
@@ -744,7 +849,7 @@ input[type="time"]{
 }
 
 /* =========================
-   UPLOAD
+   UPLOAD / GALLERY
 ========================= */
 .uploadGrid{
   display:grid;
@@ -787,6 +892,60 @@ input[type="time"]{
   font-size:11px;
   color:var(--muted);
   line-height:1.35;
+}
+
+.galGrid{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:10px;
+}
+
+.galItem{
+  display:block;
+  width:100%;
+  border:none;
+  background:transparent;
+  padding:0;
+  cursor:pointer;
+  text-align:left;
+}
+
+.galThumbWrap{
+  position:relative;
+  overflow:hidden;
+  border:1px solid #dbe7f7;
+  border-radius:14px;
+  background:#fff;
+}
+
+.galThumb{
+  width:100%;
+  aspect-ratio:4 / 3;
+  object-fit:cover;
+}
+
+.galBadge{
+  position:absolute;
+  top:8px;
+  right:8px;
+  min-width:24px;
+  height:24px;
+  padding:0 7px;
+  border-radius:999px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:rgba(15,23,42,.74);
+  color:#fff;
+  font-size:11px;
+  font-weight:900;
+}
+
+.galCap{
+  margin-top:6px;
+  font-size:12px;
+  font-weight:800;
+  color:#334155;
 }
 
 /* =========================
@@ -1254,63 +1413,6 @@ input[type="time"]{
 }
 
 /* =========================
-   GALLERY
-========================= */
-.galGrid{
-  display:grid;
-  grid-template-columns:repeat(3,minmax(0,1fr));
-  gap:10px;
-}
-
-.galItem{
-  display:block;
-  width:100%;
-  border:none;
-  background:transparent;
-  padding:0;
-  cursor:pointer;
-  text-align:left;
-}
-
-.galThumbWrap{
-  position:relative;
-  overflow:hidden;
-  border:1px solid #dbe7f7;
-  border-radius:14px;
-  background:#fff;
-}
-
-.galThumb{
-  width:100%;
-  aspect-ratio:4 / 3;
-  object-fit:cover;
-}
-
-.galBadge{
-  position:absolute;
-  top:8px;
-  right:8px;
-  min-width:24px;
-  height:24px;
-  padding:0 7px;
-  border-radius:999px;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  background:rgba(15,23,42,.74);
-  color:#fff;
-  font-size:11px;
-  font-weight:900;
-}
-
-.galCap{
-  margin-top:6px;
-  font-size:12px;
-  font-weight:800;
-  color:#334155;
-}
-
-/* =========================
    PROGRESS OVERLAY
 ========================= */
 .progress-overlay{
@@ -1321,7 +1423,7 @@ input[type="time"]{
   align-items:center;
   justify-content:center;
   padding:20px;
-  background:rgba(15,23,42,0.52);
+  background:rgba(15,23,42,.52);
   backdrop-filter:blur(7px);
 }
 
@@ -1598,7 +1700,6 @@ body.img-editor-lock{
   pointer-events:none;
 }
 
-/* HEADER */
 .imgEditorHeader{
   grid-area:header;
   display:grid;
@@ -1639,7 +1740,6 @@ body.img-editor-lock{
   white-space:nowrap;
 }
 
-/* BODY / CANVAS */
 .imgEditorBody{
   grid-area:body;
   min-height:0;
@@ -1685,7 +1785,6 @@ body.img-editor-lock{
   backface-visibility:hidden;
 }
 
-/* FLOATING PENCIL BUTTON */
 .ieFloatingToggle{
   position:absolute;
   top:12px;
@@ -1720,7 +1819,6 @@ body.img-editor-lock{
   display:block;
 }
 
-/* SMALL RIGHT PANEL UNDER BUTTON */
 .ieFloatingPanel{
   position:absolute;
   top:66px;
@@ -1756,7 +1854,6 @@ body.img-editor-lock{
   background:transparent;
 }
 
-/* wrapper เดิม */
 .imgEditorToolbarWrap{
   width:100%;
   padding:0;
@@ -1835,7 +1932,6 @@ body.img-editor-lock{
   display:none !important;
 }
 
-/* BUTTONS */
 .imgEditorToolbar .btn,
 .ieToolbarSection .btn{
   width:100%;
@@ -1913,7 +2009,6 @@ body.img-editor-lock{
   box-shadow:0 10px 20px rgba(15,23,42,.18);
 }
 
-/* FIELDS */
 .imgEditorToolbarWrap .ieField,
 .ieField{
   width:100%;
@@ -1964,7 +2059,6 @@ body.img-editor-lock{
   box-shadow:none;
 }
 
-/* FOOTER */
 .imgEditorFooter{
   grid-area:footer;
   display:grid;
@@ -2019,7 +2113,6 @@ body.img-editor-lock{
   white-space:nowrap;
 }
 
-/* ===== Image Editor Toolbar Tone ===== */
 .ieToolbarGridEnhanced .ieToolbarSection{
   border:1px solid #dbe7f5;
   border-radius:16px;
@@ -2099,7 +2192,6 @@ body.img-editor-lock{
   background:#fee2e2;
 }
 
-/* REPORT image row */
 .rptImageActions{
   display:flex;
   justify-content:flex-end;
@@ -2816,6 +2908,12 @@ body.img-editor-lock{
 /* =========================
    RESPONSIVE
 ========================= */
+@media (max-width:1180px){
+  .ieFloatingPanel{
+    width:310px;
+  }
+}
+
 @media (max-width:1080px){
   .container{
     padding-inline:10px;
@@ -2828,11 +2926,25 @@ body.img-editor-lock{
   .galGrid{
     grid-template-columns:repeat(2,minmax(0,1fr));
   }
-}
 
-@media (max-width:1180px){
-  .ieFloatingPanel{
-    width:310px;
+  .refRow{
+    grid-template-columns:minmax(0,1fr) 18px 100px;
+    gap:8px;
+  }
+
+  .refDash{
+    font-size:24px;
+  }
+
+  .refDuplicateHintBox{
+    width:100%;
+    padding:14px 15px;
+    font-size:13px;
+    line-height:1.65;
+  }
+
+  .refDupMain{
+    font-size:14px;
   }
 }
 
@@ -2950,7 +3062,6 @@ body.img-editor-lock{
   .uploadGrid,
   .galGrid,
   .optionMatrix,
-  .rptRepeaterList,
   .sigGrid,
   .swalKvGrid{
     grid-template-columns:repeat(2,minmax(0,1fr));
@@ -2969,251 +3080,61 @@ body.img-editor-lock{
     gap:10px;
   }
 
-  #rptPersonList .gridCompact,
-  #rptPersonList .gridEmployee,
-  #rptDamageList .gridCompact,
-  #rptDamageList .gridEmployee,
-  #rptStepTakenList .gridCompact,
-  #rptStepTakenList .gridEmployee,
-  #rptEvidenceList .gridCompact,
-  #rptEvidenceList .gridEmployee,
-  #rptCauseList .gridCompact,
-  #rptCauseList .gridEmployee,
-  #rptPreventionList .gridCompact,
-  #rptPreventionList .gridEmployee,
-  #rptLearningList .gridCompact,
-  #rptLearningList .gridEmployee,
-  #rptImageList .gridCompact,
-  #rptImageList .gridEmployee{
-    grid-template-columns:1fr;
-    gap:10px;
-  }
-
-  .actions{
-    grid-template-columns:1fr;
-  }
-
-  .refRow{
-    grid-template-columns:minmax(0,1fr) 16px 92px;
-  }
-
-  .loginHeroLogo{
-    width:190px;
-    max-width:72%;
-  }
-
-  .emailItem,
-  .confirmCauseCard,
-  .optionChoiceCard,
-  .rptRepeatCard,
-  .rptBlock{
-    border-radius:13px;
-  }
-
-  .emailItem,
-  .confirmCauseCard,
-  .optionChoiceCard{
-    min-height:46px;
-    padding:9px 10px;
-  }
-
-  .emailText,
-  .confirmCauseText,
-  .optionChoiceText{
-    font-size:11.5px;
-    line-height:1.35;
-  }
-
-  .emailCheckBox,
-  .confirmCauseMark,
-  .optionChoiceMark{
-    width:17px;
-    height:17px;
-    flex:0 0 17px;
-  }
-
-  .panelActions{
-    gap:8px;
-  }
-
-  .panelActions .btn{
-    flex:1 1 calc(50% - 8px);
-  }
-
-  .gridCompact .fieldSpan2,
-  .gridEmployee .fieldSpan2{
-    grid-column:1 / -1;
-  }
-
-  textarea,
-  .field textarea{
-    min-height:96px;
-  }
-
-  .swal2-popup.rptLookupPopup{
-    width:calc(100vw - 10px) !important;
-    border-radius:18px !important;
-  }
-
-  .rptLookupModal{
-    min-height:min(84vh,760px);
-  }
-
-  .rptLookupModalHead{
-    padding:12px 12px 9px;
-  }
-
-  .rptLookupModalTitle{
-    font-size:15px;
-    line-height:1.12;
-  }
-
-  .rptLookupModalSub{
-    font-size:10.8px;
-    line-height:1.45;
-  }
-
   .rptLookupToolbar,
   .rptLookupToolbarCompact{
     grid-template-columns:1fr;
-    gap:8px;
-    padding:10px 12px;
   }
 
   .rptLookupToolbarActions,
   .rptLookupToolbarActionsCompact{
-    display:grid;
-    grid-template-columns:1fr 1fr;
-    gap:8px;
-    width:100%;
+    justify-content:stretch;
   }
 
-  .rptLookupToolbarActions .rptLookupBtn,
-  .rptLookupToolbarActionsCompact .rptLookupBtn{
-    width:100%;
-  }
-
-  .rptLookupBody{
-    padding:10px 12px 12px;
-    min-height:220px;
-  }
-
-  .rptLookupResultGrid,
-  .rptLookupResultGridCompact{
+  .rptLookupActionRow,
+  .rptLookupActionRowCompact{
     grid-template-columns:1fr;
   }
 
   .rptLookupDesktopView{
-    display:block;
-  }
-
-  .rptLookupMobileView{
     display:none;
   }
 
-  .swal2-popup.rptLookupPreviewPopup{
-    width:calc(100vw - 8px) !important;
-    border-radius:16px !important;
+  .rptLookupMobileView{
+    display:block;
   }
 
-  .swal2-popup.rptLookupPreviewPopup .swal2-title.rptLookupPreviewTitle{
-    padding:9px 10px 5px !important;
-    font-size:14px !important;
-    line-height:1.12 !important;
+  .rptLookupRecordItem{
+    grid-template-columns:102px minmax(0,1fr);
+    gap:7px;
+    padding:8px 9px;
   }
 
-  .swal2-popup.rptLookupPreviewPopup .swal2-html-container.rptLookupPreviewHtml{
-    padding:0 6px 6px !important;
+  .rptLookupRecordLabel{
+    font-size:9.8px;
   }
 
-  .swal2-popup.rptLookupPreviewPopup .swal2-actions{
-    padding:8px 10px 10px !important;
+  .rptLookupRecordValue{
+    font-size:11.5px;
+    line-height:1.4;
   }
 
-  .rptLookupPreviewWrap .rptLookupResultCard{
-    padding:4px;
-  }
-
-  .rptLookupPreviewWrap .rptLookupTableWrap,
-  .rptLookupPreviewWrap .rptLookupTableWrapCompact{
-    max-height:min(64vh,560px);
+  .rptLookupTable thead th,
+  .rptLookupTable tbody td,
+  .rptLookupTableCompact thead th,
+  .rptLookupTableCompact tbody td{
+    padding:8px 7px;
+    font-size:11px;
   }
 }
 
 @media (max-width:768px){
-  .imgEditorModal{
-    padding:0;
-  }
-
-  .imgEditorDialog{
-    width:100%;
-    height:100dvh;
-    max-height:100dvh;
-    border-radius:0;
-    border:none;
-    box-shadow:none;
-  }
-
-  .imgEditorBackdrop{
-    backdrop-filter:none;
-    -webkit-backdrop-filter:none;
-  }
-
-  .ieFloatingPanel{
-    background:#ffffff;
-    backdrop-filter:none;
-    -webkit-backdrop-filter:none;
-    box-shadow:0 16px 32px rgba(15,23,42,.18);
-    max-height:52vh;
-  }
-
-  .rptImageActions .btn{
-    flex:1 1 calc(50% - 8px);
-  }
-
-  .rptUtilityBar{
-    grid-template-columns:repeat(2,minmax(0,1fr));
-    gap:8px;
-  }
-
-  .rptUtilityBar .btn{
-    min-height:44px;
-    padding:10px 8px;
-    font-size:12px;
-    letter-spacing:0;
-  }
-}
-
-@media (max-width:640px){
-  :root{
-    --input-h:44px;
-    --radius-card:18px;
-    --radius-panel:15px;
-    --radius-input:13px;
-  }
-
   .topbar{
-    grid-template-columns:minmax(0,1fr) auto;
-    gap:8px;
-    padding:8px 9px;
+    padding:8px 10px;
+    grid-template-columns:minmax(0,1fr);
   }
 
-  .brandTextInline{
-    gap:6px;
-  }
-
-  .brandTextInline .subtitle{
-    display:none;
-  }
-
-  .brandTextInline .title{
-    font-size:12px;
-  }
-
-  .tab{
-    min-height:34px;
-    padding:6px 12px;
-    font-size:11px;
+  .tabsInline{
+    justify-content:flex-start;
   }
 
   .container{
@@ -3229,13 +3150,13 @@ body.img-editor-lock{
   .emailPanel,
   .rptPanel{
     padding:12px;
-    border-radius:15px;
+    border-radius:14px;
   }
 
   .sectionTitle{
     gap:9px;
     margin:12px 0 8px;
-    padding-bottom:8px;
+    padding-bottom:9px;
   }
 
   .sectionMain{
@@ -3243,9 +3164,64 @@ body.img-editor-lock{
   }
 
   .sectionSub{
-    font-size:10px;
+    font-size:10.5px;
   }
 
+  .actions{
+    grid-template-columns:1fr;
+  }
+
+  .sigGrid{
+    grid-template-columns:1fr;
+  }
+
+  .refTopGrid{
+    gap:12px;
+  }
+
+  .refRow{
+    grid-template-columns:minmax(0,1fr) 14px 82px;
+    gap:6px;
+  }
+
+  .refDash{
+    font-size:18px;
+  }
+
+  .refDuplicateWrap{
+    margin-top:12px;
+  }
+
+  .refDuplicateHintBox{
+    width:100%;
+    padding:12px;
+    border-radius:16px;
+    font-size:12px;
+    line-height:1.6;
+  }
+
+  .refDuplicateHintBox::before{
+    font-size:11px;
+    margin-bottom:8px;
+    padding-bottom:6px;
+  }
+
+  .refDupMain{
+    font-size:13px;
+  }
+
+  .rptLookupSummary{
+    flex-direction:column;
+    align-items:flex-start;
+  }
+
+  .rptLookupSummaryActions{
+    width:100%;
+    justify-content:flex-start;
+  }
+}
+
+@media (max-width:480px){
   .gridCompact,
   .gridEmployee,
   .emailSelector,
@@ -3254,264 +3230,55 @@ body.img-editor-lock{
   .uploadGrid,
   .galGrid,
   .optionMatrix,
-  .rptRepeaterList,
   .sigGrid,
   .swalKvGrid{
-    grid-template-columns:repeat(2,minmax(0,1fr));
+    grid-template-columns:1fr;
     gap:8px;
   }
 
-  #rptPersonList,
-  #rptDamageList,
-  #rptStepTakenList,
-  #rptEvidenceList,
-  #rptCauseList,
-  #rptPreventionList,
-  #rptLearningList,
-  #rptImageList{
-    grid-template-columns:1fr;
-    gap:10px;
-  }
-
-  #rptPersonList .gridCompact,
-  #rptPersonList .gridEmployee,
-  #rptDamageList .gridCompact,
-  #rptDamageList .gridEmployee,
-  #rptStepTakenList .gridCompact,
-  #rptStepTakenList .gridEmployee,
-  #rptEvidenceList .gridCompact,
-  #rptEvidenceList .gridEmployee,
-  #rptCauseList .gridCompact,
-  #rptCauseList .gridEmployee,
-  #rptPreventionList .gridCompact,
-  #rptPreventionList .gridEmployee,
-  #rptLearningList .gridCompact,
-  #rptLearningList .gridEmployee,
-  #rptImageList .gridCompact,
-  #rptImageList .gridEmployee{
-    grid-template-columns:1fr;
-    gap:10px;
-  }
-
-  .confirmCauseCard,
-  .optionChoiceCard,
-  .emailItem{
-    min-height:44px;
-    padding:8px 9px;
-  }
-
-  label{
-    font-size:11.5px;
-  }
-
-  .fieldHint,
-  .small,
-  .sectionSub{
-    font-size:10.5px;
-  }
-
-  input,
-  select,
-  textarea{
-    font-size:13px;
-    padding:10px 11px;
-  }
-
-  textarea{
-    min-height:88px;
-  }
-
-  .btn{
-    min-height:40px;
-    font-size:13px;
-    border-radius:13px;
-  }
-
-  .panelActions{
-    gap:6px;
-  }
-
-  .panelActions .btn{
-    flex:1 1 100%;
-  }
-
-  .loginHero{
-    padding:18px 16px 12px;
-    gap:10px;
-  }
-
-  .loginHeroLogo{
-    width:170px;
-    max-width:78%;
-  }
-
-  .loginHero h1{
-    font-size:18px;
-  }
-
-  .loginHero p{
-    font-size:13px;
-    line-height:1.55;
-  }
-
-  .loginForm{
-    padding:14px 16px 16px;
-    gap:10px;
-  }
-
-  .topLoginUserWrap{
-    font-size:10px;
-    min-height:26px;
-    padding:4px 8px;
-  }
-
-  .rptCardHead{
-    padding:11px 11px;
-    gap:10px;
-  }
-
-  .rptCardBody{
-    padding:11px;
-  }
-
-  .rptCardTitle{
-    font-size:12.5px;
-  }
-
-  .rptCardSummary{
-    font-size:10.8px;
-  }
-
-  .rptCardHeadActions{
-    gap:6px;
-  }
-
-  .rptToggleBtn{
-    min-width:34px;
-    height:34px;
-    border-radius:11px;
-    font-size:16px;
-  }
-
-  .rptCardFooterActions{
-    flex-direction:column;
-  }
-
-  .rptCardFooterActions .btn{
-    width:100%;
-  }
-
-  .rptRepeatAddBottom{
-    margin-top:10px;
-  }
-
-  .rptRepeatAddBottomBtn{
-    width:100% !important;
-    max-width:none;
-    min-width:0;
-    border-radius:16px;
-    padding:12px 14px;
-    font-size:14px;
-  }
-
-  .progress-card{
-    border-radius:20px;
-    padding:18px 16px 16px;
-  }
-
-  .progress-head-text h3{
-    font-size:18px;
-  }
-
-  #progressPercentText{
-    font-size:22px;
-  }
-
-  .progress-stage{
-    padding:10px;
-    border-radius:12px;
-  }
-
-  .btnEditImage{
-    min-height:36px;
-    padding:7px 12px;
-    border-radius:11px;
-    font-size:11px;
-  }
-}
-
-@media (max-width:560px){
-  .imgEditorHeader{
-    padding:9px 10px 7px;
-  }
-
-  .imgEditorTitle{
-    font-size:15px;
-  }
-
-  .imgEditorSub{
-    display:none;
-  }
-
-  .imgEditorBody{
-    padding:6px;
-  }
-
-  .ieFloatingToggle{
-    width:40px;
-    height:40px;
-    top:8px;
-    right:8px;
-  }
-
-  .ieFloatingPanel{
-    top:52px;
-    right:8px;
-    width:min(280px,calc(100vw - 16px));
-    max-height:min(48vh,320px);
-    padding:7px;
-    border-radius:14px;
-  }
-
-  .ieToolbarSection{
-    padding:7px;
-    border-radius:13px;
-  }
-
-  .imgEditorToolbar .btn,
-  .ieToolbarSection .btn{
-    min-height:44px;
-    height:44px;
-    padding:4px 3px;
-    border-radius:10px;
-    font-size:8.5px;
-  }
-
-  .imgEditorToolbar .btn::before,
-  .ieToolbarSection .btn::before{
-    font-size:14px;
-  }
-
-  .ieButtonGridEffects,
-  .ieButtonGridView,
-  .ieSectionManage .ieButtonGridView{
-    grid-template-columns:repeat(2,minmax(0,1fr));
-  }
-
-  .imgEditorToolbarWrap .ieField,
-  .ieField{
-    grid-template-columns:34px minmax(0,1fr);
-    min-height:32px;
-    padding:4px 5px;
-    border-radius:10px;
-    font-size:9px;
+  .refRow{
+    grid-template-columns:minmax(0,1fr) 12px 74px;
     gap:5px;
   }
 
-  .imgEditorToolbarWrap .ieField input[type="color"],
-  .ieField input[type="color"]{
-    height:20px;
-    min-height:20px;
+  .refDash{
+    font-size:16px;
+  }
+
+  .refDuplicateHintBox{
+    padding:10px;
+    font-size:11.5px;
+    line-height:1.55;
+  }
+
+  .refDupMain{
+    font-size:12.5px;
+  }
+
+  .emailSelector,
+  .checkList{
+    grid-template-columns:1fr;
+  }
+
+  .confirmCauseGrid{
+    grid-template-columns:1fr;
+  }
+
+  .optionMatrix{
+    grid-template-columns:1fr;
+  }
+
+  .swalKvGrid{
+    grid-template-columns:1fr;
+  }
+
+  .rptLookupResultGrid,
+  .rptLookupResultGridCompact{
+    grid-template-columns:1fr;
+  }
+
+  .rptLookupRecordItem{
+    grid-template-columns:92px minmax(0,1fr);
   }
 
   .imgEditorActions{
@@ -3570,490 +3337,4 @@ body.img-editor-lock{
     font-size:12px;
     line-height:1.5;
   }
-
-  .rptLookupToolbarActions,
-  .rptLookupToolbarActionsCompact,
-  .rptLookupActionRow,
-  .rptLookupActionRowCompact{
-    grid-template-columns:1fr;
-  }
-
-  .rptLookupDesktopView{
-    display:none;
-  }
-
-  .rptLookupMobileView{
-    display:block;
-  }
-
-  .rptLookupRecordItem{
-    grid-template-columns:102px minmax(0,1fr);
-    gap:7px;
-    padding:8px 9px;
-  }
-
-  .rptLookupRecordLabel{
-    font-size:9.8px;
-  }
-
-  .rptLookupRecordValue{
-    font-size:11.5px;
-    line-height:1.4;
-  }
-
-  .rptLookupTable thead th,
-  .rptLookupTable tbody td,
-  .rptLookupTableCompact thead th,
-  .rptLookupTableCompact tbody td{
-    padding:8px 7px;
-    font-size:11px;
-  }
-}
-
-@media (max-width:480px){
-  .gridCompact,
-  .gridEmployee,
-  .emailSelector,
-  .checkList,
-  .confirmCauseGrid,
-  .uploadGrid,
-  .galGrid,
-  .optionMatrix,
-  .rptRepeaterList,
-  .sigGrid,
-  .swalKvGrid{
-    grid-template-columns:repeat(2,minmax(0,1fr));
-    gap:7px;
-  }
-
-  #rptPersonList,
-  #rptDamageList,
-  #rptStepTakenList,
-  #rptEvidenceList,
-  #rptCauseList,
-  #rptPreventionList,
-  #rptLearningList,
-  #rptImageList{
-    grid-template-columns:1fr;
-    gap:10px;
-  }
-
-  #rptPersonList .gridCompact,
-  #rptPersonList .gridEmployee,
-  #rptDamageList .gridCompact,
-  #rptDamageList .gridEmployee,
-  #rptStepTakenList .gridCompact,
-  #rptStepTakenList .gridEmployee,
-  #rptEvidenceList .gridCompact,
-  #rptEvidenceList .gridEmployee,
-  #rptCauseList .gridCompact,
-  #rptCauseList .gridEmployee,
-  #rptPreventionList .gridCompact,
-  #rptPreventionList .gridEmployee,
-  #rptLearningList .gridCompact,
-  #rptLearningList .gridEmployee,
-  #rptImageList .gridCompact,
-  #rptImageList .gridEmployee{
-    grid-template-columns:1fr;
-    gap:10px;
-  }
-
-  .refRow{
-    grid-template-columns:minmax(0,1fr) 14px 82px;
-    gap:6px;
-  }
-
-  .refDash{
-    font-size:22px;
-  }
-
-  .card{
-    padding:10px;
-  }
-
-  .panel,
-  .emailPanel,
-  .rptPanel{
-    padding:10px;
-  }
-
-  .emailItem,
-  .confirmCauseCard,
-  .optionChoiceCard{
-    min-height:42px;
-    padding:8px 8px;
-  }
-
-  .emailText,
-  .confirmCauseText,
-  .optionChoiceText{
-    font-size:10.8px;
-    line-height:1.3;
-  }
-
-  .swalSection{
-    padding:10px;
-  }
-
-  .swalKv,
-  .swalDesc{
-    padding:8px 9px;
-  }
-}
-
-@media (max-width:420px){
-  .rptImageActions .btn{
-    flex:1 1 100%;
-  }
-
-  .imgEditorHeader{
-    padding:10px 12px 10px;
-  }
-
-  .imgEditorFooter{
-    padding:10px 12px;
-  }
-
-  .rptUtilityBar .btn{
-    min-height:42px;
-    font-size:11.5px;
-    padding:9px 6px;
-  }
-
-  .swal2-popup.rptLookupPopup{
-    width:calc(100vw - 6px) !important;
-  }
-
-  .rptLookupModalHead{
-    padding:10px 10px 8px;
-  }
-
-  .rptLookupModalBadge{
-    min-height:24px;
-    padding:3px 8px;
-    font-size:10px;
-  }
-
-  .rptLookupModalTitle{
-    margin-top:7px;
-    font-size:14px;
-  }
-
-  .rptLookupModalSub{
-    font-size:10px;
-    line-height:1.4;
-  }
-
-  .rptLookupToolbar,
-  .rptLookupToolbarCompact{
-    padding:8px 10px;
-  }
-
-  .rptLookupBody{
-    padding:8px 10px 10px;
-  }
-
-  .rptLookupRecordItem{
-    grid-template-columns:92px minmax(0,1fr);
-    gap:6px;
-    padding:8px;
-  }
-
-  .rptLookupRecordTop{
-    padding:8px;
-  }
-
-  .rptLookupRecordIndex{
-    min-height:23px;
-    padding:0 7px;
-    font-size:9.6px;
-  }
-
-  .rptLookupRecordDate{
-    font-size:10.5px;
-  }
-}
-
-@media (max-width:380px){
-  .topbar{
-    grid-template-columns:1fr;
-    align-items:flex-start;
-  }
-
-  .tabsInline{
-    width:100%;
-    justify-content:flex-start;
-    overflow:auto;
-    padding-bottom:2px;
-  }
-
-  .brandInline{
-    gap:8px;
-  }
-
-  .logo,
-  .brandLogoImg{
-    width:28px;
-    height:28px;
-    flex-basis:28px;
-  }
-
-  .gridCompact,
-  .gridEmployee,
-  .emailSelector,
-  .checkList,
-  .confirmCauseGrid,
-  .uploadGrid,
-  .galGrid,
-  .optionMatrix,
-  .rptRepeaterList,
-  .sigGrid,
-  .swalKvGrid{
-    grid-template-columns:1fr;
-  }
-
-  #rptPersonList,
-  #rptDamageList,
-  #rptStepTakenList,
-  #rptEvidenceList,
-  #rptCauseList,
-  #rptPreventionList,
-  #rptLearningList,
-  #rptImageList,
-  #rptPersonList .gridCompact,
-  #rptPersonList .gridEmployee,
-  #rptDamageList .gridCompact,
-  #rptDamageList .gridEmployee,
-  #rptStepTakenList .gridCompact,
-  #rptStepTakenList .gridEmployee,
-  #rptEvidenceList .gridCompact,
-  #rptEvidenceList .gridEmployee,
-  #rptCauseList .gridCompact,
-  #rptCauseList .gridEmployee,
-  #rptPreventionList .gridCompact,
-  #rptPreventionList .gridEmployee,
-  #rptLearningList .gridCompact,
-  #rptLearningList .gridEmployee,
-  #rptImageList .gridCompact,
-  #rptImageList .gridEmployee{
-    grid-template-columns:1fr;
-    gap:10px;
-  }
-
-  .btn{
-    min-height:38px;
-    padding:8px 12px;
-    font-size:12px;
-  }
-
-  .panelActions .btn{
-    flex:1 1 100%;
-  }
-
-  .loginHero{
-    padding:16px 14px 12px;
-  }
-
-  .loginForm{
-    padding:12px 14px 14px;
-  }
-
-  .loginHeroLogo{
-    width:150px;
-    max-width:82%;
-  }
-
-  .loginHero h1{
-    font-size:17px;
-  }
-
-  .loginHero p{
-    font-size:12px;
-  }
-
-  input,
-  select,
-  textarea{
-    font-size:12.5px;
-  }
-
-  textarea{
-    min-height:82px;
-  }
-}
-/* =========================================
-   REF DUPLICATE - CLEAN RESPONSIVE LAYOUT
-   ใช้แทนชุดเดิมทั้งหมด
-   ========================================= */
-
-.refRow{
-  display:grid;
-  grid-template-columns:minmax(0,1fr) 18px 96px;
-  gap:8px;
-  align-items:center;
-  min-width:0;
-}
-
-.refDash{
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  font-size:22px;
-  line-height:1;
-  font-weight:900;
-  color:#64748b;
-}
-
-#refNo,
-#rptRefNo,
-#refYear,
-#rptRefYear{
-  min-width:0;
-}
-
-/* highlight row when invalid */
-.refRow:has(#refNo.is-invalid),
-.refRow:has(#rptRefNo.is-invalid){
-  padding:6px;
-  border-radius:16px;
-  background:rgba(239,68,68,.06);
-}
-
-/* invalid inputs */
-#refNo.is-invalid,
-#refYear.is-invalid,
-#rptRefNo.is-invalid,
-#rptRefYear.is-invalid{
-  border:2px solid #ef4444 !important;
-  background:#fff8f8 !important;
-  color:#991b1b !important;
-  font-weight:800 !important;
-  box-shadow:0 0 0 3px rgba(239,68,68,.10) !important;
-}
-
-.refRow:has(#refNo.is-invalid) .refDash,
-.refRow:has(#rptRefNo.is-invalid) .refDash{
-  color:#dc2626;
-}
-
-/* hint base */
-#refDuplicateHint,
-#rptRefDuplicateHint{
-  display:none;
-  width:100%;
-  max-width:100%;
-  box-sizing:border-box;
-  margin-top:10px;
-  padding:12px 12px;
-  border-radius:16px;
-  border:2px solid #ef4444;
-  background:linear-gradient(180deg,#fff8f8 0%, #fff1f2 100%);
-  color:#b91c1c;
-  box-shadow:0 8px 22px rgba(239,68,68,.10);
-  white-space:normal;
-  word-break:break-word;
-  overflow-wrap:anywhere;
-  line-height:1.65;
-  font-size:13px;
-  font-weight:700;
-}
-
-/* show state */
-#refDuplicateHint:not(.hidden),
-#rptRefDuplicateHint:not(.hidden){
-  display:block;
-}
-
-/* title */
-#refDuplicateHint:not(.hidden)::before,
-#rptRefDuplicateHint:not(.hidden)::before{
-  content:"พบเลข Ref ซ้ำ";
-  display:block;
-  margin-bottom:8px;
-  padding-bottom:6px;
-  border-bottom:1px solid rgba(239,68,68,.20);
-  color:#991b1b;
-  font-size:11px;
-  font-weight:900;
-  letter-spacing:.3px;
-  text-transform:uppercase;
-}
-
-/* formatting lines inserted by JS */
-.refDupLine{
-  display:block;
-  margin:0 0 4px 0;
-}
-
-.refDupLine:last-child{
-  margin-bottom:0;
-}
-
-.refDupMain{
-  color:#991b1b;
-  font-weight:900;
-}
-
-.refDupMeta{
-  color:#b91c1c;
-  font-weight:700;
-}
-
-.refDupBlock{
-  display:block;
-  margin-top:8px;
-  padding-top:8px;
-  border-top:1px dashed rgba(239,68,68,.22);
-}
-
-/* tablet */
-@media (min-width: 769px){
-  .refRow{
-    grid-template-columns:minmax(0,1fr) 22px 112px;
-    gap:10px;
-  }
-
-  .refDash{
-    font-size:28px;
-  }
-
-  #refDuplicateHint,
-  #rptRefDuplicateHint{
-    padding:14px 16px;
-    font-size:14px;
-    line-height:1.7;
-  }
-
-  #refDuplicateHint:not(.hidden)::before,
-  #rptRefDuplicateHint:not(.hidden)::before{
-    font-size:12px;
-  }
-}
-
-/* very small phones */
-@media (max-width: 420px){
-  .refRow{
-    grid-template-columns:minmax(0,1fr) 14px 78px;
-    gap:6px;
-  }
-
-  .refDash{
-    font-size:18px;
-  }
-
-  #refDuplicateHint,
-  #rptRefDuplicateHint{
-    font-size:12px;
-    line-height:1.55;
-    padding:10px 10px;
-    border-radius:14px;
-  }
-}
-.gridCompact .field{
-  min-width:0;
-}
-
-.gridCompact .field:has(#refDuplicateHint),
-.gridCompact .field:has(#rptRefDuplicateHint){
-  width:100%;
 }
