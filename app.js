@@ -424,6 +424,9 @@ function buildYearOptionsForSelect(selectEl) {
 function bindRefInputs() {
   bindRefPair_("refNo", "refYear");
   bindRefPair_("rptRefNo", "rptRefYear");
+
+  bindDuplicateRefCheck_("refNo", "refYear", "error_bol");
+  bindDuplicateRefCheck_("rptRefNo", "rptRefYear", "report500");
 }
 
 function bindRefPair_(runningId, yearId) {
@@ -450,7 +453,250 @@ function getRefNoValue() {
 function getRptRefNoValue() {
   return buildRefNo_("rptRefNo", "rptRefYear");
 }
+/** ==========================
+ *  REF DUPLICATE CHECK HELPERS
+ *  เพิ่มใน app.js
+ *  ========================== */
 
+const REF_DUPLICATE_STATE = {
+  errorBol: {
+    lastRefNo: "",
+    duplicated: false,
+    checked: false,
+    result: null
+  },
+  report500: {
+    lastRefNo: "",
+    duplicated: false,
+    checked: false,
+    result: null
+  }
+};
+
+function getRefDuplicateState_(formType) {
+  return formType === "report500"
+    ? REF_DUPLICATE_STATE.report500
+    : REF_DUPLICATE_STATE.errorBol;
+}
+
+function normalizeFrontendRefNo_(value) {
+  return String(value || "")
+    .replace(/\u00A0/g, " ")
+    .replace(/[\u200B-\u200D\uFEFF]/g, "")
+    .replace(/[–—]/g, "-")
+    .replace(/\s+/g, "")
+    .trim();
+}
+
+function getErrorBolRefHintEl_() {
+  return document.getElementById("refDuplicateHint");
+}
+
+function getReportRefHintEl_() {
+  return document.getElementById("rptRefDuplicateHint");
+}
+
+function setRefDuplicateHint_(formType, message, isError = false) {
+  const el = formType === "report500"
+    ? getReportRefHintEl_()
+    : getErrorBolRefHintEl_();
+
+  if (!el) return;
+
+  el.textContent = message || "";
+  el.classList.toggle("hidden", !message);
+  el.classList.toggle("error", !!(message && isError));
+}
+
+function setRefFieldInvalidState_(formType, invalid) {
+  const runningEl = formType === "report500"
+    ? document.getElementById("rptRefNo")
+    : document.getElementById("refNo");
+
+  const yearEl = formType === "report500"
+    ? document.getElementById("rptRefYear")
+    : document.getElementById("refYear");
+
+  [runningEl, yearEl].forEach((el) => {
+    if (!el) return;
+    el.classList.toggle("is-invalid", !!invalid);
+  });
+}
+
+function resetRefDuplicateUi_(formType) {
+  const state = getRefDuplicateState_(formType);
+  state.lastRefNo = "";
+  state.duplicated = false;
+  state.checked = false;
+  state.result = null;
+
+  setRefDuplicateHint_(formType, "", false);
+  setRefFieldInvalidState_(formType, false);
+}
+
+function buildDuplicateDetailHtml_(result) {
+  const matched = result?.matched || {};
+  const system = String(result?.system || "").trim().toUpperCase();
+
+  if (system === "ERROR_BOL") {
+    return `
+      <div class="swalSummary" style="text-align:left">
+        <div class="swalSection">
+          <div class="swalSectionTitle">เลขอ้างอิงซ้ำ</div>
+          <div class="swalKvGrid">
+            <div class="swalKv"><div class="swalKvLabel">Ref ที่กรอก</div><div class="swalKvValue">${escapeHtml(result?.inputRefNo || "-")}</div></div>
+            <div class="swalKv"><div class="swalKvLabel">Ref มาตรฐาน</div><div class="swalKvValue">${escapeHtml(result?.rootRefComparable || "-")}</div></div>
+            <div class="swalKv"><div class="swalKvLabel">Ref เดิม</div><div class="swalKvValue">${escapeHtml(matched.refNo || "-")}</div></div>
+            <div class="swalKv"><div class="swalKvLabel">Revision</div><div class="swalKvValue">${escapeHtml(matched.revisionLabel || "-")}</div></div>
+            <div class="swalKv"><div class="swalKvLabel">พนักงาน</div><div class="swalKvValue">${escapeHtml(matched.employeeName || "-")}</div></div>
+            <div class="swalKv"><div class="swalKvLabel">รหัสพนักงาน</div><div class="swalKvValue">${escapeHtml(matched.employeeCode || "-")}</div></div>
+            <div class="swalKv"><div class="swalKvLabel">สาเหตุ</div><div class="swalKvValue">${escapeHtml(matched.errorReason || "-")}</div></div>
+            <div class="swalKv"><div class="swalKvLabel">วันที่เกิดเหตุ</div><div class="swalKvValue">${escapeHtml(matched.errorDate || "-")}</div></div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  if (system === "REPORT500") {
+    return `
+      <div class="swalSummary" style="text-align:left">
+        <div class="swalSection">
+          <div class="swalSectionTitle">เลขอ้างอิงซ้ำ</div>
+          <div class="swalKvGrid">
+            <div class="swalKv"><div class="swalKvLabel">Ref ที่กรอก</div><div class="swalKvValue">${escapeHtml(result?.inputRefNo || "-")}</div></div>
+            <div class="swalKv"><div class="swalKvLabel">Ref มาตรฐาน</div><div class="swalKvValue">${escapeHtml(result?.rootRefComparable || "-")}</div></div>
+            <div class="swalKv"><div class="swalKvLabel">Ref เดิม</div><div class="swalKvValue">${escapeHtml(matched.refNo || "-")}</div></div>
+            <div class="swalKv"><div class="swalKvLabel">Revision</div><div class="swalKvValue">${escapeHtml(matched.revisionLabel || "-")}</div></div>
+            <div class="swalKv"><div class="swalKvLabel">เรื่อง</div><div class="swalKvValue">${escapeHtml(matched.subject || "-")}</div></div>
+            <div class="swalKv"><div class="swalKvLabel">Reported by</div><div class="swalKvValue">${escapeHtml(matched.reportedBy || "-")}</div></div>
+            <div class="swalKv"><div class="swalKvLabel">วันที่เกิดเหตุ</div><div class="swalKvValue">${escapeHtml(matched.incidentDate || "-")}</div></div>
+            <div class="swalKv"><div class="swalKvLabel">สถานที่</div><div class="swalKvValue">${escapeHtml(matched.whereDidItHappen || "-")}</div></div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  return `<div style="text-align:left;white-space:pre-wrap">${escapeHtml(result?.message || "เลขอ้างอิงซ้ำ")}</div>`;
+}
+
+async function checkRefDuplicate_(formType, refNo, opts = {}) {
+  const state = getRefDuplicateState_(formType);
+  const normalizedRef = normalizeFrontendRefNo_(refNo);
+
+  if (!normalizedRef) {
+    state.lastRefNo = "";
+    state.duplicated = false;
+    state.checked = false;
+    state.result = null;
+    setRefDuplicateHint_(formType, "", false);
+    setRefFieldInvalidState_(formType, false);
+    return {
+      ok: true,
+      duplicated: false,
+      skipped: true,
+      result: null
+    };
+  }
+
+  if (!opts.force && state.checked && state.lastRefNo === normalizedRef && state.result) {
+    if (state.duplicated) {
+      setRefDuplicateHint_(formType, state.result.message || "เลขอ้างอิงซ้ำ", true);
+      setRefFieldInvalidState_(formType, true);
+    } else {
+      setRefDuplicateHint_(formType, "", false);
+      setRefFieldInvalidState_(formType, false);
+    }
+    return {
+      ok: true,
+      duplicated: state.duplicated,
+      cached: true,
+      result: state.result
+    };
+  }
+
+  const url = `${apiUrl("/checkRefDuplicate")}?formType=${encodeURIComponent(formType)}&refNo=${encodeURIComponent(normalizedRef)}`;
+
+  let json = {};
+  const res = await fetch(url, {
+    method: "GET",
+    cache: "no-store"
+  });
+
+  const text = await res.text();
+  try {
+    json = JSON.parse(text);
+  } catch (_) {
+    throw new Error("Backend ตอบกลับไม่ใช่ JSON");
+  }
+
+  if (!res.ok || !json.ok) {
+    throw new Error(json?.message || json?.error || `ตรวจสอบ Ref ไม่สำเร็จ (HTTP ${res.status})`);
+  }
+
+  state.lastRefNo = normalizedRef;
+  state.duplicated = !!json.duplicated;
+  state.checked = true;
+  state.result = json;
+
+  if (json.duplicated) {
+    setRefDuplicateHint_(formType, json.message || "เลขอ้างอิงซ้ำ", true);
+    setRefFieldInvalidState_(formType, true);
+  } else {
+    setRefDuplicateHint_(formType, "", false);
+    setRefFieldInvalidState_(formType, false);
+  }
+
+  return {
+    ok: true,
+    duplicated: !!json.duplicated,
+    result: json
+  };
+}
+
+async function showDuplicateRefAlert_(result) {
+  await Swal.fire({
+    icon: "warning",
+    title: "เลขอ้างอิงซ้ำ",
+    html: buildDuplicateDetailHtml_(result),
+    width: 920,
+    confirmButtonText: "กลับไปแก้ไข Ref"
+  });
+}
+
+function bindDuplicateRefCheck_(runningId, yearId, formType) {
+  const runningEl = document.getElementById(runningId);
+  const yearEl = document.getElementById(yearId);
+  if (!runningEl || !yearEl) return;
+
+  let timer = null;
+
+  const schedule = () => {
+    if (timer) clearTimeout(timer);
+
+    const refNo = formType === "report500"
+      ? (typeof window.getRptRefNoValue === "function" ? window.getRptRefNoValue() : "")
+      : (typeof window.getRefNoValue === "function" ? window.getRefNoValue() : "");
+
+    if (!normalizeFrontendRefNo_(refNo)) {
+      resetRefDuplicateUi_(formType);
+      return;
+    }
+
+    timer = setTimeout(async () => {
+      try {
+        await checkRefDuplicate_(formType, refNo, { force: true });
+      } catch (err) {
+        console.error("checkRefDuplicate failed:", err);
+      }
+    }, 320);
+  };
+
+  runningEl.addEventListener("input", schedule);
+  runningEl.addEventListener("change", schedule);
+  yearEl.addEventListener("change", schedule);
+}
 /** ==========================
  *  GALLERY
  *  ========================== */
@@ -1645,6 +1891,22 @@ async function submitForm() {
     });
   }
 
+  try {
+    const dup = await checkRefDuplicate_("error_bol", getRefNoValue(), { force: true });
+    if (dup.duplicated) {
+      await showDuplicateRefAlert_(dup.result);
+      $("refNo")?.focus();
+      return;
+    }
+  } catch (dupErr) {
+    return Swal.fire({
+      icon: "error",
+      title: "ตรวจสอบ Ref ไม่สำเร็จ",
+      text: dupErr?.message || String(dupErr),
+      confirmButtonText: "ตกลง"
+    });
+  }
+
   let files = [];
   try {
     files = await collectFilesAsBase64({ maxFiles: 6, maxMBEach: 4 });
@@ -1675,7 +1937,17 @@ async function submitForm() {
   );
 
   try {
-    ProgressUI.activateOnly("validate", 10, "ตรวจสอบข้อมูลเรียบร้อย");
+    ProgressUI.activateOnly("validate", 10, "กำลังตรวจสอบ Ref และข้อมูล");
+
+    const dupBeforeSend = await checkRefDuplicate_("error_bol", getRefNoValue(), { force: true });
+    if (dupBeforeSend.duplicated) {
+      ProgressUI.markError("validate", "เลขอ้างอิงซ้ำ", 10);
+      ProgressUI.hide(150);
+      await showDuplicateRefAlert_(dupBeforeSend.result);
+      $("refNo")?.focus();
+      return;
+    }
+
     await safeDelay(140);
     ProgressUI.markDone("validate", 18, "พร้อมส่งข้อมูล");
 
@@ -1751,118 +2023,120 @@ async function submitForm() {
 
     ProgressUI.hide(120);
 
-await Swal.fire({
-  icon: (emailInfo.emailOk || emailInfo.emailSkipped) ? "success" : "warning",
-  title: (emailInfo.emailOk || emailInfo.emailSkipped) ? "บันทึกสำเร็จ" : "บันทึกสำเร็จบางส่วน",
-  showConfirmButton: false,
-  width: 920,
-  html: `
-    <div class="swalSummary">
-      <div class="swalHero">
-        <div class="swalHeroTitle">บันทึกรายการเรียบร้อยแล้ว</div>
-        <div class="swalHeroSub">ระบบจัดเก็บข้อมูล รูปภาพ ลายเซ็น และเอกสาร PDF เรียบร้อย</div>
-        <div class="swalPillRow">
-          <div class="swalPill primary">LPS: ${escapeHtml(AUTH.name || json.lpsName || "-")}</div>
-          <div class="swalPill">Ref: ${escapeHtml(p.refNo || "-")}</div>
-          <div class="swalPill">รูป ${Number((json.imageIds || []).length)}</div>
-        </div>
-      </div>
+    await Swal.fire({
+      icon: (emailInfo.emailOk || emailInfo.emailSkipped) ? "success" : "warning",
+      title: (emailInfo.emailOk || emailInfo.emailSkipped) ? "บันทึกสำเร็จ" : "บันทึกสำเร็จบางส่วน",
+      showConfirmButton: false,
+      width: 920,
+      html: `
+        <div class="swalSummary">
+          <div class="swalHero">
+            <div class="swalHeroTitle">บันทึกรายการเรียบร้อยแล้ว</div>
+            <div class="swalHeroSub">ระบบจัดเก็บข้อมูล รูปภาพ ลายเซ็น และเอกสาร PDF เรียบร้อย</div>
+            <div class="swalPillRow">
+              <div class="swalPill primary">LPS: ${escapeHtml(AUTH.name || json.lpsName || "-")}</div>
+              <div class="swalPill">Ref: ${escapeHtml(p.refNo || "-")}</div>
+              <div class="swalPill">รูป ${Number((json.imageIds || []).length)}</div>
+            </div>
+          </div>
 
-      <div class="swalSection">
-        <div class="swalSectionTitle">ข้อมูลเอกสาร</div>
-        <div class="swalKvGrid">
-          <div class="swalKv"><div class="swalKvLabel">วันที่เวลา</div><div class="swalKvValue">${escapeHtml(json.timestamp || "-")}</div></div>
-          <div class="swalKv"><div class="swalKvLabel">Ref:No.</div><div class="swalKvValue">${escapeHtml(p.refNo || "-")}</div></div>
-          <div class="swalKv"><div class="swalKvLabel">Label CID</div><div class="swalKvValue">${escapeHtml(p.labelCid || "-")}</div></div>
-          <div class="swalKv"><div class="swalKvLabel">ขนาด PDF</div><div class="swalKvValue">${escapeHtml(pdfSizeText)}</div></div>
-        </div>
-      </div>
+          <div class="swalSection">
+            <div class="swalSectionTitle">ข้อมูลเอกสาร</div>
+            <div class="swalKvGrid">
+              <div class="swalKv"><div class="swalKvLabel">วันที่เวลา</div><div class="swalKvValue">${escapeHtml(json.timestamp || "-")}</div></div>
+              <div class="swalKv"><div class="swalKvLabel">Ref:No.</div><div class="swalKvValue">${escapeHtml(p.refNo || "-")}</div></div>
+              <div class="swalKv"><div class="swalKvLabel">Label CID</div><div class="swalKvValue">${escapeHtml(p.labelCid || "-")}</div></div>
+              <div class="swalKv"><div class="swalKvLabel">ขนาด PDF</div><div class="swalKvValue">${escapeHtml(pdfSizeText)}</div></div>
+            </div>
+          </div>
 
-      <div class="swalSection">
-        <div class="swalSectionTitle">สถานะอีเมล</div>
-        ${
-          emailInfo.emailSkipped
-            ? `<div class="swalNote">ไม่ได้ส่งอีเมล เพราะยังไม่ได้เลือกผู้รับ</div>`
-            : emailInfo.emailOk
-              ? `<div class="swalEmailOk">ส่งอีเมลสำเร็จ ${Number(emailInfo.emailResult.count || 0)} รายการ ${emailInfo.emailResult.attachmentMode ? `• ${escapeHtml(emailInfo.emailResult.attachmentMode)}` : ""}</div>`
-              : `<div class="swalEmailFail">บันทึกข้อมูลสำเร็จ แต่ส่งอีเมลไม่สำเร็จ: ${escapeHtml(emailInfo.emailResult.error || "-")}</div>`
+          <div class="swalSection">
+            <div class="swalSectionTitle">สถานะอีเมล</div>
+            ${
+              emailInfo.emailSkipped
+                ? `<div class="swalNote">ไม่ได้ส่งอีเมล เพราะยังไม่ได้เลือกผู้รับ</div>`
+                : emailInfo.emailOk
+                  ? `<div class="swalEmailOk">ส่งอีเมลสำเร็จ ${Number(emailInfo.emailResult.count || 0)} รายการ ${emailInfo.emailResult.attachmentMode ? `• ${escapeHtml(emailInfo.emailResult.attachmentMode)}` : ""}</div>`
+                  : `<div class="swalEmailFail">บันทึกข้อมูลสำเร็จ แต่ส่งอีเมลไม่สำเร็จ: ${escapeHtml(emailInfo.emailResult.error || "-")}</div>`
+            }
+          </div>
+
+          <div class="swalSection">
+            <div class="swalSectionTitle">ลายเซ็น</div>
+            <div class="sigGrid">
+              <div>
+                <div class="sigBoxTitle">หัวหน้างาน</div>
+                ${supSignThumb}
+                <div class="sigName">${escapeHtml(p.otm || "-")}</div>
+              </div>
+              <div>
+                <div class="sigBoxTitle">พนักงาน</div>
+                ${empSignThumb}
+                <div class="sigName">${escapeHtml(p.employeeName || "-")}</div>
+              </div>
+              <div>
+                <div class="sigBoxTitle">ล่ามแปลภาษา</div>
+                ${intSignThumb}
+                <div class="sigName">${escapeHtml(p.interpreterName || "-")}</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="swalSection">
+            <div class="swalSectionTitle">รูปภาพแนบ</div>
+            ${galleryHtml || `<div class="swalNote">ไม่มีรูปภาพแนบ</div>`}
+          </div>
+
+          <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:18px">
+            ${
+              json.pdfUrl
+                ? `<button type="button" id="btnOpenPdfAfterSave" class="swal2-confirm swal2-styled" style="background:#2563eb">เปิด PDF</button>`
+                : ``
+            }
+            <button type="button" id="btnCloseAfterSave" class="swal2-cancel swal2-styled" style="display:inline-block;background:#64748b">ปิดหน้าต่าง</button>
+          </div>
+        </div>
+      `,
+      didOpen: () => {
+        bindGalleryClickInSwal();
+
+        const btnOpen = document.getElementById("btnOpenPdfAfterSave");
+        const btnClose = document.getElementById("btnCloseAfterSave");
+
+        if (btnOpen && json.pdfUrl) {
+          btnOpen.addEventListener("click", () => {
+            window.open(json.pdfUrl, "_blank", "noopener,noreferrer");
+            Swal.close();
+          });
         }
-      </div>
 
-      <div class="swalSection">
-        <div class="swalSectionTitle">ลายเซ็น</div>
-        <div class="sigGrid">
-          <div>
-            <div class="sigBoxTitle">หัวหน้างาน</div>
-            ${supSignThumb}
-            <div class="sigName">${escapeHtml(p.otm || "-")}</div>
-          </div>
-          <div>
-            <div class="sigBoxTitle">พนักงาน</div>
-            ${empSignThumb}
-            <div class="sigName">${escapeHtml(p.employeeName || "-")}</div>
-          </div>
-          <div>
-            <div class="sigBoxTitle">ล่ามแปลภาษา</div>
-            ${intSignThumb}
-            <div class="sigName">${escapeHtml(p.interpreterName || "-")}</div>
-          </div>
-        </div>
-      </div>
-
-      <div class="swalSection">
-        <div class="swalSectionTitle">รูปภาพแนบ</div>
-        ${galleryHtml || `<div class="swalNote">ไม่มีรูปภาพแนบ</div>`}
-      </div>
-
-      <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:18px">
-        ${
-          json.pdfUrl
-            ? `<button type="button" id="btnOpenPdfAfterSave" class="swal2-confirm swal2-styled" style="background:#2563eb">เปิด PDF</button>`
-            : ``
+        if (btnClose) {
+          btnClose.addEventListener("click", () => {
+            Swal.close();
+          });
         }
-        <button type="button" id="btnCloseAfterSave" class="swal2-cancel swal2-styled" style="display:inline-block;background:#64748b">ปิดหน้าต่าง</button>
-      </div>
-    </div>
-  `,
-  didOpen: () => {
-    bindGalleryClickInSwal();
+      },
+      willClose: () => {
+        resetRefDuplicateUi_("error_bol");
+        resetForm();
+      }
+    });
 
-    const btnOpen = document.getElementById("btnOpenPdfAfterSave");
-    const btnClose = document.getElementById("btnCloseAfterSave");
+    return json;
+  } catch (err2) {
+    console.error(err2);
+    ProgressUI.markError("save", err2?.message || "เกิดข้อผิดพลาด", 58);
+    ProgressUI.setHint("กรุณาตรวจสอบข้อมูล เครือข่าย หรือ backend แล้วลองใหม่อีกครั้ง");
 
-    if (btnOpen && json.pdfUrl) {
-      btnOpen.addEventListener("click", () => {
-       window.open(json.pdfUrl, "_blank", "noopener,noreferrer");
-Swal.close();
-      });
-    }
-
-    if (btnClose) {
-      btnClose.addEventListener("click", () => {
-        Swal.close();
-      });
-    }
-  },
-  willClose: () => {
-    resetForm();
+    await Swal.fire({
+      icon: "error",
+      title: "บันทึกไม่สำเร็จ",
+      text: err2?.message || String(err2),
+      confirmButtonText: "ตกลง"
+    });
+  } finally {
+    ProgressUI.hide(180);
   }
-});
-
-} catch (err2) {
-  console.error(err2);
-  ProgressUI.markError("save", err2?.message || "เกิดข้อผิดพลาด", 58);
-  ProgressUI.setHint("กรุณาตรวจสอบข้อมูล เครือข่าย หรือ backend แล้วลองใหม่อีกครั้ง");
-
-  await Swal.fire({
-    icon: "error",
-    title: "บันทึกไม่สำเร็จ",
-    text: err2?.message || String(err2),
-    confirmButtonText: "ตกลง"
-  });
-
-  ProgressUI.hide(180);
-}
 }
 
 async function collectFilesAsBase64({ maxFiles = 6, maxMBEach = 4 } = {}) {
