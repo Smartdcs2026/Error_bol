@@ -2392,10 +2392,11 @@ function initRepeatFooters() {
       renderOptionMatrix("rptUrgencyTypes", "rptUrgencyTypes", state.options.urgencyList);
       renderOptionMatrix("rptNotifyTo", "rptNotifyTo", state.options.notifyToList);
 
-      renderSelect("rptWhereDidItHappen", state.options.locationList, false);
-      if ($("rptWhereDidItHappen") && state.options.whereDidItHappenDefault) {
-        $("rptWhereDidItHappen").value = state.options.whereDidItHappenDefault;
-      }
+      renderSelect("rptWhereDidItHappen", state.options.locationList, true);
+
+if ($("rptWhereDidItHappen")) {
+  $("rptWhereDidItHappen").value = "";
+}
 
       renderWhereTypeSelections();
       renderSelect("rptReporterPosition", state.options.reporterPositionList, true);
