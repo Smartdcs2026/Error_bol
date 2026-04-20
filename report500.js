@@ -191,16 +191,31 @@
 function setReportRefDuplicateUi_(message, invalid) {
   const hint = getReportRefHintEl_();
   if (hint) {
-    const text = String(message || "")
-      .replace(/เลขอ้างอิงซ้ำ\s*/g, "")
-      .replace(/Ref ที่กรอก:/g, "\nRef ที่กรอก:")
-      .replace(/Ref มาตรฐาน:/g, "\nRef มาตรฐาน:")
-      .replace(/ซ้ำกับ Report เดิม:/g, "\nซ้ำกับ Report เดิม:\n")
-      .trim();
+    const raw = String(message || "").trim();
 
-    hint.textContent = text || "";
-    hint.classList.toggle("hidden", !text);
-    hint.classList.toggle("error", !!(text && invalid));
+    if (!raw) {
+      hint.innerHTML = "";
+      hint.classList.add("hidden");
+      hint.classList.toggle("error", false);
+    } else {
+      const formatted = raw
+        .replace(/^เลขอ้างอิงซ้ำ\s*/i, "")
+        .replace(/Ref ที่กรอก:/g, '||Ref ที่กรอก:')
+        .replace(/Ref มาตรฐาน:/g, '||Ref มาตรฐาน:')
+        .replace(/ซ้ำกับ Report เดิม:/g, '||ซ้ำกับ Report เดิม:')
+        .split("||")
+        .map(s => s.trim())
+        .filter(Boolean);
+
+      hint.innerHTML = formatted.map((line, idx) => {
+        const cls = idx < 2 ? "refDupLine refDupMain" : "refDupLine refDupMeta";
+        const block = idx === 2 ? " refDupBlock" : "";
+        return `<span class="${cls}${block}">${escapeHtml(line)}</span>`;
+      }).join("");
+
+      hint.classList.remove("hidden");
+      hint.classList.toggle("error", !!invalid);
+    }
   }
 
   $("rptRefNo")?.classList.toggle("is-invalid", !!invalid);
