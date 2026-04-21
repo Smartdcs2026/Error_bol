@@ -312,6 +312,7 @@ function setReportRefDuplicateUi_(message, invalid) {
         .replace(/^เลขอ้างอิงซ้ำ\s*/i, "")
         .replace(/Ref ที่กรอก:/g, "||Ref ที่กรอก:")
         .replace(/Ref มาตรฐาน:/g, "||Ref มาตรฐาน:")
+        .replace(/ซ้ำกับเอกสาร Error_BOL เดิม:/g, "||ซ้ำกับเอกสาร Error_BOL เดิม:")
         .replace(/ซ้ำกับ Report เดิม:/g, "||ซ้ำกับ Report เดิม:")
         .split("||")
         .map(s => s.trim())
@@ -389,6 +390,36 @@ async function checkReportRefDuplicate_(opts = {}) {
 
 async function showReportDuplicateAlert_(result) {
   const matched = result?.matched || {};
+  const sourceSystem = String(matched?.sourceSystem || result?.system || "").trim().toUpperCase();
+
+  const systemLabel = sourceSystem === "REPORT500" ? "Report500" : "Error_BOL";
+  const titleText = sourceSystem === "REPORT500"
+    ? "ไม่สามารถบันทึก Report ได้ เนื่องจาก Ref นี้ถูกใช้ในระบบ Report500 แล้ว"
+    : "ไม่สามารถบันทึก Report ได้ เนื่องจาก Ref นี้ถูกใช้ในระบบ Error_BOL แล้ว";
+
+  const commonTop = `
+    <div class="swalKv"><div class="swalKvLabel">ระบบที่พบข้อมูลซ้ำ</div><div class="swalKvValue">${escapeHtml(systemLabel)}</div></div>
+    <div class="swalKv"><div class="swalKvLabel">Ref ที่กรอก</div><div class="swalKvValue">${escapeHtml(result?.inputRefNo || "-")}</div></div>
+    <div class="swalKv"><div class="swalKvLabel">Ref มาตรฐาน</div><div class="swalKvValue">${escapeHtml(result?.rootRefComparable || "-")}</div></div>
+    <div class="swalKv"><div class="swalKvLabel">Ref เดิม</div><div class="swalKvValue">${escapeHtml(matched.refNo || "-")}</div></div>
+    <div class="swalKv"><div class="swalKvLabel">Revision</div><div class="swalKvValue">${escapeHtml(matched.revisionLabel || "-")}</div></div>
+  `;
+
+  const detailHtml = sourceSystem === "REPORT500"
+    ? `
+      <div class="swalKv"><div class="swalKvLabel">เรื่อง</div><div class="swalKvValue">${escapeHtml(matched.subject || "-")}</div></div>
+      <div class="swalKv"><div class="swalKvLabel">Reported by</div><div class="swalKvValue">${escapeHtml(matched.reportedBy || "-")}</div></div>
+      <div class="swalKv"><div class="swalKvLabel">วันที่เกิดเหตุ</div><div class="swalKvValue">${escapeHtml(matched.incidentDate || "-")}</div></div>
+      <div class="swalKv"><div class="swalKvLabel">สถานที่</div><div class="swalKvValue">${escapeHtml(matched.whereDidItHappen || "-")}</div></div>
+      <div class="swalKv"><div class="swalKvLabel">สาขา</div><div class="swalKvValue">${escapeHtml(matched.branch || "-")}</div></div>
+    `
+    : `
+      <div class="swalKv"><div class="swalKvLabel">พนักงาน</div><div class="swalKvValue">${escapeHtml(matched.employeeName || "-")}</div></div>
+      <div class="swalKv"><div class="swalKvLabel">รหัสพนักงาน</div><div class="swalKvValue">${escapeHtml(matched.employeeCode || "-")}</div></div>
+      <div class="swalKv"><div class="swalKvLabel">สาเหตุ</div><div class="swalKvValue">${escapeHtml(matched.errorReason || "-")}</div></div>
+      <div class="swalKv"><div class="swalKvLabel">วันที่เกิดเหตุ</div><div class="swalKvValue">${escapeHtml(matched.errorDate || "-")}</div></div>
+      <div class="swalKv"><div class="swalKvLabel">ผู้บันทึก</div><div class="swalKvValue">${escapeHtml(matched.lps || "-")}</div></div>
+    `;
 
   await Swal.fire({
     icon: "warning",
@@ -396,40 +427,10 @@ async function showReportDuplicateAlert_(result) {
     html: `
       <div class="swalSummary" style="text-align:left">
         <div class="swalSection">
-          <div class="swalSectionTitle">ไม่สามารถบันทึก Report ได้</div>
+          <div class="swalSectionTitle">${escapeHtml(titleText)}</div>
           <div class="swalKvGrid">
-            <div class="swalKv">
-              <div class="swalKvLabel">Ref ที่กรอก</div>
-              <div class="swalKvValue">${escapeHtml(result?.inputRefNo || "-")}</div>
-            </div>
-            <div class="swalKv">
-              <div class="swalKvLabel">Ref มาตรฐาน</div>
-              <div class="swalKvValue">${escapeHtml(result?.rootRefComparable || "-")}</div>
-            </div>
-            <div class="swalKv">
-              <div class="swalKvLabel">Ref เดิม</div>
-              <div class="swalKvValue">${escapeHtml(matched.refNo || "-")}</div>
-            </div>
-            <div class="swalKv">
-              <div class="swalKvLabel">Revision</div>
-              <div class="swalKvValue">${escapeHtml(matched.revisionLabel || "-")}</div>
-            </div>
-            <div class="swalKv">
-              <div class="swalKvLabel">เรื่อง</div>
-              <div class="swalKvValue">${escapeHtml(matched.subject || "-")}</div>
-            </div>
-            <div class="swalKv">
-              <div class="swalKvLabel">Reported by</div>
-              <div class="swalKvValue">${escapeHtml(matched.reportedBy || "-")}</div>
-            </div>
-            <div class="swalKv">
-              <div class="swalKvLabel">วันที่เกิดเหตุ</div>
-              <div class="swalKvValue">${escapeHtml(matched.incidentDate || "-")}</div>
-            </div>
-            <div class="swalKv">
-              <div class="swalKvLabel">สถานที่</div>
-              <div class="swalKvValue">${escapeHtml(matched.whereDidItHappen || "-")}</div>
-            </div>
+            ${commonTop}
+            ${detailHtml}
           </div>
         </div>
       </div>
