@@ -244,32 +244,7 @@ async function checkReportRefDuplicate_(opts = {}) {
     result: json
   };
 }
-async function showReportDuplicateAlert_(result) {
-  const matched = result?.matched || {};
-  await Swal.fire({
-    icon: "warning",
-    title: "เลขอ้างอิงซ้ำ",
-    html: `
-      <div class="swalSummary" style="text-align:left">
-        <div class="swalSection">
-          <div class="swalSectionTitle">ไม่สามารถบันทึก Report ได้</div>
-          <div class="swalKvGrid">
-            <div class="swalKv"><div class="swalKvLabel">Ref ที่กรอก</div><div class="swalKvValue">${escapeHtml(result?.inputRefNo || "-")}</div></div>
-            <div class="swalKv"><div class="swalKvLabel">Ref มาตรฐาน</div><div class="swalKvValue">${escapeHtml(result?.rootRefComparable || "-")}</div></div>
-            <div class="swalKv"><div class="swalKvLabel">Ref เดิม</div><div class="swalKvValue">${escapeHtml(matched.refNo || "-")}</div></div>
-            <div class="swalKv"><div class="swalKvLabel">Revision</div><div class="swalKvValue">${escapeHtml(matched.revisionLabel || "-")}</div></div>
-            <div class="swalKv"><div class="swalKvLabel">เรื่อง</div><div class="swalKvValue">${escapeHtml(matched.subject || "-")}</div></div>
-            <div class="swalKv"><div class="swalKvLabel">Reported by</div><div class="swalKvValue">${escapeHtml(matched.reportedBy || "-")}</div></div>
-            <div class="swalKv"><div class="swalKvLabel">วันที่เกิดเหตุ</div><div class="swalKvValue">${escapeHtml(matched.incidentDate || "-")}</div></div>
-            <div class="swalKv"><div class="swalKvLabel">สถานที่</div><div class="swalKvValue">${escapeHtml(matched.whereDidItHappen || "-")}</div></div>
-          </div>
-        </div>
-      </div>
-    `,
-    width: 920,
-    confirmButtonText: "กลับไปแก้ไข Ref"
-  });
-}
+
 
 function bindReportRefDuplicateCheck_() {
   const runningEl = $("rptRefNo");
@@ -353,7 +328,10 @@ function resetReportRefDuplicateUi_() {
   $("rptRefYear")?.classList.remove("is-invalid");
 }
 async function checkReportRefDuplicate_(opts = {}) {
-  const refNo = getRefNo();
+  const force = !!opts.force;
+  const refNo = typeof getRptRefNoValue === "function"
+    ? getRptRefNoValue()
+    : "";
 
   if (!norm(refNo)) {
     resetReportRefDuplicateUi_();
@@ -365,16 +343,16 @@ async function checkReportRefDuplicate_(opts = {}) {
     };
   }
 
-  const url = `${apiUrl("/checkRefDuplicate")}?formType=${encodeURIComponent("report500")}&refNo=${encodeURIComponent(refNo)}`;
+  const normalizedRef = String(refNo || "").trim();
+  const url = `${apiUrl("/checkRefDuplicate")}?formType=${encodeURIComponent("report500")}&refNo=${encodeURIComponent(normalizedRef)}`;
 
   const res = await fetch(url, {
     method: "GET",
-    cache: "no-store"
+    cache: force ? "no-store" : "default"
   });
 
   const text = await res.text();
   let json = {};
-
   try {
     json = JSON.parse(text);
   } catch (_) {
@@ -421,14 +399,12 @@ async function showReportDuplicateAlert_(result) {
       <div class="swalKv"><div class="swalKvLabel">Reported by</div><div class="swalKvValue">${escapeHtml(matched.reportedBy || "-")}</div></div>
       <div class="swalKv"><div class="swalKvLabel">วันที่เกิดเหตุ</div><div class="swalKvValue">${escapeHtml(matched.incidentDate || "-")}</div></div>
       <div class="swalKv"><div class="swalKvLabel">สถานที่</div><div class="swalKvValue">${escapeHtml(matched.whereDidItHappen || "-")}</div></div>
-      <div class="swalKv"><div class="swalKvLabel">สาขา</div><div class="swalKvValue">${escapeHtml(matched.branch || "-")}</div></div>
     `
     : `
       <div class="swalKv"><div class="swalKvLabel">พนักงาน</div><div class="swalKvValue">${escapeHtml(matched.employeeName || "-")}</div></div>
       <div class="swalKv"><div class="swalKvLabel">รหัสพนักงาน</div><div class="swalKvValue">${escapeHtml(matched.employeeCode || "-")}</div></div>
       <div class="swalKv"><div class="swalKvLabel">สาเหตุ</div><div class="swalKvValue">${escapeHtml(matched.errorReason || "-")}</div></div>
       <div class="swalKv"><div class="swalKvLabel">วันที่เกิดเหตุ</div><div class="swalKvValue">${escapeHtml(matched.errorDate || "-")}</div></div>
-      <div class="swalKv"><div class="swalKvLabel">ผู้บันทึก</div><div class="swalKvValue">${escapeHtml(matched.lps || "-")}</div></div>
     `;
 
   await Swal.fire({
