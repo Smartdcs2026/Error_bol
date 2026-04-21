@@ -578,47 +578,49 @@ function resetRefDuplicateUi_(formType) {
 }
 function buildDuplicateDetailHtml_(result) {
   const matched = result?.matched || {};
-  const system = String(result?.system || "").trim().toUpperCase();
+  const sourceSystem = String(matched?.sourceSystem || result?.system || "").trim().toUpperCase();
 
-  if (system === "ERROR_BOL") {
-    return `
-      <div class="swalSummary" style="text-align:left">
-        <div class="swalSection">
-          <div class="swalSectionTitle">เลขอ้างอิงซ้ำ</div>
-          <div class="swalKvGrid">
-            <div class="swalKv"><div class="swalKvLabel">Ref ที่กรอก</div><div class="swalKvValue">${escapeHtml(result?.inputRefNo || "-")}</div></div>
-            <div class="swalKv"><div class="swalKvLabel">Ref มาตรฐาน</div><div class="swalKvValue">${escapeHtml(result?.rootRefComparable || "-")}</div></div>
-            <div class="swalKv"><div class="swalKvLabel">Ref เดิม</div><div class="swalKvValue">${escapeHtml(matched.refNo || "-")}</div></div>
-            <div class="swalKv"><div class="swalKvLabel">Revision</div><div class="swalKvValue">${escapeHtml(matched.revisionLabel || "-")}</div></div>
-            <div class="swalKv"><div class="swalKvLabel">พนักงาน</div><div class="swalKvValue">${escapeHtml(matched.employeeName || "-")}</div></div>
-            <div class="swalKv"><div class="swalKvLabel">รหัสพนักงาน</div><div class="swalKvValue">${escapeHtml(matched.employeeCode || "-")}</div></div>
-            <div class="swalKv"><div class="swalKvLabel">สาเหตุ</div><div class="swalKvValue">${escapeHtml(matched.errorReason || "-")}</div></div>
-            <div class="swalKv"><div class="swalKvLabel">วันที่เกิดเหตุ</div><div class="swalKvValue">${escapeHtml(matched.errorDate || "-")}</div></div>
-          </div>
+  const systemLabel = sourceSystem === "REPORT500" ? "Report500" : "Error_BOL";
+  const titleText = sourceSystem === "REPORT500"
+    ? "พบเลขอ้างอิงซ้ำกับเอกสารในระบบ Report"
+    : "พบเลขอ้างอิงซ้ำกับเอกสารในระบบ Error_BOL";
+
+  const commonTop = `
+    <div class="swalKv"><div class="swalKvLabel">ระบบที่พบข้อมูลซ้ำ</div><div class="swalKvValue">${escapeHtml(systemLabel)}</div></div>
+    <div class="swalKv"><div class="swalKvLabel">Ref ที่กรอก</div><div class="swalKvValue">${escapeHtml(result?.inputRefNo || "-")}</div></div>
+    <div class="swalKv"><div class="swalKvLabel">Ref มาตรฐาน</div><div class="swalKvValue">${escapeHtml(result?.rootRefComparable || "-")}</div></div>
+    <div class="swalKv"><div class="swalKvLabel">Ref เดิม</div><div class="swalKvValue">${escapeHtml(matched.refNo || "-")}</div></div>
+    <div class="swalKv"><div class="swalKvLabel">Revision</div><div class="swalKvValue">${escapeHtml(matched.revisionLabel || "-")}</div></div>
+  `;
+
+  const detailHtml = sourceSystem === "REPORT500"
+    ? `
+      <div class="swalKv"><div class="swalKvLabel">เรื่อง</div><div class="swalKvValue">${escapeHtml(matched.subject || "-")}</div></div>
+      <div class="swalKv"><div class="swalKvLabel">Reported by</div><div class="swalKvValue">${escapeHtml(matched.reportedBy || "-")}</div></div>
+      <div class="swalKv"><div class="swalKvLabel">วันที่เกิดเหตุ</div><div class="swalKvValue">${escapeHtml(matched.incidentDate || "-")}</div></div>
+      <div class="swalKv"><div class="swalKvLabel">สถานที่</div><div class="swalKvValue">${escapeHtml(matched.whereDidItHappen || "-")}</div></div>
+      <div class="swalKv"><div class="swalKvLabel">สาขา</div><div class="swalKvValue">${escapeHtml(matched.branch || "-")}</div></div>
+    `
+    : `
+      <div class="swalKv"><div class="swalKvLabel">พนักงาน</div><div class="swalKvValue">${escapeHtml(matched.employeeName || "-")}</div></div>
+      <div class="swalKv"><div class="swalKvLabel">รหัสพนักงาน</div><div class="swalKvValue">${escapeHtml(matched.employeeCode || "-")}</div></div>
+      <div class="swalKv"><div class="swalKvLabel">สาเหตุ</div><div class="swalKvValue">${escapeHtml(matched.errorReason || "-")}</div></div>
+      <div class="swalKv"><div class="swalKvLabel">วันที่เกิดเหตุ</div><div class="swalKvValue">${escapeHtml(matched.errorDate || "-")}</div></div>
+      <div class="swalKv"><div class="swalKvLabel">ผู้บันทึก</div><div class="swalKvValue">${escapeHtml(matched.lps || "-")}</div></div>
+    `;
+
+  return `
+    <div class="swalSummary" style="text-align:left">
+      <div class="swalSection">
+        <div class="swalSectionTitle">${escapeHtml(titleText)}</div>
+        <div class="swalKvGrid">
+          ${commonTop}
+          ${detailHtml}
         </div>
       </div>
-    `;
-  }
-
-  if (system === "REPORT500") {
-    return `
-      <div class="swalSummary" style="text-align:left">
-        <div class="swalSection">
-          <div class="swalSectionTitle">เลขอ้างอิงซ้ำ</div>
-          <div class="swalKvGrid">
-            <div class="swalKv"><div class="swalKvLabel">Ref ที่กรอก</div><div class="swalKvValue">${escapeHtml(result?.inputRefNo || "-")}</div></div>
-            <div class="swalKv"><div class="swalKvLabel">Ref มาตรฐาน</div><div class="swalKvValue">${escapeHtml(result?.rootRefComparable || "-")}</div></div>
-            <div class="swalKv"><div class="swalKvLabel">Ref เดิม</div><div class="swalKvValue">${escapeHtml(matched.refNo || "-")}</div></div>
-            <div class="swalKv"><div class="swalKvLabel">Revision</div><div class="swalKvValue">${escapeHtml(matched.revisionLabel || "-")}</div></div>
-            <div class="swalKv"><div class="swalKvLabel">เรื่อง</div><div class="swalKvValue">${escapeHtml(matched.subject || "-")}</div></div>
-            <div class="swalKv"><div class="swalKvLabel">Reported by</div><div class="swalKvValue">${escapeHtml(matched.reportedBy || "-")}</div></div>
-            <div class="swalKv"><div class="swalKvLabel">วันที่เกิดเหตุ</div><div class="swalKvValue">${escapeHtml(matched.incidentDate || "-")}</div></div>
-            <div class="swalKv"><div class="swalKvLabel">สถานที่</div><div class="swalKvValue">${escapeHtml(matched.whereDidItHappen || "-")}</div></div>
-          </div>
-        </div>
-      </div>
-    `;
-  }
+    </div>
+  `;
+}
 
   return `<div style="text-align:left;white-space:pre-wrap">${escapeHtml(result?.message || "เลขอ้างอิงซ้ำ")}</div>`;
 }
