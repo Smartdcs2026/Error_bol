@@ -195,7 +195,11 @@ function getReportRefWrapEl_() {
 
 
 async function checkReportRefDuplicate_(opts = {}) {
-  const refNo = getRefNo();
+  const force = !!opts.force;
+  const refNo = typeof getRptRefNoValue === "function"
+    ? getRptRefNoValue()
+    : "";
+
   if (!norm(refNo)) {
     resetReportRefDuplicateUi_();
     return {
@@ -206,15 +210,18 @@ async function checkReportRefDuplicate_(opts = {}) {
     };
   }
 
-  const url = `${apiUrl("/checkRefDuplicate")}?formType=${encodeURIComponent("report500")}&refNo=${encodeURIComponent(refNo)}`;
+  const normalizedRef = String(refNo || "").trim();
+
+  const url = `${apiUrl("/checkRefDuplicate")}?formType=${encodeURIComponent("report500")}&refNo=${encodeURIComponent(normalizedRef)}`;
 
   const res = await fetch(url, {
     method: "GET",
-    cache: "no-store"
+    cache: force ? "no-store" : "default"
   });
 
   const text = await res.text();
   let json = {};
+
   try {
     json = JSON.parse(text);
   } catch (_) {
@@ -237,7 +244,6 @@ async function checkReportRefDuplicate_(opts = {}) {
     result: json
   };
 }
-
 async function showReportDuplicateAlert_(result) {
   const matched = result?.matched || {};
   await Swal.fire({
@@ -275,7 +281,11 @@ function bindReportRefDuplicateCheck_() {
   const schedule = () => {
     if (timer) clearTimeout(timer);
 
-    if (!norm(getRefNo())) {
+    const refNo = typeof getRptRefNoValue === "function"
+      ? getRptRefNoValue()
+      : "";
+
+    if (!norm(refNo)) {
       resetReportRefDuplicateUi_();
       return;
     }
