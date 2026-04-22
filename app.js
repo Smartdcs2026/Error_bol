@@ -3367,13 +3367,27 @@ async function login() {
 
   safeSetLoginMsg("กำลังตรวจสอบรหัสผ่าน...");
 
-  const res = await fetch(apiUrl("/"), {
-    method: "POST",
-    headers: { "Content-Type": "text/plain;charset=utf-8" },
-    body: JSON.stringify({ action: "auth", pass })
-  });
+  let res;
+  try {
+    res = await fetch(apiUrl("/auth"), {
+      method: "POST",
+      headers: { "Content-Type": "application/json;charset=utf-8" },
+      body: JSON.stringify({ pass })
+    });
+  } catch (err) {
+    console.error("login network error:", err);
+    safeSetLoginMsg("ไม่สามารถเชื่อมต่อระบบเข้าสู่ระบบได้", true);
+    return;
+  }
 
-  const json = await res.json();
+  let json = null;
+  try {
+    json = await res.json();
+  } catch (_) {
+    safeSetLoginMsg(`เข้าสู่ระบบไม่สำเร็จ (HTTP ${res.status})`, true);
+    return;
+  }
+
   if (!res.ok || !json?.ok) {
     safeSetLoginMsg(json?.error || `เข้าสู่ระบบไม่สำเร็จ (HTTP ${res.status})`, true);
     return;
@@ -3608,7 +3622,7 @@ function renderErrorBolOptions() {
   renderSelectOptions("nationality", OPTIONS.nationalityList, "-- เลือกสัญชาติ --");
   renderEmailChecklist();
   renderConfirmCauseOptions();
-  bindOtherSelect("errorReason", "errorReasonOther", "อื่นๆ");
+  bindOtherSelect("errorReason", "errorReasonOtherWrap", "อื่นๆ");
 }
 
 function bindErrorBolInputs() {
@@ -4701,5 +4715,3 @@ document.addEventListener("DOMContentLoaded", bootstrapApp);
 window.promptLoadErrorBolForEdit_ = promptLoadErrorBolForEdit_;
 window.loadErrorBolForEditByRef_ = loadErrorBolForEditByRef_;
 window.openErrorBolExistingAssetManager_ = openErrorBolExistingAssetManager_;
-
-
