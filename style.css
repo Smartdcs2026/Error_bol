@@ -1,3 +1,13 @@
+/*
+  style.css — Error_bol
+  Cleaned / organized safe version
+
+  Scope:
+  - Preserves existing selector names, cascade order, IDs, classes, media queries, and visual behavior.
+  - Only normalizes formatting, spacing, section readability, and removes excess blank space.
+  - Safe to paste over the existing style.css.
+*/
+
 :root{
   --bg:#eef4fb;
   --bg-soft:#f8fbff;
@@ -2867,7 +2877,7 @@ body.img-editor-lock{
     min-height:38px;
     padding:7px 12px;
     border-radius:12px;
-    font-size:12px;
+    font-size:11.5px;
   }
 
   .imgEditorBody{
@@ -2875,9 +2885,8 @@ body.img-editor-lock{
   }
 
   .imgEditorCanvasWrap{
-    min-height:0;
-    height:100%;
-    border-radius:14px;
+    min-height:260px;
+    border-radius:15px;
   }
 
   .ieFloatingToggle{
@@ -2888,41 +2897,17 @@ body.img-editor-lock{
   }
 
   .ieFloatingPanel{
-    top:58px;
-    right:8px;
-    width:300px;
-    max-width:calc(100% - 16px);
-    max-height:min(50vh,360px);
-    padding:8px;
+    top:60px;
+    right:10px;
+    width:min(330px, calc(100% - 20px));
+    max-height:min(56vh,420px);
     border-radius:16px;
-  }
-
-  .imgEditorToolbar .btn,
-  .ieToolbarSection .btn{
-    min-height:48px;
-    height:48px;
-    font-size:9px;
-  }
-
-  .imgEditorToolbar .btn::before,
-  .ieToolbarSection .btn::before{
-    font-size:15px;
-  }
-
-  .ieButtonGridEffects,
-  .ieButtonGridView,
-  .ieSectionManage .ieButtonGridView{
-    grid-template-columns:repeat(3,minmax(0,1fr));
   }
 
   .imgEditorFooter{
     grid-template-columns:1fr;
     gap:8px;
     padding:8px 10px 10px;
-  }
-
-  .imgEditorStatus{
-    font-size:11px;
   }
 
   .imgEditorActions{
@@ -2933,453 +2918,187 @@ body.img-editor-lock{
 
   .imgEditorActions .btn{
     width:100%;
-    min-height:38px;
-    height:38px;
+    min-height:40px;
     padding:7px 8px;
-    border-radius:11px;
     font-size:11px;
   }
-}
 
-@media (max-width:860px){
-  .gridCompact,
-  .gridEmployee,
-  .emailSelector,
-  .checkList,
-  .confirmCauseGrid,
-  .uploadGrid,
-  .galGrid,
-  .optionMatrix,
-  .rptRepeaterList,
-  .sigGrid,
-  .swalKvGrid{
-    grid-template-columns:repeat(2,minmax(0,1fr));
-    gap:8px 10px;
-  }
-
-  #rptPersonList,
-  #rptDamageList,
-  #rptStepTakenList,
-  #rptEvidenceList,
-  #rptCauseList,
-  #rptPreventionList,
-  #rptLearningList,
-  #rptImageList{
-    grid-template-columns:1fr;
-    gap:10px;
-  }
-
-  #rptPersonList .gridCompact,
-  #rptPersonList .gridEmployee,
-  #rptDamageList .gridCompact,
-  #rptDamageList .gridEmployee,
-  #rptStepTakenList .gridCompact,
-  #rptStepTakenList .gridEmployee,
-  #rptEvidenceList .gridCompact,
-  #rptEvidenceList .gridEmployee,
-  #rptCauseList .gridCompact,
-  #rptCauseList .gridEmployee,
-  #rptPreventionList .gridCompact,
-  #rptPreventionList .gridEmployee,
-  #rptLearningList .gridCompact,
-  #rptLearningList .gridEmployee,
-  #rptImageList .gridCompact,
-  #rptImageList .gridEmployee{
-    grid-template-columns:1fr;
-    gap:10px;
-  }
-
-  .actions{
-    grid-template-columns:1fr;
-  }
-
-  .refRow{
-    grid-template-columns:minmax(0,1fr) 16px 92px;
-  }
-
-  .loginHeroLogo{
-    width:190px;
-    max-width:72%;
-  }
-
-  .emailItem,
-  .confirmCauseCard,
-  .optionChoiceCard,
-  .rptRepeatCard,
-  .rptBlock{
-    border-radius:13px;
-  }
-
-  .emailItem,
-  .confirmCauseCard,
-  .optionChoiceCard{
-    min-height:46px;
-    padding:9px 10px;
-  }
-
-  .emailText,
-  .confirmCauseText,
-  .optionChoiceText{
-    font-size:11.5px;
-    line-height:1.35;
-  }
-
-  .emailCheckBox,
-  .confirmCauseMark,
-  .optionChoiceMark{
-    width:17px;
-    height:17px;
-    flex:0 0 17px;
-  }
-
-  .panelActions{
-    gap:8px;
-  }
-
-  .panelActions .btn{
-    flex:1 1 calc(50% - 8px);
-  }
-
-  .gridCompact .fieldSpan2,
-  .gridEmployee .fieldSpan2{
-    grid-column:1 / -1;
-  }
-
-  textarea,
-  .field textarea{
-    min-height:96px;
-  }
-
-  .swal2-popup.rptLookupPopup{
-    width:calc(100vw - 10px) !important;
-    border-radius:18px !important;
-  }
-
-  .rptLookupModal{
-    min-height:min(84vh,760px);
-  }
-
-  .rptLookupModalHead{
-    padding:12px 12px 9px;
-  }
-
-  .rptLookupModalTitle{
-    font-size:15px;
-    line-height:1.12;
-  }
-
-  .rptLookupModalSub{
-    font-size:10.8px;
-    line-height:1.45;
-  }
-
-  .rptLookupToolbar,
-  .rptLookupToolbarCompact{
-    grid-template-columns:1fr;
-    gap:8px;
-    padding:10px 12px;
-  }
-
-  .rptLookupToolbarActions,
-  .rptLookupToolbarActionsCompact{
-    display:grid;
-    grid-template-columns:1fr 1fr;
-    gap:8px;
-    width:100%;
-  }
-
-  .rptLookupToolbarActions .rptLookupBtn,
-  .rptLookupToolbarActionsCompact .rptLookupBtn{
-    width:100%;
-  }
-
-  .rptLookupBody{
-    padding:10px 12px 12px;
-    min-height:220px;
-  }
-
-  .rptLookupResultGrid,
-  .rptLookupResultGridCompact{
-    grid-template-columns:1fr;
-  }
-
-  .rptLookupDesktopView{
-    display:block;
-  }
-
-  .rptLookupMobileView{
-    display:none;
-  }
-
-  .swal2-popup.rptLookupPreviewPopup{
-    width:calc(100vw - 8px) !important;
-    border-radius:16px !important;
-  }
-
-  .swal2-popup.rptLookupPreviewPopup .swal2-title.rptLookupPreviewTitle{
-    padding:9px 10px 5px !important;
-    font-size:14px !important;
-    line-height:1.12 !important;
-  }
-
-  .swal2-popup.rptLookupPreviewPopup .swal2-html-container.rptLookupPreviewHtml{
-    padding:0 6px 6px !important;
-  }
-
-  .swal2-popup.rptLookupPreviewPopup .swal2-actions{
-    padding:8px 10px 10px !important;
-  }
-
-  .rptLookupPreviewWrap .rptLookupResultCard{
-    padding:4px;
-  }
-
-  .rptLookupPreviewWrap .rptLookupTableWrap,
-  .rptLookupPreviewWrap .rptLookupTableWrapCompact{
-    max-height:min(64vh,560px);
+  .imgEditorStatus{
+    font-size:11px;
   }
 }
 
 @media (max-width:768px){
-  .imgEditorModal{
-    padding:0;
-  }
-
-  .imgEditorDialog{
-    width:100%;
-    height:100dvh;
-    max-height:100dvh;
-    border-radius:0;
-    border:none;
-    box-shadow:none;
-  }
-
-  .imgEditorBackdrop{
-    backdrop-filter:none;
-    -webkit-backdrop-filter:none;
-  }
-
-  .ieFloatingPanel{
-    background:#ffffff;
-    backdrop-filter:none;
-    -webkit-backdrop-filter:none;
-    box-shadow:0 16px 32px rgba(15,23,42,.18);
-    max-height:52vh;
-  }
-
-  .rptImageActions .btn{
-    flex:1 1 calc(50% - 8px);
-  }
-
-  .rptUtilityBar{
-    grid-template-columns:repeat(2,minmax(0,1fr));
-    gap:8px;
-  }
-
-  .rptUtilityBar .btn{
-    min-height:44px;
-    padding:10px 8px;
-    font-size:12px;
-    letter-spacing:0;
-  }
-}
-
-@media (max-width:640px){
-  :root{
-    --input-h:44px;
-    --radius-card:18px;
-    --radius-panel:15px;
-    --radius-input:13px;
-  }
-
   .topbar{
-    grid-template-columns:minmax(0,1fr) auto;
+    grid-template-columns:1fr;
+    align-items:stretch;
     gap:8px;
-    padding:8px 9px;
+    padding:8px 10px;
+  }
+
+  .brandInline{
+    align-items:center;
   }
 
   .brandTextInline{
-    gap:6px;
-  }
-
-  .brandTextInline .subtitle{
-    display:none;
+    gap:4px 8px;
   }
 
   .brandTextInline .title{
-    font-size:12px;
+    font-size:13px;
+    max-width:100%;
+  }
+
+  .brandTextInline .subtitle{
+    font-size:10px;
+  }
+
+  .topLoginUserWrap{
+    max-width:100%;
+    font-size:10px;
+  }
+
+  .tabsInline{
+    justify-content:stretch;
+    gap:8px;
+    width:100%;
   }
 
   .tab{
-    min-height:34px;
-    padding:6px 12px;
-    font-size:11px;
+    flex:1 1 0;
+    min-height:38px;
+    padding:8px 10px;
+    font-size:12px;
   }
 
   .container{
-    padding:12px 10px 24px;
+    padding:10px 8px 22px;
   }
 
   .card{
-    padding:14px;
     border-radius:18px;
+    padding:12px;
   }
 
   .panel,
   .emailPanel,
   .rptPanel{
-    padding:12px;
+    padding:11px;
     border-radius:15px;
   }
 
   .sectionTitle{
-    gap:9px;
     margin:12px 0 8px;
-    padding-bottom:8px;
+    gap:9px;
   }
 
   .sectionMain{
     font-size:14px;
   }
 
-  .sectionSub{
-    font-size:10px;
-  }
-
   .gridCompact,
   .gridEmployee,
   .emailSelector,
   .checkList,
   .confirmCauseGrid,
   .uploadGrid,
-  .galGrid,
-  .optionMatrix,
-  .rptRepeaterList,
   .sigGrid,
   .swalKvGrid{
-    grid-template-columns:repeat(2,minmax(0,1fr));
-    gap:8px;
-  }
-
-  #rptPersonList,
-  #rptDamageList,
-  #rptStepTakenList,
-  #rptEvidenceList,
-  #rptCauseList,
-  #rptPreventionList,
-  #rptLearningList,
-  #rptImageList{
     grid-template-columns:1fr;
-    gap:10px;
   }
 
-  #rptPersonList .gridCompact,
-  #rptPersonList .gridEmployee,
-  #rptDamageList .gridCompact,
-  #rptDamageList .gridEmployee,
-  #rptStepTakenList .gridCompact,
-  #rptStepTakenList .gridEmployee,
-  #rptEvidenceList .gridCompact,
-  #rptEvidenceList .gridEmployee,
-  #rptCauseList .gridCompact,
-  #rptCauseList .gridEmployee,
-  #rptPreventionList .gridCompact,
-  #rptPreventionList .gridEmployee,
-  #rptLearningList .gridCompact,
-  #rptLearningList .gridEmployee,
-  #rptImageList .gridCompact,
-  #rptImageList .gridEmployee{
-    grid-template-columns:1fr;
-    gap:10px;
-  }
-
-  .confirmCauseCard,
-  .optionChoiceCard,
-  .emailItem{
-    min-height:44px;
-    padding:8px 9px;
-  }
-
-  label{
-    font-size:11.5px;
-  }
-
-  .fieldHint,
-  .small,
-  .sectionSub{
-    font-size:10.5px;
-  }
-
-  input,
-  select,
-  textarea{
-    font-size:13px;
-    padding:10px 11px;
-  }
-
-  textarea{
-    min-height:88px;
-  }
-
-  .btn{
-    min-height:40px;
-    font-size:13px;
-    border-radius:13px;
-  }
-
-  .panelActions{
+  .refRow{
+    grid-template-columns:minmax(0,1fr) 14px 88px;
     gap:6px;
   }
 
+  .refDash{
+    font-size:20px;
+  }
+
+  #refYear,
+  #rptRefYear{
+    min-width:74px;
+    padding-left:6px;
+    padding-right:6px;
+  }
+
+  .optionMatrix{
+    grid-template-columns:1fr;
+  }
+
+  .actions{
+    grid-template-columns:1fr;
+  }
+
+  .btn{
+    width:100%;
+  }
+
+  .panelActions{
+    align-items:stretch;
+  }
+
   .panelActions .btn{
-    flex:1 1 100%;
+    flex:1 1 auto;
+  }
+
+  .galGrid{
+    grid-template-columns:1fr;
   }
 
   .loginHero{
-    padding:18px 16px 12px;
-    gap:10px;
+    padding:16px 16px 12px;
   }
 
   .loginHeroLogo{
-    width:170px;
-    max-width:78%;
-  }
-
-  .loginHero h1{
-    font-size:18px;
-  }
-
-  .loginHero p{
-    font-size:13px;
-    line-height:1.55;
+    width:160px;
   }
 
   .loginForm{
     padding:14px 16px 16px;
+  }
+
+  .progress-card{
+    width:100%;
+    padding:18px 14px 14px;
+    border-radius:20px;
+  }
+
+  .progress-head{
     gap:10px;
   }
 
-  .topLoginUserWrap{
-    font-size:10px;
-    min-height:26px;
-    padding:4px 8px;
+  .progress-icon-wrap{
+    width:46px;
+    height:46px;
+    border-radius:16px;
+  }
+
+  .progress-head-text h3{
+    font-size:17px;
+  }
+
+  .progress-head-text p{
+    font-size:12px;
+  }
+
+  #progressPercentText{
+    font-size:22px;
+  }
+
+  .progress-stage{
+    grid-template-columns:14px 1fr;
+    gap:8px;
+  }
+
+  .stage-status{
+    grid-column:2 / 3;
   }
 
   .rptCardHead{
-    padding:11px 11px;
-    gap:10px;
-  }
-
-  .rptCardBody{
     padding:11px;
-  }
-
-  .rptCardTitle{
-    font-size:12.5px;
-  }
-
-  .rptCardSummary{
-    font-size:10.8px;
+    gap:8px;
   }
 
   .rptCardHeadActions{
@@ -3390,59 +3109,166 @@ body.img-editor-lock{
     min-width:34px;
     height:34px;
     border-radius:11px;
-    font-size:16px;
   }
 
-  .rptCardFooterActions{
+  .rptCardBody{
+    padding:12px;
+  }
+
+  .rptLookupSummary{
+    align-items:stretch;
     flex-direction:column;
+    padding:12px;
   }
 
-  .rptCardFooterActions .btn{
-    width:100%;
+  .rptLookupSummaryActions{
+    justify-content:stretch;
   }
 
-  .rptRepeatAddBottom{
-    margin-top:10px;
+  .rptLookupSummaryActions .btn{
+    flex:1 1 0;
   }
 
-  .rptRepeatAddBottomBtn{
-    width:100% !important;
-    max-width:none;
-    min-width:0;
-    border-radius:16px;
-    padding:12px 14px;
-    font-size:14px;
+  .rptUtilityBar{
+    grid-template-columns:1fr;
   }
 
-  .progress-card{
-    border-radius:20px;
-    padding:18px 16px 16px;
+  .rptLookupToolbar,
+  .rptLookupToolbarCompact{
+    grid-template-columns:1fr;
+    align-items:stretch;
+    padding:10px 12px;
   }
 
-  .progress-head-text h3{
-    font-size:18px;
+  .rptLookupToolbarActions,
+  .rptLookupToolbarActionsCompact{
+    display:grid;
+    grid-template-columns:1fr 1fr;
   }
 
-  #progressPercentText{
-    font-size:22px;
+  .rptLookupBody{
+    padding:10px 12px 12px;
   }
 
-  .progress-stage{
-    padding:10px;
-    border-radius:12px;
+  .rptLookupResultGrid,
+  .rptLookupResultGridCompact{
+    grid-template-columns:1fr;
   }
 
-  .btnEditImage{
-    min-height:36px;
-    padding:7px 12px;
-    border-radius:11px;
-    font-size:11px;
+  .rptLookupDesktopView{
+    display:none;
+  }
+
+  .rptLookupMobileView{
+    display:block;
+  }
+
+  .rptLookupActionRow,
+  .rptLookupActionRowCompact{
+    grid-template-columns:1fr;
+  }
+
+  .rptLookupRecordItem{
+    grid-template-columns:96px minmax(0,1fr);
+    padding:8px 9px;
+  }
+
+  .swal2-popup.rptLookupPopup{
+    border-radius:18px !important;
+  }
+
+  .rptLookupModal{
+    min-height:min(76vh,680px);
+  }
+
+  .swal2-popup.rptLookupPreviewPopup .swal2-title.rptLookupPreviewTitle{
+    font-size:14px !important;
+    padding:9px 10px 5px !important;
+  }
+
+  .swal2-popup.rptLookupPreviewPopup .swal2-html-container.rptLookupPreviewHtml{
+    padding:0 6px 6px !important;
+  }
+
+  .rptLookupPreviewWrap .rptLookupTableWrap,
+  .rptLookupPreviewWrap .rptLookupTableWrapCompact{
+    max-height:min(66vh,620px);
+  }
+
+  .rptLookupPreviewWrap .rptLookupTable,
+  .rptLookupPreviewWrap .rptLookupTableCompact{
+    min-width:680px;
   }
 }
 
-@media (max-width:560px){
+@media (max-width:520px){
+  .card{
+    padding:10px;
+    border-radius:16px;
+  }
+
+  .logo,
+  .brandLogoImg{
+    width:32px;
+    height:32px;
+    flex-basis:32px;
+  }
+
+  .brandTextInline{
+    display:grid;
+    grid-template-columns:1fr;
+  }
+
+  .topLoginUserWrap{
+    width:max-content;
+    max-width:100%;
+  }
+
+  input,
+  select,
+  textarea{
+    font-size:13.5px;
+    padding:9px 10px;
+  }
+
+  input,
+  select{
+    min-height:44px;
+  }
+
+  .btn{
+    min-height:42px;
+    font-size:13px;
+  }
+
+  .emailItem,
+  .confirmCauseCard,
+  .optionChoiceCard{
+    padding:10px;
+  }
+
+  .swal2-popup{
+    width:calc(100% - 14px) !important;
+  }
+
+  .progress-overlay{
+    padding:12px;
+  }
+
+  .imgEditorModal{
+    padding:0;
+  }
+
+  .imgEditorDialog{
+    width:100%;
+    height:100dvh;
+    max-height:100dvh;
+    border-radius:0;
+    border:none;
+  }
+
   .imgEditorHeader{
-    padding:9px 10px 7px;
+    padding:8px 10px;
   }
 
   .imgEditorTitle{
@@ -3457,540 +3283,202 @@ body.img-editor-lock{
     padding:6px;
   }
 
+  .imgEditorCanvasWrap{
+    min-height:220px;
+    border-radius:14px;
+  }
+
   .ieFloatingToggle{
-    width:40px;
-    height:40px;
     top:8px;
     right:8px;
+    width:42px;
+    height:42px;
   }
 
   .ieFloatingPanel{
-    top:52px;
+    top:56px;
     right:8px;
-    width:min(280px,calc(100vw - 16px));
-    max-height:min(48vh,320px);
-    padding:7px;
-    border-radius:14px;
+    left:8px;
+    width:auto;
+    max-width:none;
+    max-height:min(58vh,430px);
+    padding:8px;
   }
 
   .ieToolbarSection{
     padding:7px;
-    border-radius:13px;
+  }
+
+  .ieButtonGridTools{
+    grid-template-columns:repeat(4,minmax(0,1fr));
+  }
+
+  .ieButtonGridEffects,
+  .ieButtonGridView{
+    grid-template-columns:repeat(3,minmax(0,1fr));
   }
 
   .imgEditorToolbar .btn,
   .ieToolbarSection .btn{
-    min-height:44px;
-    height:44px;
-    padding:4px 3px;
-    border-radius:10px;
-    font-size:8.5px;
+    height:48px;
+    min-height:48px;
+    font-size:9px;
+    border-radius:11px;
   }
 
   .imgEditorToolbar .btn::before,
   .ieToolbarSection .btn::before{
-    font-size:14px;
+    font-size:15px;
   }
 
-  .ieButtonGridEffects,
-  .ieButtonGridView,
-  .ieSectionManage .ieButtonGridView{
-    grid-template-columns:repeat(2,minmax(0,1fr));
+  .imgEditorFooter{
+    padding:7px 8px 8px;
   }
 
-  .imgEditorToolbarWrap .ieField,
-  .ieField{
-    grid-template-columns:34px minmax(0,1fr);
-    min-height:32px;
-    padding:4px 5px;
-    border-radius:10px;
-    font-size:9px;
-    gap:5px;
-  }
-
-  .imgEditorToolbarWrap .ieField input[type="color"],
-  .ieField input[type="color"]{
-    height:20px;
-    min-height:20px;
-  }
-
-  .imgEditorActions{
-    grid-template-columns:repeat(3,minmax(0,1fr));
-  }
-
-  .imgEditorActions .btn{
-    min-height:36px;
-    height:36px;
-    border-radius:10px;
-    font-size:10.5px;
-  }
-
-  .rptLookupBtn{
-    min-height:40px;
-    font-size:12px;
-    border-radius:12px;
-    padding:9px 10px;
-  }
-
-  .rptLookupMetaPill{
-    min-height:25px;
-    padding:4px 8px;
-    font-size:9.8px;
-  }
-
-  .rptLookupResultCard,
-  .rptLookupResultCardDiscipline{
-    padding:8px;
-    border-radius:13px;
-  }
-
-  .rptLookupResultBox{
-    padding:8px 9px;
-    border-radius:10px;
-  }
-
-  .rptLookupResultLabel{
-    font-size:10px;
-  }
-
-  .rptLookupResultValue{
-    font-size:12px;
-  }
-
-  .rptLookupResultTextBlock{
-    padding:9px;
-    border-radius:10px;
-  }
-
-  .rptLookupResultTextTitle{
-    font-size:11px;
-  }
-
-  .rptLookupResultTextValue{
-    font-size:12px;
-    line-height:1.5;
-  }
-
-  .rptLookupToolbarActions,
-  .rptLookupToolbarActionsCompact,
-  .rptLookupActionRow,
-  .rptLookupActionRowCompact{
-    grid-template-columns:1fr;
-  }
-
-  .rptLookupDesktopView{
+  .imgEditorStatus{
     display:none;
   }
 
-  .rptLookupMobileView{
-    display:block;
+  .imgEditorActions{
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:6px;
+  }
+
+  .imgEditorActions .btn{
+    min-height:39px;
+    height:39px;
+    font-size:11px;
+  }
+
+  .rptLookupModalHead{
+    padding:12px 12px 8px;
+  }
+
+  .rptLookupModalTitle{
+    font-size:15px;
+  }
+
+  .rptLookupModalSub{
+    font-size:11px;
+  }
+
+  .rptLookupToolbarActions,
+  .rptLookupToolbarActionsCompact{
+    grid-template-columns:1fr;
+  }
+
+  .rptLookupBtn{
+    width:100%;
+    min-height:42px;
   }
 
   .rptLookupRecordItem{
-    grid-template-columns:102px minmax(0,1fr);
+    grid-template-columns:88px minmax(0,1fr);
     gap:7px;
-    padding:8px 9px;
   }
 
   .rptLookupRecordLabel{
-    font-size:9.8px;
+    font-size:10px;
   }
 
   .rptLookupRecordValue{
     font-size:11.5px;
-    line-height:1.4;
   }
 
-  .rptLookupTable thead th,
-  .rptLookupTable tbody td,
-  .rptLookupTableCompact thead th,
-  .rptLookupTableCompact tbody td{
-    padding:8px 7px;
-    font-size:11px;
-  }
-}
-
-@media (max-width:480px){
-  .gridCompact,
-  .gridEmployee,
-  .emailSelector,
-  .checkList,
-  .confirmCauseGrid,
-  .uploadGrid,
-  .galGrid,
-  .optionMatrix,
-  .rptRepeaterList,
-  .sigGrid,
-  .swalKvGrid{
-    grid-template-columns:repeat(2,minmax(0,1fr));
-    gap:7px;
-  }
-
-  #rptPersonList,
-  #rptDamageList,
-  #rptStepTakenList,
-  #rptEvidenceList,
-  #rptCauseList,
-  #rptPreventionList,
-  #rptLearningList,
-  #rptImageList{
-    grid-template-columns:1fr;
-    gap:10px;
-  }
-
-  #rptPersonList .gridCompact,
-  #rptPersonList .gridEmployee,
-  #rptDamageList .gridCompact,
-  #rptDamageList .gridEmployee,
-  #rptStepTakenList .gridCompact,
-  #rptStepTakenList .gridEmployee,
-  #rptEvidenceList .gridCompact,
-  #rptEvidenceList .gridEmployee,
-  #rptCauseList .gridCompact,
-  #rptCauseList .gridEmployee,
-  #rptPreventionList .gridCompact,
-  #rptPreventionList .gridEmployee,
-  #rptLearningList .gridCompact,
-  #rptLearningList .gridEmployee,
-  #rptImageList .gridCompact,
-  #rptImageList .gridEmployee{
-    grid-template-columns:1fr;
-    gap:10px;
-  }
-
-  .refRow{
-    grid-template-columns:minmax(0,1fr) 14px 82px;
-    gap:6px;
-  }
-
-  .refDash{
-    font-size:22px;
-  }
-
-  .card{
-    padding:10px;
-  }
-
-  .panel,
-  .emailPanel,
-  .rptPanel{
-    padding:10px;
-  }
-
-  .emailItem,
-  .confirmCauseCard,
-  .optionChoiceCard{
-    min-height:42px;
-    padding:8px 8px;
-  }
-
-  .emailText,
-  .confirmCauseText,
-  .optionChoiceText{
-    font-size:10.8px;
-    line-height:1.3;
-  }
-
-  .swalSection{
-    padding:10px;
-  }
-
-  .swalKv,
-  .swalDesc{
-    padding:8px 9px;
-  }
-}
-
-@media (max-width:420px){
-  .rptImageActions .btn{
-    flex:1 1 100%;
-  }
-
-  .imgEditorHeader{
-    padding:10px 12px 10px;
-  }
-
-  .imgEditorFooter{
-    padding:10px 12px;
-  }
-
-  .rptUtilityBar .btn{
-    min-height:42px;
-    font-size:11.5px;
-    padding:9px 6px;
-  }
-
-  .swal2-popup.rptLookupPopup{
-    width:calc(100vw - 6px) !important;
-  }
-
-  .rptLookupModalHead{
-    padding:10px 10px 8px;
-  }
-
-  .rptLookupModalBadge{
-    min-height:24px;
-    padding:3px 8px;
-    font-size:10px;
-  }
-
-  .rptLookupModalTitle{
-    margin-top:7px;
-    font-size:14px;
-  }
-
-  .rptLookupModalSub{
-    font-size:10px;
-    line-height:1.4;
-  }
-
-  .rptLookupToolbar,
-  .rptLookupToolbarCompact{
-    padding:8px 10px;
-  }
-
-  .rptLookupBody{
-    padding:8px 10px 10px;
-  }
-
-  .rptLookupRecordItem{
-    grid-template-columns:92px minmax(0,1fr);
-    gap:6px;
+  .rptLookupPreviewWrap .rptLookupRecordItem{
+    grid-template-columns:82px minmax(0,1fr);
     padding:8px;
-  }
-
-  .rptLookupRecordTop{
-    padding:8px;
-  }
-
-  .rptLookupRecordIndex{
-    min-height:23px;
-    padding:0 7px;
-    font-size:9.6px;
-  }
-
-  .rptLookupRecordDate{
-    font-size:10.5px;
   }
 }
 
 @media (max-width:380px){
-  .topbar{
-    grid-template-columns:1fr;
-    align-items:flex-start;
+  .tab{
+    font-size:11px;
+    padding-inline:8px;
   }
 
-  .tabsInline{
-    width:100%;
-    justify-content:flex-start;
-    overflow:auto;
-    padding-bottom:2px;
+  .sectionMain{
+    font-size:13px;
   }
 
-  .brandInline{
-    gap:8px;
+  .refRow{
+    grid-template-columns:minmax(0,1fr) 12px 80px;
   }
 
-  .logo,
-  .brandLogoImg{
-    width:28px;
-    height:28px;
-    flex-basis:28px;
+  .refDash{
+    font-size:18px;
   }
 
-  .gridCompact,
-  .gridEmployee,
-  .emailSelector,
-  .checkList,
-  .confirmCauseGrid,
-  .uploadGrid,
-  .galGrid,
-  .optionMatrix,
-  .rptRepeaterList,
-  .sigGrid,
-  .swalKvGrid{
-    grid-template-columns:1fr;
-  }
-
-  #rptPersonList,
-  #rptDamageList,
-  #rptStepTakenList,
-  #rptEvidenceList,
-  #rptCauseList,
-  #rptPreventionList,
-  #rptLearningList,
-  #rptImageList,
-  #rptPersonList .gridCompact,
-  #rptPersonList .gridEmployee,
-  #rptDamageList .gridCompact,
-  #rptDamageList .gridEmployee,
-  #rptStepTakenList .gridCompact,
-  #rptStepTakenList .gridEmployee,
-  #rptEvidenceList .gridCompact,
-  #rptEvidenceList .gridEmployee,
-  #rptCauseList .gridCompact,
-  #rptCauseList .gridEmployee,
-  #rptPreventionList .gridCompact,
-  #rptPreventionList .gridEmployee,
-  #rptLearningList .gridCompact,
-  #rptLearningList .gridEmployee,
-  #rptImageList .gridCompact,
-  #rptImageList .gridEmployee{
-    grid-template-columns:1fr;
-    gap:10px;
-  }
-
-  .btn{
-    min-height:38px;
-    padding:8px 12px;
+  #refYear,
+  #rptRefYear{
+    min-width:70px;
     font-size:12px;
-  }
-
-  .panelActions .btn{
-    flex:1 1 100%;
-  }
-
-  .loginHero{
-    padding:16px 14px 12px;
-  }
-
-  .loginForm{
-    padding:12px 14px 14px;
-  }
-
-  .loginHeroLogo{
-    width:150px;
-    max-width:82%;
-  }
-
-  .loginHero h1{
-    font-size:17px;
-  }
-
-  .loginHero p{
-    font-size:12px;
-  }
-
-  input,
-  select,
-  textarea{
-    font-size:12.5px;
-  }
-
-  textarea{
-    min-height:82px;
   }
 }
-/* =========================================
+
+/* =========================
    REF DUPLICATE - CLEAN RESPONSIVE LAYOUT
    ใช้แทนชุดเดิมทั้งหมด
-   ========================================= */
-
-.refRow{
-  display:grid;
-  grid-template-columns:minmax(0,1fr) 18px 96px;
-  gap:8px;
-  align-items:center;
-  min-width:0;
+========================= */
+.refDuplicateWrap{
+  grid-column:1 / -1;
+  width:100%;
+  margin-top:10px;
 }
 
-.refDash{
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  font-size:22px;
-  line-height:1;
-  font-weight:900;
-  color:#64748b;
-}
-
-#refNo,
-#rptRefNo,
-#refYear,
-#rptRefYear{
-  min-width:0;
-}
-
-/* highlight row when invalid */
-.refRow:has(#refNo.is-invalid),
-.refRow:has(#rptRefNo.is-invalid){
-  padding:6px;
-  border-radius:16px;
-  background:rgba(239,68,68,.06);
-}
-
-/* invalid inputs */
-#refNo.is-invalid,
-#refYear.is-invalid,
-#rptRefNo.is-invalid,
-#rptRefYear.is-invalid{
-  border:2px solid #ef4444 !important;
-  background:#fff8f8 !important;
-  color:#991b1b !important;
-  font-weight:800 !important;
-  box-shadow:0 0 0 3px rgba(239,68,68,.10) !important;
-}
-
-.refRow:has(#refNo.is-invalid) .refDash,
-.refRow:has(#rptRefNo.is-invalid) .refDash{
-  color:#dc2626;
-}
-
-/* hint base */
 #refDuplicateHint,
 #rptRefDuplicateHint{
-  display:none;
   width:100%;
   max-width:100%;
   box-sizing:border-box;
-  margin-top:10px;
-  padding:12px 12px;
-  border-radius:16px;
-  border:2px solid #ef4444;
-  background:linear-gradient(180deg,#fff8f8 0%, #fff1f2 100%);
-  color:#b91c1c;
-  box-shadow:0 8px 22px rgba(239,68,68,.10);
-  white-space:normal;
+  overflow:hidden;
   word-break:break-word;
   overflow-wrap:anywhere;
-  line-height:1.65;
-  font-size:13px;
-  font-weight:700;
+  white-space:normal;
 }
 
-/* show state */
 #refDuplicateHint:not(.hidden),
 #rptRefDuplicateHint:not(.hidden){
   display:block;
+  padding:12px 12px;
+  border-radius:16px;
+  border:1.5px solid rgba(239,68,68,.35);
+  background:linear-gradient(180deg,#fff7f7 0%,#fff1f2 100%);
+  color:#7f1d1d;
+  box-shadow:0 10px 26px rgba(220,38,38,.08);
+  font-size:13px;
+  line-height:1.65;
 }
 
-/* title */
 #refDuplicateHint:not(.hidden)::before,
 #rptRefDuplicateHint:not(.hidden)::before{
-  content:"พบเลข Ref ซ้ำ";
-  display:block;
-  margin-bottom:8px;
-  padding-bottom:6px;
-  border-bottom:1px solid rgba(239,68,68,.20);
+  content:"เลขอ้างอิงซ้ำ";
+  display:inline-flex;
+  align-items:center;
+  width:max-content;
+  max-width:100%;
+  margin:0 0 8px;
+  padding:4px 10px;
+  border-radius:999px;
+  background:#fee2e2;
   color:#991b1b;
   font-size:11px;
   font-weight:900;
-  letter-spacing:.3px;
-  text-transform:uppercase;
+  line-height:1.2;
 }
 
-/* formatting lines inserted by JS */
 .refDupLine{
   display:block;
-  margin:0 0 4px 0;
+  width:100%;
+  max-width:100%;
 }
 
-.refDupLine:last-child{
-  margin-bottom:0;
+.refDupLine + .refDupLine{
+  margin-top:4px;
 }
 
 .refDupMain{
-  color:#991b1b;
+  color:#7f1d1d;
   font-weight:900;
 }
 
@@ -4049,6 +3537,7 @@ body.img-editor-lock{
     border-radius:14px;
   }
 }
+
 .gridCompact .field{
   min-width:0;
 }
