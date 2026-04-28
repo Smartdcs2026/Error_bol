@@ -2464,137 +2464,204 @@ function errorBolEditClearFormFields_() {
   const formCard = document.getElementById("formCard");
   if (!formCard) return;
 
-  /**
-   * เคลียร์ input / textarea
-   * ยกเว้นปุ่ม, hidden, checkbox, radio
-   */
-  formCard.querySelectorAll("input, textarea").forEach((el) => {
+  document.body.classList.remove("error-bol-editing");
+
+  [
+    "errorBolEditPanel",
+    "errorBolExistingImagesWrap",
+    "errorBolExistingSignsWrap",
+    "btnErrorBolExitEdit",
+    "refDuplicateWrap",
+    "errorReasonOtherWrap",
+    "confirmCauseOtherWrap"
+  ].forEach((id) => {
+    const el = document.getElementById(id);
+    if (el) el.classList.add("hidden");
+  });
+
+  [
+    "refDuplicateHint",
+    "itemLookupHint",
+    "errorBolExistingImages",
+    "errorBolExistingSigns"
+  ].forEach((id) => {
+    const el = document.getElementById(id);
+    if (el) el.innerHTML = "";
+  });
+
+  try {
+    ITEM_LOOKUP_STATE = {
+      item: "",
+      description: "",
+      displayText: "",
+      found: false,
+      loading: false
+    };
+  } catch (_) {}
+
+  try {
+    if (REF_DUPLICATE_STATE && REF_DUPLICATE_STATE.errorBol) {
+      REF_DUPLICATE_STATE.errorBol.lastRefNo = "";
+      REF_DUPLICATE_STATE.errorBol.duplicated = false;
+      REF_DUPLICATE_STATE.errorBol.checked = false;
+      REF_DUPLICATE_STATE.errorBol.result = null;
+    }
+  } catch (_) {}
+
+  formCard.querySelectorAll("img.previewImg").forEach((img) => {
+    if (img.dataset.objectUrl) {
+      try { URL.revokeObjectURL(img.dataset.objectUrl); } catch (_) {}
+    }
+    img.removeAttribute("src");
+    delete img.dataset.objectUrl;
+  });
+
+  formCard.querySelectorAll("input, textarea, select").forEach((el) => {
     const type = String(el.type || "").toLowerCase();
 
-    if (type === "button" || type === "submit" || type === "reset" || type === "hidden") return;
+    if (
+      type === "button" ||
+      type === "submit" ||
+      type === "reset" ||
+      type === "hidden"
+    ) {
+      return;
+    }
 
     if (type === "checkbox" || type === "radio") {
       el.checked = false;
-      try {
-        el.dispatchEvent(new Event("change", { bubbles: true }));
-      } catch (_) {}
       return;
     }
 
     if (type === "file") {
       el.value = "";
-      try {
-        el.dispatchEvent(new Event("change", { bubbles: true }));
-      } catch (_) {}
+      try { EDITED_UPLOAD_STORE.delete(el); } catch (_) {}
       return;
     }
 
     el.value = "";
+  });
+
+  document.querySelectorAll(
+    "#emailSelector input[type='checkbox'], .emailChk, .confirmCauseChk"
+  ).forEach((el) => {
+    el.checked = false;
+  });
+
+  const uploadList = document.getElementById("uploadList");
+  if (uploadList) {
+    uploadList.innerHTML = "";
+
     try {
-      el.dispatchEvent(new Event("input", { bubbles: true }));
-      el.dispatchEvent(new Event("change", { bubbles: true }));
-    } catch (_) {}
-  });
-
-  /**
-   * เคลียร์ select ทั้งหมด
-   */
-  formCard.querySelectorAll("select").forEach((el) => {
-    el.value = "";
-    try {
-      el.dispatchEvent(new Event("change", { bubbles: true }));
-    } catch (_) {}
-  });
-
-  /**
-   * เคลียร์ checkbox อีเมล
-   */
-  document.querySelectorAll("#emailSelector input[type='checkbox'], .emailChk").forEach((chk) => {
-    chk.checked = false;
-    try {
-      chk.dispatchEvent(new Event("change", { bubbles: true }));
-    } catch (_) {}
-  });
-
-  /**
-   * เคลียร์กล่องแสดงผล/preview ที่เกี่ยวกับ item และ duplicate ref
-   */
-  const clearHtmlIds = [
-    "itemLookupHint",
-    "refDuplicateHint",
-    "errorBolExistingImages",
-    "errorBolExistingSigns"
-  ];
-
-  clearHtmlIds.forEach((id) => {
-    const el = document.getElementById(id);
-    if (el) el.innerHTML = "";
-  });
-
-  const hideIds = [
-    "refDuplicateWrap",
-    "errorBolEditPanel",
-    "errorBolExistingImagesWrap",
-    "errorBolExistingSignsWrap",
-    "btnErrorBolExitEdit"
-  ];
-
-  hideIds.forEach((id) => {
-    const el = document.getElementById(id);
-    if (el) el.classList.add("hidden");
-  });
-
- /**
- * เคลียร์ upload list รูปภาพใหม่
- * แล้วสร้างช่องอัปโหลดเริ่มต้นกลับมา
- */
-const uploadList = document.getElementById("uploadList");
-if (uploadList) {
-  uploadList.innerHTML = "";
+      if (typeof buildInitialUploadFields === "function") {
+        buildInitialUploadFields();
+      } else if (typeof addUploadField === "function") {
+        addUploadField("บัตรพนักงาน", { removable: false });
+        addUploadField("รูปพนักงาน", { removable: false });
+      }
+    } catch (err) {
+      console.warn("reset upload fields failed:", err);
+    }
+  }
 
   try {
-    if (typeof buildInitialUploadFields === "function") {
-      buildInitialUploadFields();
-    } else if (typeof addUploadField === "function") {
-      addUploadField("บัตรพนักงาน", { removable: false });
-      addUploadField("รูปพนักงาน", { removable: false });
+    if (typeof buildYearOptionsForSelect === "function") {
+      buildYearOptionsForSelect(document.getElementById("refYear"));
     }
   } catch (_) {}
-}
 
- try {
-  if (typeof buildYearOptionsForSelect === "function") {
-    buildYearOptionsForSelect(document.getElementById("refYear"));
-  }
-} catch (_) {}
-  /**
-   * เคลียร์ข้อความยืนยันพนักงาน / ช่องอื่นๆ ที่ถูกเปิดจาก logic เดิม
-   */
-  try {
-    if (typeof syncErrorReasonOtherVisibility === "function") syncErrorReasonOtherVisibility();
-    if (typeof syncConfirmCauseOtherVisibility === "function") syncConfirmCauseOtherVisibility();
-    if (typeof updateEmployeeConfirmPreview === "function") updateEmployeeConfirmPreview();
-  } catch (_) {}
+  [
+    "refNo",
+    "labelCid",
+    "item",
+    "itemDisplay",
+    "errorCaseQty",
+    "errorDate",
+    "errorReasonOther",
+    "errorDescription",
+    "employeeName",
+    "employeeCode",
+    "interpreterName",
+    "confirmCauseOther",
+    "employeeConfirmText",
+    "lps"
+  ].forEach((id) => {
+    const el = document.getElementById(id);
+    if (el) el.value = "";
+  });
 
-  /**
-   * ถ้าต้องการให้ชื่อผู้เข้าใช้งานกลับมาแสดงหลังเคลียร์ฟอร์ม
-   * ให้เติมกลับเฉพาะช่อง lps จาก AUTH
-   */
-  const lpsEl = document.getElementById("lps");
-  if (lpsEl && window.AUTH && window.AUTH.name) {
-    lpsEl.value = window.AUTH.name;
-  }
+  [
+    "errorReason",
+    "auditName",
+    "shift",
+    "osm",
+    "otm",
+    "workAgeYear",
+    "workAgeMonth",
+    "nationality"
+  ].forEach((id) => {
+    const el = document.getElementById(id);
+    if (el) el.value = "";
+  });
 
-  /**
-   * คืนข้อความปุ่มบันทึก
-   */
   const btnSubmit = document.getElementById("btnSubmit");
   if (btnSubmit) {
     btnSubmit.textContent = "บันทึกและสร้าง PDF";
     btnSubmit.classList.remove("editTextManaged");
   }
 
-  document.body.classList.remove("error-bol-editing");
+  ["refNo", "refYear"].forEach((id) => {
+    const el = document.getElementById(id);
+    if (el) el.classList.remove("is-invalid");
+  });
+
+  setTimeout(() => {
+    [
+      "refNo",
+      "labelCid",
+      "item",
+      "itemDisplay",
+      "errorCaseQty",
+      "errorDate",
+      "errorReasonOther",
+      "errorDescription",
+      "employeeName",
+      "employeeCode",
+      "interpreterName",
+      "confirmCauseOther",
+      "employeeConfirmText",
+      "lps"
+    ].forEach((id) => {
+      const el = document.getElementById(id);
+      if (el) el.value = "";
+    });
+
+    [
+      "errorReason",
+      "auditName",
+      "shift",
+      "osm",
+      "otm",
+      "workAgeYear",
+      "workAgeMonth",
+      "nationality"
+    ].forEach((id) => {
+      const el = document.getElementById(id);
+      if (el) el.value = "";
+    });
+
+    document.querySelectorAll(
+      "#emailSelector input[type='checkbox'], .emailChk, .confirmCauseChk"
+    ).forEach((el) => {
+      el.checked = false;
+    });
+
+    const itemHint = document.getElementById("itemLookupHint");
+    if (itemHint) itemHint.textContent = "";
+
+    const refHint = document.getElementById("refDuplicateHint");
+    if (refHint) refHint.innerHTML = "";
+  }, 0);
 }
 /** =========================================================
  *  ERROR_BOL EDIT MODE
@@ -3599,8 +3666,11 @@ async function submitErrorBolRevision() {
       confirmButtonText: "ตกลง"
     });
 
-    errorBolEditClearState_();
-errorBolEditClearFormFields_();
+ errorBolEditClearState_();
+
+setTimeout(() => {
+  errorBolEditClearFormFields_();
+}, 80);
 
   } catch (err) {
     console.error("submitErrorBolRevision failed:", err);
