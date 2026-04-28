@@ -16,7 +16,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-  <link rel="stylesheet" href="./style.css?v=mobile-2col-v9">
+  <link rel="stylesheet" href="./style.css?v=errorbol-edit-v1">
 </head>
 <body>
   <header class="topbar">
@@ -106,8 +106,60 @@
           </div>
         </div>
 
+        <div class="panelActions refEditActions">
+          <button id="btnErrorBolLoadRef" class="btn ghost" type="button">ดึงข้อมูล Ref เดิม</button>
+          <button id="btnErrorBolExitEdit" class="btn danger hidden" type="button">ออกจากโหมดแก้ไข</button>
+        </div>
+
         <div id="refDuplicateWrap" class="refDuplicateWrap hidden">
           <div id="refDuplicateHint" class="refDuplicateHintBox"></div>
+        </div>
+
+        <div id="errorBolEditPanel" class="editModeBox hidden">
+          <div class="editModeHead">
+            <div>
+              <div class="editModeTitle">กำลังแก้ไขข้อมูลเดิม</div>
+              <div class="editModeSub">ระบบจะบันทึกเป็นฉบับแก้ไข และสร้าง PDF ใหม่</div>
+            </div>
+            <div id="errorBolEditBadge" class="editModeBadge">EDIT MODE</div>
+          </div>
+
+          <div class="editModeGrid">
+            <div class="editModeItem">
+              <div class="editModeLabel">Ref ที่โหลด</div>
+              <div id="errorBolEditRefText" class="editModeValue">-</div>
+            </div>
+
+            <div class="editModeItem">
+              <div class="editModeLabel">Revision ล่าสุด</div>
+              <div id="errorBolEditRevisionText" class="editModeValue">-</div>
+            </div>
+
+            <div class="editModeItem">
+              <div class="editModeLabel">Document ID</div>
+              <div id="errorBolEditDocumentIdText" class="editModeValue">-</div>
+            </div>
+
+            <div class="editModeItem">
+              <div class="editModeLabel">PDF เดิม</div>
+              <div class="editModeValue">
+                <a id="errorBolEditPdfLink" class="editPdfLink hidden" href="#" target="_blank" rel="noopener">เปิด PDF เดิม</a>
+                <span id="errorBolEditPdfEmpty">-</span>
+              </div>
+            </div>
+          </div>
+
+          <div id="errorBolExistingImagesWrap" class="existingAssetBlock hidden">
+            <div class="existingAssetTitle">รูปภาพเดิมจากเอกสารนี้</div>
+            <div class="existingAssetSub">หากไม่ลบหรือไม่อัปโหลดรูปใหม่ ระบบจะใช้รูปเดิมต่อในการสร้าง PDF ฉบับแก้ไข</div>
+            <div id="errorBolExistingImages" class="existingImageGrid"></div>
+          </div>
+
+          <div id="errorBolExistingSignsWrap" class="existingAssetBlock hidden">
+            <div class="existingAssetTitle">ลายเซ็นเดิมจากเอกสารนี้</div>
+            <div class="existingAssetSub">หากไม่เซ็นใหม่ ระบบจะใช้ลายเซ็นเดิมต่อ</div>
+            <div id="errorBolExistingSigns" class="existingSignGrid"></div>
+          </div>
         </div>
       </div>
 
@@ -798,6 +850,6 @@
   <script src="./report500.js?v=progress-ui-3"></script>
 
   <!-- Main app -->
-  <script src="./app.js?v=progress-ui-2"></script>
+  <script src="./app.js?v=errorbol-edit-v1"></script>
 </body>
 </html>
