@@ -2544,31 +2544,29 @@ function errorBolEditClearFormFields_() {
     if (el) el.classList.add("hidden");
   });
 
-  /**
-   * เคลียร์ upload list รูปภาพใหม่
-   * แล้วสร้างช่องอัปโหลดเปล่ากลับมา ถ้าระบบเดิมมีฟังก์ชัน addUploadBox()
-   */
-  const uploadList = document.getElementById("uploadList");
-  if (uploadList) {
-    uploadList.innerHTML = "";
+ /**
+ * เคลียร์ upload list รูปภาพใหม่
+ * แล้วสร้างช่องอัปโหลดเริ่มต้นกลับมา
+ */
+const uploadList = document.getElementById("uploadList");
+if (uploadList) {
+  uploadList.innerHTML = "";
 
-    try {
-      if (typeof addUploadBox === "function") {
-        addUploadBox();
-      }
-    } catch (_) {}
-  }
-
-  /**
-   * เคลียร์ค่าปี Ref ให้กลับมาตามระบบเดิม
-   * ถ้ามี setRefYear() ให้เรียกคืนค่า default
-   */
   try {
-    if (typeof setRefYear === "function") {
-      setRefYear();
+    if (typeof buildInitialUploadFields === "function") {
+      buildInitialUploadFields();
+    } else if (typeof addUploadField === "function") {
+      addUploadField("บัตรพนักงาน", { removable: false });
+      addUploadField("รูปพนักงาน", { removable: false });
     }
   } catch (_) {}
+}
 
+ try {
+  if (typeof buildYearOptionsForSelect === "function") {
+    buildYearOptionsForSelect(document.getElementById("refYear"));
+  }
+} catch (_) {}
   /**
    * เคลียร์ข้อความยืนยันพนักงาน / ช่องอื่นๆ ที่ถูกเปิดจาก logic เดิม
    */
@@ -3221,7 +3219,7 @@ async function errorBolEditExitMode_() {
 
   if (!ok.isConfirmed) return;
 
- errorBolEditClearState_();
+errorBolEditClearState_();
 errorBolEditClearFormFields_();
 }
 
@@ -3602,6 +3600,7 @@ async function submitErrorBolRevision() {
     });
 
     errorBolEditClearState_();
+errorBolEditClearFormFields_();
 
   } catch (err) {
     console.error("submitErrorBolRevision failed:", err);
