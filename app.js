@@ -2460,6 +2460,144 @@ function bindResultActionButtons_(pdfUrl) {
   }
 }
 
+function errorBolEditClearFormFields_() {
+  const formCard = document.getElementById("formCard");
+  if (!formCard) return;
+
+  /**
+   * เคลียร์ input / textarea
+   * ยกเว้นปุ่ม, hidden, checkbox, radio
+   */
+  formCard.querySelectorAll("input, textarea").forEach((el) => {
+    const type = String(el.type || "").toLowerCase();
+
+    if (type === "button" || type === "submit" || type === "reset" || type === "hidden") return;
+
+    if (type === "checkbox" || type === "radio") {
+      el.checked = false;
+      try {
+        el.dispatchEvent(new Event("change", { bubbles: true }));
+      } catch (_) {}
+      return;
+    }
+
+    if (type === "file") {
+      el.value = "";
+      try {
+        el.dispatchEvent(new Event("change", { bubbles: true }));
+      } catch (_) {}
+      return;
+    }
+
+    el.value = "";
+    try {
+      el.dispatchEvent(new Event("input", { bubbles: true }));
+      el.dispatchEvent(new Event("change", { bubbles: true }));
+    } catch (_) {}
+  });
+
+  /**
+   * เคลียร์ select ทั้งหมด
+   */
+  formCard.querySelectorAll("select").forEach((el) => {
+    el.value = "";
+    try {
+      el.dispatchEvent(new Event("change", { bubbles: true }));
+    } catch (_) {}
+  });
+
+  /**
+   * เคลียร์ checkbox อีเมล
+   */
+  document.querySelectorAll("#emailSelector input[type='checkbox'], .emailChk").forEach((chk) => {
+    chk.checked = false;
+    try {
+      chk.dispatchEvent(new Event("change", { bubbles: true }));
+    } catch (_) {}
+  });
+
+  /**
+   * เคลียร์กล่องแสดงผล/preview ที่เกี่ยวกับ item และ duplicate ref
+   */
+  const clearHtmlIds = [
+    "itemLookupHint",
+    "refDuplicateHint",
+    "errorBolExistingImages",
+    "errorBolExistingSigns"
+  ];
+
+  clearHtmlIds.forEach((id) => {
+    const el = document.getElementById(id);
+    if (el) el.innerHTML = "";
+  });
+
+  const hideIds = [
+    "refDuplicateWrap",
+    "errorBolEditPanel",
+    "errorBolExistingImagesWrap",
+    "errorBolExistingSignsWrap",
+    "btnErrorBolExitEdit"
+  ];
+
+  hideIds.forEach((id) => {
+    const el = document.getElementById(id);
+    if (el) el.classList.add("hidden");
+  });
+
+  /**
+   * เคลียร์ upload list รูปภาพใหม่
+   * แล้วสร้างช่องอัปโหลดเปล่ากลับมา ถ้าระบบเดิมมีฟังก์ชัน addUploadBox()
+   */
+  const uploadList = document.getElementById("uploadList");
+  if (uploadList) {
+    uploadList.innerHTML = "";
+
+    try {
+      if (typeof addUploadBox === "function") {
+        addUploadBox();
+      }
+    } catch (_) {}
+  }
+
+  /**
+   * เคลียร์ค่าปี Ref ให้กลับมาตามระบบเดิม
+   * ถ้ามี setRefYear() ให้เรียกคืนค่า default
+   */
+  try {
+    if (typeof setRefYear === "function") {
+      setRefYear();
+    }
+  } catch (_) {}
+
+  /**
+   * เคลียร์ข้อความยืนยันพนักงาน / ช่องอื่นๆ ที่ถูกเปิดจาก logic เดิม
+   */
+  try {
+    if (typeof syncErrorReasonOtherVisibility === "function") syncErrorReasonOtherVisibility();
+    if (typeof syncConfirmCauseOtherVisibility === "function") syncConfirmCauseOtherVisibility();
+    if (typeof updateEmployeeConfirmPreview === "function") updateEmployeeConfirmPreview();
+  } catch (_) {}
+
+  /**
+   * ถ้าต้องการให้ชื่อผู้เข้าใช้งานกลับมาแสดงหลังเคลียร์ฟอร์ม
+   * ให้เติมกลับเฉพาะช่อง lps จาก AUTH
+   */
+  const lpsEl = document.getElementById("lps");
+  if (lpsEl && window.AUTH && window.AUTH.name) {
+    lpsEl.value = window.AUTH.name;
+  }
+
+  /**
+   * คืนข้อความปุ่มบันทึก
+   */
+  const btnSubmit = document.getElementById("btnSubmit");
+  if (btnSubmit) {
+    btnSubmit.textContent = "บันทึกและสร้าง PDF";
+    btnSubmit.classList.remove("editTextManaged");
+  }
+
+  document.body.classList.remove("error-bol-editing");
+}
 /** =========================================================
  *  ERROR_BOL EDIT MODE
  *  Load existing Ref -> edit in form -> submit revision
@@ -3083,7 +3221,8 @@ async function errorBolEditExitMode_() {
 
   if (!ok.isConfirmed) return;
 
-  errorBolEditClearState_();
+ errorBolEditClearState_();
+errorBolEditClearFormFields_();
 }
 
 async function loadErrorBolForEdit() {
