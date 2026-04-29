@@ -16,7 +16,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-  <link rel="stylesheet" href="./style.css?v=errorbol-edit-v1">
+  <link rel="stylesheet" href="./style.css?v=report500-edit-v1">
 </head>
 <body>
   <header class="topbar">
@@ -389,8 +389,54 @@
           </div>
         </div>
 
+        <div class="panelActions report500EditActions">
+          <button id="btnReport500LoadRef" class="btn ghost" type="button">ดึงข้อมูล Ref เดิม</button>
+          <button id="btnReport500ExitEdit" class="btn danger hidden" type="button">ออกจากโหมดแก้ไข</button>
+        </div>
+
         <div id="rptRefDuplicateWrap" class="refDuplicateWrap hidden">
           <div id="rptRefDuplicateHint" class="refDuplicateHintBox"></div>
+        </div>
+
+        <div id="report500EditPanel" class="editModeBox report500EditPanel hidden">
+          <div class="editModeHead">
+            <div>
+              <div class="editModeTitle">กำลังแก้ไขข้อมูล Report เดิม</div>
+              <div class="editModeSub">ระบบจะบันทึกเป็นฉบับแก้ไข และสร้าง PDF ใหม่</div>
+            </div>
+            <div id="report500EditBadge" class="editModeBadge">REPORT EDIT</div>
+          </div>
+
+          <div class="editModeGrid">
+            <div class="editModeItem">
+              <div class="editModeLabel">Ref ที่โหลด</div>
+              <div id="report500EditRefText" class="editModeValue">-</div>
+            </div>
+
+            <div class="editModeItem">
+              <div class="editModeLabel">Revision ล่าสุด</div>
+              <div id="report500EditRevisionText" class="editModeValue">-</div>
+            </div>
+
+            <div class="editModeItem">
+              <div class="editModeLabel">Document ID</div>
+              <div id="report500EditDocumentIdText" class="editModeValue">-</div>
+            </div>
+
+            <div class="editModeItem">
+              <div class="editModeLabel">PDF เดิม</div>
+              <div class="editModeValue">
+                <a id="report500EditPdfLink" class="editPdfLink hidden" href="#" target="_blank" rel="noopener">เปิด PDF เดิม</a>
+                <span id="report500EditPdfEmpty">-</span>
+              </div>
+            </div>
+          </div>
+
+          <div id="report500ExistingImagesWrap" class="existingAssetBlock report500ExistingImagesWrap hidden">
+            <div class="existingAssetTitle">รูปภาพเดิมจาก Report นี้</div>
+            <div class="existingAssetSub">หากไม่ลบหรือไม่อัปโหลดรูปใหม่ ระบบจะใช้รูปเดิมต่อในการสร้าง PDF ฉบับแก้ไข</div>
+            <div id="report500ExistingImages" class="existingImageGrid report500ExistingImages"></div>
+          </div>
         </div>
       </div>
 
@@ -847,9 +893,9 @@
   <script src="./image-editor.js?v=1"></script>
 
   <!-- Report script -->
-  <script src="./report500.js?v=progress-ui-3"></script>
+  <script src="./report500.js?v=report500-edit-v1"></script>
 
   <!-- Main app -->
-  <script src="./app.js?v=errorbol-edit-v1"></script>
+  <script src="./app.js?v=report500-edit-v1"></script>
 </body>
 </html>
