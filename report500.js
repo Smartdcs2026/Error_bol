@@ -2718,13 +2718,1028 @@ state.ready = true;
       state.loading = false;
     }
   }
+/** =========================================================
+ *  REPORT500 EDIT MODE
+ *  Load existing Ref -> edit in Report form -> submit revision
+ *  เพิ่มไว้ก่อน window.Report500UI
+ *  ========================================================= */
 
-  window.Report500UI = {
-    ensureReady,
-    preview,
-    submit,
-    reset: resetForm
+const REPORT500_EDIT_STATE = {
+  active: false,
+  loading: false,
+  submitting: false,
+
+  loadedRefNo: "",
+  rootRefNo: "",
+  currentRefNo: "",
+  documentId: "",
+  revisionNo: 0,
+  revisionLabel: "",
+
+  pdfUrl: "",
+  pdfFileId: "",
+
+  payload: {},
+  existingImages: [],
+  removedImageIds: []
+};
+
+window.REPORT500_EDIT_STATE = REPORT500_EDIT_STATE;
+
+function rptEditDriveImageUrl_(fileId) {
+  const id = norm(fileId);
+  if (!id) return "";
+  return `https://lh5.googleusercontent.com/d/${encodeURIComponent(id)}`;
+}
+
+function rptEditDriveViewUrl_(fileId) {
+  const id = norm(fileId);
+  if (!id) return "";
+  return `https://drive.google.com/file/d/${encodeURIComponent(id)}/view?usp=drivesdk`;
+}
+
+function rptEditSetHidden_(id, hidden) {
+  const el = $(id);
+  if (!el) return;
+  el.classList.toggle("hidden", !!hidden);
+}
+
+function rptEditSetText_(id, value) {
+  const el = $(id);
+  if (!el) return;
+  el.textContent = norm(value) || "-";
+}
+
+function rptEditEnsureOptionValue_(selectEl, value) {
+  if (!selectEl) return;
+
+  const v = norm(value);
+  if (!v) return;
+
+  const exists = Array.from(selectEl.options || []).some((opt) => opt.value === v);
+  if (exists) return;
+
+  const opt = document.createElement("option");
+  opt.value = v;
+  opt.textContent = v;
+  selectEl.appendChild(opt);
+}
+
+function rptEditSetValue_(id, value) {
+  const el = $(id);
+  if (!el) return;
+
+  const v = norm(value);
+
+  if (el.tagName === "SELECT" && v) {
+    rptEditEnsureOptionValue_(el, v);
+  }
+
+  el.value = v;
+
+  try {
+    el.dispatchEvent(new Event("input", { bubbles: true }));
+    el.dispatchEvent(new Event("change", { bubbles: true }));
+  } catch (_) {}
+}
+
+function rptEditToInputDate_(value) {
+  const s = norm(value);
+  if (!s || s === "-") return "";
+
+  let m = s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (m) return `${m[1]}-${m[2]}-${m[3]}`;
+
+  m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (m) {
+    const dd = String(m[1]).padStart(2, "0");
+    const mm = String(m[2]).padStart(2, "0");
+    let yyyy = Number(m[3]);
+    if (yyyy > 2400) yyyy -= 543;
+    return `${yyyy}-${mm}-${dd}`;
+  }
+
+  const d = new Date(s);
+  if (!isNaN(d.getTime())) {
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, "0");
+    const dd = String(d.getDate()).padStart(2, "0");
+    return `${yyyy}-${mm}-${dd}`;
+  }
+
+  return "";
+}
+
+function rptEditSplitRef_(refNo) {
+  const s = norm(refNo);
+  const m = s.match(/^(.+?)-(\d{4})(?:-R\d+|\/R\d+|-REV\d+| Rev\.\d+)?$/i);
+
+  if (!m) {
+    return {
+      running: "",
+      year: ""
+    };
+  }
+
+  return {
+    running: String(m[1] || "").replace(/[^\d]/g, ""),
+    year: String(m[2] || "").trim()
   };
+}
+
+function rptEditApplyRefToInputs_(refNo) {
+  const parts = rptEditSplitRef_(refNo);
+  if (!parts.running) return;
+
+  rptEditSetValue_("rptRefNo", parts.running);
+
+  const yearEl = $("rptRefYear");
+  if (yearEl && parts.year) {
+    rptEditEnsureOptionValue_(yearEl, parts.year);
+    yearEl.value = parts.year;
+  }
+}
+
+function rptEditCheckedValues_(items) {
+  const arr = Array.isArray(items) ? items : [];
+
+  return arr
+    .filter((item) => {
+      if (item && typeof item === "object" && "checked" in item) {
+        return !!item.checked;
+      }
+
+      return !!norm(
+        typeof item === "string"
+          ? item
+          : item && (item.value || item.label || item.text)
+      );
+    })
+    .map((item) => norm(
+      typeof item === "string"
+        ? item
+        : item && (item.value || item.label || item.text)
+    ))
+    .filter(Boolean);
+}
+
+function rptEditSetCheckboxGroup_(rootId, values) {
+  const root = $(rootId);
+  if (!root) return;
+
+  const set = new Set(rptEditCheckedValues_(values));
+
+  root.querySelectorAll("input[type='checkbox']").forEach((chk) => {
+    chk.checked = set.has(norm(chk.value));
+
+    try {
+      chk.dispatchEvent(new Event("change", { bubbles: true }));
+    } catch (_) {}
+  });
+}
+
+function rptEditSetWhereTypeSelections_(items) {
+  const list = Array.isArray(items) ? items : [];
+  const map = new Map();
+
+  list.forEach((item) => {
+    if (!item) return;
+
+    const value = norm(typeof item === "string" ? item : item.value);
+    const checked = typeof item === "string"
+      ? true
+      : ("checked" in item ? !!item.checked : !!value);
+
+    if (value && checked) {
+      map.set(value, item || {});
+    }
+  });
+
+  document.querySelectorAll(".rptWhereTypeRow").forEach((row) => {
+    const value = norm(row.getAttribute("data-value"));
+    const item = map.get(value);
+
+    const chk = row.querySelector(".rptWhereTypeChk");
+    const suffix = row.querySelector(".rptWhereTypeSuffix");
+    const wrap = row.querySelector(".optionChoiceOther");
+    const needSuffix = row.getAttribute("data-need-suffix") === "1";
+
+    if (chk) chk.checked = !!item;
+
+    if (suffix) {
+      suffix.value = item
+        ? norm(item.suffixText || item.suffix || item.otherText)
+        : "";
+    }
+
+    if (wrap) {
+      wrap.classList.toggle("hidden", !(item && needSuffix));
+    }
+  });
+}
+
+function rptEditNormalizeLoadedResponse_(json) {
+  const root = json && typeof json === "object" ? json : {};
+  const data = root.data && typeof root.data === "object" ? root.data : root;
+
+  const payload =
+    data.payload ||
+    data.editPayload ||
+    data.record ||
+    data.rowObj ||
+    data.row ||
+    {};
+
+  const revision =
+    data.revision ||
+    data.revisionMeta ||
+    data.meta ||
+    {};
+
+  const existingImages =
+    data.existingImages ||
+    data.images ||
+    data.imageList ||
+    payload.existingImages ||
+    [];
+
+  const pdfUrl =
+    data.pdfUrl ||
+    payload.pdfUrl ||
+    revision.pdfUrl ||
+    "";
+
+  const pdfFileId =
+    data.pdfFileId ||
+    payload.pdfFileId ||
+    revision.pdfFileId ||
+    "";
+
+  return {
+    payload,
+    revision,
+    existingImages: Array.isArray(existingImages) ? existingImages : [],
+    pdfUrl,
+    pdfFileId
+  };
+}
+
+function rptEditNormalizeImage_(img, index) {
+  if (typeof img === "string") {
+    return {
+      id: img,
+      fileId: img,
+      filename: `รูปภาพเดิม ${index + 1}`,
+      name: `รูปภาพเดิม ${index + 1}`,
+      caption: `รูปภาพเดิม ${index + 1}`,
+      url: rptEditDriveViewUrl_(img),
+      previewUrl: rptEditDriveImageUrl_(img)
+    };
+  }
+
+  const id = norm(img && (img.id || img.fileId || img.imageId));
+  const url = norm(img && (img.url || img.viewUrl)) || rptEditDriveViewUrl_(id);
+  const previewUrl = norm(img && (img.previewUrl || img.thumbnailUrl || img.embedUrl)) || rptEditDriveImageUrl_(id);
+
+  return {
+    id,
+    fileId: id,
+    filename: norm(img && (img.filename || img.name || img.caption)) || `รูปภาพเดิม ${index + 1}`,
+    name: norm(img && (img.name || img.filename)) || `รูปภาพเดิม ${index + 1}`,
+    caption: norm(img && img.caption) || `รูปภาพเดิม ${index + 1}`,
+    url,
+    previewUrl
+  };
+}
+
+function rptEditBuildLoadSummaryHtml_(payload, images, pdfUrl) {
+  const p = payload || {};
+
+  const rows = [
+    ["Ref", p.refNo || "-"],
+    ["Root", p.rootRefNo || p.refNo || "-"],
+    ["Rev", p.revisionLabel || ("Rev." + Number(p.revisionNo || 0))],
+    ["สาขา", p.branch || "-"],
+    ["เรื่อง", p.subject || "-"],
+    ["ผู้รายงาน", p.reportedBy || "-"],
+    ["วันที่", p.incidentDate || "-"],
+    ["สถานที่", p.whereDidItHappen || "-"],
+    ["รูป", `${images.length} รูป`],
+    ["PDF", pdfUrl ? "มีไฟล์" : "ไม่มี"]
+  ];
+
+  return `
+    <div class="report500LoadSummaryCompact">
+      <div class="report500LoadCompactHead">
+        <div class="report500LoadCompactTitle">พบข้อมูล Report เดิม</div>
+        <div class="report500LoadCompactSub">ตรวจสอบข้อมูลก่อนโหลดกลับเข้าแบบฟอร์ม</div>
+      </div>
+
+      <div class="report500LoadCompactTable">
+        ${rows.map(([label, value]) => `
+          <div class="report500LoadCompactRow">
+            <div class="report500LoadCompactLabel">${escapeHtml(label)}</div>
+            <div class="report500LoadCompactValue">${escapeHtml(value)}</div>
+          </div>
+        `).join("")}
+      </div>
+    </div>
+  `;
+}
+
+function rptEditRenderPanel_() {
+  const st = REPORT500_EDIT_STATE;
+
+  document.body.classList.toggle("report500-editing", !!st.active);
+
+  rptEditSetHidden_("report500EditPanel", !st.active);
+  rptEditSetHidden_("btnReport500ExitEdit", !st.active);
+
+  rptEditSetText_("report500EditRefText", st.rootRefNo || st.loadedRefNo || "-");
+  rptEditSetText_("report500EditRevisionText", st.revisionLabel || ("Rev." + Number(st.revisionNo || 0)));
+  rptEditSetText_("report500EditDocumentIdText", st.documentId || "-");
+
+  const pdfLink = $("report500EditPdfLink");
+  const pdfEmpty = $("report500EditPdfEmpty");
+
+  if (pdfLink && st.pdfUrl) {
+    pdfLink.href = st.pdfUrl;
+    pdfLink.classList.remove("hidden");
+    if (pdfEmpty) pdfEmpty.classList.add("hidden");
+  } else {
+    if (pdfLink) {
+      pdfLink.href = "#";
+      pdfLink.classList.add("hidden");
+    }
+    if (pdfEmpty) pdfEmpty.classList.remove("hidden");
+  }
+
+  const btnSubmit = $("btnRptSubmit");
+  if (btnSubmit) {
+    btnSubmit.textContent = st.active
+      ? "บันทึกฉบับแก้ไขและสร้าง PDF ใหม่"
+      : "บันทึกและสร้าง PDF";
+  }
+
+  rptEditRenderExistingImages_();
+}
+
+function rptEditRenderExistingImages_() {
+  const wrap = $("report500ExistingImagesWrap");
+  const root = $("report500ExistingImages");
+  if (!wrap || !root) return;
+
+  const images = REPORT500_EDIT_STATE.existingImages || [];
+  root.innerHTML = "";
+
+  if (!images.length) {
+    wrap.classList.add("hidden");
+    return;
+  }
+
+  images.forEach((img, idx) => {
+    const id = norm(img.id);
+    const removed = REPORT500_EDIT_STATE.removedImageIds.includes(id);
+    const previewUrl = img.previewUrl || rptEditDriveImageUrl_(id);
+    const viewUrl = img.url || rptEditDriveViewUrl_(id);
+
+    const card = document.createElement("div");
+    card.className = `existingImageCard${removed ? " is-removed" : ""}`;
+    card.dataset.fileId = id;
+
+    card.innerHTML = `
+      <div class="existingImageThumbWrap">
+        ${
+          previewUrl
+            ? `<img class="existingImageThumb" src="${escapeHtml(previewUrl)}" alt="รูปเดิม ${idx + 1}" loading="lazy">`
+            : `<div class="existingImageNoPreview">ไม่มีตัวอย่างรูป</div>`
+        }
+      </div>
+
+      <div class="existingImageBody">
+        <div class="existingImageTitle">${escapeHtml(img.caption || img.filename || img.name || ("รูปภาพเดิม " + (idx + 1)))}</div>
+        <div class="existingImageMeta">File ID: ${escapeHtml(id || "-")}</div>
+
+        <div class="existingImageActions">
+          ${
+            viewUrl
+              ? `<a class="existingImageViewLink" href="${escapeHtml(viewUrl)}" target="_blank" rel="noopener">เปิดดู</a>`
+              : `<span></span>`
+          }
+
+          <button class="existingImageRemoveBtn${removed ? " is-removed" : ""}" type="button" data-file-id="${escapeHtml(id)}">
+            ${removed ? "ใช้รูปนี้ต่อ" : "ไม่ใช้รูปนี้"}
+          </button>
+        </div>
+      </div>
+    `;
+
+    root.appendChild(card);
+  });
+
+  root.querySelectorAll(".existingImageRemoveBtn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const fileId = norm(btn.getAttribute("data-file-id"));
+      if (!fileId) return;
+
+      const list = REPORT500_EDIT_STATE.removedImageIds;
+      const found = list.indexOf(fileId);
+
+      if (found >= 0) {
+        list.splice(found, 1);
+      } else {
+        list.push(fileId);
+      }
+
+      rptEditRenderExistingImages_();
+    });
+  });
+
+  wrap.classList.remove("hidden");
+}
+
+function rptEditClearState_() {
+  REPORT500_EDIT_STATE.active = false;
+  REPORT500_EDIT_STATE.loading = false;
+  REPORT500_EDIT_STATE.submitting = false;
+
+  REPORT500_EDIT_STATE.loadedRefNo = "";
+  REPORT500_EDIT_STATE.rootRefNo = "";
+  REPORT500_EDIT_STATE.currentRefNo = "";
+  REPORT500_EDIT_STATE.documentId = "";
+  REPORT500_EDIT_STATE.revisionNo = 0;
+  REPORT500_EDIT_STATE.revisionLabel = "";
+
+  REPORT500_EDIT_STATE.pdfUrl = "";
+  REPORT500_EDIT_STATE.pdfFileId = "";
+
+  REPORT500_EDIT_STATE.payload = {};
+  REPORT500_EDIT_STATE.existingImages = [];
+  REPORT500_EDIT_STATE.removedImageIds = [];
+
+  rptEditRenderPanel_();
+}
+
+async function rptEditExitMode_() {
+  const ok = await Swal.fire({
+    icon: "question",
+    title: "ออกจากโหมดแก้ไข Report?",
+    text: "ข้อมูลที่โหลดไว้จะถูกยกเลิก แต่ข้อมูลในฟอร์มจะยังไม่ถูกล้าง",
+    showCancelButton: true,
+    confirmButtonText: "ออกจากโหมดแก้ไข",
+    cancelButtonText: "ยกเลิก"
+  });
+
+  if (!ok.isConfirmed) return;
+  rptEditClearState_();
+}
+
+function rptEditAppendRowAndGet_(listId, html, emptyLabel) {
+  const root = $(listId);
+  if (!root) return null;
+
+  appendRow(listId, html, emptyLabel);
+
+  const cards = root.querySelectorAll(".rptRepeatCard");
+  return cards[cards.length - 1] || null;
+}
+
+function rptEditFillPersonRows_(rows) {
+  const root = $("rptPersonList");
+  if (!root) return;
+
+  root.innerHTML = "";
+
+  const arr = Array.isArray(rows) ? rows : [];
+
+  arr.forEach((item, idx) => {
+    const node = rptEditAppendRowAndGet_("rptPersonList", createPersonRowHtml(idx + 1), "ผู้เกี่ยวข้อง");
+    if (!node) return;
+
+    const who = node.querySelector(".rptPersonWho");
+    if (who) who.value = norm(item.who || item.name || item.personName);
+
+    const pos = node.querySelector(".rptPersonPosition");
+    rptEditEnsureOptionValue_(pos, norm(item.position));
+    if (pos) pos.value = norm(item.position);
+
+    const posOther = node.querySelector(".rptPersonPositionOther");
+    if (posOther) posOther.value = norm(item.positionOther);
+
+    const dep = node.querySelector(".rptPersonDepartment");
+    rptEditEnsureOptionValue_(dep, norm(item.department));
+    if (dep) dep.value = norm(item.department);
+
+    const depOther = node.querySelector(".rptPersonDepartmentOther");
+    if (depOther) depOther.value = norm(item.departmentOther);
+
+    const rem = node.querySelector(".rptPersonRemark");
+    rptEditEnsureOptionValue_(rem, norm(item.remark));
+    if (rem) rem.value = norm(item.remark);
+
+    const remOther = node.querySelector(".rptPersonRemarkOther");
+    if (remOther) remOther.value = norm(item.remarkOther);
+
+    pos?.dispatchEvent(new Event("change", { bubbles: true }));
+    dep?.dispatchEvent(new Event("change", { bubbles: true }));
+    rem?.dispatchEvent(new Event("change", { bubbles: true }));
+
+    refreshSingleCardUi(node);
+  });
+
+  toggleEmptyState("rptPersonList", "ผู้เกี่ยวข้อง");
+}
+
+function rptEditFillSimpleRows_(listId, rows, type, titleLabel, detailLabel, titlePlaceholder, detailPlaceholder) {
+  const root = $(listId);
+  if (!root) return;
+
+  root.innerHTML = "";
+
+  const arr = Array.isArray(rows) ? rows : [];
+
+  arr.forEach((item, idx) => {
+    const node = rptEditAppendRowAndGet_(
+      listId,
+      createSimpleIndexedRowHtml(type, idx + 1, titleLabel, detailLabel, titlePlaceholder, detailPlaceholder),
+      titleLabel
+    );
+
+    if (!node) return;
+
+    const title = node.querySelector(".rptIdxTitle");
+    const detail = node.querySelector(".rptIdxDetail");
+
+    if (title) title.value = norm(item.title || item.name || item.topic);
+    if (detail) detail.value = norm(item.detail || item.text || item.description);
+
+    refreshSingleCardUi(node);
+  });
+
+  toggleEmptyState(listId, titleLabel);
+}
+
+function rptEditFillStepRows_(rows) {
+  const root = $("rptStepTakenList");
+  if (!root) return;
+
+  root.innerHTML = "";
+
+  const arr = Array.isArray(rows) ? rows : [];
+
+  arr.forEach((item, idx) => {
+    const node = rptEditAppendRowAndGet_("rptStepTakenList", createStepTakenRowHtml(idx + 1), "การดำเนินการ");
+    if (!node) return;
+
+    const action = node.querySelector(".rptStepActionType");
+    rptEditEnsureOptionValue_(action, norm(item.actionType));
+    if (action) action.value = norm(item.actionType);
+
+    const actionOther = node.querySelector(".rptStepActionTypeOther");
+    if (actionOther) actionOther.value = norm(item.actionTypeOther);
+
+    const alcoholResult = node.querySelector(".rptAlcoholResult");
+    if (alcoholResult) alcoholResult.value = norm(item.alcoholResult);
+
+    const alcoholMg = node.querySelector(".rptAlcoholMgPercent");
+    if (alcoholMg) alcoholMg.value = norm(item.alcoholMgPercent);
+
+    const drugConfirmed = node.querySelector(".rptDrugConfirmed");
+    if (drugConfirmed) drugConfirmed.value = norm(item.drugConfirmed);
+
+    const drugDetail = node.querySelector(".rptDrugShortDetail");
+    if (drugDetail) drugDetail.value = norm(item.drugShortDetail);
+
+    const detail = node.querySelector(".rptStepDetail");
+    if (detail) detail.value = norm(item.detail || item.text);
+
+    action?.dispatchEvent(new Event("change", { bubbles: true }));
+    alcoholResult?.dispatchEvent(new Event("change", { bubbles: true }));
+
+    refreshSingleCardUi(node);
+  });
+
+  toggleEmptyState("rptStepTakenList", "การดำเนินการ");
+}
+
+function rptEditApplyPayloadToForm_(payload) {
+  const p = payload || {};
+  const rootRefNo = norm(p.rootRefNo || p.refNo || REPORT500_EDIT_STATE.rootRefNo);
+
+  resetForm();
+
+  rptEditApplyRefToInputs_(rootRefNo);
+
+  rptEditSetValue_("rptBranch", p.branch);
+  rptEditSetValue_("rptBranchOther", p.branchOther);
+  rptEditSetValue_("rptSubject", p.subject);
+
+  rptEditSetCheckboxGroup_("rptReportTypes", p.reportTypes);
+  rptEditSetCheckboxGroup_("rptUrgencyTypes", p.urgencyTypes);
+  rptEditSetCheckboxGroup_("rptNotifyTo", p.notifyTo);
+
+  rptEditSetValue_("rptIncidentDate", rptEditToInputDate_(p.incidentDate));
+  rptEditSetValue_("rptIncidentTime", p.incidentTime);
+  rptEditSetValue_("rptWhatHappen", p.whatHappen);
+  rptEditSetValue_("rptWhereDidItHappen", p.whereDidItHappen);
+  rptEditSetWhereTypeSelections_(p.whereTypeSelections);
+  rptEditSetValue_("rptArea", p.area);
+
+  rptEditFillPersonRows_(p.involvedPersons);
+  rptEditFillSimpleRows_("rptDamageList", p.damages, "damage", "ความเสียหาย", "รายละเอียด", "หัวข้อความเสียหาย", "รายละเอียดเพิ่มเติม");
+  rptEditFillStepRows_(p.stepTakens);
+  rptEditSetValue_("rptOffenderStatement", p.offenderStatement);
+  rptEditFillSimpleRows_("rptEvidenceList", p.evidences, "evidence", "หลักฐาน", "รายละเอียด", "หัวข้อหลักฐาน", "รายละเอียดเพิ่มเติม");
+  rptEditSetValue_("rptSummaryText", p.summaryText);
+  rptEditFillSimpleRows_("rptCauseList", p.causes, "cause", "สาเหตุ", "รายละเอียด", "หัวข้อสาเหตุ", "รายละเอียดเพิ่มเติม");
+  rptEditFillSimpleRows_("rptPreventionList", p.preventions, "prevention", "การป้องกัน", "รายละเอียด", "หัวข้อการป้องกัน", "รายละเอียดเพิ่มเติม");
+  rptEditFillSimpleRows_("rptLearningList", p.learnings, "learning", "ข้อสรุป/บทเรียน", "รายละเอียด", "หัวข้อข้อสรุป", "รายละเอียดเพิ่มเติม");
+
+  rptEditSetValue_("rptReportedBy", p.reportedBy || getAuth().name);
+  rptEditSetValue_("rptReporterPosition", p.reporterPosition);
+  rptEditSetValue_("rptReporterPositionOther", p.reporterPositionOther);
+  rptEditSetValue_("rptReportDate", rptEditToInputDate_(p.reportDate));
+
+  if (Array.isArray(p.emailRecipients)) {
+    const emails = new Set(
+      p.emailRecipients
+        .map((x) => norm(x).toLowerCase())
+        .filter(Boolean)
+    );
+
+    document.querySelectorAll("#rptEmailSelector input[type='checkbox'], .rptEmailChk").forEach((chk) => {
+      chk.checked = emails.has(norm(chk.value).toLowerCase());
+    });
+  }
+
+  rptEditSetValue_("rptEmailOther", p.emailOther);
+
+  bindOtherSelect("rptBranch", "rptBranchOtherWrap", "rptBranchOther");
+  bindOtherSelect("rptReporterPosition", "rptReporterPositionOtherWrap", "rptReporterPositionOther");
+}
+
+async function loadReport500ForEdit() {
+  if (REPORT500_EDIT_STATE.loading) return;
+
+  await ensureReady();
+
+  const refNo = getRefNo();
+
+  if (!norm(refNo)) {
+    await Swal.fire({
+      icon: "warning",
+      title: "ยังไม่ได้ระบุ Ref",
+      text: "กรุณากรอก Ref No. และปี ก่อนดึงข้อมูลเดิม",
+      confirmButtonText: "ตกลง"
+    });
+    return;
+  }
+
+  REPORT500_EDIT_STATE.loading = true;
+
+  try {
+    const res = await fetch(`${apiUrl("/report500/load")}?refNo=${encodeURIComponent(refNo)}`, {
+      method: "GET",
+      cache: "no-store"
+    });
+
+    const text = await res.text();
+    let json = {};
+
+    try {
+      json = JSON.parse(text);
+    } catch (_) {
+      throw new Error("Backend ตอบกลับไม่ใช่ JSON");
+    }
+
+    if (!res.ok || !json.ok) {
+      throw new Error(json?.message || json?.error || `โหลดข้อมูลไม่สำเร็จ (HTTP ${res.status})`);
+    }
+
+    const normalized = rptEditNormalizeLoadedResponse_(json);
+    const payload = normalized.payload || {};
+    const images = normalized.existingImages.map(rptEditNormalizeImage_).filter((x) => x.id);
+
+    const rootRefNo = norm(
+      payload.rootRefNo ||
+      normalized.revision.rootRefNo ||
+      payload.refNo ||
+      refNo
+    );
+
+    const loadedRefNo = norm(
+      payload.refNo ||
+      normalized.revision.refNo ||
+      refNo
+    );
+
+    const revisionNo = Number(
+      payload.revisionNo ||
+      normalized.revision.revisionNo ||
+      0
+    );
+
+    const revisionLabel = norm(
+      payload.revisionLabel ||
+      normalized.revision.revisionLabel ||
+      ("Rev." + revisionNo)
+    );
+
+    const summaryHtml = rptEditBuildLoadSummaryHtml_(payload, images, normalized.pdfUrl);
+
+    const confirm = await Swal.fire({
+      icon: "info",
+      title: "พบข้อมูล Report เดิม",
+      html: summaryHtml,
+      width: 720,
+      showCancelButton: true,
+      confirmButtonText: "โหลดเข้าแบบฟอร์มเพื่อแก้ไข",
+      cancelButtonText: "ยกเลิก"
+    });
+
+    if (!confirm.isConfirmed) return;
+
+    REPORT500_EDIT_STATE.active = true;
+    REPORT500_EDIT_STATE.loadedRefNo = loadedRefNo;
+    REPORT500_EDIT_STATE.currentRefNo = loadedRefNo;
+    REPORT500_EDIT_STATE.rootRefNo = rootRefNo;
+    REPORT500_EDIT_STATE.documentId = norm(payload.documentId || normalized.revision.documentId);
+    REPORT500_EDIT_STATE.revisionNo = revisionNo;
+    REPORT500_EDIT_STATE.revisionLabel = revisionLabel;
+
+    REPORT500_EDIT_STATE.pdfUrl = normalized.pdfUrl || "";
+    REPORT500_EDIT_STATE.pdfFileId = normalized.pdfFileId || "";
+
+    REPORT500_EDIT_STATE.payload = payload;
+    REPORT500_EDIT_STATE.existingImages = images;
+    REPORT500_EDIT_STATE.removedImageIds = [];
+
+    rptEditApplyPayloadToForm_(payload);
+    rptEditRenderPanel_();
+
+    await Swal.fire({
+      icon: "success",
+      title: "โหลดข้อมูล Report เข้าแบบฟอร์มแล้ว",
+      text: "สามารถตรวจสอบ/แก้ไขข้อมูล แล้วกดบันทึกฉบับแก้ไขได้",
+      confirmButtonText: "ตกลง"
+    });
+
+  } catch (err) {
+    console.error("loadReport500ForEdit failed:", err);
+
+    await Swal.fire({
+      icon: "error",
+      title: "โหลดข้อมูล Report ไม่สำเร็จ",
+      text: err?.message || String(err),
+      confirmButtonText: "ตกลง"
+    });
+  } finally {
+    REPORT500_EDIT_STATE.loading = false;
+  }
+}
+
+function rptEditBuildRevisionPayload_(basePayload) {
+  const st = REPORT500_EDIT_STATE;
+
+  return {
+    ...basePayload,
+
+    rootRefNo: st.rootRefNo || basePayload.rootRefNo || basePayload.refNo,
+    editedFromRefNo: st.currentRefNo || st.loadedRefNo || basePayload.refNo,
+    editedBy: getAuth().name || basePayload.reportedBy || "",
+
+    documentId: st.documentId || "",
+    previousPdfFileId: st.pdfFileId || "",
+    previousPdfUrl: st.pdfUrl || "",
+
+    existingImages: (st.existingImages || []).map((img) => ({
+      id: img.id,
+      fileId: img.id,
+      filename: img.filename || img.name || "",
+      name: img.name || img.filename || "",
+      caption: img.caption || "",
+      url: img.url || "",
+      previewUrl: img.previewUrl || ""
+    })),
+
+    removedImageIds: Array.from(new Set(st.removedImageIds || []))
+  };
+}
+
+async function submitReport500Revision_() {
+  if (REPORT500_EDIT_STATE.submitting) return;
+
+  const auth = getAuth();
+  if (!norm(auth.pass)) {
+    await Swal.fire({
+      icon: "warning",
+      title: "ยังไม่ได้เข้าสู่ระบบ",
+      text: "กรุณาเข้าสู่ระบบก่อนบันทึกข้อมูล"
+    });
+    return;
+  }
+
+  try {
+    let payload = collectPayload();
+    const images = await collectImages();
+
+    payload = rptEditBuildRevisionPayload_(payload);
+
+    const existingCount = Math.max(
+      0,
+      (payload.existingImages || []).length - (payload.removedImageIds || []).length
+    );
+
+    const confirm = await Swal.fire({
+      icon: "question",
+      title: "ยืนยันบันทึกฉบับแก้ไข Report",
+      html: `
+        <div style="text-align:left;line-height:1.7">
+          <div><b>Root Ref:</b> ${escapeHtml(payload.rootRefNo || "-")}</div>
+          <div><b>แก้ไขจาก:</b> ${escapeHtml(payload.editedFromRefNo || "-")}</div>
+          <div><b>รูปเดิมที่ใช้ต่อ:</b> ${existingCount} รูป</div>
+          <div><b>รูปเดิมที่ไม่ใช้:</b> ${(payload.removedImageIds || []).length} รูป</div>
+          <div><b>รูปใหม่:</b> ${images.length} รูป</div>
+          <div style="color:#64748b;font-size:13px;margin-top:8px">
+            ระบบจะสร้างข้อมูลฉบับแก้ไขและสร้าง PDF ใหม่ โดยไม่ลบข้อมูลเดิม
+          </div>
+        </div>
+      `,
+      width: 720,
+      showCancelButton: true,
+      confirmButtonText: "ยืนยันบันทึกฉบับแก้ไข",
+      cancelButtonText: "ยกเลิก"
+    });
+
+    if (!confirm.isConfirmed) return;
+
+    REPORT500_EDIT_STATE.submitting = true;
+
+    const Progress = window.ProgressUI;
+    Progress?.show(
+      "กำลังบันทึกฉบับแก้ไข Report",
+      "ระบบกำลังบันทึกข้อมูล สร้าง PDF ใหม่ และอัปเดต QR Code"
+    );
+
+    Progress?.activateOnly("validate", 10, "กำลังตรวจสอบข้อมูลฉบับแก้ไข");
+    await (window.sleepMs ? window.sleepMs(140) : new Promise((r) => setTimeout(r, 140)));
+    Progress?.markDone("validate", 18, "ข้อมูลพร้อมบันทึก");
+
+    Progress?.activateOnly("upload", 30, "กำลังเตรียมรูปภาพ");
+    await (window.sleepMs ? window.sleepMs(160) : new Promise((r) => setTimeout(r, 160)));
+    Progress?.markDone("upload", 42, `เตรียมรูปภาพเรียบร้อย (${images.length} รูปใหม่)`);
+
+    Progress?.activateOnly("save", 56, "กำลังบันทึกฉบับแก้ไข Report");
+
+    const res = await fetch(apiUrl("/report500/revise"), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        pass: auth.pass,
+        payload,
+        files: images
+      })
+    });
+
+    const text = await res.text();
+    let json = {};
+
+    try {
+      json = JSON.parse(text);
+    } catch (_) {
+      throw new Error("Backend ตอบกลับไม่ใช่ JSON");
+    }
+
+    if (!res.ok || !json.ok) {
+      throw new Error(json?.error || json?.message || `บันทึกฉบับแก้ไขไม่สำเร็จ (HTTP ${res.status})`);
+    }
+
+    Progress?.markDone("save", 72, "บันทึกฉบับแก้ไขเรียบร้อย");
+    Progress?.activateOnly("pdf", 84, "กำลังสร้าง PDF ใหม่");
+
+    await (window.sleepMs ? window.sleepMs(180) : new Promise((r) => setTimeout(r, 180)));
+
+    if (json.pdfFileId || json.pdfUrl || json.pdfAccessUrl) {
+      const sizeText = json.pdfSizeText ? ` (${json.pdfSizeText})` : "";
+      Progress?.markDone("pdf", 94, `สร้าง PDF ใหม่เรียบร้อย${sizeText}`);
+    } else {
+      Progress?.markDone("pdf", 94, "สร้าง PDF ใหม่เรียบร้อย");
+    }
+
+    Progress?.activateOnly("email", 97, "กำลังสรุปสถานะอีเมล");
+
+    const emailResult = json.emailResult || {};
+    if (emailResult.ok) {
+      Progress?.markDone("email", 100, "ส่งอีเมลเรียบร้อย");
+    } else if (emailResult.skipped) {
+      Progress?.markDone("email", 100, "ไม่ได้ส่งอีเมล", "ข้าม");
+    } else {
+      Progress?.markError("email", emailResult.error || "ส่งอีเมลไม่สำเร็จ", 100);
+    }
+
+    Progress?.success(
+      "บันทึกฉบับแก้ไขสำเร็จ",
+      "ระบบสร้าง PDF ใหม่และอัปเดตข้อมูลล่าสุดเรียบร้อยแล้ว"
+    );
+
+    Progress?.hide(250);
+
+    const pdfUrl =
+      json.pdfUrl ||
+      json.pdfAccessUrl ||
+      (json.rootRefNo ? apiUrl(`/report500/pdf/${encodeURIComponent(json.rootRefNo)}`) : "");
+
+    await Swal.fire({
+      icon: "success",
+      title: "บันทึกฉบับแก้ไข Report สำเร็จ",
+      html: `
+        <div class="swalSummary" style="text-align:left">
+          <div class="swalSection">
+            <div class="swalSectionTitle">ข้อมูลเอกสาร</div>
+            <div class="swalKvGrid">
+              <div class="swalKv"><div class="swalKvLabel">Ref ใหม่</div><div class="swalKvValue">${escapeHtml(json.refNo || payload.refNo || "-")}</div></div>
+              <div class="swalKv"><div class="swalKvLabel">Root Ref</div><div class="swalKvValue">${escapeHtml(json.rootRefNo || payload.rootRefNo || "-")}</div></div>
+              <div class="swalKv"><div class="swalKvLabel">Revision</div><div class="swalKvValue">${escapeHtml(json.revisionLabel || "-")}</div></div>
+              <div class="swalKv"><div class="swalKvLabel">PDF</div><div class="swalKvValue">${pdfUrl ? "สร้างแล้ว" : "ไม่พบลิงก์ PDF"}</div></div>
+            </div>
+          </div>
+
+          ${
+            pdfUrl
+              ? `<div style="margin-top:14px;text-align:center">
+                  <a href="${escapeHtml(pdfUrl)}" target="_blank" rel="noopener" class="btn primary" style="text-decoration:none;display:inline-flex">เปิด PDF ใหม่</a>
+                </div>`
+              : ""
+          }
+        </div>
+      `,
+      width: 920,
+      confirmButtonText: "ตกลง"
+    });
+
+    rptEditClearState_();
+    resetReportRefDuplicateUi_();
+    resetForm();
+
+    if ($("rptRefNo")) $("rptRefNo").value = "";
+
+  } catch (err) {
+    console.error("submitReport500Revision_ failed:", err);
+
+    window.ProgressUI?.markError("save", err?.message || "บันทึกฉบับแก้ไขไม่สำเร็จ", 72);
+    window.ProgressUI?.hide(180);
+
+    await Swal.fire({
+      icon: "error",
+      title: "บันทึกฉบับแก้ไขไม่สำเร็จ",
+      text: err?.message || String(err),
+      confirmButtonText: "ตกลง"
+    });
+  } finally {
+    REPORT500_EDIT_STATE.submitting = false;
+  }
+}
+
+function bindReport500EditModeEvents_() {
+  const loadBtn = $("btnReport500LoadRef");
+  const exitBtn = $("btnReport500ExitEdit");
+  const submitBtn = $("btnRptSubmit");
+
+  if (loadBtn && !loadBtn.__report500EditBound) {
+    loadBtn.__report500EditBound = true;
+    loadBtn.addEventListener("click", loadReport500ForEdit);
+  }
+
+  if (exitBtn && !exitBtn.__report500EditBound) {
+    exitBtn.__report500EditBound = true;
+    exitBtn.addEventListener("click", rptEditExitMode_);
+  }
+
+  if (submitBtn && !submitBtn.__report500EditCaptureBound) {
+    submitBtn.__report500EditCaptureBound = true;
+
+    submitBtn.addEventListener("click", (event) => {
+      if (!REPORT500_EDIT_STATE.active) return;
+
+      event.preventDefault();
+      event.stopImmediatePropagation();
+
+      submitReport500Revision_();
+    }, true);
+  }
+
+  rptEditRenderPanel_();
+}
+
+bindReport500EditModeEvents_();
+window.Report500UI = {
+  ensureReady,
+  preview,
+  submit,
+  reset: resetForm,
+  loadForEdit: loadReport500ForEdit,
+  exitEditMode: rptEditExitMode_
+};
 })();
 
 
