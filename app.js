@@ -3018,64 +3018,101 @@ function errorBolEditApplyPayloadToForm_(payload) {
   }
 }
 
+// function errorBolEditBuildLoadSummaryHtml_(payload, images, signs, pdfUrl) {
+//   const p = payload || {};
+//   const signCount = ["supervisor", "employee", "interpreter"].reduce((acc, key) => {
+//     return acc + (signs && signs[key] && signs[key].id ? 1 : 0);
+//   }, 0);
+
+//   return `
+//     <div class="errorBolLoadSummary">
+//       <div class="errorBolLoadHero">
+//         <div class="errorBolLoadTitle">พบข้อมูลเอกสารเดิม</div>
+//         <div class="errorBolLoadSub">ตรวจสอบข้อมูลก่อนโหลดกลับเข้าแบบฟอร์ม</div>
+//       </div>
+
+//       <div class="errorBolLoadKvGrid">
+//         <div class="errorBolLoadKv">
+//           <div class="errorBolLoadLabel">Ref</div>
+//           <div class="errorBolLoadValue">${errorBolEditEscape_(p.refNo || "-")}</div>
+//         </div>
+
+//         <div class="errorBolLoadKv">
+//           <div class="errorBolLoadLabel">Root Ref</div>
+//           <div class="errorBolLoadValue">${errorBolEditEscape_(p.rootRefNo || p.refNo || "-")}</div>
+//         </div>
+
+//         <div class="errorBolLoadKv">
+//           <div class="errorBolLoadLabel">Revision</div>
+//           <div class="errorBolLoadValue">${errorBolEditEscape_(p.revisionLabel || ("Rev." + Number(p.revisionNo || 0)))}</div>
+//         </div>
+
+//         <div class="errorBolLoadKv">
+//           <div class="errorBolLoadLabel">พนักงาน</div>
+//           <div class="errorBolLoadValue">${errorBolEditEscape_(p.employeeName || "-")}</div>
+//         </div>
+
+//         <div class="errorBolLoadKv">
+//           <div class="errorBolLoadLabel">Item</div>
+//           <div class="errorBolLoadValue">${errorBolEditEscape_(p.itemDisplay || p.item || "-")}</div>
+//         </div>
+
+//         <div class="errorBolLoadKv">
+//           <div class="errorBolLoadLabel">รูปภาพ / ลายเซ็น</div>
+//           <div class="errorBolLoadValue">${images.length} รูป / ${signCount} ลายเซ็น</div>
+//         </div>
+
+//         <div class="errorBolLoadKv">
+//           <div class="errorBolLoadLabel">PDF เดิม</div>
+//           <div class="errorBolLoadValue">${pdfUrl ? "มีไฟล์ PDF" : "ไม่พบ PDF"}</div>
+//         </div>
+
+//         <div class="errorBolLoadKv">
+//           <div class="errorBolLoadLabel">วันที่เกิดเหตุ</div>
+//           <div class="errorBolLoadValue">${errorBolEditEscape_(p.errorDate || "-")}</div>
+//         </div>
+//       </div>
+//     </div>
+//   `;
+// }
 function errorBolEditBuildLoadSummaryHtml_(payload, images, signs, pdfUrl) {
   const p = payload || {};
+
   const signCount = ["supervisor", "employee", "interpreter"].reduce((acc, key) => {
     return acc + (signs && signs[key] && signs[key].id ? 1 : 0);
   }, 0);
 
+  const rows = [
+    ["Ref", p.refNo || "-"],
+    ["Root Ref", p.rootRefNo || p.refNo || "-"],
+    ["Revision", p.revisionLabel || ("Rev." + Number(p.revisionNo || 0))],
+    ["พนักงาน", p.employeeName || "-"],
+    ["รหัสพนักงาน", p.employeeCode || "-"],
+    ["Item", p.itemDisplay || p.item || "-"],
+    ["วันที่เกิดเหตุ", p.errorDate || "-"],
+    ["สาเหตุ", p.errorReason || "-"],
+    ["รูป/ลายเซ็น", `${images.length} รูป / ${signCount} ลายเซ็น`],
+    ["PDF เดิม", pdfUrl ? "มีไฟล์ PDF" : "ไม่พบ PDF"]
+  ];
+
   return `
-    <div class="errorBolLoadSummary">
-      <div class="errorBolLoadHero">
-        <div class="errorBolLoadTitle">พบข้อมูลเอกสารเดิม</div>
-        <div class="errorBolLoadSub">ตรวจสอบข้อมูลก่อนโหลดกลับเข้าแบบฟอร์ม</div>
+    <div class="errorBolLoadSummaryCompact">
+      <div class="errorBolLoadCompactHead">
+        <div class="errorBolLoadCompactTitle">พบข้อมูลเอกสารเดิม</div>
+        <div class="errorBolLoadCompactSub">ตรวจสอบข้อมูลก่อนโหลดกลับเข้าแบบฟอร์ม</div>
       </div>
 
-      <div class="errorBolLoadKvGrid">
-        <div class="errorBolLoadKv">
-          <div class="errorBolLoadLabel">Ref</div>
-          <div class="errorBolLoadValue">${errorBolEditEscape_(p.refNo || "-")}</div>
-        </div>
-
-        <div class="errorBolLoadKv">
-          <div class="errorBolLoadLabel">Root Ref</div>
-          <div class="errorBolLoadValue">${errorBolEditEscape_(p.rootRefNo || p.refNo || "-")}</div>
-        </div>
-
-        <div class="errorBolLoadKv">
-          <div class="errorBolLoadLabel">Revision</div>
-          <div class="errorBolLoadValue">${errorBolEditEscape_(p.revisionLabel || ("Rev." + Number(p.revisionNo || 0)))}</div>
-        </div>
-
-        <div class="errorBolLoadKv">
-          <div class="errorBolLoadLabel">พนักงาน</div>
-          <div class="errorBolLoadValue">${errorBolEditEscape_(p.employeeName || "-")}</div>
-        </div>
-
-        <div class="errorBolLoadKv">
-          <div class="errorBolLoadLabel">Item</div>
-          <div class="errorBolLoadValue">${errorBolEditEscape_(p.itemDisplay || p.item || "-")}</div>
-        </div>
-
-        <div class="errorBolLoadKv">
-          <div class="errorBolLoadLabel">รูปภาพ / ลายเซ็น</div>
-          <div class="errorBolLoadValue">${images.length} รูป / ${signCount} ลายเซ็น</div>
-        </div>
-
-        <div class="errorBolLoadKv">
-          <div class="errorBolLoadLabel">PDF เดิม</div>
-          <div class="errorBolLoadValue">${pdfUrl ? "มีไฟล์ PDF" : "ไม่พบ PDF"}</div>
-        </div>
-
-        <div class="errorBolLoadKv">
-          <div class="errorBolLoadLabel">วันที่เกิดเหตุ</div>
-          <div class="errorBolLoadValue">${errorBolEditEscape_(p.errorDate || "-")}</div>
-        </div>
+      <div class="errorBolLoadCompactTable">
+        ${rows.map(([label, value]) => `
+          <div class="errorBolLoadCompactRow">
+            <div class="errorBolLoadCompactLabel">${errorBolEditEscape_(label)}</div>
+            <div class="errorBolLoadCompactValue">${errorBolEditEscape_(value)}</div>
+          </div>
+        `).join("")}
       </div>
     </div>
   `;
 }
-
 function errorBolEditRenderExistingImages_() {
   const wrap = document.getElementById("errorBolExistingImagesWrap");
   const root = document.getElementById("errorBolExistingImages");
@@ -3364,15 +3401,15 @@ async function loadErrorBolForEdit() {
 
     const summaryHtml = errorBolEditBuildLoadSummaryHtml_(payload, images, signs, normalized.pdfUrl);
 
-    const confirm = await Swal.fire({
-      icon: "info",
-      title: "พบข้อมูลเดิม",
-      html: summaryHtml,
-      width: 920,
-      showCancelButton: true,
-      confirmButtonText: "โหลดเข้าแบบฟอร์มเพื่อแก้ไข",
-      cancelButtonText: "ยกเลิก"
-    });
+   const confirm = await Swal.fire({
+  icon: "info",
+  title: "พบข้อมูลเดิม",
+  html: summaryHtml,
+  width: 680,
+  showCancelButton: true,
+  confirmButtonText: "โหลดเข้าแบบฟอร์มเพื่อแก้ไข",
+  cancelButtonText: "ยกเลิก"
+});
 
     if (!confirm.isConfirmed) return;
 
