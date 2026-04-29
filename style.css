@@ -3546,3 +3546,805 @@ body.img-editor-lock{
 .gridCompact .field:has(#rptRefDuplicateHint){
   width:100%;
 }
+
+
+/* =========================================================
+   MOBILE COMPACT OVERRIDE
+   ลดพื้นที่แสดงผลบนมือถือ / จอเล็ก
+   ให้วางท้ายสุดของ style.css
+   ========================================================= */
+
+@media (max-width: 768px){
+
+  :root{
+    --radius-card:14px;
+    --radius-panel:12px;
+    --radius-input:10px;
+    --input-h:38px;
+    --input-h-compact:36px;
+  }
+
+  body{
+    line-height:1.35;
+  }
+
+  /* ===== Topbar compact ===== */
+  .topbar{
+    gap:6px;
+    padding:5px 7px;
+    grid-template-columns:minmax(0,1fr) auto;
+  }
+
+  .brandInline{
+    gap:6px;
+  }
+
+  .logo,
+  .brandLogoImg{
+    width:28px;
+    height:28px;
+    flex-basis:28px;
+    border-radius:8px;
+  }
+
+  .brandTextInline{
+    gap:4px;
+  }
+
+  .brandTextInline .title{
+    font-size:12px;
+    max-width:118px;
+  }
+
+  .brandTextInline .subtitle{
+    display:none;
+  }
+
+  .topLoginUserWrap{
+    min-height:22px;
+    padding:2px 7px;
+    font-size:9.5px;
+    max-width:118px;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+  }
+
+  .topLoginUserLabel{
+    display:none;
+  }
+
+  .tabsInline{
+    gap:5px;
+  }
+
+  .tab{
+    min-height:30px;
+    padding:5px 10px;
+    font-size:10.5px;
+    box-shadow:none;
+  }
+
+  /* ===== Main layout compact ===== */
+  .container{
+    padding:7px 6px 14px;
+  }
+
+  .card{
+    padding:9px;
+    margin-bottom:8px;
+    border-radius:14px;
+  }
+
+  .card::before{
+    height:3px;
+  }
+
+  .panel,
+  .emailPanel,
+  .rptPanel{
+    padding:8px;
+    border-radius:12px;
+    box-shadow:none;
+  }
+
+  .sectionTitle{
+    gap:7px;
+    margin:9px 0 6px;
+    padding:0 0 6px;
+  }
+
+  .sectionTitle .dot{
+    width:9px;
+    height:9px;
+    flex-basis:9px;
+    margin-top:3px;
+    box-shadow:0 0 0 4px rgba(59,130,246,.08);
+  }
+
+  .sectionMain{
+    font-size:13px;
+  }
+
+  .sectionSub{
+    font-size:10px;
+    margin-top:1px;
+    line-height:1.25;
+  }
+
+  /* ===== Field compact ===== */
+  .gridCompact,
+  .gridEmployee{
+    grid-template-columns:1fr;
+    gap:8px;
+  }
+
+  .field{
+    gap:4px;
+  }
+
+  .fieldBlock{
+    margin-top:8px;
+  }
+
+  label{
+    font-size:10.5px;
+  }
+
+  input,
+  select,
+  textarea{
+    min-height:38px;
+    padding:7px 9px;
+    font-size:12px;
+    border-radius:10px;
+  }
+
+  textarea{
+    min-height:74px;
+    line-height:1.4;
+  }
+
+  .fieldHint{
+    font-size:10px;
+    min-height:12px;
+  }
+
+  .refRow{
+    grid-template-columns:minmax(0,1fr) 12px 82px;
+    gap:5px;
+  }
+
+  .refDash{
+    font-size:19px;
+  }
+
+  #refYear,
+  #rptRefYear{
+    min-width:72px;
+  }
+
+  /* ===== Buttons compact ===== */
+  .btn{
+    min-height:36px;
+    padding:7px 10px;
+    border-radius:10px;
+    font-size:12px;
+  }
+
+  .panelActions{
+    gap:6px;
+    margin-top:7px;
+  }
+
+  .actions{
+    gap:7px;
+    margin-top:9px;
+  }
+
+  .actions .btn{
+    min-height:38px;
+    font-size:12px;
+  }
+
+  /* มือถือให้ปุ่มสรุป/บันทึกซ้อนลงมา แต่ไม่สูงเกิน */
+  .actions{
+    grid-template-columns:1fr;
+  }
+
+  /* ===== Email / checkbox compact ===== */
+  .emailSelector,
+  .checkList,
+  .confirmCauseGrid,
+  .optionMatrix{
+    grid-template-columns:1fr;
+    gap:6px;
+  }
+
+  .emailItem,
+  .confirmCauseCard,
+  .optionChoiceCard{
+    min-height:38px;
+    padding:7px 8px;
+    border-radius:10px;
+    gap:8px;
+    box-shadow:none;
+  }
+
+  .emailCheckBox,
+  .confirmCauseMark,
+  .optionChoiceMark{
+    width:16px;
+    height:16px;
+    flex-basis:16px;
+    border-radius:5px;
+  }
+
+  .emailText,
+  .confirmCauseText,
+  .optionChoiceText{
+    font-size:11px;
+    line-height:1.3;
+  }
+
+  .confirmCauseGroup + .confirmCauseGroup{
+    margin-top:2px;
+    padding-top:7px;
+  }
+
+  .confirmCauseGroupTitle{
+    min-height:23px;
+    padding:3px 8px;
+    font-size:10px;
+    margin-bottom:5px;
+  }
+
+  /* ===== Upload compact ===== */
+  .uploadGrid{
+    grid-template-columns:1fr;
+    gap:7px;
+  }
+
+  .uploadBox{
+    padding:8px;
+    border-radius:11px;
+    box-shadow:none;
+  }
+
+  .uploadBox .cap{
+    font-size:11px;
+    margin-bottom:5px;
+  }
+
+  .uploadBox input[type="file"]{
+    padding:6px 7px;
+    min-height:34px;
+    font-size:11px;
+  }
+
+  .previewImg{
+    margin-top:6px;
+    max-height:145px !important;
+    aspect-ratio:16 / 9;
+    border-radius:9px;
+  }
+
+  .small{
+    margin-top:5px;
+    font-size:10px;
+  }
+
+  .btnEditImage{
+    min-height:30px;
+    padding:5px 8px;
+    font-size:10.5px;
+    border-radius:9px;
+  }
+
+  /* ===== Error_BOL Edit Mode compact ===== */
+  .refEditActions{
+    margin-top:7px;
+    padding-top:7px;
+    gap:6px;
+  }
+
+  .refEditActions .btn{
+    min-height:34px;
+    padding:6px 9px;
+    font-size:11px;
+    border-radius:10px;
+  }
+
+  .editModeBox{
+    margin-top:8px;
+    padding:8px;
+    border-radius:12px;
+    box-shadow:none;
+  }
+
+  .editModeHead{
+    gap:6px;
+    padding-bottom:7px;
+    margin-bottom:7px;
+  }
+
+  .editModeTitle{
+    font-size:12.5px;
+  }
+
+  .editModeSub{
+    font-size:10px;
+    line-height:1.3;
+  }
+
+  .editModeBadge{
+    min-height:22px;
+    padding:3px 7px;
+    font-size:9px;
+  }
+
+  .editModeGrid{
+    grid-template-columns:1fr;
+    gap:6px;
+  }
+
+  .editModeItem{
+    padding:7px 8px;
+    border-radius:10px;
+    box-shadow:none;
+  }
+
+  .editModeLabel{
+    font-size:9.5px;
+  }
+
+  .editModeValue{
+    font-size:10.5px;
+    margin-top:2px;
+  }
+
+  .editPdfLink{
+    min-height:26px;
+    padding:4px 8px;
+    font-size:10px;
+  }
+
+  .existingAssetBlock{
+    margin-top:8px;
+    padding:8px;
+    border-radius:11px;
+  }
+
+  .existingAssetTitle{
+    font-size:11.5px;
+  }
+
+  .existingAssetSub{
+    font-size:9.5px;
+    line-height:1.25;
+  }
+
+  .existingImageGrid,
+  .existingSignGrid{
+    grid-template-columns:1fr;
+    gap:7px;
+    margin-top:7px;
+  }
+
+  .existingImageCard,
+  .existingSignCard{
+    border-radius:11px;
+    box-shadow:none;
+  }
+
+  .existingImageThumb,
+  .existingImageNoPreview{
+    aspect-ratio:16 / 9;
+    max-height:140px;
+  }
+
+  .existingImageBody,
+  .existingSignBody{
+    padding:7px;
+  }
+
+  .existingImageTitle,
+  .existingSignTitle{
+    font-size:10.5px;
+  }
+
+  .existingImageMeta,
+  .existingSignMeta{
+    font-size:9px;
+  }
+
+  .existingImageActions,
+  .existingSignActions{
+    gap:5px;
+    margin-top:6px;
+  }
+
+  .existingImageViewLink,
+  .existingImageRemoveBtn,
+  .existingSignViewLink{
+    min-height:28px;
+    padding:5px 8px;
+    font-size:10px;
+    border-radius:9px;
+  }
+
+  .existingSignHead{
+    padding:7px 8px;
+  }
+
+  .existingSignThumb,
+  .existingSignEmpty{
+    min-height:68px;
+    max-height:88px;
+    border-radius:9px;
+  }
+
+  /* ===== Report500 compact ===== */
+  .rptRepeaterList{
+    gap:8px;
+  }
+
+  .rptBlock,
+  .rptRepeatCard{
+    padding:8px;
+    border-radius:12px;
+    box-shadow:none;
+  }
+
+  .rptCardHead{
+    padding:8px;
+    gap:7px;
+  }
+
+  .rptCardTitle{
+    font-size:11.5px;
+  }
+
+  .rptCardSummary{
+    font-size:10px;
+    min-height:auto;
+  }
+
+  .rptRowIndex{
+    min-width:28px;
+    height:24px;
+    padding:0 7px;
+    font-size:9.5px;
+  }
+
+  .rptCardStatus{
+    min-height:20px;
+    padding:2px 7px;
+    font-size:9px;
+  }
+
+  .rptToggleBtn{
+    min-width:30px;
+    height:30px;
+    border-radius:9px;
+    font-size:15px;
+  }
+
+  .rptCardBody{
+    padding:8px;
+  }
+
+  .rptRepeatCard textarea,
+  .rptBlock textarea{
+    min-height:70px;
+  }
+
+  .rptRepeatCard .btn,
+  .rptBlock .btn{
+    min-height:32px;
+    padding:6px 9px;
+    font-size:10.5px;
+    border-radius:9px;
+  }
+
+  .rptUtilityBar{
+    grid-template-columns:1fr;
+    gap:7px;
+  }
+
+  .rptUtilityBar .btn{
+    min-height:38px;
+    font-size:11.5px;
+    border-radius:11px;
+  }
+
+  .rptLookupSummary{
+    margin-top:8px;
+    padding:8px;
+    border-radius:11px;
+    gap:8px;
+    flex-direction:column;
+    align-items:stretch;
+    box-shadow:none;
+  }
+
+  .rptLookupSummaryTitle{
+    font-size:12px;
+  }
+
+  .rptLookupSummaryMeta{
+    font-size:10.5px;
+  }
+
+  .rptLookupSummaryActions{
+    justify-content:stretch;
+  }
+
+  .rptLookupSummaryActions .btn{
+    flex:1 1 0;
+  }
+
+  /* ===== SweetAlert compact ===== */
+  .swal2-popup{
+    width:calc(100vw - 14px) !important;
+    padding:12px !important;
+    border-radius:14px !important;
+  }
+
+  .swal2-title{
+    font-size:18px !important;
+    line-height:1.25 !important;
+  }
+
+  .swal2-html-container{
+    margin:8px 0 0 !important;
+    font-size:12px !important;
+  }
+
+  .swalHero{
+    padding:9px;
+    border-radius:11px;
+    margin-bottom:8px;
+  }
+
+  .swalHeroTitle{
+    font-size:13px;
+  }
+
+  .swalHeroSub{
+    font-size:10.5px;
+  }
+
+  .swalPillRow{
+    gap:5px;
+    margin-top:7px;
+  }
+
+  .swalPill{
+    min-height:24px;
+    padding:3px 7px;
+    font-size:9.5px;
+  }
+
+  .swalSection{
+    padding:8px;
+    margin-top:7px;
+    border-radius:11px;
+  }
+
+  .swalSectionTitle{
+    font-size:11.5px;
+    margin-bottom:6px;
+  }
+
+  .swalKvGrid{
+    grid-template-columns:1fr;
+    gap:6px;
+  }
+
+  .swalKv{
+    padding:7px 8px;
+    border-radius:9px;
+  }
+
+  .swalKvLabel{
+    font-size:9.5px;
+  }
+
+  .swalKvValue{
+    font-size:10.5px;
+  }
+
+  .swalDesc{
+    padding:8px;
+    border-radius:9px;
+  }
+
+  .swalDescLabel{
+    font-size:9.5px;
+  }
+
+  .swalDescValue{
+    font-size:10.5px;
+    line-height:1.4;
+  }
+
+  .sigGrid,
+  .galGrid{
+    grid-template-columns:1fr;
+    gap:7px;
+  }
+
+  .sigThumb{
+    min-height:66px;
+    max-height:90px;
+  }
+
+  /* ===== Progress compact ===== */
+  .progress-overlay{
+    padding:10px;
+  }
+
+  .progress-card{
+    border-radius:16px;
+    padding:14px 12px 12px;
+  }
+
+  .progress-head{
+    gap:9px;
+    margin-bottom:9px;
+  }
+
+  .progress-icon-wrap{
+    width:42px;
+    height:42px;
+    border-radius:13px;
+  }
+
+  .progress-spinner{
+    width:20px;
+    height:20px;
+  }
+
+  .progress-head-text h3{
+    font-size:16px;
+  }
+
+  .progress-head-text p{
+    font-size:11.5px;
+  }
+
+  #progressPercentText{
+    font-size:20px;
+  }
+
+  #progressStepText{
+    font-size:11px;
+  }
+
+  .progress-bar-shell{
+    height:10px;
+    margin-bottom:10px;
+  }
+
+  .progress-stage-list{
+    gap:6px;
+  }
+
+  .progress-stage{
+    grid-template-columns:12px 1fr auto;
+    gap:7px;
+    padding:7px 8px;
+    border-radius:10px;
+  }
+
+  .stage-dot{
+    width:10px;
+    height:10px;
+  }
+
+  .stage-label{
+    font-size:11.5px;
+  }
+
+  .stage-status{
+    font-size:10px;
+  }
+
+  .progress-hint{
+    margin-top:9px;
+    font-size:10px;
+  }
+}
+
+/* จอเล็กมาก เช่นมือถือแคบ */
+@media (max-width: 420px){
+
+  .topbar{
+    padding:4px 6px;
+  }
+
+  .brandTextInline .title{
+    max-width:96px;
+    font-size:11px;
+  }
+
+  .topLoginUserWrap{
+    max-width:92px;
+    font-size:9px;
+    padding-inline:6px;
+  }
+
+  .tab{
+    min-height:28px;
+    padding:4px 8px;
+    font-size:10px;
+  }
+
+  .container{
+    padding:6px 5px 12px;
+  }
+
+  .card{
+    padding:8px;
+    border-radius:12px;
+  }
+
+  .panel,
+  .emailPanel,
+  .rptPanel{
+    padding:7px;
+    border-radius:10px;
+  }
+
+  input,
+  select,
+  textarea{
+    min-height:36px;
+    padding:6px 8px;
+    font-size:11.5px;
+  }
+
+  textarea{
+    min-height:66px;
+  }
+
+  .sectionTitle{
+    margin:8px 0 5px;
+  }
+
+  .sectionMain{
+    font-size:12.5px;
+  }
+
+  .sectionSub{
+    display:none;
+  }
+
+  .btn{
+    min-height:34px;
+    font-size:11.5px;
+  }
+
+  .previewImg{
+    max-height:120px !important;
+  }
+
+  .existingImageThumb,
+  .existingImageNoPreview{
+    max-height:118px;
+  }
+
+  .editModeBox,
+  .existingAssetBlock{
+    padding:7px;
+  }
+
+  .rptCardHead{
+    padding:7px;
+  }
+
+  .rptCardBody{
+    padding:7px;
+  }
+}
