@@ -4475,3 +4475,393 @@ body.error-bol-editing #btnSubmit{
     font-size:8.8px;
   }
 }
+/* =========================================================
+   REPORT500 LOAD / EDIT DISPLAY ONLY
+   ปรับเฉพาะปุ่มดึงข้อมูลเดิม + กล่องแสดงผลข้อมูลที่โหลดมา
+   ไม่กระทบ layout/form เดิม
+   วางท้ายสุดของ style.css
+   ========================================================= */
+
+/* ===== ปุ่มดึงข้อมูล Ref เดิม / ออกจากโหมดแก้ไข ของ Report500 ===== */
+.report500EditActions{
+  margin-top:10px;
+  padding-top:10px;
+  border-top:1px dashed #dbe7f6;
+  display:flex;
+  align-items:center;
+  justify-content:flex-start;
+  gap:8px;
+  flex-wrap:wrap;
+}
+
+.report500EditActions .btn{
+  min-height:38px;
+  padding:8px 13px;
+  border-radius:12px;
+  font-size:12px;
+  font-weight:900;
+  box-shadow:none;
+}
+
+#btnReport500LoadRef{
+  color:#7c2d12;
+  background:linear-gradient(180deg,#ffffff 0%,#fff7ed 100%);
+  border:1.2px solid #fed7aa;
+}
+
+#btnReport500LoadRef:hover{
+  border-color:#fdba74;
+  box-shadow:0 6px 16px rgba(234,88,12,.10);
+}
+
+#btnReport500ExitEdit{
+  color:#ffffff;
+  background:linear-gradient(180deg,#ef4444,#dc2626);
+  border:1px solid transparent;
+  box-shadow:0 6px 16px rgba(220,38,38,.12);
+}
+
+/* ===== กล่องสถานะแก้ไข Report500 ===== */
+.report500EditPanel{
+  border-color:#fed7aa;
+  background:
+    radial-gradient(circle at top right, rgba(234,88,12,.08), transparent 32%),
+    linear-gradient(180deg,#fffdf8 0%,#fff7ed 100%);
+  box-shadow:0 8px 20px rgba(234,88,12,.07);
+}
+
+.report500EditPanel .editModeHead{
+  border-bottom-color:#ffedd5;
+}
+
+#report500EditBadge{
+  background:linear-gradient(180deg,#ea580c,#c2410c);
+  color:#ffffff;
+}
+
+/* ===== PDF Link ของ Report500 ===== */
+#report500EditPdfLink{
+  background:#fff7ed;
+  border-color:#fed7aa;
+  color:#c2410c;
+}
+
+#report500EditPdfLink:hover{
+  background:#ffedd5;
+  border-color:#fdba74;
+}
+
+/* ===== รูปภาพเดิมของ Report500 ===== */
+.report500ExistingImagesWrap{
+  border-color:#ffedd5;
+  background:rgba(255,255,255,.78);
+}
+
+.report500ExistingImages .existingImageViewLink{
+  color:#c2410c;
+  background:#fff7ed;
+  border-color:#fed7aa;
+}
+
+.report500ExistingImages .existingImageViewLink:hover{
+  background:#ffedd5;
+  border-color:#fdba74;
+}
+
+/* ===== สถานะ edit เฉพาะตอน Report500 active ===== */
+body.report500-editing #under500Card{
+  border-color:#fdba74;
+}
+
+body.report500-editing #under500Card::before{
+  background:linear-gradient(90deg,#ea580c,#f97316);
+}
+
+body.report500-editing #btnRptSubmit{
+  background:linear-gradient(180deg,#16a34a,#15803d);
+  box-shadow:0 8px 20px rgba(22,163,74,.18);
+}
+
+/* =========================================================
+   REPORT500 LOAD SWEETALERT COMPACT
+   ใช้สำหรับ SweetAlert ตอนพบข้อมูล Report เดิม
+   Desktop / Mobile = แสดงข้อมูลแบบกระชับ
+   ========================================================= */
+
+.report500LoadSummaryCompact{
+  text-align:left;
+  width:100%;
+}
+
+.report500LoadCompactHead{
+  padding:10px 12px;
+  margin-bottom:8px;
+  border:1px solid #fed7aa;
+  border-radius:12px;
+  background:linear-gradient(180deg,#fffdf8,#fff7ed);
+}
+
+.report500LoadCompactTitle{
+  font-size:14px;
+  line-height:1.25;
+  font-weight:900;
+  color:#0f172a;
+}
+
+.report500LoadCompactSub{
+  margin-top:2px;
+  font-size:11px;
+  line-height:1.35;
+  font-weight:800;
+  color:#64748b;
+}
+
+/* ตาราง 2 คอลัมน์ เพื่อประหยัดพื้นที่ */
+.report500LoadCompactTable{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:6px;
+}
+
+.report500LoadCompactRow{
+  display:grid;
+  grid-template-columns:72px minmax(0,1fr);
+  align-items:start;
+  gap:6px;
+  padding:7px 8px;
+  border:1px solid #f1f5f9;
+  border-radius:9px;
+  background:#ffffff;
+  min-width:0;
+}
+
+.report500LoadCompactLabel{
+  font-size:10px;
+  line-height:1.35;
+  font-weight:900;
+  color:#9a3412;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+
+.report500LoadCompactValue{
+  min-width:0;
+  font-size:11px;
+  line-height:1.35;
+  font-weight:900;
+  color:#0f172a;
+  word-break:break-word;
+}
+
+/* =========================================================
+   MOBILE: เฉพาะส่วนใหม่ของ Report500 เท่านั้น
+   ไม่แตะฟอร์มเดิม
+   ========================================================= */
+
+@media (max-width:720px){
+
+  .report500EditActions{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:6px;
+    margin-top:8px;
+    padding-top:8px;
+  }
+
+  .report500EditActions .btn{
+    width:100%;
+    min-height:34px;
+    padding:6px 8px;
+    font-size:10.5px;
+    border-radius:10px;
+  }
+
+  .report500EditPanel{
+    margin-top:8px;
+    padding:8px;
+    border-radius:12px;
+    box-shadow:none;
+  }
+
+  .report500EditPanel .editModeHead{
+    display:grid;
+    grid-template-columns:1fr auto;
+    align-items:start;
+    gap:6px;
+    padding-bottom:7px;
+    margin-bottom:7px;
+  }
+
+  .report500EditPanel .editModeTitle{
+    font-size:12px;
+  }
+
+  .report500EditPanel .editModeSub{
+    font-size:9.5px;
+    line-height:1.25;
+  }
+
+  #report500EditBadge{
+    min-height:21px;
+    padding:3px 6px;
+    font-size:8.5px;
+  }
+
+  .report500EditPanel .editModeGrid{
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:6px;
+  }
+
+  .report500EditPanel .editModeItem{
+    padding:6px 7px;
+    border-radius:9px;
+  }
+
+  .report500EditPanel .editModeLabel{
+    font-size:9px;
+  }
+
+  .report500EditPanel .editModeValue{
+    min-height:15px;
+    font-size:10px;
+    line-height:1.3;
+  }
+
+  #report500EditPdfLink{
+    min-height:24px;
+    padding:3px 7px;
+    font-size:9.5px;
+  }
+
+  .report500ExistingImagesWrap{
+    margin-top:7px;
+    padding:7px;
+    border-radius:10px;
+  }
+
+  .report500ExistingImages{
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:6px;
+    margin-top:6px;
+  }
+
+  .report500ExistingImages .existingImageCard{
+    border-radius:10px;
+    box-shadow:none;
+  }
+
+  .report500ExistingImages .existingImageThumb,
+  .report500ExistingImages .existingImageNoPreview{
+    aspect-ratio:16 / 9;
+    max-height:110px;
+  }
+
+  .report500ExistingImages .existingImageBody{
+    padding:6px;
+  }
+
+  .report500ExistingImages .existingImageTitle{
+    font-size:9.8px;
+  }
+
+  .report500ExistingImages .existingImageMeta{
+    display:none;
+  }
+
+  .report500ExistingImages .existingImageActions{
+    gap:4px;
+    margin-top:5px;
+  }
+
+  .report500ExistingImages .existingImageViewLink,
+  .report500ExistingImages .existingImageRemoveBtn{
+    min-height:25px;
+    padding:4px 6px;
+    font-size:9px;
+    border-radius:8px;
+  }
+
+  .report500LoadCompactHead{
+    padding:8px 9px;
+    margin-bottom:6px;
+    border-radius:10px;
+  }
+
+  .report500LoadCompactTitle{
+    font-size:12.5px;
+  }
+
+  .report500LoadCompactSub{
+    font-size:9.5px;
+  }
+
+  .report500LoadCompactTable{
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:5px;
+  }
+
+  .report500LoadCompactRow{
+    grid-template-columns:46px minmax(0,1fr);
+    gap:4px;
+    padding:5px 6px;
+    border-radius:8px;
+  }
+
+  .report500LoadCompactLabel{
+    font-size:8.8px;
+    line-height:1.25;
+  }
+
+  .report500LoadCompactValue{
+    font-size:9.3px;
+    line-height:1.25;
+  }
+}
+
+/* จอมือถือแคบมาก */
+@media (max-width:420px){
+
+  .report500EditActions{
+    grid-template-columns:1fr;
+  }
+
+  .report500EditPanel .editModeHead{
+    grid-template-columns:1fr;
+  }
+
+  #report500EditBadge{
+    width:max-content;
+  }
+
+  .report500EditPanel .editModeGrid{
+    grid-template-columns:1fr;
+  }
+
+  .report500ExistingImages{
+    grid-template-columns:1fr;
+  }
+
+  .report500ExistingImages .existingImageThumb,
+  .report500ExistingImages .existingImageNoPreview{
+    max-height:120px;
+  }
+
+  .report500LoadCompactTable{
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:4px;
+  }
+
+  .report500LoadCompactRow{
+    grid-template-columns:40px minmax(0,1fr);
+    padding:5px;
+  }
+
+  .report500LoadCompactLabel{
+    font-size:8px;
+  }
+
+  .report500LoadCompactValue{
+    font-size:8.8px;
+  }
+}
