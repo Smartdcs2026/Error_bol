@@ -4237,7 +4237,8 @@ body.error-bol-editing #btnSubmit{
 }
 /* =========================================================
    ERROR_BOL LOAD SWEETALERT COMPACT
-   ปรับเฉพาะ SweetAlert แสดงข้อมูลเดิม
+   แสดงข้อมูลเดิมแบบกระชับ
+   Desktop / Mobile = แถวละ 2 ข้อมูล
    ========================================================= */
 
 .errorBolLoadSummaryCompact{
@@ -4268,41 +4269,55 @@ body.error-bol-editing #btnSubmit{
   color:#64748b;
 }
 
+/* สำคัญ: ตารางหลักให้เป็น 2 คอลัมน์ */
 .errorBolLoadCompactTable{
   display:grid;
-  gap:5px;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:6px;
 }
 
+/* แต่ละข้อมูลเป็น label + value ในกล่องเดียว */
 .errorBolLoadCompactRow{
   display:grid;
-  grid-template-columns:120px minmax(0,1fr);
+  grid-template-columns:74px minmax(0,1fr);
   align-items:start;
-  gap:8px;
-  padding:7px 9px;
+  gap:6px;
+  padding:7px 8px;
   border:1px solid #edf2fa;
   border-radius:9px;
   background:#ffffff;
+  min-width:0;
 }
 
 .errorBolLoadCompactLabel{
-  font-size:10.5px;
+  font-size:10px;
   line-height:1.35;
   font-weight:900;
   color:#64748b;
   white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
 }
 
 .errorBolLoadCompactValue{
   min-width:0;
-  font-size:11.5px;
+  font-size:11px;
   line-height:1.35;
   font-weight:900;
   color:#0f172a;
   word-break:break-word;
 }
 
-/* มือถือ: ยังเป็น 1 แถว แต่ลด label ให้สั้นลง */
+/* =========================================================
+   Mobile: ยังคงแถวละ 2 ข้อมูล
+   ลดขนาดลงเพื่อให้พอดีหน้าจอมือถือ
+   ========================================================= */
 @media (max-width:520px){
+
+  .swal2-popup{
+    width:calc(100vw - 12px) !important;
+  }
+
   .errorBolLoadCompactHead{
     padding:8px 9px;
     margin-bottom:6px;
@@ -4314,25 +4329,50 @@ body.error-bol-editing #btnSubmit{
   }
 
   .errorBolLoadCompactSub{
-    font-size:9.8px;
+    font-size:9.5px;
   }
 
   .errorBolLoadCompactTable{
-    gap:4px;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:5px;
   }
 
   .errorBolLoadCompactRow{
-    grid-template-columns:82px minmax(0,1fr);
-    gap:6px;
-    padding:6px 7px;
+    grid-template-columns:48px minmax(0,1fr);
+    gap:4px;
+    padding:5px 6px;
     border-radius:8px;
   }
 
   .errorBolLoadCompactLabel{
-    font-size:9.5px;
+    font-size:8.8px;
+    line-height:1.25;
   }
 
   .errorBolLoadCompactValue{
-    font-size:10px;
+    font-size:9.3px;
+    line-height:1.25;
+  }
+}
+
+/* จอเล็กมากก็ยังพยายามคง 2 คอลัมน์ */
+@media (max-width:390px){
+
+  .errorBolLoadCompactTable{
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:4px;
+  }
+
+  .errorBolLoadCompactRow{
+    grid-template-columns:42px minmax(0,1fr);
+    padding:5px;
+  }
+
+  .errorBolLoadCompactLabel{
+    font-size:8px;
+  }
+
+  .errorBolLoadCompactValue{
+    font-size:8.8px;
   }
 }
