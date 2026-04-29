@@ -3546,3 +3546,692 @@ body.img-editor-lock{
 .gridCompact .field:has(#rptRefDuplicateHint){
   width:100%;
 }
+
+
+/* =========================================================
+   ERROR_BOL LOAD / EDIT DISPLAY ONLY
+   ปรับเฉพาะปุ่มดึงข้อมูลเดิม + กล่องแสดงผลข้อมูลที่โหลดมา
+   ไม่กระทบ layout/form เดิม
+   วางท้ายสุดของ style.css
+   ========================================================= */
+
+/* ===== ปุ่มดึงข้อมูล Ref เดิม / ออกจากโหมดแก้ไข ===== */
+.refEditActions{
+  margin-top:10px;
+  padding-top:10px;
+  border-top:1px dashed #dbe7f6;
+  display:flex;
+  align-items:center;
+  justify-content:flex-start;
+  gap:8px;
+  flex-wrap:wrap;
+}
+
+.refEditActions .btn{
+  min-height:38px;
+  padding:8px 13px;
+  border-radius:12px;
+  font-size:12px;
+  font-weight:900;
+  box-shadow:none;
+}
+
+#btnErrorBolLoadRef{
+  color:#1d4ed8;
+  background:linear-gradient(180deg,#ffffff 0%,#eff6ff 100%);
+  border:1.2px solid #bfdbfe;
+}
+
+#btnErrorBolLoadRef:hover{
+  border-color:#93c5fd;
+  box-shadow:0 6px 16px rgba(37,99,235,.10);
+}
+
+#btnErrorBolExitEdit{
+  color:#ffffff;
+  background:linear-gradient(180deg,#ef4444,#dc2626);
+  border:1px solid transparent;
+  box-shadow:0 6px 16px rgba(220,38,38,.12);
+}
+
+/* ===== กล่องสถานะกำลังแก้ไข ===== */
+.editModeBox{
+  margin-top:12px;
+  padding:12px;
+  border:1.3px solid #bfdbfe;
+  border-radius:16px;
+  background:
+    radial-gradient(circle at top right, rgba(37,99,235,.07), transparent 32%),
+    linear-gradient(180deg,#f8fbff 0%,#eef6ff 100%);
+  box-shadow:0 8px 20px rgba(37,99,235,.07);
+  overflow:hidden;
+}
+
+.editModeHead{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:10px;
+  padding-bottom:10px;
+  margin-bottom:10px;
+  border-bottom:1px solid #dbeafe;
+}
+
+.editModeTitle{
+  font-size:14px;
+  line-height:1.25;
+  font-weight:900;
+  color:#0f172a;
+}
+
+.editModeSub{
+  margin-top:2px;
+  font-size:11px;
+  line-height:1.4;
+  font-weight:800;
+  color:#475569;
+}
+
+.editModeBadge{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-height:26px;
+  padding:4px 9px;
+  border-radius:999px;
+  background:linear-gradient(180deg,#2563eb,#1d4ed8);
+  color:#ffffff;
+  font-size:10px;
+  line-height:1;
+  font-weight:900;
+  letter-spacing:.03em;
+  white-space:nowrap;
+}
+
+.editModeGrid{
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:8px;
+}
+
+.editModeItem{
+  min-width:0;
+  padding:9px 10px;
+  border:1px solid #dbeafe;
+  border-radius:12px;
+  background:rgba(255,255,255,.86);
+}
+
+.editModeLabel{
+  font-size:10px;
+  line-height:1.25;
+  font-weight:900;
+  color:#64748b;
+}
+
+.editModeValue{
+  margin-top:3px;
+  min-height:17px;
+  font-size:11.5px;
+  line-height:1.4;
+  font-weight:900;
+  color:#0f172a;
+  word-break:break-word;
+}
+
+.editPdfLink{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-height:28px;
+  padding:5px 9px;
+  border-radius:999px;
+  background:#eaf2ff;
+  border:1px solid #cfe0ff;
+  color:#1d4ed8;
+  text-decoration:none;
+  font-size:10.5px;
+  font-weight:900;
+}
+
+.editPdfLink:hover{
+  background:#dbeafe;
+  border-color:#93c5fd;
+}
+
+/* ===== กล่องรูปเดิม / ลายเซ็นเดิม ===== */
+.existingAssetBlock{
+  margin-top:10px;
+  padding:10px;
+  border:1px solid #dbeafe;
+  border-radius:14px;
+  background:rgba(255,255,255,.76);
+}
+
+.existingAssetTitle{
+  font-size:12.5px;
+  line-height:1.3;
+  font-weight:900;
+  color:#0f172a;
+}
+
+.existingAssetSub{
+  margin-top:2px;
+  font-size:10.5px;
+  line-height:1.4;
+  font-weight:800;
+  color:#64748b;
+}
+
+/* ===== รูปภาพเดิม ===== */
+.existingImageGrid{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:8px;
+  margin-top:8px;
+}
+
+.existingImageCard{
+  position:relative;
+  min-width:0;
+  border:1px solid #dbe7f7;
+  border-radius:13px;
+  background:#ffffff;
+  box-shadow:0 4px 12px rgba(15,23,42,.04);
+  overflow:hidden;
+}
+
+.existingImageThumbWrap{
+  position:relative;
+  width:100%;
+  background:#f8fbff;
+  border-bottom:1px solid #e5edf8;
+}
+
+.existingImageThumb{
+  width:100%;
+  aspect-ratio:4 / 3;
+  object-fit:cover;
+  background:#f8fbff;
+}
+
+.existingImageNoPreview{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  width:100%;
+  aspect-ratio:4 / 3;
+  padding:10px;
+  background:#f8fbff;
+  color:#94a3b8;
+  font-size:11px;
+  font-weight:900;
+  text-align:center;
+}
+
+.existingImageBody{
+  padding:8px;
+}
+
+.existingImageTitle{
+  font-size:11px;
+  line-height:1.35;
+  font-weight:900;
+  color:#0f172a;
+  word-break:break-word;
+}
+
+.existingImageMeta{
+  margin-top:2px;
+  font-size:9.5px;
+  line-height:1.35;
+  font-weight:800;
+  color:#64748b;
+  word-break:break-word;
+}
+
+.existingImageActions{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:6px;
+  margin-top:7px;
+}
+
+.existingImageViewLink,
+.existingImageRemoveBtn{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-height:29px;
+  padding:5px 8px;
+  border-radius:10px;
+  font-size:10.5px;
+  line-height:1.2;
+  font-weight:900;
+  text-decoration:none;
+  cursor:pointer;
+}
+
+.existingImageViewLink{
+  color:#1d4ed8;
+  background:#eff6ff;
+  border:1px solid #bfdbfe;
+}
+
+.existingImageRemoveBtn{
+  color:#b91c1c;
+  background:#fff5f5;
+  border:1px solid #fecaca;
+}
+
+.existingImageRemoveBtn.is-removed{
+  color:#166534;
+  background:#ecfdf3;
+  border-color:#bbf7d0;
+}
+
+.existingImageCard.is-removed{
+  opacity:.64;
+  filter:grayscale(.55);
+}
+
+.existingImageCard.is-removed::after{
+  content:"ไม่ใช้รูปนี้";
+  position:absolute;
+  top:6px;
+  right:6px;
+  z-index:1;
+  min-height:22px;
+  padding:3px 7px;
+  border-radius:999px;
+  background:rgba(185,28,28,.92);
+  color:#ffffff;
+  font-size:9.5px;
+  font-weight:900;
+}
+
+/* ===== ลายเซ็นเดิม ===== */
+.existingSignGrid{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:8px;
+  margin-top:8px;
+}
+
+.existingSignCard{
+  min-width:0;
+  border:1px solid #dbe7f7;
+  border-radius:13px;
+  background:#ffffff;
+  box-shadow:0 4px 12px rgba(15,23,42,.04);
+  overflow:hidden;
+}
+
+.existingSignHead{
+  padding:8px 9px;
+  background:linear-gradient(180deg,#f8fbff 0%,#f2f7ff 100%);
+  border-bottom:1px solid #e5edf8;
+}
+
+.existingSignTitle{
+  font-size:11px;
+  line-height:1.35;
+  font-weight:900;
+  color:#0f172a;
+}
+
+.existingSignBody{
+  padding:8px;
+}
+
+.existingSignThumb{
+  width:100%;
+  min-height:78px;
+  max-height:106px;
+  object-fit:contain;
+  padding:5px;
+  border:1px solid #e5edf8;
+  border-radius:10px;
+  background:#ffffff;
+}
+
+.existingSignEmpty{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  min-height:78px;
+  padding:8px;
+  border:1px dashed #cbd5e1;
+  border-radius:10px;
+  background:#f8fafc;
+  color:#94a3b8;
+  font-size:10px;
+  font-weight:900;
+  text-align:center;
+}
+
+.existingSignMeta{
+  margin-top:6px;
+  font-size:9.5px;
+  line-height:1.35;
+  font-weight:800;
+  color:#64748b;
+  word-break:break-word;
+}
+
+.existingSignActions{
+  display:flex;
+  justify-content:flex-end;
+  gap:6px;
+  margin-top:7px;
+}
+
+.existingSignViewLink{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-height:29px;
+  padding:5px 8px;
+  border-radius:10px;
+  color:#1d4ed8;
+  background:#eff6ff;
+  border:1px solid #bfdbfe;
+  text-decoration:none;
+  font-size:10.5px;
+  line-height:1.2;
+  font-weight:900;
+}
+
+/* ===== สถานะ edit เฉพาะตอน active ===== */
+body.error-bol-editing #formCard{
+  border-color:#93c5fd;
+}
+
+body.error-bol-editing #formCard::before{
+  background:linear-gradient(90deg,#2563eb,#22c55e);
+}
+
+body.error-bol-editing #btnSubmit{
+  background:linear-gradient(180deg,#16a34a,#15803d);
+  box-shadow:0 8px 20px rgba(22,163,74,.18);
+}
+
+/* ===== SweetAlert ตอนโหลด Ref เดิม ===== */
+.errorBolLoadSummary{
+  text-align:left;
+}
+
+.errorBolLoadHero{
+  border:1px solid #dbeafe;
+  background:linear-gradient(180deg,#f8fbff,#eff6ff);
+  border-radius:14px;
+  padding:12px;
+  margin-bottom:10px;
+}
+
+.errorBolLoadTitle{
+  font-size:14px;
+  font-weight:900;
+  color:#0f172a;
+  line-height:1.3;
+}
+
+.errorBolLoadSub{
+  margin-top:3px;
+  color:#64748b;
+  font-size:11px;
+  line-height:1.45;
+  font-weight:800;
+}
+
+.errorBolLoadKvGrid{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:7px;
+}
+
+.errorBolLoadKv{
+  border:1px solid #edf2fa;
+  border-radius:11px;
+  padding:8px 9px;
+  background:#ffffff;
+}
+
+.errorBolLoadLabel{
+  color:#64748b;
+  font-size:10px;
+  font-weight:900;
+}
+
+.errorBolLoadValue{
+  margin-top:2px;
+  font-size:11.5px;
+  line-height:1.4;
+  font-weight:900;
+  color:#0f172a;
+  word-break:break-word;
+}
+
+/* =========================================================
+   MOBILE: เฉพาะส่วนใหม่เท่านั้น
+   ไม่แตะฟอร์มเดิม
+   ========================================================= */
+@media (max-width:720px){
+
+  .refEditActions{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:6px;
+    margin-top:8px;
+    padding-top:8px;
+  }
+
+  .refEditActions .btn{
+    width:100%;
+    min-height:34px;
+    padding:6px 8px;
+    font-size:10.5px;
+    border-radius:10px;
+  }
+
+  .editModeBox{
+    margin-top:8px;
+    padding:8px;
+    border-radius:12px;
+    box-shadow:none;
+  }
+
+  .editModeHead{
+    display:grid;
+    grid-template-columns:1fr auto;
+    align-items:start;
+    gap:6px;
+    padding-bottom:7px;
+    margin-bottom:7px;
+  }
+
+  .editModeTitle{
+    font-size:12px;
+  }
+
+  .editModeSub{
+    font-size:9.5px;
+    line-height:1.25;
+  }
+
+  .editModeBadge{
+    min-height:21px;
+    padding:3px 6px;
+    font-size:8.5px;
+  }
+
+  .editModeGrid{
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:6px;
+  }
+
+  .editModeItem{
+    padding:6px 7px;
+    border-radius:9px;
+  }
+
+  .editModeLabel{
+    font-size:9px;
+  }
+
+  .editModeValue{
+    min-height:15px;
+    font-size:10px;
+    line-height:1.3;
+  }
+
+  .editPdfLink{
+    min-height:24px;
+    padding:3px 7px;
+    font-size:9.5px;
+  }
+
+  .existingAssetBlock{
+    margin-top:7px;
+    padding:7px;
+    border-radius:10px;
+  }
+
+  .existingAssetTitle{
+    font-size:10.8px;
+  }
+
+  .existingAssetSub{
+    font-size:9px;
+    line-height:1.25;
+  }
+
+  .existingImageGrid,
+  .existingSignGrid{
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:6px;
+    margin-top:6px;
+  }
+
+  .existingImageCard,
+  .existingSignCard{
+    border-radius:10px;
+    box-shadow:none;
+  }
+
+  .existingImageThumb,
+  .existingImageNoPreview{
+    aspect-ratio:16 / 9;
+    max-height:110px;
+  }
+
+  .existingImageBody,
+  .existingSignBody{
+    padding:6px;
+  }
+
+  .existingImageTitle,
+  .existingSignTitle{
+    font-size:9.8px;
+  }
+
+  .existingImageMeta,
+  .existingSignMeta{
+    display:none;
+  }
+
+  .existingImageActions,
+  .existingSignActions{
+    gap:4px;
+    margin-top:5px;
+  }
+
+  .existingImageViewLink,
+  .existingImageRemoveBtn,
+  .existingSignViewLink{
+    min-height:25px;
+    padding:4px 6px;
+    font-size:9px;
+    border-radius:8px;
+  }
+
+  .existingSignHead{
+    padding:6px 7px;
+  }
+
+  .existingSignThumb,
+  .existingSignEmpty{
+    min-height:58px;
+    max-height:76px;
+    border-radius:8px;
+  }
+
+  .errorBolLoadHero{
+    padding:9px;
+    border-radius:11px;
+    margin-bottom:8px;
+  }
+
+  .errorBolLoadTitle{
+    font-size:12.5px;
+  }
+
+  .errorBolLoadSub{
+    font-size:10px;
+  }
+
+  .errorBolLoadKvGrid{
+    grid-template-columns:1fr;
+    gap:6px;
+  }
+
+  .errorBolLoadKv{
+    padding:7px 8px;
+    border-radius:9px;
+  }
+
+  .errorBolLoadLabel{
+    font-size:9.5px;
+  }
+
+  .errorBolLoadValue{
+    font-size:10.5px;
+  }
+}
+
+/* จอมือถือแคบมาก */
+@media (max-width:420px){
+
+  .refEditActions{
+    grid-template-columns:1fr;
+  }
+
+  .editModeHead{
+    grid-template-columns:1fr;
+  }
+
+  .editModeBadge{
+    width:max-content;
+  }
+
+  .editModeGrid{
+    grid-template-columns:1fr;
+  }
+
+  .existingImageGrid,
+  .existingSignGrid{
+    grid-template-columns:1fr;
+  }
+
+  .existingImageThumb,
+  .existingImageNoPreview{
+    max-height:120px;
+  }
+
+  .existingSignThumb,
+  .existingSignEmpty{
+    min-height:62px;
+    max-height:82px;
+  }
+}
