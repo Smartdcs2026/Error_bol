@@ -3082,18 +3082,18 @@ function errorBolEditBuildLoadSummaryHtml_(payload, images, signs, pdfUrl) {
     return acc + (signs && signs[key] && signs[key].id ? 1 : 0);
   }, 0);
 
-  const rows = [
-    ["Ref", p.refNo || "-"],
-    ["Root Ref", p.rootRefNo || p.refNo || "-"],
-    ["Revision", p.revisionLabel || ("Rev." + Number(p.revisionNo || 0))],
-    ["พนักงาน", p.employeeName || "-"],
-    ["รหัสพนักงาน", p.employeeCode || "-"],
-    ["Item", p.itemDisplay || p.item || "-"],
-    ["วันที่เกิดเหตุ", p.errorDate || "-"],
-    ["สาเหตุ", p.errorReason || "-"],
-    ["รูป/ลายเซ็น", `${images.length} รูป / ${signCount} ลายเซ็น`],
-    ["PDF เดิม", pdfUrl ? "มีไฟล์ PDF" : "ไม่พบ PDF"]
-  ];
+ const rows = [
+  ["Ref", p.refNo || "-"],
+  ["Root", p.rootRefNo || p.refNo || "-"],
+  ["Rev", p.revisionLabel || ("Rev." + Number(p.revisionNo || 0))],
+  ["ชื่อ", p.employeeName || "-"],
+  ["รหัส", p.employeeCode || "-"],
+  ["Item", p.itemDisplay || p.item || "-"],
+  ["วันที่", p.errorDate || "-"],
+  ["สาเหตุ", p.errorReason || "-"],
+  ["ไฟล์", `${images.length} รูป / ${signCount} เซ็น`],
+  ["PDF", pdfUrl ? "มีไฟล์" : "ไม่มี"]
+];
 
   return `
     <div class="errorBolLoadSummaryCompact">
