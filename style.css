@@ -82,19 +82,19 @@ textarea{
 /* =========================
    TOPBAR
 ========================= */
+/* =========================================================
+   TOPBAR SINGLE ROW COMPACT
+   ให้ header / logo / title / user / tabs อยู่แถวเดียวกัน
+   วางท้ายสุดของ style.css
+   ========================================================= */
+
 .topbar{
-  position:sticky;
-  top:0;
-  z-index:100;
   display:grid;
   grid-template-columns:minmax(0,1fr) auto;
   align-items:center;
-  gap:10px;
-  padding:8px 12px;
-  background:rgba(255,255,255,.94);
-  backdrop-filter:blur(12px);
-  border-bottom:1px solid rgba(207,219,234,.95);
-  box-shadow:0 2px 10px rgba(15,23,42,.04);
+  gap:8px;
+  min-height:44px;
+  padding:5px 10px;
 }
 
 .topbarLeft{
@@ -105,100 +105,199 @@ textarea{
 .brandInline{
   display:flex;
   align-items:center;
-  gap:10px;
+  gap:8px;
   min-width:0;
   flex-wrap:nowrap;
+  overflow:hidden;
 }
 
 .logo,
 .brandLogoImg{
-  width:34px;
-  height:34px;
-  flex:0 0 34px;
-  border-radius:10px;
-  object-fit:contain;
-  padding:2px;
-  background:#fff;
-  border:1px solid var(--line);
+  width:30px;
+  height:30px;
+  flex:0 0 30px;
+  border-radius:9px;
 }
 
 .brandTextInline{
-  min-width:0;
   display:flex;
   align-items:center;
-  gap:8px;
-  flex-wrap:wrap;
+  gap:7px;
+  min-width:0;
+  max-width:100%;
+  flex-wrap:nowrap;
   overflow:hidden;
 }
 
 .brandTextInline .title{
+  flex:0 1 auto;
   min-width:0;
-  font-size:14px;
-  font-weight:900;
-  line-height:1.1;
+  max-width:180px;
+  font-size:13px;
+  line-height:1;
   white-space:nowrap;
   overflow:hidden;
   text-overflow:ellipsis;
 }
 
 .brandTextInline .subtitle{
-  font-size:11px;
-  color:var(--muted);
-  line-height:1.1;
+  flex:0 1 auto;
+  min-width:0;
+  max-width:150px;
+  font-size:10.5px;
+  line-height:1;
   white-space:nowrap;
   overflow:hidden;
   text-overflow:ellipsis;
 }
 
 .topLoginUserWrap{
-  display:inline-flex;
-  align-items:center;
-  gap:6px;
-  min-height:28px;
-  padding:4px 10px;
-  border:1px solid #dbe6f7;
-  background:#f8fbff;
-  color:#1d4ed8;
-  border-radius:999px;
-  font-size:11px;
-  font-weight:900;
+  flex:0 1 auto;
+  min-width:0;
+  max-width:170px;
+  min-height:24px;
+  padding:3px 8px;
+  gap:4px;
+  font-size:10.5px;
+  line-height:1;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
 }
 
-.topLoginUserLabel{
-  opacity:.85;
+#topLoginUserName{
+  min-width:0;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
 }
 
 .tabsInline{
   display:flex;
   align-items:center;
-  gap:8px;
+  justify-content:flex-end;
+  gap:6px;
   flex-wrap:nowrap;
   white-space:nowrap;
-  justify-content:flex-end;
 }
 
 .tab{
-  min-height:38px;
-  padding:7px 16px;
+  min-height:32px;
+  padding:5px 12px;
   border-radius:999px;
-  border:1.2px solid var(--line);
-  background:#fff;
-  color:var(--text);
-  font-size:12px;
-  font-weight:900;
-  cursor:pointer;
-  box-shadow:var(--shadow-sm);
-  transition:.18s ease;
-  white-space:nowrap;
-  flex:0 0 auto;
+  font-size:11px;
+  line-height:1;
 }
 
-.tab.active{
-  background:linear-gradient(180deg,var(--primary),var(--primary-hover));
-  color:#fff;
-  border-color:transparent;
+/* =========================================================
+   MOBILE TOPBAR SINGLE ROW
+   มือถือยังอยู่แถวเดียว ไม่ตกบรรทัด
+   ========================================================= */
+@media (max-width:720px){
+
+  .topbar{
+    grid-template-columns:minmax(0,1fr) auto;
+    gap:5px;
+    min-height:38px;
+    padding:4px 6px;
+  }
+
+  .brandInline{
+    gap:5px;
+  }
+
+  .logo,
+  .brandLogoImg{
+    width:25px;
+    height:25px;
+    flex-basis:25px;
+    border-radius:7px;
+    padding:1px;
+  }
+
+  .brandTextInline{
+    gap:5px;
+    flex-wrap:nowrap;
+  }
+
+  .brandTextInline .title{
+    max-width:92px;
+    font-size:10.5px;
+  }
+
+  /*
+    มือถือจอเล็ก ถ้าแสดง subtitle ด้วยจะเบียดปุ่ม
+    จึงซ่อนเฉพาะ subtitle แต่ยังคง title + user + tabs ในแถวเดียว
+  */
+  .brandTextInline .subtitle{
+    display:none;
+  }
+
+  .topLoginUserWrap{
+    max-width:82px;
+    min-height:21px;
+    padding:2px 6px;
+    font-size:9px;
+  }
+
+  .topLoginUserLabel{
+    display:none;
+  }
+
+  .tabsInline{
+    gap:4px;
+  }
+
+  .tab{
+    min-height:28px;
+    padding:4px 8px;
+    font-size:9.8px;
+    box-shadow:none;
+  }
 }
 
+/* มือถือแคบมาก เช่น 360-390px */
+@media (max-width:420px){
+
+  .topbar{
+    gap:4px;
+    padding:4px 5px;
+  }
+
+  .brandTextInline .title{
+    max-width:74px;
+    font-size:10px;
+  }
+
+  .topLoginUserWrap{
+    max-width:68px;
+    font-size:8.5px;
+    padding-inline:5px;
+  }
+
+  .tab{
+    min-height:27px;
+    padding:4px 7px;
+    font-size:9.3px;
+  }
+}
+
+/* จอแคบมากจริง ๆ ให้คงปุ่ม tab ไว้ และตัดชื่อระบบแทน */
+@media (max-width:360px){
+
+  .brandTextInline .title{
+    max-width:58px;
+  }
+
+  .topLoginUserWrap{
+    max-width:58px;
+  }
+
+  .tab{
+    padding-inline:6px;
+    font-size:9px;
+  }
+}
 /* =========================
    LAYOUT
 ========================= */
