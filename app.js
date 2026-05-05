@@ -187,7 +187,12 @@ let OPTIONS = {
   nationalityList: []
 };
 
-let AUTH = { name: "", pass: "" };
+let AUTH = {
+  name: "",
+  pass: "",
+  signImageId: "",
+  hasLpsSignature: false
+};
 
 let ITEM_LOOKUP_STATE = {
   item: "",
@@ -796,6 +801,7 @@ async function init() {
   applyStaticLogos();
   bindTabs();
   bindEvents();
+  bindLpsSignatureButtons_();
   bindRefInputs();
   buildInitialUploadFields();
   buildWorkAgeOptions();
@@ -818,7 +824,8 @@ async function init() {
 
   syncErrorReasonOtherVisibility();
   syncConfirmCauseOtherVisibility();
-  setActiveTab("error");
+   setActiveTab("error");
+  renderLpsSignatureStatus_();
   updateEmployeeConfirmPreview();
 }
 
@@ -1224,10 +1231,16 @@ async function onLogin() {
     return;
   }
 
-  AUTH = { name: lpsName, pass };
+   AUTH = {
+    name: lpsName,
+    pass,
+    signImageId: String(json.signImageId || "").trim(),
+    hasLpsSignature: !!json.hasLpsSignature && !!String(json.signImageId || "").trim()
+  };
   window.AUTH = AUTH;
 
   setLpsFromLogin(lpsName);
+  renderLpsSignatureStatus_();
 
   if ($("rptReportedBy")) {
     $("rptReportedBy").value = lpsName || "";
@@ -1235,11 +1248,15 @@ async function onLogin() {
 
   safeSetLoginMsg("");
 
-  try {
+    try {
     setActiveTab("error");
   } catch (err) {
     console.error("setActiveTab error:", err);
   }
+
+  refreshMyLpsSignature_().catch(err => {
+    console.error("refreshMyLpsSignature after login failed:", err);
+  });
 
   if (window.Report500UI && typeof window.Report500UI.ensureReady === "function") {
     window.Report500UI.ensureReady().catch(err => {
@@ -1254,6 +1271,378 @@ function setLpsFromLogin(lpsName) {
   $("topLoginUserWrap")?.classList.toggle("hidden", !lpsName);
 }
 
+
+/** ==========================
+ *  LPS SIGNATURE STATUS
+ *  ใช้เฉพาะ Error_BOL
+ *  ========================== */
+
+function setLpsSignatureStatus_(state, text) {
+  const dot = $("lpsSignDot");
+  const textEl = $("lpsSignStatusText");
+
+  if (dot) {
+    dot.classList.remove("checking", "ready", "missing", "error");
+    dot.classList.add(state || "checking");
+  }
+
+  if (textEl) {
+    textEl.textContent = text || "กำลังตรวจสอบลายเซ็น...";
+  }
+}
+
+function renderLpsSignatureStatus_() {
+  const userEl = $("lpsSignUserText");
+  const deleteBtn = $("btnDeleteLpsSign");
+
+  if (userEl) {
+    userEl.textContent = `ผู้ใช้งาน: ${AUTH.name || "-"}`;
+  }
+
+  if (!AUTH.name) {
+    setLpsSignatureStatus_("checking", "กรุณาเข้าสู่ระบบก่อน");
+    deleteBtn?.classList.add("hidden");
+    return;
+  }
+
+  if (AUTH.hasLpsSignature && AUTH.signImageId) {
+    setLpsSignatureStatus_("ready", "พร้อมใช้งาน");
+    deleteBtn?.classList.remove("hidden");
+  } else {
+    setLpsSignatureStatus_("missing", "ยังไม่มีลายเซ็น");
+    deleteBtn?.classList.add("hidden");
+  }
+}
+
+async function refreshMyLpsSignature_() {
+  if (!AUTH.pass) {
+    renderLpsSignatureStatus_();
+    return {
+      ok: false,
+      error: "ยังไม่ได้เข้าสู่ระบบ"
+    };
+  }
+
+  setLpsSignatureStatus_("checking", "กำลังตรวจสอบลายเซ็น...");
+
+  try {
+    const res = await fetch(apiUrl("/getMyLpsSignature"), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ pass: AUTH.pass })
+    });
+
+    const text = await res.text();
+    let json = {};
+
+    try {
+      json = JSON.parse(text);
+    } catch (_) {
+      throw new Error("Backend ตอบกลับไม่ใช่ JSON");
+    }
+
+    if (!res.ok || !json.ok) {
+      throw new Error(json?.error || `ตรวจสอบลายเซ็นไม่สำเร็จ (HTTP ${res.status})`);
+    }
+
+    AUTH.signImageId = String(json.signImageId || "").trim();
+    AUTH.hasLpsSignature = !!json.hasLpsSignature && !!AUTH.signImageId;
+    window.AUTH = AUTH;
+
+    renderLpsSignatureStatus_();
+
+    return {
+      ok: true,
+      signImageId: AUTH.signImageId,
+      hasLpsSignature: AUTH.hasLpsSignature
+    };
+
+  } catch (err) {
+    console.error("refreshMyLpsSignature_ failed:", err);
+
+    AUTH.signImageId = "";
+    AUTH.hasLpsSignature = false;
+    window.AUTH = AUTH;
+
+    setLpsSignatureStatus_("error", "ตรวจสอบลายเซ็นไม่สำเร็จ");
+    $("btnDeleteLpsSign")?.classList.add("hidden");
+
+    return {
+      ok: false,
+      error: err?.message || String(err)
+    };
+  }
+}
+
+async function openLpsSignatureManager_() {
+  if (!AUTH.pass || !AUTH.name) {
+    await Swal.fire({
+      icon: "warning",
+      title: "ยังไม่ได้เข้าสู่ระบบ",
+      text: "กรุณาเข้าสู่ระบบก่อนจัดการลายเซ็น",
+      confirmButtonText: "ตกลง"
+    });
+    return;
+  }
+
+  const result = await signatureModal(
+    "ลายเซ็น LPS ผู้บันทึก",
+    `ผู้เซ็น: ${AUTH.name || "-"}`
+  );
+
+  if (!result || !result.ok || !result.base64) {
+    return;
+  }
+
+  const confirm = await Swal.fire({
+    icon: "question",
+    title: AUTH.hasLpsSignature ? "ยืนยันเปลี่ยนลายเซ็น LPS" : "ยืนยันบันทึกลายเซ็น LPS",
+    html: `
+      <div style="text-align:left;line-height:1.7">
+        <div>ระบบจะบันทึกลายเซ็นนี้เป็นลายเซ็นของผู้ใช้งาน:</div>
+        <div style="font-weight:900;margin-top:4px">${escapeHtml(AUTH.name || "-")}</div>
+        <div style="color:#64748b;font-size:13px;margin-top:8px">
+          ลายเซ็นนี้จะถูกใช้กับ PDF ของ Error_BOL ในฐานะผู้บันทึกข้อมูล
+        </div>
+      </div>
+    `,
+    showCancelButton: true,
+    confirmButtonText: "ยืนยันบันทึก",
+    cancelButtonText: "ยกเลิก"
+  });
+
+  if (!confirm.isConfirmed) return;
+
+  await saveMyLpsSignature_(result.base64);
+}
+
+async function saveMyLpsSignature_(base64) {
+  if (!AUTH.pass) {
+    throw new Error("ยังไม่ได้เข้าสู่ระบบ");
+  }
+
+  if (!base64) {
+    await Swal.fire({
+      icon: "warning",
+      title: "ไม่พบข้อมูลลายเซ็น",
+      text: "กรุณาเซ็นใหม่อีกครั้ง",
+      confirmButtonText: "ตกลง"
+    });
+    return;
+  }
+
+  setLpsSignatureStatus_("checking", "กำลังบันทึกลายเซ็น...");
+
+  try {
+    const res = await fetch(apiUrl("/saveMyLpsSignature"), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        pass: AUTH.pass,
+        file: {
+          filename: "LPS_SIGN.png",
+          base64: base64
+        }
+      })
+    });
+
+    const text = await res.text();
+    let json = {};
+
+    try {
+      json = JSON.parse(text);
+    } catch (_) {
+      throw new Error("Backend ตอบกลับไม่ใช่ JSON");
+    }
+
+    if (!res.ok || !json.ok) {
+      throw new Error(json?.error || `บันทึกลายเซ็นไม่สำเร็จ (HTTP ${res.status})`);
+    }
+
+    AUTH.signImageId = String(json.signImageId || "").trim();
+    AUTH.hasLpsSignature = !!json.hasLpsSignature && !!AUTH.signImageId;
+    window.AUTH = AUTH;
+
+    renderLpsSignatureStatus_();
+
+    await Swal.fire({
+      icon: "success",
+      title: "บันทึกลายเซ็นเรียบร้อย",
+      text: "ลายเซ็น LPS พร้อมใช้งานสำหรับ Error_BOL แล้ว",
+      timer: 1400,
+      showConfirmButton: false
+    });
+
+  } catch (err) {
+    console.error("saveMyLpsSignature_ failed:", err);
+
+    setLpsSignatureStatus_("error", "บันทึกลายเซ็นไม่สำเร็จ");
+
+    await Swal.fire({
+      icon: "error",
+      title: "บันทึกลายเซ็นไม่สำเร็จ",
+      text: err?.message || String(err),
+      confirmButtonText: "ตกลง"
+    });
+
+    await refreshMyLpsSignature_();
+  }
+}
+
+async function deleteMyLpsSignature_() {
+  if (!AUTH.pass || !AUTH.name) {
+    await Swal.fire({
+      icon: "warning",
+      title: "ยังไม่ได้เข้าสู่ระบบ",
+      text: "กรุณาเข้าสู่ระบบก่อนลบลายเซ็น",
+      confirmButtonText: "ตกลง"
+    });
+    return;
+  }
+
+  if (!AUTH.hasLpsSignature) {
+    await Swal.fire({
+      icon: "info",
+      title: "ยังไม่มีลายเซ็น",
+      text: "ไม่มีลายเซ็น LPS ให้ลบ",
+      confirmButtonText: "ตกลง"
+    });
+    return;
+  }
+
+  const ask = await Swal.fire({
+    icon: "warning",
+    title: "ยืนยันลบลายเซ็น LPS",
+    html: `
+      <div style="text-align:left;line-height:1.7">
+        <div>ต้องการลบลายเซ็นของผู้ใช้งานนี้หรือไม่?</div>
+        <div style="font-weight:900;margin-top:4px">${escapeHtml(AUTH.name || "-")}</div>
+        <div style="color:#64748b;font-size:13px;margin-top:8px">
+          ระบบจะล้างค่า Sign ใน list_Name เท่านั้น และไม่ลบไฟล์จริงใน Drive เพื่อไม่ให้เอกสารเก่าเสียหาย
+        </div>
+      </div>
+    `,
+    showCancelButton: true,
+    confirmButtonText: "ยืนยันลบ",
+    cancelButtonText: "ยกเลิก",
+    confirmButtonColor: "#dc2626"
+  });
+
+  if (!ask.isConfirmed) return;
+
+  setLpsSignatureStatus_("checking", "กำลังลบลายเซ็น...");
+
+  try {
+    const res = await fetch(apiUrl("/deleteMyLpsSignature"), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ pass: AUTH.pass })
+    });
+
+    const text = await res.text();
+    let json = {};
+
+    try {
+      json = JSON.parse(text);
+    } catch (_) {
+      throw new Error("Backend ตอบกลับไม่ใช่ JSON");
+    }
+
+    if (!res.ok || !json.ok) {
+      throw new Error(json?.error || `ลบลายเซ็นไม่สำเร็จ (HTTP ${res.status})`);
+    }
+
+    AUTH.signImageId = "";
+    AUTH.hasLpsSignature = false;
+    window.AUTH = AUTH;
+
+    renderLpsSignatureStatus_();
+
+    await Swal.fire({
+      icon: "success",
+      title: "ลบลายเซ็นเรียบร้อย",
+      text: "หากต้องการบันทึก Error_BOL ใหม่ ต้องเพิ่มลายเซ็นอีกครั้ง",
+      confirmButtonText: "ตกลง"
+    });
+
+  } catch (err) {
+    console.error("deleteMyLpsSignature_ failed:", err);
+
+    setLpsSignatureStatus_("error", "ลบลายเซ็นไม่สำเร็จ");
+
+    await Swal.fire({
+      icon: "error",
+      title: "ลบลายเซ็นไม่สำเร็จ",
+      text: err?.message || String(err),
+      confirmButtonText: "ตกลง"
+    });
+
+    await refreshMyLpsSignature_();
+  }
+}
+
+function bindLpsSignatureButtons_() {
+  const manageBtn = $("btnManageLpsSign");
+  const deleteBtn = $("btnDeleteLpsSign");
+
+  if (manageBtn && !manageBtn.__lpsSignBound) {
+    manageBtn.__lpsSignBound = true;
+    manageBtn.addEventListener("click", openLpsSignatureManager_);
+  }
+
+  if (deleteBtn && !deleteBtn.__lpsSignBound) {
+    deleteBtn.__lpsSignBound = true;
+    deleteBtn.addEventListener("click", deleteMyLpsSignature_);
+  }
+}
+
+async function ensureLpsSignatureReadyBeforeSubmit_() {
+  if (!AUTH.pass) {
+    await Swal.fire({
+      icon: "warning",
+      title: "ยังไม่ได้เข้าสู่ระบบ",
+      text: "กรุณาเข้าสู่ระบบก่อนบันทึก Error_BOL",
+      confirmButtonText: "ตกลง"
+    });
+    return false;
+  }
+
+  if (!AUTH.hasLpsSignature || !AUTH.signImageId) {
+    const fresh = await refreshMyLpsSignature_();
+    if (fresh.ok && fresh.hasLpsSignature) return true;
+  }
+
+  if (AUTH.hasLpsSignature && AUTH.signImageId) {
+    return true;
+  }
+
+  const ask = await Swal.fire({
+    icon: "warning",
+    title: "ยังไม่มีลายเซ็น LPS",
+    html: `
+      <div style="text-align:left;line-height:1.7">
+        <div>กรุณาเพิ่มลายเซ็น LPS ก่อนบันทึก Error_BOL</div>
+        <div style="color:#64748b;font-size:13px;margin-top:8px">
+          ลายเซ็นนี้จะใช้เป็นลายเซ็นผู้บันทึกใน PDF
+        </div>
+      </div>
+    `,
+    showCancelButton: true,
+    confirmButtonText: "เพิ่มลายเซ็นตอนนี้",
+    cancelButtonText: "ยกเลิก"
+  });
+
+  if (ask.isConfirmed) {
+    await openLpsSignatureManager_();
+    return !!(AUTH.hasLpsSignature && AUTH.signImageId);
+  }
+
+  return false;
+}
+
+window.renderLpsSignatureStatus_ = renderLpsSignatureStatus_;
+window.refreshMyLpsSignature_ = refreshMyLpsSignature_;
+window.openLpsSignatureManager_ = openLpsSignatureManager_;
 /** ==========================
  *  Basic sanitizers
  *  ========================== */
@@ -1606,8 +1995,11 @@ function collectPayloadBase() {
     osm: norm($("osm")?.value),
     otm: norm($("otm")?.value),
     interpreterName: norm($("interpreterName")?.value),
-    auditName: norm($("auditName")?.value),
-    emailRecipients: getSelectedEmails()
+        auditName: norm($("auditName")?.value),
+    emailRecipients: getSelectedEmails(),
+
+    /** ส่งประกอบไปด้วย แต่ backend จะอ่าน Sign จาก list_Name ตาม pass อีกครั้ง */
+    lpsSignImageId: AUTH.signImageId || ""
   };
 }
 
@@ -1923,6 +2315,16 @@ async function submitForm() {
     });
   }
 
+   const p = errorBolEditBuildRevisionPayload_(pBase);
+
+  const lpsSignReady = await ensureLpsSignatureReadyBeforeSubmit_();
+  if (!lpsSignReady) {
+    return;
+  }
+
+  p.lpsSignImageId = AUTH.signImageId || "";
+
+  const ok = await Swal.fire({
   try {
     const dup = await checkRefDuplicate_("error_bol", getRefNoValue(), { force: true });
     if (dup.duplicated) {
@@ -3531,7 +3933,9 @@ function errorBolEditBuildRevisionPayload_(basePayload) {
     }
   };
 
-  return p;
+p.lpsSignImageId = AUTH.signImageId || "";
+
+return p;
 }
 
 async function submitErrorBolRevision() {
