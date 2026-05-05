@@ -105,7 +105,19 @@
             <input id="lps" placeholder="ระบบแสดงอัตโนมัติหลังเข้าสู่ระบบ" readonly>
           </div>
         </div>
+       <div id="lpsSignatureStatusPanel" class="lpsSignStatusPanel hidden">
+  <div class="lpsSignStatusLeft">
+    <span id="lpsSignStatusDot" class="lpsSignStatusDot is-missing"></span>
+    <span class="lpsSignStatusLabel">ลายเซ็น LPS:</span>
+    <span id="lpsSignStatusText" class="lpsSignStatusText">ยังไม่ได้ตั้งค่า</span>
+  </div>
 
+  <div class="lpsSignStatusActions">
+    <button id="btnLpsSignAddOrChange" class="btn ghost btnTiny" type="button">เพิ่มลายเซ็น</button>
+    <button id="btnLpsSignDelete" class="btn danger btnTiny hidden" type="button">ลบ</button>
+    <input id="lpsSignFileInput" type="file" accept="image/png,image/jpeg,image/jpg,image/webp" class="hidden">
+  </div>
+</div>
         <div class="panelActions refEditActions">
           <button id="btnErrorBolLoadRef" class="btn ghost" type="button">ดึงข้อมูล Ref เดิม</button>
           <button id="btnErrorBolExitEdit" class="btn danger hidden" type="button">ออกจากโหมดแก้ไข</button>
