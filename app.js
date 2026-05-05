@@ -187,13 +187,7 @@ let OPTIONS = {
   nationalityList: []
 };
 
-let AUTH = {
-  name: "",
-  pass: "",
-  signImageId: "",
-  signUrl: "",
-  hasLpsSignature: false
-};
+let AUTH = { name: "", pass: "" };
 
 let ITEM_LOOKUP_STATE = {
   item: "",
@@ -329,15 +323,13 @@ async function handlePickedImageForUpload(input, box) {
   EDITED_UPLOAD_STORE.delete(input);
 
   ensureEditButtonForUploadBox(box, input.id);
-
-  updateUploadPreviewFromFile(
+updateUploadPreviewFromFile(
   input,
   box,
   f,
   `ไฟล์ที่เลือก: ${f.name} (${Math.round((f.size || 0) / 1024)} KB)`
 );
 }
-
 const $ = (id) => document.getElementById(id);
 
 /** ==========================
@@ -461,7 +453,6 @@ function getRefNoValue() {
 function getRptRefNoValue() {
   return buildRefNo_("rptRefNo", "rptRefYear");
 }
-
 /** ==========================
  *  REF DUPLICATE CHECK HELPERS
  *  เพิ่มใน app.js
@@ -495,6 +486,10 @@ function normalizeFrontendRefNo_(value) {
     .replace(/[–—]/g, "-")
     .replace(/\s+/g, "")
     .trim();
+}
+
+function getErrorBolRefHintEl_() {
+  return document.getElementById("refDuplicateHint");
 }
 
 function getErrorBolRefWrapEl_() {
@@ -546,7 +541,6 @@ function setRefDuplicateHint_(formType, message, isError = false) {
 
   wrap.classList.remove("hidden");
 }
-
 function setRefFieldInvalidState_(formType, invalid) {
   const runningEl = formType === "report500"
     ? document.getElementById("rptRefNo")
@@ -582,7 +576,6 @@ function resetRefDuplicateUi_(formType) {
 
   setRefFieldInvalidState_(formType, false);
 }
-
 function buildDuplicateDetailHtml_(result) {
   const matched = result?.matched || {};
   const sourceSystem = String(matched?.sourceSystem || result?.system || "").trim().toUpperCase();
@@ -736,7 +729,6 @@ function bindDuplicateRefCheck_(runningId, yearId, formType) {
   runningEl.addEventListener("change", schedule);
   yearEl.addEventListener("change", schedule);
 }
-
 /** ==========================
  *  GALLERY
  *  ========================== */
@@ -917,6 +909,7 @@ function bindEvents() {
     $(id)?.addEventListener("change", updateEmployeeConfirmPreview);
   });
 }
+
 /** ==========================
  *  Load options
  *  ========================== */
@@ -1200,7 +1193,6 @@ async function onLogin() {
   }
 
   let json;
-
   try {
     const res = await fetch(apiUrl("/auth"), {
       method: "POST",
@@ -1209,7 +1201,6 @@ async function onLogin() {
     });
 
     const text = await res.text();
-
     try {
       json = JSON.parse(text);
     } catch (_) {
@@ -1233,18 +1224,10 @@ async function onLogin() {
     return;
   }
 
-  AUTH = {
-    name: lpsName,
-    pass,
-    signImageId: String(json.signImageId || "").trim(),
-    signUrl: String(json.signUrl || "").trim(),
-    hasLpsSignature: !!json.hasLpsSignature || !!String(json.signImageId || "").trim()
-  };
+  AUTH = { name: lpsName, pass };
   window.AUTH = AUTH;
 
   setLpsFromLogin(lpsName);
-  renderLpsSignatureStatus_();
-  bindLpsSignatureButtons_();
 
   if ($("rptReportedBy")) {
     $("rptReportedBy").value = lpsName || "";
@@ -1269,250 +1252,6 @@ function setLpsFromLogin(lpsName) {
   if ($("lps")) $("lps").value = lpsName || "";
   if ($("topLoginUserName")) $("topLoginUserName").textContent = lpsName || "-";
   $("topLoginUserWrap")?.classList.toggle("hidden", !lpsName);
-}
-
-/** ==========================
- *  LPS SIGNATURE STATUS
- *  ใช้เฉพาะ Error_BOL
- *  ========================== */
-let LPS_SIGN_BUTTONS_BOUND = false;
-
-function renderLpsSignatureStatus_() {
-  const panel = $("lpsSignatureStatusPanel");
-  const dot = $("lpsSignStatusDot");
-  const text = $("lpsSignStatusText");
-  const btnMain = $("btnLpsSignAddOrChange");
-  const btnDelete = $("btnLpsSignDelete");
-
-  if (!panel || !dot || !text || !btnMain) return;
-
-  const has = !!(AUTH && AUTH.signImageId);
-
-  panel.classList.remove("hidden");
-  dot.classList.toggle("is-ready", has);
-  dot.classList.toggle("is-missing", !has);
-
-  text.textContent = has ? "พร้อมใช้งาน" : "ยังไม่ได้ตั้งค่า";
-  btnMain.textContent = has ? "เปลี่ยนลายเซ็น" : "เพิ่มลายเซ็น";
-
-  if (btnDelete) {
-    btnDelete.classList.toggle("hidden", !has);
-  }
-}
-
-function bindLpsSignatureButtons_() {
-  if (LPS_SIGN_BUTTONS_BOUND) return;
-  LPS_SIGN_BUTTONS_BOUND = true;
-
-  $("btnLpsSignAddOrChange")?.addEventListener("click", () => {
-    if (!AUTH || !AUTH.pass) {
-      Swal.fire({
-        icon: "warning",
-        title: "ยังไม่ได้เข้าสู่ระบบ",
-        text: "กรุณาเข้าสู่ระบบก่อนจัดการลายเซ็น"
-      });
-      return;
-    }
-
-    $("lpsSignFileInput")?.click();
-  });
-
-  $("lpsSignFileInput")?.addEventListener("change", async (ev) => {
-    const input = ev.currentTarget;
-    const file = input?.files && input.files[0] ? input.files[0] : null;
-
-    try {
-      if (!file) return;
-      await saveMyLpsSignatureFromFile_(file);
-    } catch (err) {
-      console.error("saveMyLpsSignatureFromFile_ failed:", err);
-
-      await Swal.fire({
-        icon: "error",
-        title: "บันทึกลายเซ็นไม่สำเร็จ",
-        text: err?.message || String(err),
-        confirmButtonText: "ตกลง"
-      });
-    } finally {
-      if (input) input.value = "";
-    }
-  });
-
-  $("btnLpsSignDelete")?.addEventListener("click", async () => {
-    try {
-      await deleteMyLpsSignature_();
-    } catch (err) {
-      console.error("deleteMyLpsSignature_ failed:", err);
-
-      await Swal.fire({
-        icon: "error",
-        title: "ลบลายเซ็นไม่สำเร็จ",
-        text: err?.message || String(err),
-        confirmButtonText: "ตกลง"
-      });
-    }
-  });
-}
-
-async function saveMyLpsSignatureFromFile_(file) {
-  if (!file) return;
-
-  if (!/^image\//i.test(file.type || "")) {
-    await Swal.fire({
-      icon: "warning",
-      title: "ไฟล์ไม่ถูกต้อง",
-      text: "กรุณาเลือกไฟล์รูปภาพเท่านั้น"
-    });
-    return;
-  }
-
-  const mb = file.size / (1024 * 1024);
-  if (mb > 5) {
-    await Swal.fire({
-      icon: "warning",
-      title: "ไฟล์ใหญ่เกินไป",
-      text: "กรุณาเลือกไฟล์ลายเซ็นไม่เกิน 5 MB"
-    });
-    return;
-  }
-
-  const confirm = await Swal.fire({
-    icon: "question",
-    title: AUTH.signImageId ? "เปลี่ยนลายเซ็น LPS?" : "เพิ่มลายเซ็น LPS?",
-    html: `
-      <div style="text-align:left;line-height:1.7">
-        <div><b>ผู้ใช้งาน:</b> ${escapeHtml(AUTH.name || "-")}</div>
-        <div><b>ไฟล์:</b> ${escapeHtml(file.name || "-")}</div>
-        <div><b>ขนาด:</b> ${escapeHtml(String(Math.round((file.size || 0) / 1024)))} KB</div>
-        <div style="margin-top:8px;color:#64748b;font-size:13px">
-          ระบบจะบันทึกไฟล์นี้เป็นลายเซ็นปัจจุบันของผู้ใช้งานนี้
-        </div>
-      </div>
-    `,
-    showCancelButton: true,
-    confirmButtonText: "ยืนยันบันทึก",
-    cancelButtonText: "ยกเลิก"
-  });
-
-  if (!confirm.isConfirmed) return;
-
-  const base64 = await fileToBase64(file);
-
-  const res = await fetch(apiUrl("/lps/signature/save"), {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      action: "saveMyLpsSignature",
-      pass: AUTH.pass,
-      file: {
-        filename: file.name || "lps-signature.png",
-        mimeType: file.type || "",
-        base64
-      }
-    })
-  });
-
-  const text = await res.text();
-  let json = {};
-
-  try {
-    json = JSON.parse(text);
-  } catch (_) {
-    throw new Error("Backend ตอบกลับไม่ใช่ JSON");
-  }
-
-  if (!res.ok || !json.ok) {
-    throw new Error(json?.error || `บันทึกลายเซ็นไม่สำเร็จ (HTTP ${res.status})`);
-  }
-
-  AUTH.signImageId = String(json.signImageId || "").trim();
-  AUTH.signUrl = String(json.signUrl || "").trim();
-  AUTH.hasLpsSignature = !!AUTH.signImageId;
-  window.AUTH = AUTH;
-
-  renderLpsSignatureStatus_();
-
-  await Swal.fire({
-    icon: "success",
-    title: "บันทึกลายเซ็นเรียบร้อย",
-    text: json.message || "ลายเซ็น LPS พร้อมใช้งานแล้ว"
-  });
-}
-async function deleteMyLpsSignature_() {
-  if (!AUTH || !AUTH.pass) {
-    await Swal.fire({
-      icon: "warning",
-      title: "ยังไม่ได้เข้าสู่ระบบ",
-      text: "กรุณาเข้าสู่ระบบก่อนจัดการลายเซ็น"
-    });
-    return;
-  }
-
-  if (!AUTH.signImageId) {
-    renderLpsSignatureStatus_();
-    return;
-  }
-
-  const confirm = await Swal.fire({
-    icon: "warning",
-    title: "ลบลายเซ็น LPS?",
-    text: "ระบบจะล้างลายเซ็นออกจากผู้ใช้งานนี้ แต่จะไม่ลบไฟล์จริง เพื่อให้เอกสารเก่ายังตรวจสอบย้อนหลังได้",
-    showCancelButton: true,
-    confirmButtonText: "ยืนยันลบ",
-    cancelButtonText: "ยกเลิก"
-  });
-
-  if (!confirm.isConfirmed) return;
-
-  const res = await fetch(apiUrl("/lps/signature/delete"), {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      action: "deleteMyLpsSignature",
-      pass: AUTH.pass
-    })
-  });
-
-  const text = await res.text();
-  let json = {};
-
-  try {
-    json = JSON.parse(text);
-  } catch (_) {
-    throw new Error("Backend ตอบกลับไม่ใช่ JSON");
-  }
-
-  if (!res.ok || !json.ok) {
-    throw new Error(json?.error || `ลบลายเซ็นไม่สำเร็จ (HTTP ${res.status})`);
-  }
-
-  AUTH.signImageId = "";
-  AUTH.signUrl = "";
-  AUTH.hasLpsSignature = false;
-  window.AUTH = AUTH;
-
-  renderLpsSignatureStatus_();
-
-  await Swal.fire({
-    icon: "success",
-    title: "ลบลายเซ็นเรียบร้อย",
-    text: json.message || "ลายเซ็นถูกล้างออกจากผู้ใช้งานนี้แล้ว"
-  });
-}
-
-async function ensureLpsSignatureReadyBeforeSubmit_() {
-  if (AUTH && AUTH.signImageId) return true;
-
-  renderLpsSignatureStatus_();
-
-  await Swal.fire({
-    icon: "warning",
-    title: "ยังไม่ได้ตั้งค่าลายเซ็น LPS",
-    text: "กรุณาเพิ่มลายเซ็นก่อนบันทึก Error_BOL",
-    confirmButtonText: "ตกลง"
-  });
-
-  return false;
 }
 
 /** ==========================
@@ -1650,7 +1389,6 @@ async function lookupItemRealtime(item, immediate = false) {
   const text = await res.text();
 
   let json = {};
-
   try {
     json = JSON.parse(text);
   } catch (_) {
@@ -1709,7 +1447,6 @@ function renderItemLookupState(state) {
       ? "เชื่อมต่อค้นหาสินค้าไม่ได้ หรือไม่พบข้อมูล"
       : "ไม่พบข้อมูลสินค้า";
   }
-
   if (display) {
     display.value = displayText || `${item} | ${ITEM_NOT_FOUND_TEXT}`;
   }
@@ -1719,7 +1456,6 @@ function getItemDisplayText() {
   if (ITEM_LOOKUP_STATE && ITEM_LOOKUP_STATE.displayText) {
     return ITEM_LOOKUP_STATE.displayText;
   }
-
   return ($("itemDisplay")?.value || $("item")?.value || "").trim();
 }
 
@@ -1823,13 +1559,11 @@ function addUploadField(label, opts = {}) {
       fileInput.value = "";
       if (txt) txt.textContent = "ไฟล์ไม่ถูกต้อง (ต้องเป็นรูปภาพเท่านั้น)";
       if (img) img.removeAttribute("src");
-
       await Swal.fire({
         icon: "warning",
         title: "ไฟล์ไม่ถูกต้อง",
         text: "กรุณาเลือกไฟล์รูปภาพเท่านั้น"
       });
-
       return;
     }
 
@@ -1839,7 +1573,6 @@ function addUploadField(label, opts = {}) {
       if (img.dataset.objectUrl) {
         try { URL.revokeObjectURL(img.dataset.objectUrl); } catch (_) {}
       }
-
       const url = URL.createObjectURL(f);
       img.src = url;
       img.dataset.objectUrl = url;
@@ -1848,6 +1581,7 @@ function addUploadField(label, opts = {}) {
     await handlePickedImageForUpload(fileInput, box);
   });
 }
+
 /** ==========================
  *  Payload
  *  ========================== */
@@ -2007,17 +1741,13 @@ async function previewSummary() {
   const err = validatePayload(p);
 
   if (err) {
-    await Swal.fire({
+    return Swal.fire({
       icon: "warning",
       title: "ข้อมูลไม่ครบ",
       text: err,
       confirmButtonText: "ตกลง"
     });
-    return;
   }
-
-  const lpsSignReady = await ensureLpsSignatureReadyBeforeSubmit_();
-  if (!lpsSignReady) return;
 
   const fileCount = countSelectedFiles();
   const emails = Array.isArray(p.emailRecipients) ? p.emailRecipients : [];
@@ -2193,9 +1923,6 @@ async function submitForm() {
     });
   }
 
-  const lpsSignReady = await ensureLpsSignatureReadyBeforeSubmit_();
-  if (!lpsSignReady) return;
-
   try {
     const dup = await checkRefDuplicate_("error_bol", getRefNoValue(), { force: true });
     if (dup.duplicated) {
@@ -2299,593 +2026,1320 @@ async function submitForm() {
 
     const emailInfo = buildEmailStatusSummary_(json);
 
-    if (emailInfo.emailSkipped) {
-      ProgressUI.markDone("email", 100, "ไม่มีการส่งอีเมล", "ข้าม");
-    } else if (emailInfo.emailOk) {
-      ProgressUI.markDone("email", 100, emailInfo.emailModeText, "เสร็จแล้ว");
+    if (emailInfo.emailOk) {
+      ProgressUI.markDone("email", 100, emailInfo.emailModeText, emailInfo.emailModeText);
+      ProgressUI.success("บันทึกสำเร็จ", "ข้อมูล Error_BOL ถูกบันทึกเรียบร้อยแล้ว");
+    } else if (emailInfo.emailSkipped) {
+      ProgressUI.markDone("email", 100, "ไม่ได้เลือกส่งอีเมล", "ข้าม");
+      ProgressUI.success("บันทึกสำเร็จ", "บันทึกข้อมูลและสร้าง PDF เรียบร้อยแล้ว");
     } else {
       ProgressUI.markError("email", "ส่งอีเมลไม่สำเร็จ", 100);
+      ProgressUI.success("บันทึกสำเร็จ", "ข้อมูลและ PDF สำเร็จแล้ว แต่การส่งอีเมลไม่สำเร็จ");
+      ProgressUI.setHint(emailInfo.emailStatus || "กรุณาตรวจสอบสิทธิ์อีเมลหรือขนาดไฟล์แนบ");
     }
 
-    ProgressUI.success("บันทึก Error_BOL สำเร็จ", "ระบบสร้าง PDF และบันทึกข้อมูลเรียบร้อยแล้ว");
+    const galleryHtml = renderGalleryHtml(json.imageIds || []);
+    const pdfSizeText = String(json.pdfSizeText || "-");
 
-    await safeDelay(450);
+    const supSignThumb = signRes.supervisorBase64
+      ? `<img class="sigThumb" src="${signRes.supervisorBase64}" alt="sign supervisor">`
+      : `<div class="swalNote">ไม่มีลายเซ็น</div>`;
 
-    const html = buildSubmitSuccessHtml_(json, emailInfo);
+    const empSignThumb = signRes.employeeBase64
+      ? `<img class="sigThumb" src="${signRes.employeeBase64}" alt="sign employee">`
+      : `<div class="swalNote">ไม่มีลายเซ็น</div>`;
+
+    const intSignThumb = signRes.interpreterBase64
+      ? `<img class="sigThumb" src="${signRes.interpreterBase64}" alt="sign interpreter">`
+      : `<div class="swalNote">ไม่มีลายเซ็น</div>`;
+
+    ProgressUI.hide(120);
+
     await Swal.fire({
-      icon: "success",
-      title: "บันทึกสำเร็จ",
-      html,
-      width: 820,
-      confirmButtonText: "ตกลง"
+      icon: (emailInfo.emailOk || emailInfo.emailSkipped) ? "success" : "warning",
+      title: (emailInfo.emailOk || emailInfo.emailSkipped) ? "บันทึกสำเร็จ" : "บันทึกสำเร็จบางส่วน",
+      showConfirmButton: false,
+      width: 920,
+      html: `
+        <div class="swalSummary">
+          <div class="swalHero">
+            <div class="swalHeroTitle">บันทึกรายการเรียบร้อยแล้ว</div>
+            <div class="swalHeroSub">ระบบจัดเก็บข้อมูล รูปภาพ ลายเซ็น และเอกสาร PDF เรียบร้อย</div>
+            <div class="swalPillRow">
+              <div class="swalPill primary">LPS: ${escapeHtml(AUTH.name || json.lpsName || "-")}</div>
+              <div class="swalPill">Ref: ${escapeHtml(p.refNo || "-")}</div>
+              <div class="swalPill">รูป ${Number((json.imageIds || []).length)}</div>
+            </div>
+          </div>
+
+          <div class="swalSection">
+            <div class="swalSectionTitle">ข้อมูลเอกสาร</div>
+            <div class="swalKvGrid">
+              <div class="swalKv"><div class="swalKvLabel">วันที่เวลา</div><div class="swalKvValue">${escapeHtml(json.timestamp || "-")}</div></div>
+              <div class="swalKv"><div class="swalKvLabel">Ref:No.</div><div class="swalKvValue">${escapeHtml(p.refNo || "-")}</div></div>
+              <div class="swalKv"><div class="swalKvLabel">Label CID</div><div class="swalKvValue">${escapeHtml(p.labelCid || "-")}</div></div>
+              <div class="swalKv"><div class="swalKvLabel">ขนาด PDF</div><div class="swalKvValue">${escapeHtml(pdfSizeText)}</div></div>
+            </div>
+          </div>
+
+          <div class="swalSection">
+            <div class="swalSectionTitle">สถานะอีเมล</div>
+            ${
+              emailInfo.emailSkipped
+                ? `<div class="swalNote">ไม่ได้ส่งอีเมล เพราะยังไม่ได้เลือกผู้รับ</div>`
+                : emailInfo.emailOk
+                  ? `<div class="swalEmailOk">ส่งอีเมลสำเร็จ ${Number(emailInfo.emailResult.count || 0)} รายการ ${emailInfo.emailResult.attachmentMode ? `• ${escapeHtml(emailInfo.emailResult.attachmentMode)}` : ""}</div>`
+                  : `<div class="swalEmailFail">บันทึกข้อมูลสำเร็จ แต่ส่งอีเมลไม่สำเร็จ: ${escapeHtml(emailInfo.emailResult.error || "-")}</div>`
+            }
+          </div>
+
+          <div class="swalSection">
+            <div class="swalSectionTitle">ลายเซ็น</div>
+            <div class="sigGrid">
+              <div>
+                <div class="sigBoxTitle">หัวหน้างาน</div>
+                ${supSignThumb}
+                <div class="sigName">${escapeHtml(p.otm || "-")}</div>
+              </div>
+              <div>
+                <div class="sigBoxTitle">พนักงาน</div>
+                ${empSignThumb}
+                <div class="sigName">${escapeHtml(p.employeeName || "-")}</div>
+              </div>
+              <div>
+                <div class="sigBoxTitle">ล่ามแปลภาษา</div>
+                ${intSignThumb}
+                <div class="sigName">${escapeHtml(p.interpreterName || "-")}</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="swalSection">
+            <div class="swalSectionTitle">รูปภาพแนบ</div>
+            ${galleryHtml || `<div class="swalNote">ไม่มีรูปภาพแนบ</div>`}
+          </div>
+
+          <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:18px">
+            ${
+              json.pdfUrl
+                ? `<button type="button" id="btnOpenPdfAfterSave" class="swal2-confirm swal2-styled" style="background:#2563eb">เปิด PDF</button>`
+                : ``
+            }
+            <button type="button" id="btnCloseAfterSave" class="swal2-cancel swal2-styled" style="display:inline-block;background:#64748b">ปิดหน้าต่าง</button>
+          </div>
+        </div>
+      `,
+      didOpen: () => {
+        bindGalleryClickInSwal();
+
+        const btnOpen = document.getElementById("btnOpenPdfAfterSave");
+        const btnClose = document.getElementById("btnCloseAfterSave");
+
+        if (btnOpen && json.pdfUrl) {
+          btnOpen.addEventListener("click", () => {
+            window.open(json.pdfUrl, "_blank", "noopener,noreferrer");
+            Swal.close();
+          });
+        }
+
+        if (btnClose) {
+          btnClose.addEventListener("click", () => {
+            Swal.close();
+          });
+        }
+      },
+      willClose: () => {
+        resetRefDuplicateUi_("error_bol");
+        resetForm();
+      }
     });
 
-    ProgressUI.hide(150);
-  } catch (submitErr) {
-    console.error(submitErr);
-    ProgressUI.markError("save", submitErr?.message || String(submitErr), 70);
-    ProgressUI.hide(250);
+    return json;
+  } catch (err2) {
+    console.error(err2);
+    ProgressUI.markError("save", err2?.message || "เกิดข้อผิดพลาด", 58);
+    ProgressUI.setHint("กรุณาตรวจสอบข้อมูล เครือข่าย หรือ backend แล้วลองใหม่อีกครั้ง");
 
     await Swal.fire({
       icon: "error",
       title: "บันทึกไม่สำเร็จ",
-      text: submitErr?.message || String(submitErr),
+      text: err2?.message || String(err2),
       confirmButtonText: "ตกลง"
     });
+  } finally {
+    ProgressUI.hide(180);
   }
 }
 
-function buildSubmitSuccessHtml_(json, emailInfo) {
-  const pdfUrl = json?.pdfUrl || "";
-  const pdfFileId = json?.pdfFileId || "";
-  const pdfSizeText = json?.pdfSizeText || "";
-  const disciplineCount = Number(json?.disciplineMatchCount || 0);
-  const itemDisplay = json?.itemDisplay || json?.itemDescription || json?.item || "-";
-  const emailResult = emailInfo?.emailResult || {};
-  const emailRecipients = Array.isArray(emailResult.recipients) ? emailResult.recipients : [];
-
-  const pdfLinkHtml = pdfUrl
-    ? `<a href="${escapeHtml(pdfUrl)}" target="_blank" rel="noopener noreferrer" class="swalLinkBtn">เปิด PDF</a>`
-    : `<span class="swalMuted">ไม่มีลิงก์ PDF</span>`;
-
-  const emailHtml = emailInfo?.emailSkipped
-    ? `<div class="swalBadge muted">ไม่ได้ส่งอีเมล</div>`
-    : emailInfo?.emailOk
-      ? `<div class="swalBadge success">${escapeHtml(emailInfo.emailModeText || "ส่งอีเมลเรียบร้อย")}</div>`
-      : `<div class="swalBadge danger">ส่งอีเมลไม่สำเร็จ</div>`;
-
-  return `
-    <div class="swalSummary">
-      <div class="swalHero success">
-        <div class="swalHeroTitle">บันทึก Error_BOL สำเร็จ</div>
-        <div class="swalHeroSub">ระบบบันทึกข้อมูล สร้าง PDF และประมวลผลอีเมลเรียบร้อยแล้ว</div>
-        <div class="swalPillRow">
-          <div class="swalPill primary">Ref: ${escapeHtml(json?.refNo || getRefNoValue() || "-")}</div>
-          <div class="swalPill">PDF ${escapeHtml(pdfSizeText || "-")}</div>
-          <div class="swalPill">วินัย ${disciplineCount} รายการ</div>
-        </div>
-      </div>
-
-      <div class="swalSection">
-        <div class="swalSectionTitle">ไฟล์ PDF</div>
-        <div class="swalKvGrid">
-          <div class="swalKv">
-            <div class="swalKvLabel">File ID</div>
-            <div class="swalKvValue">${escapeHtml(pdfFileId || "-")}</div>
-          </div>
-          <div class="swalKv">
-            <div class="swalKvLabel">ขนาดไฟล์</div>
-            <div class="swalKvValue">${escapeHtml(pdfSizeText || "-")}</div>
-          </div>
-        </div>
-        <div style="margin-top:10px">${pdfLinkHtml}</div>
-      </div>
-
-      <div class="swalSection">
-        <div class="swalSectionTitle">ข้อมูลสินค้า</div>
-        <div class="swalDescValue">${escapeHtml(itemDisplay)}</div>
-      </div>
-
-      <div class="swalSection">
-        <div class="swalSectionTitle">สถานะอีเมล</div>
-        ${emailHtml}
-        ${
-          emailRecipients.length
-            ? `<div class="swalEmailList" style="margin-top:8px">${emailRecipients.map(e => `<div class="swalEmailChip">${escapeHtml(e)}</div>`).join("")}</div>`
-            : `<div class="swalNote" style="margin-top:8px">ไม่มีผู้รับอีเมล</div>`
-        }
-      </div>
-    </div>
-  `;
-}
-
-/** ==========================
- *  File helpers
- *  ========================== */
-function collectFilesAsBase64({ maxFiles = 6, maxMBEach = 4 } = {}) {
+async function collectFilesAsBase64({ maxFiles = 6, maxMBEach = 4 } = {}) {
   const inputs = Array.from(document.querySelectorAll('#uploadList input[type="file"]'));
-  const selected = [];
+  const picked = [];
 
-  inputs.forEach((el, idx) => {
+  for (const el of inputs) {
     const edited = EDITED_UPLOAD_STORE.get(el)?.file || null;
     const raw = el.files && el.files[0] ? el.files[0] : null;
-    const file = edited || raw;
-
-    if (file) {
-      selected.push({
-        file,
-        filename: edited
-          ? (EDITED_UPLOAD_STORE.get(el)?.filename || file.name || `edited_${idx + 1}.jpg`)
-          : (file.name || `image_${idx + 1}.jpg`)
-      });
-    }
-  });
-
-  if (selected.length > maxFiles) {
-    Swal.fire({
-      icon: "warning",
-      title: "รูปภาพเกินจำนวน",
-      text: `แนบรูปได้สูงสุด ${maxFiles} รูป`
-    });
-    throw new Error("จำนวนรูปภาพเกินกำหนด");
+    const f = edited || raw;
+    if (f) picked.push(f);
   }
 
-  for (const it of selected) {
-    const mb = it.file.size / (1024 * 1024);
+  if (picked.length > maxFiles) {
+    await Swal.fire({
+      icon: "warning",
+      title: "รูปเยอะเกินไป",
+      text: `เลือกได้สูงสุด ${maxFiles} รูป (ตอนนี้เลือก ${picked.length})`
+    });
+    throw new Error("Too many files");
+  }
+
+  const out = [];
+  for (const f of picked) {
+    if (!/^image\//.test(f.type)) {
+      await Swal.fire({
+        icon: "warning",
+        title: "ไฟล์ไม่ถูกต้อง",
+        text: `ไฟล์ "${f.name}" ต้องเป็นรูปภาพเท่านั้น`
+      });
+      throw new Error("Invalid file type");
+    }
+
+    const mb = f.size / (1024 * 1024);
     if (mb > maxMBEach) {
-      Swal.fire({
+      await Swal.fire({
         icon: "warning",
         title: "ไฟล์ใหญ่เกินไป",
-        text: `${it.filename} มีขนาด ${mb.toFixed(2)} MB กรุณาใช้ไฟล์ไม่เกิน ${maxMBEach} MB`
+        text: `ไฟล์ "${f.name}" มีขนาด ${mb.toFixed(1)} MB (กำหนดไว้ไม่เกิน ${maxMBEach} MB)`
       });
-      throw new Error("ไฟล์ใหญ่เกินกำหนด");
+      throw new Error("File too large");
     }
+
+    const base64 = await fileToBase64(f);
+    out.push({ filename: f.name, base64 });
   }
 
-  return Promise.all(selected.map((it) => fileToBase64(it.file).then((base64) => ({
-    filename: it.filename,
-    name: it.filename,
-    base64
-  }))));
+  return out;
 }
 
 function fileToBase64(file) {
   return new Promise((resolve, reject) => {
     const r = new FileReader();
-    r.onload = () => resolve(String(r.result || ""));
+    r.onload = () => {
+      const result = String(r.result || "");
+      const base64 = result.includes(",") ? result.split(",")[1] : result;
+      resolve(base64);
+    };
     r.onerror = reject;
     r.readAsDataURL(file);
   });
 }
 
 /** ==========================
- *  Signature modal
+ *  Signature Flow
  *  ========================== */
-function openSignatureFlow(supervisorName, employeeName, interpreterName) {
-  return new Promise((resolve) => {
-    const modal = $("signatureModal");
-    const canvas = $("signCanvas");
-    const ctx = canvas?.getContext("2d");
-    const title = $("signModalTitle");
-    const subtitle = $("signModalSubtitle");
-    const stepText = $("signStepText");
+async function openSignatureFlow(supervisorName, employeeName, interpreterName) {
+  const sup = await signatureModal("ลายเซ็นหัวหน้างาน", `ผู้เซ็น: ${supervisorName || "-"}`);
+  if (!sup.ok) return { ok: false };
 
-    if (!modal || !canvas || !ctx) {
-      resolve({ ok: false });
-      return;
-    }
+  const emp = await signatureModal("ลายเซ็นพนักงานที่เบิกสินค้า Error", `ผู้เซ็น: ${employeeName || "-"}`);
+  if (!emp.ok) return { ok: false };
 
-    const steps = [
-      { key: "supervisorBase64", label: "หัวหน้างาน", name: supervisorName || "-" },
-      { key: "employeeBase64", label: "พนักงาน", name: employeeName || "-" }
-    ];
-
-    if (interpreterName) {
-      steps.push({ key: "interpreterBase64", label: "ล่ามแปลภาษา", name: interpreterName || "-" });
-    }
-
-    const result = {};
-    let idx = 0;
-    let drawing = false;
-    let hasStroke = false;
-
-    function resizeCanvas() {
-      const ratio = window.devicePixelRatio || 1;
-      const rect = canvas.getBoundingClientRect();
-      const width = Math.max(300, Math.floor(rect.width || 720));
-      const height = 220;
-
-      canvas.width = Math.floor(width * ratio);
-      canvas.height = Math.floor(height * ratio);
-      canvas.style.height = height + "px";
-
-      ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
-      ctx.lineCap = "round";
-      ctx.lineJoin = "round";
-      ctx.lineWidth = 2.4;
-      ctx.strokeStyle = "#111827";
-      clearPad();
-    }
-
-    function clearPad() {
-      const rect = canvas.getBoundingClientRect();
-      ctx.clearRect(0, 0, rect.width || 720, rect.height || 220);
-      hasStroke = false;
-    }
-
-    function pos(e) {
-      const rect = canvas.getBoundingClientRect();
-      const t = e.touches && e.touches[0] ? e.touches[0] : e;
-      return {
-        x: t.clientX - rect.left,
-        y: t.clientY - rect.top
-      };
-    }
-
-    function start(e) {
-      e.preventDefault();
-      drawing = true;
-      const p = pos(e);
-      ctx.beginPath();
-      ctx.moveTo(p.x, p.y);
-    }
-
-    function move(e) {
-      if (!drawing) return;
-      e.preventDefault();
-      const p = pos(e);
-      ctx.lineTo(p.x, p.y);
-      ctx.stroke();
-      hasStroke = true;
-    }
-
-    function end() {
-      drawing = false;
-    }
-        function renderStep() {
-      const s = steps[idx];
-      if (title) title.textContent = `ลายเซ็น${s.label}`;
-      if (subtitle) subtitle.textContent = `กรุณาให้ ${s.name} ลงลายเซ็น`;
-      if (stepText) stepText.textContent = `ขั้นตอนที่ ${idx + 1} จาก ${steps.length}`;
-      clearPad();
-    }
-
-    function close() {
-      modal.classList.add("hidden");
-      cleanup();
-    }
-
-    function cleanup() {
-      canvas.removeEventListener("mousedown", start);
-      canvas.removeEventListener("mousemove", move);
-      window.removeEventListener("mouseup", end);
-
-      canvas.removeEventListener("touchstart", start);
-      canvas.removeEventListener("touchmove", move);
-      window.removeEventListener("touchend", end);
-
-      $("btnSignClear")?.removeEventListener("click", clearPad);
-      $("btnSignCancel")?.removeEventListener("click", cancelHandler);
-      $("btnSignNext")?.removeEventListener("click", nextHandler);
-    }
-
-    function cancelHandler() {
-      close();
-      resolve({ ok: false });
-    }
-
-    async function nextHandler() {
-      if (!hasStroke) {
-        await Swal.fire({
-          icon: "warning",
-          title: "ยังไม่ได้ลงลายเซ็น",
-          text: "กรุณาลงลายเซ็นก่อนดำเนินการต่อ"
-        });
-        return;
-      }
-
-      const s = steps[idx];
-      result[s.key] = canvas.toDataURL("image/png");
-
-      idx += 1;
-
-      if (idx >= steps.length) {
-        close();
-        resolve({
-          ok: true,
-          supervisorBase64: result.supervisorBase64 || "",
-          employeeBase64: result.employeeBase64 || "",
-          interpreterBase64: result.interpreterBase64 || ""
-        });
-        return;
-      }
-
-      renderStep();
-    }
-
-    resizeCanvas();
-    renderStep();
-    modal.classList.remove("hidden");
-
-    canvas.addEventListener("mousedown", start);
-    canvas.addEventListener("mousemove", move);
-    window.addEventListener("mouseup", end);
-
-    canvas.addEventListener("touchstart", start, { passive: false });
-    canvas.addEventListener("touchmove", move, { passive: false });
-    window.addEventListener("touchend", end);
-
-    $("btnSignClear")?.addEventListener("click", clearPad);
-    $("btnSignCancel")?.addEventListener("click", cancelHandler);
-    $("btnSignNext")?.addEventListener("click", nextHandler);
-  });
-}
-
-/** ==========================
- *  Error_BOL edit mode
- *  ========================== */
-const ERROR_BOL_EDIT_STATE = {
-  active: false,
-  loading: false,
-  rootRefNo: "",
-  currentRefNo: "",
-  previousRefNo: "",
-  documentId: "",
-  revisionNo: 0,
-  revisionLabel: "",
-  loadedRow: null,
-  existingImages: [],
-  existingSigns: {
-    supervisor: null,
-    employee: null,
-    interpreter: null,
-    lps: null
-  }
-};
-
-function errorBolEditNormalizeImage_(obj) {
-  obj = obj || {};
-
-  return {
-    id: String(obj.id || obj.fileId || obj.imageId || "").trim(),
-    fileId: String(obj.fileId || obj.id || obj.imageId || "").trim(),
-    imageId: String(obj.imageId || obj.id || obj.fileId || "").trim(),
-    name: String(obj.name || obj.filename || obj.label || "").trim(),
-    filename: String(obj.filename || obj.name || "").trim(),
-    label: String(obj.label || obj.name || obj.filename || "").trim(),
-    url: String(obj.url || obj.viewUrl || obj.previewUrl || obj.thumbnailUrl || "").trim(),
-    viewUrl: String(obj.viewUrl || obj.url || "").trim(),
-    previewUrl: String(obj.previewUrl || obj.thumbnailUrl || obj.url || "").trim(),
-    thumbnailUrl: String(obj.thumbnailUrl || obj.previewUrl || obj.url || "").trim()
-  };
-}
-
-function errorBolEditNormalizeSigns_(signs) {
-  signs = signs || {};
-
-  function one(obj) {
-    obj = obj || {};
-
+  const hasInterpreter = String(interpreterName || "").trim().length > 0;
+  if (!hasInterpreter) {
     return {
-      id: String(obj.id || obj.fileId || obj.imageId || "").trim(),
-      fileId: String(obj.fileId || obj.id || obj.imageId || "").trim(),
-      imageId: String(obj.imageId || obj.id || obj.fileId || "").trim(),
-      label: String(obj.label || obj.name || "").trim(),
-      name: String(obj.name || obj.label || "").trim(),
-      filename: String(obj.filename || "").trim(),
-      url: String(obj.url || obj.viewUrl || obj.previewUrl || obj.thumbnailUrl || "").trim(),
-      viewUrl: String(obj.viewUrl || obj.url || "").trim(),
-      previewUrl: String(obj.previewUrl || obj.thumbnailUrl || obj.url || "").trim(),
-      thumbnailUrl: String(obj.thumbnailUrl || obj.previewUrl || obj.url || "").trim()
+      ok: true,
+      supervisorBase64: sup.base64,
+      employeeBase64: emp.base64,
+      interpreterBase64: ""
     };
   }
 
+  const intr = await signatureModal("ลายเซ็นล่ามแปลภาษา", `ผู้เซ็น: ${interpreterName || "-"}`);
+  if (!intr.ok) return { ok: false };
+
   return {
-    supervisor: one(signs.supervisor),
-    employee: one(signs.employee),
-    interpreter: one(signs.interpreter),
-    lps: one(signs.lps)
+    ok: true,
+    supervisorBase64: sup.base64,
+    employeeBase64: emp.base64,
+    interpreterBase64: intr.base64
   };
 }
 
-function errorBolEditResetState_() {
-  ERROR_BOL_EDIT_STATE.active = false;
-  ERROR_BOL_EDIT_STATE.loading = false;
-  ERROR_BOL_EDIT_STATE.rootRefNo = "";
-  ERROR_BOL_EDIT_STATE.currentRefNo = "";
-  ERROR_BOL_EDIT_STATE.previousRefNo = "";
-  ERROR_BOL_EDIT_STATE.documentId = "";
-  ERROR_BOL_EDIT_STATE.revisionNo = 0;
-  ERROR_BOL_EDIT_STATE.revisionLabel = "";
-  ERROR_BOL_EDIT_STATE.loadedRow = null;
-  ERROR_BOL_EDIT_STATE.existingImages = [];
-  ERROR_BOL_EDIT_STATE.existingSigns = {
-    supervisor: null,
-    employee: null,
-    interpreter: null,
-    lps: null
+async function signatureModal(title, subtitle) {
+  const canvasId = "sigCanvas_" + Math.random().toString(16).slice(2);
+  const clearId = "sigClear_" + Math.random().toString(16).slice(2);
+
+  const res = await Swal.fire({
+    title,
+    html: `
+      <div style="text-align:left">
+        <div style="font-size:13px;color:#64748b;font-weight:700;margin-bottom:10px">${escapeHtml(subtitle || "")}</div>
+        <div style="border:1px solid #d7e4f3;border-radius:18px;padding:10px;background:#fff">
+          <canvas id="${canvasId}" class="sigCanvasElmLarge" width="900" height="320"></canvas>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:10px;flex-wrap:wrap">
+          <div style="font-size:12px;color:#64748b">กรุณาเซ็นในช่องด้านบน</div>
+          <button id="${clearId}" type="button" class="btn ghost sigBtn">ล้างลายเซ็น</button>
+        </div>
+      </div>
+    `,
+    width: 900,
+    showCancelButton: true,
+    confirmButtonText: "ยืนยันลายเซ็น",
+    cancelButtonText: "ยกเลิก",
+    didOpen: () => {
+      const canvas = document.getElementById(canvasId);
+      const btnClear = document.getElementById(clearId);
+
+      enableSignature(canvas);
+
+      btnClear?.addEventListener("click", () => {
+        const ctx = canvas.getContext("2d");
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+      });
+    },
+    preConfirm: () => {
+      const canvas = document.getElementById(canvasId);
+      const isEmpty = isCanvasBlank(canvas);
+
+      if (isEmpty) {
+        Swal.showValidationMessage("กรุณาเซ็นชื่อก่อนกดยืนยัน");
+        return false;
+      }
+
+      return canvas.toDataURL("image/png");
+    }
+  });
+
+  if (!res.isConfirmed) return { ok: false };
+  return { ok: true, base64: res.value };
+}
+
+function enableSignature(canvas) {
+  if (!canvas) return;
+  const ctx = canvas.getContext("2d");
+
+  ctx.lineWidth = 2.8;
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
+  ctx.strokeStyle = "#1d4ed8";
+
+  let drawing = false;
+  let last = null;
+
+  const getPos = (e) => {
+    const rect = canvas.getBoundingClientRect();
+    const t = (e.touches && e.touches[0]) ? e.touches[0] : e;
+    return {
+      x: (t.clientX - rect.left) * (canvas.width / rect.width),
+      y: (t.clientY - rect.top) * (canvas.height / rect.height)
+    };
   };
+
+  const down = (e) => {
+    drawing = true;
+    last = getPos(e);
+    e.preventDefault();
+  };
+
+  const move = (e) => {
+    if (!drawing) return;
+    const p = getPos(e);
+    ctx.beginPath();
+    ctx.moveTo(last.x, last.y);
+    ctx.lineTo(p.x, p.y);
+    ctx.stroke();
+    last = p;
+    e.preventDefault();
+  };
+
+  const up = (e) => {
+    drawing = false;
+    last = null;
+    e.preventDefault();
+  };
+
+  canvas.addEventListener("mousedown", down);
+  canvas.addEventListener("mousemove", move);
+  window.addEventListener("mouseup", up);
+
+  canvas.addEventListener("touchstart", down, { passive: false });
+  canvas.addEventListener("touchmove", move, { passive: false });
+  canvas.addEventListener("touchend", up, { passive: false });
 }
 
-function errorBolEditSetMode_(active, meta = {}) {
-  ERROR_BOL_EDIT_STATE.active = !!active;
+function isCanvasBlank(canvas) {
+  if (!canvas) return true;
+  const ctx = canvas.getContext("2d");
+  const { width, height } = canvas;
+  const data = ctx.getImageData(0, 0, width, height).data;
 
-  document.body.classList.toggle("errorbol-edit-mode", !!active);
-
-  const badge = $("errorBolEditBadge");
-  const refLabel = $("errorBolEditRefText");
-  const btnCancel = $("btnErrorBolCancelEdit");
-
-  if (badge) {
-    badge.classList.toggle("hidden", !active);
+  for (let i = 3; i < data.length; i += 4) {
+    if (data[i] !== 0) return false;
   }
-
-  if (refLabel) {
-    refLabel.textContent = active
-      ? `กำลังแก้ไข: ${meta.refNo || ERROR_BOL_EDIT_STATE.currentRefNo || "-"}`
-      : "";
-  }
-
-  if (btnCancel) {
-    btnCancel.classList.toggle("hidden", !active);
-  }
-
-  const submitBtn = $("btnSubmit");
-  if (submitBtn) {
-    submitBtn.textContent = active ? "บันทึกฉบับแก้ไข" : "บันทึก";
-  }
+  return true;
 }
 
-function errorBolEditApplyPayloadToForm_(payload) {
-  payload = payload || {};
+/** ==========================
+ *  Reset / helpers
+ *  ========================== */
+function resetForm() {
+  const ids = [
+    "refNo",
+    "labelCid",
+    "errorReasonOther",
+    "errorDescription",
+    "item",
+    "itemDisplay",
+    "errorCaseQty",
+    "employeeName",
+    "errorDate",
+    "employeeCode",
+    "interpreterName",
+    "confirmCauseOther"
+  ];
 
-  function setValue(id, value) {
+  ids.forEach((id) => {
     const el = $(id);
-    if (!el) return;
-    el.value = value == null ? "" : String(value);
-    el.dispatchEvent(new Event("change", { bubbles: true }));
-    el.dispatchEvent(new Event("input", { bubbles: true }));
-  }
+    if (el) el.value = "";
+  });
 
-  function splitRef(refNo) {
-    const s = String(refNo || "").trim();
-    const m = s.match(/^(.+?)-(\d{4})$/);
-    if (!m) return { running: s, year: "" };
-    return { running: m[1], year: m[2] };
-  }
+  ["errorReason", "auditName", "shift", "osm", "otm", "workAgeYear", "workAgeMonth", "nationality"].forEach((id) => {
+    const el = $(id);
+    if (el) el.value = "";
+  });
 
-  const ref = splitRef(payload.rootRefNo || payload.refNo || "");
-  if (ref.running) setValue("refNo", ref.running.replace(/[^\d]/g, ""));
-  if (ref.year) setValue("refYear", ref.year);
-
-  setValue("labelCid", payload.labelCid || "");
-  setValue("errorReason", payload.errorReason || "");
-  setValue("errorReasonOther", payload.errorReasonOther || "");
-  setValue("errorDescription", payload.errorDescription || "");
-  setValue("errorDate", payload.errorDateIso || payload.errorDate || "");
-  setValue("item", payload.item || "");
-  setValue("itemDisplay", payload.itemDisplay || "");
-  setValue("errorCaseQty", payload.errorCaseQty || "");
-  setValue("employeeName", payload.employeeName || "");
-  setValue("employeeCode", payload.employeeCode || "");
-  setValue("workAgeYear", payload.workAgeYear || "");
-  setValue("workAgeMonth", payload.workAgeMonth || "");
-  setValue("nationality", payload.nationality || "");
-  setValue("shift", payload.shift || "");
-  setValue("osm", payload.osm || "");
-  setValue("otm", payload.otm || "");
-  setValue("interpreterName", payload.interpreterName || "");
-  setValue("auditName", payload.auditName || "");
+  document.querySelectorAll(".confirmCauseChk, .emailChk").forEach((el) => {
+    el.checked = false;
+  });
 
   ITEM_LOOKUP_STATE = {
-    item: String(payload.item || "").trim(),
-    description: String(payload.itemDescription || "").trim(),
-    displayText: String(payload.itemDisplay || payload.itemDescription || payload.item || "").trim(),
-    found: true,
+    item: "",
+    description: "",
+    displayText: "",
+    found: false,
     loading: false
   };
 
   renderItemLookupState(ITEM_LOOKUP_STATE);
-
-  const emails = Array.isArray(payload.emailRecipientsArray)
-    ? payload.emailRecipientsArray
-    : String(payload.emailRecipients || "")
-        .split(/[,\n;]/)
-        .map(x => x.trim())
-        .filter(Boolean);
-
-  document.querySelectorAll(".emailChk").forEach((chk) => {
-    chk.checked = emails.includes(chk.value);
-  });
-
-  const selectedCauses = Array.isArray(payload.confirmCauseSelected)
-    ? payload.confirmCauseSelected
-    : String(payload.confirmCauseText || "")
-        .split("|")
-        .map(x => x.trim())
-        .filter(Boolean)
-        .filter(x => !/^อื่นๆ:/i.test(x));
-
-  document.querySelectorAll(".confirmCauseChk").forEach((chk) => {
-    chk.checked = selectedCauses.includes(chk.value);
-  });
-
-  const otherCause = payload.confirmCauseOther ||
-    String(payload.confirmCauseText || "")
-      .split("|")
-      .map(x => x.trim())
-      .find(x => /^อื่นๆ:/i.test(x));
-
-  if (otherCause) {
-    setValue("confirmCauseOther", String(otherCause).replace(/^อื่นๆ:\s*/i, ""));
-  }
-
+  buildInitialUploadFields();
   syncErrorReasonOtherVisibility();
   syncConfirmCauseOtherVisibility();
   updateEmployeeConfirmPreview();
+
+  if ($("lps")) $("lps").value = AUTH.name || "";
 }
 
-function errorBolEditRenderExistingImages_(images) {
-  const root = $("errorBolExistingImages");
+function buildResultActionButtons_(pdfUrl) {
+  const hasPdf = !!String(pdfUrl || "").trim();
+
+  return `
+    <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:18px">
+      ${
+        hasPdf
+          ? `<button type="button" id="btnOpenPdfAfterSave" class="swal2-confirm swal2-styled" style="background:#2563eb">เปิด PDF</button>`
+          : ``
+      }
+      <button type="button" id="btnCloseAfterSave" class="swal2-cancel swal2-styled" style="display:inline-block;background:#64748b">ปิดหน้าต่าง</button>
+    </div>
+  `;
+}
+
+function bindResultActionButtons_(pdfUrl) {
+  const btnOpen = document.getElementById("btnOpenPdfAfterSave");
+  const btnClose = document.getElementById("btnCloseAfterSave");
+
+  if (btnOpen && pdfUrl) {
+    btnOpen.addEventListener("click", () => {
+      window.open(pdfUrl, "_blank", "noopener,noreferrer");
+    });
+  }
+
+  if (btnClose) {
+    btnClose.addEventListener("click", () => {
+      Swal.close();
+    });
+  }
+}
+
+function errorBolEditClearFormFields_() {
+  const formCard = document.getElementById("formCard");
+  if (!formCard) return;
+
+  document.body.classList.remove("error-bol-editing");
+
+  [
+    "errorBolEditPanel",
+    "errorBolExistingImagesWrap",
+    "errorBolExistingSignsWrap",
+    "btnErrorBolExitEdit",
+    "refDuplicateWrap",
+    "errorReasonOtherWrap",
+    "confirmCauseOtherWrap"
+  ].forEach((id) => {
+    const el = document.getElementById(id);
+    if (el) el.classList.add("hidden");
+  });
+
+  [
+    "refDuplicateHint",
+    "itemLookupHint",
+    "errorBolExistingImages",
+    "errorBolExistingSigns"
+  ].forEach((id) => {
+    const el = document.getElementById(id);
+    if (el) el.innerHTML = "";
+  });
+
+  try {
+    ITEM_LOOKUP_STATE = {
+      item: "",
+      description: "",
+      displayText: "",
+      found: false,
+      loading: false
+    };
+  } catch (_) {}
+
+  try {
+    if (REF_DUPLICATE_STATE && REF_DUPLICATE_STATE.errorBol) {
+      REF_DUPLICATE_STATE.errorBol.lastRefNo = "";
+      REF_DUPLICATE_STATE.errorBol.duplicated = false;
+      REF_DUPLICATE_STATE.errorBol.checked = false;
+      REF_DUPLICATE_STATE.errorBol.result = null;
+    }
+  } catch (_) {}
+
+  formCard.querySelectorAll("img.previewImg").forEach((img) => {
+    if (img.dataset.objectUrl) {
+      try { URL.revokeObjectURL(img.dataset.objectUrl); } catch (_) {}
+    }
+    img.removeAttribute("src");
+    delete img.dataset.objectUrl;
+  });
+
+  formCard.querySelectorAll("input, textarea, select").forEach((el) => {
+    const type = String(el.type || "").toLowerCase();
+
+    if (
+      type === "button" ||
+      type === "submit" ||
+      type === "reset" ||
+      type === "hidden"
+    ) {
+      return;
+    }
+
+    if (type === "checkbox" || type === "radio") {
+      el.checked = false;
+      return;
+    }
+
+    if (type === "file") {
+      el.value = "";
+      try { EDITED_UPLOAD_STORE.delete(el); } catch (_) {}
+      return;
+    }
+
+    el.value = "";
+  });
+
+  document.querySelectorAll(
+    "#emailSelector input[type='checkbox'], .emailChk, .confirmCauseChk"
+  ).forEach((el) => {
+    el.checked = false;
+  });
+
+  const uploadList = document.getElementById("uploadList");
+  if (uploadList) {
+    uploadList.innerHTML = "";
+
+    try {
+      if (typeof buildInitialUploadFields === "function") {
+        buildInitialUploadFields();
+      } else if (typeof addUploadField === "function") {
+        addUploadField("บัตรพนักงาน", { removable: false });
+        addUploadField("รูปพนักงาน", { removable: false });
+      }
+    } catch (err) {
+      console.warn("reset upload fields failed:", err);
+    }
+  }
+
+  try {
+    if (typeof buildYearOptionsForSelect === "function") {
+      buildYearOptionsForSelect(document.getElementById("refYear"));
+    }
+  } catch (_) {}
+
+  [
+    "refNo",
+    "labelCid",
+    "item",
+    "itemDisplay",
+    "errorCaseQty",
+    "errorDate",
+    "errorReasonOther",
+    "errorDescription",
+    "employeeName",
+    "employeeCode",
+    "interpreterName",
+    "confirmCauseOther",
+    "employeeConfirmText",
+    "lps"
+  ].forEach((id) => {
+    const el = document.getElementById(id);
+    if (el) el.value = "";
+  });
+
+  [
+    "errorReason",
+    "auditName",
+    "shift",
+    "osm",
+    "otm",
+    "workAgeYear",
+    "workAgeMonth",
+    "nationality"
+  ].forEach((id) => {
+    const el = document.getElementById(id);
+    if (el) el.value = "";
+  });
+
+  const btnSubmit = document.getElementById("btnSubmit");
+  if (btnSubmit) {
+    btnSubmit.textContent = "บันทึกและสร้าง PDF";
+    btnSubmit.classList.remove("editTextManaged");
+  }
+
+  ["refNo", "refYear"].forEach((id) => {
+    const el = document.getElementById(id);
+    if (el) el.classList.remove("is-invalid");
+  });
+
+  setTimeout(() => {
+    [
+      "refNo",
+      "labelCid",
+      "item",
+      "itemDisplay",
+      "errorCaseQty",
+      "errorDate",
+      "errorReasonOther",
+      "errorDescription",
+      "employeeName",
+      "employeeCode",
+      "interpreterName",
+      "confirmCauseOther",
+      "employeeConfirmText",
+      "lps"
+    ].forEach((id) => {
+      const el = document.getElementById(id);
+      if (el) el.value = "";
+    });
+
+    [
+      "errorReason",
+      "auditName",
+      "shift",
+      "osm",
+      "otm",
+      "workAgeYear",
+      "workAgeMonth",
+      "nationality"
+    ].forEach((id) => {
+      const el = document.getElementById(id);
+      if (el) el.value = "";
+    });
+
+    document.querySelectorAll(
+      "#emailSelector input[type='checkbox'], .emailChk, .confirmCauseChk"
+    ).forEach((el) => {
+      el.checked = false;
+    });
+
+    const itemHint = document.getElementById("itemLookupHint");
+    if (itemHint) itemHint.textContent = "";
+
+    const refHint = document.getElementById("refDuplicateHint");
+    if (refHint) refHint.innerHTML = "";
+  }, 0);
+}
+/** =========================================================
+ *  ERROR_BOL EDIT MODE
+ *  Load existing Ref -> edit in form -> submit revision
+ *  Append-only safe module
+ *  ========================================================= */
+
+const ERROR_BOL_EDIT_STATE = {
+  active: false,
+  loading: false,
+  submitting: false,
+
+  loadedRefNo: "",
+  rootRefNo: "",
+  currentRefNo: "",
+  documentId: "",
+  revisionNo: 0,
+  revisionLabel: "",
+
+  pdfUrl: "",
+  pdfFileId: "",
+
+  payload: {},
+  existingImages: [],
+  existingSigns: {},
+  removedImageIds: []
+};
+
+window.ERROR_BOL_EDIT_STATE = ERROR_BOL_EDIT_STATE;
+
+function errorBolEditNorm_(value) {
+  return String(value == null ? "" : value).trim();
+}
+
+function errorBolEditEscape_(value) {
+  if (typeof escapeHtml === "function") return escapeHtml(value);
+  return String(value == null ? "" : value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+function errorBolEditApiUrl_(path) {
+  if (typeof apiUrl === "function") return apiUrl(path);
+  const base = String(window.API_BASE || "").replace(/\/+$/, "");
+  const p = String(path || "").replace(/^\/+/, "");
+  return `${base}/${p}`;
+}
+
+function errorBolEditDriveImageUrl_(fileId) {
+  const id = errorBolEditNorm_(fileId);
+  if (!id) return "";
+  if (typeof driveImgUrl === "function") return driveImgUrl(id);
+  return `https://lh5.googleusercontent.com/d/${encodeURIComponent(id)}`;
+}
+
+function errorBolEditDriveViewUrl_(fileId) {
+  const id = errorBolEditNorm_(fileId);
+  if (!id) return "";
+  return `https://drive.google.com/file/d/${encodeURIComponent(id)}/view?usp=drivesdk`;
+}
+
+function errorBolEditSetHidden_(id, hidden) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.classList.toggle("hidden", !!hidden);
+}
+
+function errorBolEditSetText_(id, value) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.textContent = errorBolEditNorm_(value) || "-";
+}
+
+function errorBolEditSetValue_(id, value) {
+  const el = document.getElementById(id);
+  if (!el) return;
+
+  const v = errorBolEditNorm_(value);
+
+  if (el.tagName === "SELECT") {
+    const hasOption = Array.from(el.options || []).some((opt) => opt.value === v);
+    if (v && !hasOption) {
+      const opt = document.createElement("option");
+      opt.value = v;
+      opt.textContent = v;
+      el.appendChild(opt);
+    }
+  }
+
+  el.value = v;
+
+  try {
+    el.dispatchEvent(new Event("input", { bubbles: true }));
+    el.dispatchEvent(new Event("change", { bubbles: true }));
+  } catch (_) {}
+}
+
+function errorBolEditToInputDate_(value) {
+  const s = errorBolEditNorm_(value);
+  if (!s || s === "-") return "";
+
+  let m = s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (m) return `${m[1]}-${m[2]}-${m[3]}`;
+
+  m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (m) {
+    const dd = String(m[1]).padStart(2, "0");
+    const mm = String(m[2]).padStart(2, "0");
+    let yyyy = Number(m[3]);
+
+    if (yyyy > 2400) yyyy -= 543;
+
+    return `${yyyy}-${mm}-${dd}`;
+  }
+
+  const d = new Date(s);
+  if (!isNaN(d.getTime())) {
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, "0");
+    const dd = String(d.getDate()).padStart(2, "0");
+    return `${yyyy}-${mm}-${dd}`;
+  }
+
+  return "";
+}
+
+function errorBolEditSplitRef_(refNo) {
+  const s = errorBolEditNorm_(refNo);
+  const m = s.match(/^(.+?)-(\d{4})(?:-R\d+|\/R\d+| Rev\.\d+)?$/i);
+  if (!m) return { running: "", year: "" };
+
+  const running = String(m[1] || "").replace(/[^\d]/g, "");
+  const year = String(m[2] || "").trim();
+
+  return { running, year };
+}
+
+function errorBolEditApplyRefToInputs_(refNo) {
+  const parts = errorBolEditSplitRef_(refNo);
+  if (!parts.running) return;
+
+  errorBolEditSetValue_("refNo", parts.running);
+
+  const yearEl = document.getElementById("refYear");
+  if (yearEl && parts.year) {
+    const hasOption = Array.from(yearEl.options || []).some((opt) => opt.value === parts.year);
+    if (!hasOption) {
+      const opt = document.createElement("option");
+      opt.value = parts.year;
+      opt.textContent = parts.year;
+      yearEl.appendChild(opt);
+    }
+    yearEl.value = parts.year;
+  }
+}
+
+function errorBolEditNormalizeLoadedResponse_(json) {
+  const root = json && typeof json === "object" ? json : {};
+  const data = root.data && typeof root.data === "object" ? root.data : root;
+
+  const payload =
+    data.payload ||
+    data.editPayload ||
+    data.record ||
+    data.rowObj ||
+    data.row ||
+    {};
+
+  const revision =
+    data.revision ||
+    data.revisionMeta ||
+    data.meta ||
+    {};
+
+  const existingImages =
+    data.existingImages ||
+    data.images ||
+    data.imageList ||
+    payload.existingImages ||
+    [];
+
+  const existingSigns =
+    data.existingSigns ||
+    data.signatures ||
+    data.signs ||
+    payload.existingSigns ||
+    {};
+
+  const pdfUrl =
+    data.pdfUrl ||
+    payload.pdfUrl ||
+    revision.pdfUrl ||
+    "";
+
+  const pdfFileId =
+    data.pdfFileId ||
+    payload.pdfFileId ||
+    revision.pdfFileId ||
+    "";
+
+  return {
+    payload,
+    existingImages: Array.isArray(existingImages) ? existingImages : [],
+    existingSigns: existingSigns && typeof existingSigns === "object" ? existingSigns : {},
+    pdfUrl,
+    pdfFileId,
+    revision
+  };
+}
+
+function errorBolEditNormalizeImage_(img, index) {
+  if (typeof img === "string") {
+    return {
+      id: img,
+      filename: `รูปภาพเดิม ${index + 1}`,
+      name: `รูปภาพเดิม ${index + 1}`,
+      url: errorBolEditDriveViewUrl_(img),
+      previewUrl: errorBolEditDriveImageUrl_(img)
+    };
+  }
+
+  const id = errorBolEditNorm_(img && (img.id || img.fileId || img.imageId));
+  const url = errorBolEditNorm_(img && (img.url || img.viewUrl)) || errorBolEditDriveViewUrl_(id);
+  const previewUrl = errorBolEditNorm_(img && (img.previewUrl || img.thumbnailUrl || img.embedUrl)) || errorBolEditDriveImageUrl_(id);
+
+  return {
+    id,
+    filename: errorBolEditNorm_(img && (img.filename || img.name || img.caption)) || `รูปภาพเดิม ${index + 1}`,
+    name: errorBolEditNorm_(img && (img.name || img.filename)) || `รูปภาพเดิม ${index + 1}`,
+    caption: errorBolEditNorm_(img && img.caption),
+    url,
+    previewUrl
+  };
+}
+
+function errorBolEditNormalizeSigns_(signs) {
+  const s = signs && typeof signs === "object" ? signs : {};
+
+  function pick(key, fallbackIdKey) {
+    const raw = s[key] || {};
+    const id = errorBolEditNorm_(
+      raw.id ||
+      raw.fileId ||
+      raw.imageId ||
+      s[fallbackIdKey] ||
+      ""
+    );
+
+    if (!id) return { id: "", url: "", previewUrl: "" };
+
+    return {
+      id,
+      url: errorBolEditNorm_(raw.url || raw.viewUrl) || errorBolEditDriveViewUrl_(id),
+      previewUrl: errorBolEditNorm_(raw.previewUrl || raw.thumbnailUrl || raw.embedUrl) || errorBolEditDriveImageUrl_(id)
+    };
+  }
+
+  return {
+    supervisor: pick("supervisor", "supervisorSignImageId"),
+    employee: pick("employee", "employeeSignImageId"),
+    interpreter: pick("interpreter", "interpreterSignImageId")
+  };
+}
+
+function errorBolEditSetCheckboxesByValues_(containerId, values) {
+  const root = document.getElementById(containerId);
   if (!root) return;
 
-  const list = Array.isArray(images) ? images : [];
+  const set = new Set(
+    (Array.isArray(values) ? values : [])
+      .map((x) => errorBolEditNorm_(typeof x === "string" ? x : (x.value || x.label || x.text)))
+      .filter(Boolean)
+  );
 
-  if (!list.length) {
-    root.innerHTML = `<div class="small">ไม่มีรูปภาพเดิม</div>`;
+  root.querySelectorAll("input[type='checkbox']").forEach((chk) => {
+    chk.checked = set.has(errorBolEditNorm_(chk.value));
+    try {
+      chk.dispatchEvent(new Event("change", { bubbles: true }));
+    } catch (_) {}
+  });
+}
+
+function errorBolEditInferConfirmCauses_(payload) {
+  const direct = payload.confirmCauseSelected;
+  if (Array.isArray(direct) && direct.length) return direct;
+
+  const text = errorBolEditNorm_(payload.confirmCauseText);
+  if (!text) return [];
+
+  return text
+    .split(/[|,\n;]+/)
+    .map((x) => errorBolEditNorm_(x))
+    .filter(Boolean)
+    .filter((x) => x !== errorBolEditNorm_(payload.confirmCauseOther));
+}
+
+function errorBolEditApplyPayloadToForm_(payload) {
+  const p = payload || {};
+  const rootRefNo = errorBolEditNorm_(p.rootRefNo || p.refNo || ERROR_BOL_EDIT_STATE.rootRefNo);
+
+  errorBolEditApplyRefToInputs_(rootRefNo);
+
+  errorBolEditSetValue_("lps", p.lps || (window.AUTH && window.AUTH.name) || "");
+  errorBolEditSetValue_("labelCid", p.labelCid);
+  errorBolEditSetValue_("item", p.item);
+  errorBolEditSetValue_("itemDisplay", p.itemDisplay || p.itemDescription);
+  errorBolEditSetValue_("errorCaseQty", p.errorCaseQty);
+  errorBolEditSetValue_("errorDate", errorBolEditToInputDate_(p.errorDate));
+
+  let errorReason = errorBolEditNorm_(p.errorReason);
+  let errorReasonOther = errorBolEditNorm_(p.errorReasonOther);
+
+  const otherMatch = errorReason.match(/^อื่นๆ\s*:\s*(.+)$/);
+  if (otherMatch) {
+    errorReason = "อื่นๆ";
+    errorReasonOther = otherMatch[1] || errorReasonOther;
+  }
+
+  errorBolEditSetValue_("errorReason", errorReason);
+  errorBolEditSetValue_("errorReasonOther", errorReasonOther);
+  errorBolEditSetValue_("errorDescription", p.errorDescription);
+
+  errorBolEditSetValue_("employeeName", p.employeeName);
+  errorBolEditSetValue_("employeeCode", p.employeeCode);
+  errorBolEditSetValue_("workAgeYear", p.workAgeYear);
+  errorBolEditSetValue_("workAgeMonth", p.workAgeMonth);
+  errorBolEditSetValue_("nationality", p.nationality);
+  errorBolEditSetValue_("shift", p.shift);
+  errorBolEditSetValue_("osm", p.osm);
+  errorBolEditSetValue_("otm", p.otm);
+  errorBolEditSetValue_("auditName", p.auditName);
+  errorBolEditSetValue_("interpreterName", p.interpreterName);
+
+  const confirmCauseSelected = errorBolEditInferConfirmCauses_(p);
+  errorBolEditSetCheckboxesByValues_("confirmCauseSelector", confirmCauseSelected);
+  errorBolEditSetValue_("confirmCauseOther", p.confirmCauseOther);
+
+  if (Array.isArray(p.emailRecipients)) {
+    const emails = new Set(p.emailRecipients.map((x) => errorBolEditNorm_(x).toLowerCase()).filter(Boolean));
+    document.querySelectorAll(".emailChk, #emailSelector input[type='checkbox']").forEach((chk) => {
+      chk.checked = emails.has(errorBolEditNorm_(chk.value).toLowerCase());
+    });
+  }
+
+  try {
+    if (typeof syncErrorReasonOtherVisibility === "function") syncErrorReasonOtherVisibility();
+    if (typeof syncConfirmCauseOtherVisibility === "function") syncConfirmCauseOtherVisibility();
+    if (typeof updateEmployeeConfirmPreview === "function") updateEmployeeConfirmPreview();
+  } catch (err) {
+    console.warn("errorBolEditApplyPayloadToForm_ refresh warning:", err);
+  }
+}
+
+// function errorBolEditBuildLoadSummaryHtml_(payload, images, signs, pdfUrl) {
+//   const p = payload || {};
+//   const signCount = ["supervisor", "employee", "interpreter"].reduce((acc, key) => {
+//     return acc + (signs && signs[key] && signs[key].id ? 1 : 0);
+//   }, 0);
+
+//   return `
+//     <div class="errorBolLoadSummary">
+//       <div class="errorBolLoadHero">
+//         <div class="errorBolLoadTitle">พบข้อมูลเอกสารเดิม</div>
+//         <div class="errorBolLoadSub">ตรวจสอบข้อมูลก่อนโหลดกลับเข้าแบบฟอร์ม</div>
+//       </div>
+
+//       <div class="errorBolLoadKvGrid">
+//         <div class="errorBolLoadKv">
+//           <div class="errorBolLoadLabel">Ref</div>
+//           <div class="errorBolLoadValue">${errorBolEditEscape_(p.refNo || "-")}</div>
+//         </div>
+
+//         <div class="errorBolLoadKv">
+//           <div class="errorBolLoadLabel">Root Ref</div>
+//           <div class="errorBolLoadValue">${errorBolEditEscape_(p.rootRefNo || p.refNo || "-")}</div>
+//         </div>
+
+//         <div class="errorBolLoadKv">
+//           <div class="errorBolLoadLabel">Revision</div>
+//           <div class="errorBolLoadValue">${errorBolEditEscape_(p.revisionLabel || ("Rev." + Number(p.revisionNo || 0)))}</div>
+//         </div>
+
+//         <div class="errorBolLoadKv">
+//           <div class="errorBolLoadLabel">พนักงาน</div>
+//           <div class="errorBolLoadValue">${errorBolEditEscape_(p.employeeName || "-")}</div>
+//         </div>
+
+//         <div class="errorBolLoadKv">
+//           <div class="errorBolLoadLabel">Item</div>
+//           <div class="errorBolLoadValue">${errorBolEditEscape_(p.itemDisplay || p.item || "-")}</div>
+//         </div>
+
+//         <div class="errorBolLoadKv">
+//           <div class="errorBolLoadLabel">รูปภาพ / ลายเซ็น</div>
+//           <div class="errorBolLoadValue">${images.length} รูป / ${signCount} ลายเซ็น</div>
+//         </div>
+
+//         <div class="errorBolLoadKv">
+//           <div class="errorBolLoadLabel">PDF เดิม</div>
+//           <div class="errorBolLoadValue">${pdfUrl ? "มีไฟล์ PDF" : "ไม่พบ PDF"}</div>
+//         </div>
+
+//         <div class="errorBolLoadKv">
+//           <div class="errorBolLoadLabel">วันที่เกิดเหตุ</div>
+//           <div class="errorBolLoadValue">${errorBolEditEscape_(p.errorDate || "-")}</div>
+//         </div>
+//       </div>
+//     </div>
+//   `;
+// }
+function errorBolEditBuildLoadSummaryHtml_(payload, images, signs, pdfUrl) {
+  const p = payload || {};
+
+  const signCount = ["supervisor", "employee", "interpreter"].reduce((acc, key) => {
+    return acc + (signs && signs[key] && signs[key].id ? 1 : 0);
+  }, 0);
+
+ const rows = [
+  ["Ref", p.refNo || "-"],
+  ["Root", p.rootRefNo || p.refNo || "-"],
+  ["Rev", p.revisionLabel || ("Rev." + Number(p.revisionNo || 0))],
+  ["ชื่อ", p.employeeName || "-"],
+  ["รหัส", p.employeeCode || "-"],
+  ["Item", p.itemDisplay || p.item || "-"],
+  ["วันที่", p.errorDate || "-"],
+  ["สาเหตุ", p.errorReason || "-"],
+  ["ไฟล์", `${images.length} รูป / ${signCount} เซ็น`],
+  ["PDF", pdfUrl ? "มีไฟล์" : "ไม่มี"]
+];
+
+  return `
+    <div class="errorBolLoadSummaryCompact">
+      <div class="errorBolLoadCompactHead">
+        <div class="errorBolLoadCompactTitle">พบข้อมูลเอกสารเดิม</div>
+        <div class="errorBolLoadCompactSub">ตรวจสอบข้อมูลก่อนโหลดกลับเข้าแบบฟอร์ม</div>
+      </div>
+
+      <div class="errorBolLoadCompactTable">
+        ${rows.map(([label, value]) => `
+          <div class="errorBolLoadCompactRow">
+            <div class="errorBolLoadCompactLabel">${errorBolEditEscape_(label)}</div>
+            <div class="errorBolLoadCompactValue">${errorBolEditEscape_(value)}</div>
+          </div>
+        `).join("")}
+      </div>
+    </div>
+  `;
+}
+function errorBolEditRenderExistingImages_() {
+  const wrap = document.getElementById("errorBolExistingImagesWrap");
+  const root = document.getElementById("errorBolExistingImages");
+  if (!wrap || !root) return;
+
+  const images = ERROR_BOL_EDIT_STATE.existingImages || [];
+
+  root.innerHTML = "";
+
+  if (!images.length) {
+    wrap.classList.add("hidden");
     return;
   }
 
-  root.innerHTML = list.map((img, i) => {
-    const url = img.previewUrl || img.thumbnailUrl || img.url || img.viewUrl || "";
-    return `
-      <div class="existingImageCard">
-        <div class="existingImageThumbWrap">
-          ${url ? `<img class="existingImageThumb" src="${escapeHtml(url)}" alt="รูปเดิม ${i + 1}">` : `<div class="existingImageEmpty">ไม่มีรูป</div>`}
-        </div>
-        <div class="existingImageMeta">
-          <div class="existingImageTitle">รูปเดิม ${i + 1}</div>
-          <div class="existingImageFile">${escapeHtml(img.filename || img.name || img.label || img.fileId || "-")}</div>
+  images.forEach((img, idx) => {
+    const id = errorBolEditNorm_(img.id);
+    const removed = ERROR_BOL_EDIT_STATE.removedImageIds.includes(id);
+    const previewUrl = img.previewUrl || errorBolEditDriveImageUrl_(id);
+    const viewUrl = img.url || errorBolEditDriveViewUrl_(id);
+
+    const card = document.createElement("div");
+    card.className = `existingImageCard${removed ? " is-removed" : ""}`;
+    card.dataset.fileId = id;
+
+    card.innerHTML = `
+      <div class="existingImageThumbWrap">
+        ${
+          previewUrl
+            ? `<img class="existingImageThumb" src="${errorBolEditEscape_(previewUrl)}" alt="รูปเดิม ${idx + 1}" loading="lazy">`
+            : `<div class="existingImageNoPreview">ไม่มีตัวอย่างรูป</div>`
+        }
+      </div>
+
+      <div class="existingImageBody">
+        <div class="existingImageTitle">${errorBolEditEscape_(img.caption || img.filename || img.name || ("รูปภาพเดิม " + (idx + 1)))}</div>
+        <div class="existingImageMeta">File ID: ${errorBolEditEscape_(id || "-")}</div>
+
+        <div class="existingImageActions">
+          ${
+            viewUrl
+              ? `<a class="existingImageViewLink" href="${errorBolEditEscape_(viewUrl)}" target="_blank" rel="noopener">เปิดดู</a>`
+              : `<span></span>`
+          }
+          <button class="existingImageRemoveBtn${removed ? " is-removed" : ""}" type="button" data-file-id="${errorBolEditEscape_(id)}">
+            ${removed ? "ใช้รูปนี้ต่อ" : "ไม่ใช้รูปนี้"}
+          </button>
         </div>
       </div>
     `;
-  }).join("");
+
+    root.appendChild(card);
+  });
+
+  root.querySelectorAll(".existingImageRemoveBtn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const fileId = errorBolEditNorm_(btn.getAttribute("data-file-id"));
+      if (!fileId) return;
+
+      const list = ERROR_BOL_EDIT_STATE.removedImageIds;
+      const found = list.indexOf(fileId);
+
+      if (found >= 0) {
+        list.splice(found, 1);
+      } else {
+        list.push(fileId);
+      }
+
+      errorBolEditRenderExistingImages_();
+    });
+  });
+
+  wrap.classList.remove("hidden");
 }
 
-function errorBolEditRenderExistingSigns_(signs) {
-  const root = $("errorBolExistingSigns");
-  if (!root) return;
+function errorBolEditRenderExistingSigns_() {
+  const wrap = document.getElementById("errorBolExistingSignsWrap");
+  const root = document.getElementById("errorBolExistingSigns");
+  if (!wrap || !root) return;
 
-  const normalized = errorBolEditNormalizeSigns_(signs || {});
+  const signs = ERROR_BOL_EDIT_STATE.existingSigns || {};
 
-  const rows = [
-    normalized.supervisor,
-    normalized.employee,
-    normalized.interpreter,
-    normalized.lps
-  ].filter(Boolean);
+  const items = [
+    { key: "supervisor", title: "ลายเซ็นหัวหน้างาน" },
+    { key: "employee", title: "ลายเซ็นพนักงาน" },
+    { key: "interpreter", title: "ลายเซ็นล่าม" }
+  ].filter((item) => signs[item.key] && signs[item.key].id);
 
-  root.innerHTML = rows.map((s) => {
-    const has = !!(s.fileId || s.id || s.imageId);
+  root.innerHTML = "";
 
-    return `
-      <div class="existingSignRow">
-        <span class="existingSignDot ${has ? "is-ready" : "is-missing"}"></span>
-        <span class="existingSignLabel">${escapeHtml(s.label || s.name || "-")}</span>
-        <span class="existingSignText">${has ? "มีไฟล์เดิม" : "ไม่มีไฟล์เดิม"}</span>
+  if (!items.length) {
+    wrap.classList.add("hidden");
+    return;
+  }
+
+  items.forEach((item) => {
+    const sign = signs[item.key] || {};
+    const id = errorBolEditNorm_(sign.id);
+    const previewUrl = sign.previewUrl || errorBolEditDriveImageUrl_(id);
+    const viewUrl = sign.url || errorBolEditDriveViewUrl_(id);
+
+    const card = document.createElement("div");
+    card.className = "existingSignCard";
+
+    card.innerHTML = `
+      <div class="existingSignHead">
+        <div class="existingSignTitle">${errorBolEditEscape_(item.title)}</div>
+      </div>
+
+      <div class="existingSignBody">
+        ${
+          previewUrl
+            ? `<img class="existingSignThumb" src="${errorBolEditEscape_(previewUrl)}" alt="${errorBolEditEscape_(item.title)}" loading="lazy">`
+            : `<div class="existingSignEmpty">ไม่มีตัวอย่างลายเซ็น</div>`
+        }
+
+        <div class="existingSignMeta">File ID: ${errorBolEditEscape_(id || "-")}</div>
+
+        <div class="existingSignActions">
+          ${
+            viewUrl
+              ? `<a class="existingSignViewLink" href="${errorBolEditEscape_(viewUrl)}" target="_blank" rel="noopener">เปิดดู</a>`
+              : ""
+          }
+        </div>
       </div>
     `;
-  }).join("");
+
+    root.appendChild(card);
+  });
+
+  wrap.classList.remove("hidden");
 }
 
-async function loadErrorBolForEdit_(refNo) {
-  const cleanRef = String(refNo || "").trim();
+function errorBolEditRenderPanel_() {
+  const st = ERROR_BOL_EDIT_STATE;
 
-  if (!cleanRef) {
+  document.body.classList.toggle("error-bol-editing", !!st.active);
+
+  errorBolEditSetHidden_("errorBolEditPanel", !st.active);
+  errorBolEditSetHidden_("btnErrorBolExitEdit", !st.active);
+
+  errorBolEditSetText_("errorBolEditRefText", st.rootRefNo || st.loadedRefNo || "-");
+  errorBolEditSetText_("errorBolEditRevisionText", st.revisionLabel || ("Rev." + Number(st.revisionNo || 0)));
+  errorBolEditSetText_("errorBolEditDocumentIdText", st.documentId || "-");
+
+  const pdfLink = document.getElementById("errorBolEditPdfLink");
+  const pdfEmpty = document.getElementById("errorBolEditPdfEmpty");
+
+  if (pdfLink && st.pdfUrl) {
+    pdfLink.href = st.pdfUrl;
+    pdfLink.classList.remove("hidden");
+    if (pdfEmpty) pdfEmpty.classList.add("hidden");
+  } else {
+    if (pdfLink) {
+      pdfLink.href = "#";
+      pdfLink.classList.add("hidden");
+    }
+    if (pdfEmpty) pdfEmpty.classList.remove("hidden");
+  }
+
+  const btnSubmit = document.getElementById("btnSubmit");
+  if (btnSubmit) {
+    if (st.active) {
+      btnSubmit.textContent = "บันทึกฉบับแก้ไขและสร้าง PDF ใหม่";
+      btnSubmit.classList.add("editTextManaged");
+    } else {
+      btnSubmit.textContent = "บันทึกและสร้าง PDF";
+      btnSubmit.classList.remove("editTextManaged");
+    }
+  }
+
+  errorBolEditRenderExistingImages_();
+  errorBolEditRenderExistingSigns_();
+}
+
+function errorBolEditClearState_() {
+  ERROR_BOL_EDIT_STATE.active = false;
+  ERROR_BOL_EDIT_STATE.loading = false;
+  ERROR_BOL_EDIT_STATE.submitting = false;
+
+  ERROR_BOL_EDIT_STATE.loadedRefNo = "";
+  ERROR_BOL_EDIT_STATE.rootRefNo = "";
+  ERROR_BOL_EDIT_STATE.currentRefNo = "";
+  ERROR_BOL_EDIT_STATE.documentId = "";
+  ERROR_BOL_EDIT_STATE.revisionNo = 0;
+  ERROR_BOL_EDIT_STATE.revisionLabel = "";
+
+  ERROR_BOL_EDIT_STATE.pdfUrl = "";
+  ERROR_BOL_EDIT_STATE.pdfFileId = "";
+
+  ERROR_BOL_EDIT_STATE.payload = {};
+  ERROR_BOL_EDIT_STATE.existingImages = [];
+  ERROR_BOL_EDIT_STATE.existingSigns = {};
+  ERROR_BOL_EDIT_STATE.removedImageIds = [];
+
+  errorBolEditRenderPanel_();
+}
+
+async function errorBolEditExitMode_() {
+  const ok = await Swal.fire({
+    icon: "question",
+    title: "ออกจากโหมดแก้ไข?",
+    text: "ข้อมูลที่โหลดไว้จะถูกยกเลิก แต่ข้อมูลที่กรอกในฟอร์มจะยังไม่ถูกล้าง",
+    showCancelButton: true,
+    confirmButtonText: "ออกจากโหมดแก้ไข",
+    cancelButtonText: "ยกเลิก"
+  });
+
+  if (!ok.isConfirmed) return;
+
+errorBolEditClearState_();
+errorBolEditClearFormFields_();
+}
+
+async function loadErrorBolForEdit() {
+  if (ERROR_BOL_EDIT_STATE.loading) return;
+
+  const refNo = typeof getRefNoValue === "function"
+    ? getRefNoValue()
+    : "";
+
+  if (!errorBolEditNorm_(refNo)) {
     await Swal.fire({
       icon: "warning",
-      title: "กรุณาระบุ Ref",
-      text: "กรุณากรอก Ref ที่ต้องการดึงกลับมาแก้ไข"
+      title: "ยังไม่ได้ระบุ Ref",
+      text: "กรุณากรอก Ref No. และปี ก่อนดึงข้อมูลเดิม",
+      confirmButtonText: "ตกลง"
     });
     return;
   }
@@ -2893,11 +3347,17 @@ async function loadErrorBolForEdit_(refNo) {
   ERROR_BOL_EDIT_STATE.loading = true;
 
   try {
-    const url = `${apiUrl("/errorbol/load")}?refNo=${encodeURIComponent(cleanRef)}`;
-    const res = await fetch(url, { method: "GET", cache: "no-store" });
-    const text = await res.text();
+    const res = await fetch(
+      `${errorBolEditApiUrl_("/errorbol/load")}?refNo=${encodeURIComponent(refNo)}`,
+      {
+        method: "GET",
+        cache: "no-store"
+      }
+    );
 
+    const text = await res.text();
     let json = {};
+
     try {
       json = JSON.parse(text);
     } catch (_) {
@@ -2905,92 +3365,219 @@ async function loadErrorBolForEdit_(refNo) {
     }
 
     if (!res.ok || !json.ok) {
-      throw new Error(json?.error || `โหลดข้อมูลไม่สำเร็จ (HTTP ${res.status})`);
+      throw new Error(json?.message || json?.error || `โหลดข้อมูลไม่สำเร็จ (HTTP ${res.status})`);
     }
 
-    const data = json.data || json.rowObj || json.payload || {};
-    const meta = json.meta || data.meta || {};
+    const normalized = errorBolEditNormalizeLoadedResponse_(json);
+    const payload = normalized.payload || {};
 
-    ERROR_BOL_EDIT_STATE.loadedRow = data;
-    ERROR_BOL_EDIT_STATE.rootRefNo = String(meta.rootRefNo || data.rootRefNo || data.refNo || cleanRef).trim();
-    ERROR_BOL_EDIT_STATE.currentRefNo = String(meta.refNo || data.refNo || cleanRef).trim();
-    ERROR_BOL_EDIT_STATE.previousRefNo = String(meta.previousRefNo || data.refNo || cleanRef).trim();
-    ERROR_BOL_EDIT_STATE.documentId = String(meta.documentId || data.documentId || "").trim();
-    ERROR_BOL_EDIT_STATE.revisionNo = Number(meta.revisionNo || data.revisionNo || 0) || 0;
-    ERROR_BOL_EDIT_STATE.revisionLabel = String(meta.revisionLabel || data.revisionLabel || "").trim();
+    const images = normalized.existingImages.map(errorBolEditNormalizeImage_).filter((x) => x.id);
+    const signs = errorBolEditNormalizeSigns_(normalized.existingSigns);
 
-    ERROR_BOL_EDIT_STATE.existingImages = Array.isArray(json.images)
-      ? json.images.map(errorBolEditNormalizeImage_)
-      : Array.isArray(data.images)
-        ? data.images.map(errorBolEditNormalizeImage_)
-        : [];
+    const rootRefNo = errorBolEditNorm_(
+      payload.rootRefNo ||
+      normalized.revision.rootRefNo ||
+      payload.refNo ||
+      refNo
+    );
 
-    ERROR_BOL_EDIT_STATE.existingSigns = errorBolEditNormalizeSigns_(json.existingSigns || data.existingSigns || {});
+    const loadedRefNo = errorBolEditNorm_(
+      payload.refNo ||
+      normalized.revision.refNo ||
+      refNo
+    );
 
-    errorBolEditApplyPayloadToForm_(data);
-    errorBolEditRenderExistingImages_(ERROR_BOL_EDIT_STATE.existingImages);
-    errorBolEditRenderExistingSigns_(ERROR_BOL_EDIT_STATE.existingSigns);
-    errorBolEditSetMode_(true, { refNo: ERROR_BOL_EDIT_STATE.currentRefNo });
+    const revisionNo = Number(
+      payload.revisionNo ||
+      normalized.revision.revisionNo ||
+      0
+    );
+
+    const revisionLabel = errorBolEditNorm_(
+      payload.revisionLabel ||
+      normalized.revision.revisionLabel ||
+      ("Rev." + revisionNo)
+    );
+
+    const summaryHtml = errorBolEditBuildLoadSummaryHtml_(payload, images, signs, normalized.pdfUrl);
+
+   const confirm = await Swal.fire({
+  icon: "info",
+  title: "พบข้อมูลเดิม",
+  html: summaryHtml,
+  width: 680,
+  showCancelButton: true,
+  confirmButtonText: "โหลดเข้าแบบฟอร์มเพื่อแก้ไข",
+  cancelButtonText: "ยกเลิก"
+});
+
+    if (!confirm.isConfirmed) return;
+
+    ERROR_BOL_EDIT_STATE.active = true;
+    ERROR_BOL_EDIT_STATE.loadedRefNo = loadedRefNo;
+    ERROR_BOL_EDIT_STATE.currentRefNo = loadedRefNo;
+    ERROR_BOL_EDIT_STATE.rootRefNo = rootRefNo;
+    ERROR_BOL_EDIT_STATE.documentId = errorBolEditNorm_(payload.documentId || normalized.revision.documentId);
+    ERROR_BOL_EDIT_STATE.revisionNo = revisionNo;
+    ERROR_BOL_EDIT_STATE.revisionLabel = revisionLabel;
+
+    ERROR_BOL_EDIT_STATE.pdfUrl = normalized.pdfUrl || "";
+    ERROR_BOL_EDIT_STATE.pdfFileId = normalized.pdfFileId || "";
+
+    ERROR_BOL_EDIT_STATE.payload = payload;
+    ERROR_BOL_EDIT_STATE.existingImages = images;
+    ERROR_BOL_EDIT_STATE.existingSigns = signs;
+    ERROR_BOL_EDIT_STATE.removedImageIds = [];
+
+    errorBolEditApplyPayloadToForm_(payload);
+    errorBolEditRenderPanel_();
 
     await Swal.fire({
       icon: "success",
-      title: "ดึงข้อมูลสำเร็จ",
-      text: `โหลดข้อมูล Ref ${ERROR_BOL_EDIT_STATE.currentRefNo} เพื่อแก้ไขแล้ว`
+      title: "โหลดข้อมูลเข้าแบบฟอร์มแล้ว",
+      text: "สามารถตรวจสอบ/แก้ไขข้อมูล แล้วกดบันทึกฉบับแก้ไขได้",
+      confirmButtonText: "ตกลง"
     });
 
   } catch (err) {
-    console.error("loadErrorBolForEdit_ failed:", err);
+    console.error("loadErrorBolForEdit failed:", err);
 
     await Swal.fire({
       icon: "error",
-      title: "ดึงข้อมูลไม่สำเร็จ",
-      text: err?.message || String(err)
+      title: "โหลดข้อมูลไม่สำเร็จ",
+      text: err?.message || String(err),
+      confirmButtonText: "ตกลง"
     });
-
   } finally {
     ERROR_BOL_EDIT_STATE.loading = false;
   }
 }
-function errorBolEditBuildRevisionPayload_() {
-  const p = collectPayload();
 
-  p.rootRefNo = ERROR_BOL_EDIT_STATE.rootRefNo || p.refNo;
-  p.previousRefNo = ERROR_BOL_EDIT_STATE.currentRefNo || ERROR_BOL_EDIT_STATE.previousRefNo || "";
-  p.documentId = ERROR_BOL_EDIT_STATE.documentId || "";
-  p.revisionNo = ERROR_BOL_EDIT_STATE.revisionNo || 0;
-  p.revisionLabel = ERROR_BOL_EDIT_STATE.revisionLabel || "";
-  p.editedBy = AUTH.name || "";
+async function errorBolEditChooseSignatureMode_(payload) {
+  const signs = ERROR_BOL_EDIT_STATE.existingSigns || {};
+  const hasExistingSign = !!(
+    signs.supervisor?.id ||
+    signs.employee?.id ||
+    signs.interpreter?.id
+  );
 
-  p.existingImages = ERROR_BOL_EDIT_STATE.existingImages || [];
-  p.existingSigns = ERROR_BOL_EDIT_STATE.existingSigns || {};
-  p.currentLpsSignImageId = AUTH.signImageId || "";
+  if (!hasExistingSign) {
+    return await openSignatureFlow(payload.otm, payload.employeeName, payload.interpreterName);
+  }
+
+  const ask = await Swal.fire({
+    icon: "question",
+    title: "ลายเซ็นสำหรับฉบับแก้ไข",
+    html: `
+      <div style="text-align:left;line-height:1.7">
+        <div>พบลายเซ็นเดิมในเอกสารนี้</div>
+        <div style="color:#64748b;font-size:13px;margin-top:6px">
+          หากเลือกใช้ลายเซ็นเดิม ระบบจะนำลายเซ็นเดิมไปใช้ใน PDF ฉบับแก้ไข
+          หากต้องการเปลี่ยนลายเซ็น ให้เลือกเซ็นใหม่
+        </div>
+      </div>
+    `,
+    showDenyButton: true,
+    showCancelButton: true,
+    confirmButtonText: "ใช้ลายเซ็นเดิม",
+    denyButtonText: "เซ็นใหม่",
+    cancelButtonText: "ยกเลิก"
+  });
+
+  if (ask.isConfirmed) {
+    return {
+      ok: true,
+      supervisorBase64: "",
+      employeeBase64: "",
+      interpreterBase64: ""
+    };
+  }
+
+  if (ask.isDenied) {
+    return await openSignatureFlow(payload.otm, payload.employeeName, payload.interpreterName);
+  }
+
+  return { ok: false };
+}
+
+function errorBolEditBuildRevisionPayload_(basePayload) {
+  const st = ERROR_BOL_EDIT_STATE;
+  const p = {
+    ...basePayload,
+
+    rootRefNo: st.rootRefNo || basePayload.rootRefNo || basePayload.refNo,
+    editedFromRefNo: st.currentRefNo || st.loadedRefNo || basePayload.refNo,
+    editedBy: (window.AUTH && window.AUTH.name) || basePayload.lps || "",
+
+    documentId: st.documentId || "",
+    previousPdfFileId: st.pdfFileId || "",
+    previousPdfUrl: st.pdfUrl || "",
+
+    existingImages: (st.existingImages || []).map((img) => ({
+      id: img.id,
+      filename: img.filename || img.name || "",
+      name: img.name || img.filename || "",
+      caption: img.caption || "",
+      url: img.url || "",
+      previewUrl: img.previewUrl || ""
+    })),
+
+    removedImageIds: Array.from(new Set(st.removedImageIds || [])),
+
+    existingSigns: {
+      supervisor: st.existingSigns?.supervisor || {},
+      employee: st.existingSigns?.employee || {},
+      interpreter: st.existingSigns?.interpreter || {}
+    }
+  };
 
   return p;
 }
 
 async function submitErrorBolRevision() {
+  if (ERROR_BOL_EDIT_STATE.submitting) return;
+
   if (!ERROR_BOL_EDIT_STATE.active) {
     return submitForm();
   }
 
-  const p = errorBolEditBuildRevisionPayload_();
-  const err = validatePayload(p);
+  const pBase = collectPayload();
+  const err = validatePayload(pBase);
 
   if (err) {
-    await Swal.fire({
+    return Swal.fire({
       icon: "warning",
       title: "ข้อมูลไม่ครบ",
       text: err,
       confirmButtonText: "ตกลง"
     });
-    return;
   }
 
-  const lpsSignReady = await ensureLpsSignatureReadyBeforeSubmit_();
-  if (!lpsSignReady) return;
+  const p = errorBolEditBuildRevisionPayload_(pBase);
+
+  const ok = await Swal.fire({
+    icon: "question",
+    title: "ยืนยันบันทึกฉบับแก้ไข",
+    html: `
+      <div style="text-align:left;line-height:1.7">
+        <div><b>Ref หลัก:</b> ${errorBolEditEscape_(p.rootRefNo || "-")}</div>
+        <div><b>แก้ไขจาก:</b> ${errorBolEditEscape_(p.editedFromRefNo || "-")}</div>
+        <div><b>รูปเดิมที่ใช้ต่อ:</b> ${Math.max(0, (p.existingImages || []).length - (p.removedImageIds || []).length)} รูป</div>
+        <div><b>รูปเดิมที่ไม่ใช้:</b> ${(p.removedImageIds || []).length} รูป</div>
+        <div style="color:#64748b;font-size:13px;margin-top:8px">
+          ระบบจะสร้างข้อมูลฉบับแก้ไขและสร้าง PDF ใหม่ โดยไม่ลบข้อมูลเดิม
+        </div>
+      </div>
+    `,
+    width: 720,
+    showCancelButton: true,
+    confirmButtonText: "ยืนยันบันทึกฉบับแก้ไข",
+    cancelButtonText: "ยกเลิก"
+  });
+
+  if (!ok.isConfirmed) return;
 
   let files = [];
-
   try {
     files = await collectFilesAsBase64({ maxFiles: 6, maxMBEach: 4 });
   } catch (fileErr) {
@@ -2998,13 +3585,11 @@ async function submitErrorBolRevision() {
     return;
   }
 
-  const signRes = await openSignatureFlow(p.otm, p.employeeName, p.interpreterName);
-  if (!signRes.ok) {
-    return;
-  }
+  const signRes = await errorBolEditChooseSignatureMode_(p);
+  if (!signRes.ok) return;
 
   const body = {
-    pass: AUTH.pass,
+    pass: (window.AUTH && window.AUTH.pass) || "",
     payload: p,
     files,
     signatures: {
@@ -3014,22 +3599,25 @@ async function submitErrorBolRevision() {
     }
   };
 
+  ERROR_BOL_EDIT_STATE.submitting = true;
+
   ProgressUI.show(
-    "กำลังบันทึกฉบับแก้ไข",
-    "ระบบกำลังสร้าง Revision ใหม่และจัดทำ PDF ฉบับล่าสุด"
+    "กำลังบันทึกฉบับแก้ไข Error_BOL",
+    "ระบบกำลังบันทึกข้อมูล สร้าง PDF ใหม่ และอัปเดต QR Code"
   );
 
   try {
     ProgressUI.activateOnly("validate", 10, "กำลังตรวจสอบข้อมูลฉบับแก้ไข");
-    await safeDelay(160);
-    ProgressUI.markDone("validate", 22, "ข้อมูลพร้อมบันทึก");
+    await safeDelay(140);
+    ProgressUI.markDone("validate", 18, "ข้อมูลพร้อมบันทึก");
 
-    ProgressUI.activateOnly("upload", 36, "กำลังเตรียมรูปภาพและลายเซ็น");
+    ProgressUI.activateOnly("upload", 30, "กำลังเตรียมรูปภาพและลายเซ็น");
     await safeDelay(180);
-    ProgressUI.markDone("upload", 48, `เตรียมไฟล์เรียบร้อย (${files.length} รูป + ลายเซ็น)`);
+    ProgressUI.markDone("upload", 42, `เตรียมไฟล์เรียบร้อย (${files.length} รูปใหม่)`);
 
-    ProgressUI.activateOnly("save", 62, "กำลังบันทึก Revision");
-    const res = await fetch(apiUrl("/errorbol/revise"), {
+    ProgressUI.activateOnly("save", 56, "กำลังบันทึกฉบับแก้ไข");
+
+    const res = await fetch(errorBolEditApiUrl_("/errorbol/revise"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body)
@@ -3045,78 +3633,87 @@ async function submitErrorBolRevision() {
     }
 
     if (!res.ok || !json.ok) {
-      throw new Error(json?.error || `บันทึกฉบับแก้ไขไม่สำเร็จ (HTTP ${res.status})`);
+      throw new Error(json?.error || json?.message || `บันทึกฉบับแก้ไขไม่สำเร็จ (HTTP ${res.status})`);
     }
 
-    ProgressUI.markDone("save", 76, "บันทึก Revision สำเร็จ");
+    ProgressUI.markDone("save", 72, "บันทึกฉบับแก้ไขเรียบร้อย");
 
-    ProgressUI.activateOnly("pdf", 90, "กำลังตรวจสอบไฟล์ PDF");
-    await safeDelay(160);
+    ProgressUI.activateOnly("pdf", 84, "กำลังสร้าง PDF ใหม่");
+    await safeDelay(180);
 
     const pdfOk = !!(json.pdfFileId || json.pdfUrl);
     if (pdfOk) {
       const sizeText = json.pdfSizeText ? ` (${json.pdfSizeText})` : "";
-      ProgressUI.markDone("pdf", 96, `สร้าง PDF ฉบับแก้ไขเรียบร้อย${sizeText}`);
+      ProgressUI.markDone("pdf", 94, `สร้าง PDF ใหม่เรียบร้อย${sizeText}`);
     } else {
-      ProgressUI.markError("pdf", "ไม่พบข้อมูลไฟล์ PDF", 96);
+      ProgressUI.markError("pdf", "ไม่พบข้อมูล PDF ใหม่", 94);
     }
 
-    ProgressUI.activateOnly("email", 98, "กำลังตรวจสอบผลอีเมล");
-    await safeDelay(120);
+    ProgressUI.activateOnly("email", 97, "กำลังสรุปสถานะอีเมล");
+    await safeDelay(140);
 
-    const emailInfo = buildEmailStatusSummary_(json);
+    const emailSummary = typeof buildEmailStatusSummary_ === "function"
+      ? buildEmailStatusSummary_(json)
+      : { emailSkipped: true, emailOk: false, emailStatus: "" };
 
-    if (emailInfo.emailSkipped) {
-      ProgressUI.markDone("email", 100, "ไม่มีการส่งอีเมล", "ข้าม");
-    } else if (emailInfo.emailOk) {
-      ProgressUI.markDone("email", 100, emailInfo.emailModeText, "เสร็จแล้ว");
+    if (emailSummary.emailSkipped) {
+      ProgressUI.markDone("email", 100, "ไม่ได้ส่งอีเมล", "ข้าม");
+    } else if (emailSummary.emailOk) {
+      ProgressUI.markDone("email", 100, emailSummary.emailModeText || "ส่งอีเมลเรียบร้อย");
     } else {
-      ProgressUI.markError("email", "ส่งอีเมลไม่สำเร็จ", 100);
+      ProgressUI.markError("email", emailSummary.emailStatus || "ส่งอีเมลไม่สำเร็จบางส่วน", 100);
     }
 
-    ProgressUI.success("บันทึกฉบับแก้ไขสำเร็จ", "ระบบสร้าง Revision และ PDF ใหม่เรียบร้อยแล้ว");
+    ProgressUI.success(
+      "บันทึกฉบับแก้ไขสำเร็จ",
+      "ระบบสร้าง PDF ใหม่และอัปเดตข้อมูลล่าสุดเรียบร้อยแล้ว"
+    );
 
-    await safeDelay(450);
+    await safeDelay(350);
+    ProgressUI.hide(350);
+
+    const pdfUrl = json.pdfUrl || json.pdfAccessUrl || "";
+    const refDisplay = json.refNo || json.rootRefNo || p.rootRefNo || p.refNo || "-";
 
     await Swal.fire({
       icon: "success",
       title: "บันทึกฉบับแก้ไขสำเร็จ",
       html: `
-        <div class="swalSummary">
-          <div class="swalHero success">
-            <div class="swalHeroTitle">สร้าง Revision สำเร็จ</div>
-            <div class="swalHeroSub">ระบบบันทึกข้อมูลเป็นฉบับแก้ไขล่าสุดแล้ว</div>
-            <div class="swalPillRow">
-              <div class="swalPill primary">Ref ใหม่: ${escapeHtml(json.refNo || "-")}</div>
-              <div class="swalPill">Root: ${escapeHtml(json.rootRefNo || "-")}</div>
-              <div class="swalPill">${escapeHtml(json.revisionLabel || "-")}</div>
+        <div class="swalSummary" style="text-align:left">
+          <div class="swalSection">
+            <div class="swalSectionTitle">ข้อมูลเอกสาร</div>
+            <div class="swalKvGrid">
+              <div class="swalKv"><div class="swalKvLabel">Ref ใหม่</div><div class="swalKvValue">${errorBolEditEscape_(refDisplay)}</div></div>
+              <div class="swalKv"><div class="swalKvLabel">Root Ref</div><div class="swalKvValue">${errorBolEditEscape_(json.rootRefNo || p.rootRefNo || "-")}</div></div>
+              <div class="swalKv"><div class="swalKvLabel">Revision</div><div class="swalKvValue">${errorBolEditEscape_(json.revisionLabel || "-")}</div></div>
+              <div class="swalKv"><div class="swalKvLabel">PDF</div><div class="swalKvValue">${pdfUrl ? "สร้างแล้ว" : "ไม่พบลิงก์ PDF"}</div></div>
             </div>
           </div>
-          <div class="swalSection">
-            <div class="swalSectionTitle">ไฟล์ PDF</div>
-            ${
-              json.pdfUrl
-                ? `<a href="${escapeHtml(json.pdfUrl)}" target="_blank" rel="noopener noreferrer" class="swalLinkBtn">เปิด PDF</a>`
-                : `<div class="swalNote">ไม่มีลิงก์ PDF</div>`
-            }
-          </div>
+
+          ${
+            pdfUrl
+              ? `<div style="margin-top:14px;text-align:center">
+                  <a href="${errorBolEditEscape_(pdfUrl)}" target="_blank" rel="noopener" class="btn primary" style="text-decoration:none;display:inline-flex">เปิด PDF ใหม่</a>
+                </div>`
+              : ""
+          }
         </div>
       `,
-      width: 820,
+      width: 920,
       confirmButtonText: "ตกลง"
     });
 
-    ProgressUI.hide(150);
+ errorBolEditClearState_();
 
-    errorBolEditResetState_();
-    errorBolEditSetMode_(false);
-    resetFormAfterSubmit_();
+setTimeout(() => {
+  errorBolEditClearFormFields_();
+}, 80);
 
   } catch (err) {
     console.error("submitErrorBolRevision failed:", err);
 
-    ProgressUI.markError("save", err?.message || String(err), 70);
-    ProgressUI.hide(250);
+    ProgressUI.markError("save", err?.message || "บันทึกฉบับแก้ไขไม่สำเร็จ", 72);
+    ProgressUI.hide(350);
 
     await Swal.fire({
       icon: "error",
@@ -3124,163 +3721,49 @@ async function submitErrorBolRevision() {
       text: err?.message || String(err),
       confirmButtonText: "ตกลง"
     });
+  } finally {
+    ERROR_BOL_EDIT_STATE.submitting = false;
   }
 }
 
-function bindErrorBolEditEvents_() {
-  $("btnErrorBolLoadRef")?.addEventListener("click", async () => {
-    const refNo = getRefNoValue();
+function bindErrorBolEditModeEvents_() {
+  const loadBtn = document.getElementById("btnErrorBolLoadRef");
+  const exitBtn = document.getElementById("btnErrorBolExitEdit");
+  const submitBtn = document.getElementById("btnSubmit");
 
-    await loadErrorBolForEdit_(refNo);
-  });
+  if (loadBtn && !loadBtn.__errorBolEditBound) {
+    loadBtn.__errorBolEditBound = true;
+    loadBtn.addEventListener("click", loadErrorBolForEdit);
+  }
 
-  $("btnErrorBolCancelEdit")?.addEventListener("click", async () => {
-    const confirm = await Swal.fire({
-      icon: "question",
-      title: "ยกเลิกโหมดแก้ไข?",
-      text: "ระบบจะออกจากโหมดแก้ไขและล้างข้อมูลในฟอร์ม",
-      showCancelButton: true,
-      confirmButtonText: "ยืนยัน",
-      cancelButtonText: "กลับไปแก้ไขต่อ"
-    });
+  if (exitBtn && !exitBtn.__errorBolEditBound) {
+    exitBtn.__errorBolEditBound = true;
+    exitBtn.addEventListener("click", errorBolEditExitMode_);
+  }
 
-    if (!confirm.isConfirmed) return;
+  /**
+   * ใช้ capture phase เพื่อดักก่อน listener เดิมของ btnSubmit
+   * ถ้าไม่ได้อยู่ edit mode จะปล่อยให้ submitForm เดิมทำงานตามปกติ
+   */
+  if (submitBtn && !submitBtn.__errorBolEditCaptureBound) {
+    submitBtn.__errorBolEditCaptureBound = true;
 
-    errorBolEditResetState_();
-    errorBolEditSetMode_(false);
-    resetFormAfterSubmit_();
-  });
+    submitBtn.addEventListener("click", (event) => {
+      if (!ERROR_BOL_EDIT_STATE.active) return;
 
-  $("btnSubmit")?.addEventListener("click", async (ev) => {
-    if (!ERROR_BOL_EDIT_STATE.active) return;
+      event.preventDefault();
+      event.stopImmediatePropagation();
 
-    ev.preventDefault();
-    ev.stopImmediatePropagation();
+      submitErrorBolRevision();
+    }, true);
+  }
 
-    await submitErrorBolRevision();
-  }, true);
+  errorBolEditRenderPanel_();
 }
 
-bindErrorBolEditEvents_();
+bindErrorBolEditModeEvents_();
 
-/** ==========================
- *  Reset form
- *  ========================== */
-function resetFormAfterSubmit_() {
-  const keepLoginName = AUTH.name || "";
-
-  [
-    "labelCid",
-    "errorReason",
-    "errorReasonOther",
-    "errorDescription",
-    "errorDate",
-    "item",
-    "itemDisplay",
-    "errorCaseQty",
-    "employeeName",
-    "employeeCode",
-    "workAgeYear",
-    "workAgeMonth",
-    "nationality",
-    "shift",
-    "osm",
-    "otm",
-    "interpreterName",
-    "auditName",
-    "confirmCauseOther",
-    "employeeConfirmText"
-  ].forEach((id) => {
-    const el = $(id);
-    if (el) el.value = "";
-  });
-
-  $("lps") && ($("lps").value = keepLoginName);
-
-  const refNo = $("refNo");
-  if (refNo) refNo.value = "";
-
-  buildYearOptionsForSelect($("refYear"));
-
-  document.querySelectorAll(".emailChk").forEach((chk) => {
-    chk.checked = false;
-  });
-
-  document.querySelectorAll(".confirmCauseChk").forEach((chk) => {
-    chk.checked = false;
-  });
-
-  syncErrorReasonOtherVisibility();
-  syncConfirmCauseOtherVisibility();
-
-  ITEM_LOOKUP_STATE = {
-    item: "",
-    description: "",
-    displayText: "",
-    found: false,
-    loading: false
-  };
-  renderItemLookupState(ITEM_LOOKUP_STATE);
-
-  buildInitialUploadFields();
-  resetRefDuplicateUi_("error_bol");
-  renderLpsSignatureStatus_();
-}
-/** ==========================
- *  Public bindings / compatibility
- *  ========================== */
-window.getRefNoValue = getRefNoValue;
-window.getRptRefNoValue = getRptRefNoValue;
-window.checkRefDuplicate_ = checkRefDuplicate_;
-window.showDuplicateRefAlert_ = showDuplicateRefAlert_;
-window.resetRefDuplicateUi_ = resetRefDuplicateUi_;
-
-window.renderLpsSignatureStatus_ = renderLpsSignatureStatus_;
-window.ensureLpsSignatureReadyBeforeSubmit_ = ensureLpsSignatureReadyBeforeSubmit_;
-
-window.errorBolEditNormalizeSigns_ = errorBolEditNormalizeSigns_;
-window.errorBolEditBuildRevisionPayload_ = errorBolEditBuildRevisionPayload_;
+window.loadErrorBolForEdit = loadErrorBolForEdit;
 window.submitErrorBolRevision = submitErrorBolRevision;
+window.errorBolEditExitMode_ = errorBolEditExitMode_;
 
-/**
- * ==========================
- *  Safety check after DOM loaded
- *  ==========================
- *  กรณี script ถูกโหลดหลัง HTML แล้ว แต่บาง element ยังไม่มี
- *  จะไม่ทำให้ระบบล้ม เพราะทุกจุดใช้ optional check อยู่แล้ว
- */
-document.addEventListener("DOMContentLoaded", () => {
-  applyStaticLogos();
-
-  if (AUTH && AUTH.name) {
-    setLpsFromLogin(AUTH.name);
-    renderLpsSignatureStatus_();
-  }
-});
-
-/**
- * ==========================
- *  Debug helpers
- *  ==========================
- *  ใช้ตรวจสอบผ่าน console ได้ เช่น
- *  window.__APP_DEBUG__.auth
- * ==========================
- */
-window.__APP_DEBUG__ = {
-  get auth() {
-    return AUTH;
-  },
-  get options() {
-    return OPTIONS;
-  },
-  get itemLookupState() {
-    return ITEM_LOOKUP_STATE;
-  },
-  get errorBolEditState() {
-    return ERROR_BOL_EDIT_STATE;
-  },
-  refreshLpsSignatureStatus: renderLpsSignatureStatus_,
-  resetErrorBolEditState: errorBolEditResetState_,
-  setErrorTab: () => setActiveTab("error"),
-  setReportTab: () => setActiveTab("u500")
-};
