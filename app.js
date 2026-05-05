@@ -1278,12 +1278,20 @@ function setLpsFromLogin(lpsName) {
  *  ========================== */
 
 function setLpsSignatureStatus_(state, text) {
+  const panel = $("lpsSignStatusPanel");
   const dot = $("lpsSignDot");
   const textEl = $("lpsSignStatusText");
 
+  const safeState = state || "checking";
+
+  if (panel) {
+    panel.classList.remove("lps-ready", "lps-missing", "lps-error", "lps-checking");
+    panel.classList.add(`lps-${safeState}`);
+  }
+
   if (dot) {
     dot.classList.remove("checking", "ready", "missing", "error");
-    dot.classList.add(state || "checking");
+    dot.classList.add(safeState);
   }
 
   if (textEl) {
