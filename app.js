@@ -474,7 +474,7 @@ function renderLpsSignatureStatus_() {
     if (!loggedIn) {
       el.text.textContent = "ยังไม่ได้เข้าสู่ระบบ";
     } else if (has) {
-      el.text.textContent = "มีลายเซ็น LPS พร้อมใช้งาน";
+      el.text.textContent = "มีลายเซ็น LPSแล้ว";
     } else {
       el.text.textContent = "ยังไม่ได้ตั้งค่าลายเซ็น LPS";
     }
