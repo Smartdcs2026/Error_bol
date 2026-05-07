@@ -611,7 +611,7 @@ async function deleteMyLpsSignatureFlow_() {
     title: "ยืนยันลบลายเซ็น LPS?",
     html: `
       <div style="text-align:left;line-height:1.7">
-        <div>ระบบจะล้างสถานะลายเซ็นของผู้ใช้งานนี้ออกจากชีท <b>list_Name</b></div>
+        <div>ระบบจะล้างสถานะลายเซ็นของผู้ใช้งานนี้ออก</b></div>
         <div style="color:#64748b;font-size:13px;margin-top:6px">
           ไฟล์ลายเซ็นจริงใน Google Drive จะไม่ถูกลบ
         </div>
