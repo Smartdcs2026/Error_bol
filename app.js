@@ -911,24 +911,261 @@ function clearRefDuplicateDisplayOnly_(formType) {
 
   setRefFieldInvalidState_(formType, false);
 }
-function buildDuplicateDetailHtml_(result) {
-  const matched = result?.matched || {};
-  const sourceSystem = String(matched?.sourceSystem || result?.system || "").trim().toUpperCase();
 
-  const systemLabel = sourceSystem === "REPORT500" ? "Report500" : "Error_BOL";
-  const titleText = sourceSystem === "REPORT500"
+
+function getDuplicateSystemLabel_(value) {
+  const s = String(value || "").trim().toUpperCase();
+
+  if (
+    s === "REPORT500" ||
+    s === "REPORT_500" ||
+    s === "REPORT" ||
+    s === "R500"
+  ) {
+    return "Report";
+  }
+
+  if (
+    s === "ERROR_BOL" ||
+    s === "ERRORBOL" ||
+    s === "ERROR"
+  ) {
+    return "Error_BOL";
+  }
+
+  return s || "-";
+}
+
+function buildRefDuplicateInlineHtml_(result) {
+  result = result || {};
+
+  const matched = result.matched || result.detail || {};
+  const sourceSystem = String(
+    matched.sourceSystem ||
+    result.sourceSystem ||
+    result.system ||
+    ""
+  ).trim();
+
+  const systemLabel = getDuplicateSystemLabel_(sourceSystem);
+
+  const inputRefNo = String(
+    result.inputRefNo ||
+    result.refNo ||
+    ""
+  ).trim();
+
+  const standardRef = String(
+    result.rootRefComparable ||
+    result.displayRootRef ||
+    result.normalizedRefNo ||
+    result.rootRefNo ||
+    inputRefNo ||
+    ""
+  ).trim();
+
+  const oldRefNo = String(
+    matched.refNo ||
+    matched.previousRefNo ||
+    matched.currentRefNo ||
+    ""
+  ).trim();
+
+  const revisionLabel = String(
+    matched.revisionLabel ||
+    matched.revisionNo ||
+    ""
+  ).trim();
+
+  const lines = [];
+
+  lines.push({
+    cls: "refDupLine refDupMain",
+    text: "เลขอ้างอิงซ้ำ"
+  });
+
+  if (inputRefNo) {
+    lines.push({
+      cls: "refDupLine refDupMain",
+      text: `Ref ที่กรอก: ${inputRefNo}`
+    });
+  }
+
+  if (standardRef) {
+    lines.push({
+      cls: "refDupLine refDupMain",
+      text: `Ref มาตรฐาน: ${standardRef}`
+    });
+  }
+
+  if (systemLabel && systemLabel !== "-") {
+    lines.push({
+      cls: "refDupLine refDupMeta refDupBlock",
+      text: `ซ้ำกับเอกสาร ${systemLabel} เดิม:`
+    });
+  }
+
+  if (oldRefNo) {
+    lines.push({
+      cls: "refDupLine refDupMeta",
+      text: `Ref เดิม: ${oldRefNo}`
+    });
+  }
+
+  if (revisionLabel) {
+    lines.push({
+      cls: "refDupLine refDupMeta",
+      text: `Revision: ${revisionLabel}`
+    });
+  }
+
+  if (systemLabel === "Report") {
+    if (matched.subject) {
+      lines.push({
+        cls: "refDupLine refDupMeta",
+        text: `เรื่อง: ${matched.subject}`
+      });
+    }
+
+    if (matched.reportedBy) {
+      lines.push({
+        cls: "refDupLine refDupMeta",
+        text: `ผู้รายงาน: ${matched.reportedBy}`
+      });
+    }
+
+    if (matched.incidentDate) {
+      lines.push({
+        cls: "refDupLine refDupMeta",
+        text: `วันที่เกิดเหตุ: ${matched.incidentDate}`
+      });
+    }
+
+    if (matched.whereDidItHappen) {
+      lines.push({
+        cls: "refDupLine refDupMeta",
+        text: `สถานที่: ${matched.whereDidItHappen}`
+      });
+    }
+  } else {
+    if (matched.employeeName) {
+      lines.push({
+        cls: "refDupLine refDupMeta",
+        text: `พนักงาน: ${matched.employeeName}`
+      });
+    }
+
+    if (matched.employeeCode) {
+      lines.push({
+        cls: "refDupLine refDupMeta",
+        text: `รหัส: ${matched.employeeCode}`
+      });
+    }
+
+    if (matched.errorReason) {
+      lines.push({
+        cls: "refDupLine refDupMeta",
+        text: `สาเหตุ: ${matched.errorReason}`
+      });
+    }
+
+    if (matched.itemDisplay) {
+      lines.push({
+        cls: "refDupLine refDupMeta",
+        text: `รายการ: ${matched.itemDisplay}`
+      });
+    }
+
+    if (matched.errorDate) {
+      lines.push({
+        cls: "refDupLine refDupMeta",
+        text: `วันที่เกิดเหตุ: ${matched.errorDate}`
+      });
+    }
+  }
+
+  if (!lines.length && result.message) {
+    return String(result.message || "")
+      .split(/\n+/)
+      .map((line, idx) => {
+        const cls = idx < 2 ? "refDupLine refDupMain" : "refDupLine refDupMeta";
+        return `<span class="${cls}">${escapeHtml(line)}</span>`;
+      })
+      .join("");
+  }
+
+  return lines
+    .filter(x => String(x.text || "").trim())
+    .map(x => `<span class="${x.cls}">${escapeHtml(x.text)}</span>`)
+    .join("");
+}
+
+function setRefDuplicateResult_(formType, result) {
+  const el = formType === "report500"
+    ? getReportRefHintEl_()
+    : getErrorBolRefHintEl_();
+
+  const wrap = formType === "report500"
+    ? getReportRefWrapEl_()
+    : getErrorBolRefWrapEl_();
+
+  if (!el || !wrap) return;
+
+  const html = buildRefDuplicateInlineHtml_(result);
+
+  if (!html) {
+    el.innerHTML = "";
+    wrap.classList.add("hidden");
+    setRefFieldInvalidState_(formType, false);
+    return;
+  }
+
+  el.innerHTML = html;
+  wrap.classList.remove("hidden");
+  setRefFieldInvalidState_(formType, true);
+}
+function buildDuplicateDetailHtml_(result) {
+  result = result || {};
+
+  const matched = result.matched || result.detail || {};
+  const sourceSystem = String(
+    matched.sourceSystem ||
+    result.sourceSystem ||
+    result.system ||
+    ""
+  ).trim();
+
+  const systemLabel = getDuplicateSystemLabel_(sourceSystem);
+  const isReport = systemLabel === "Report";
+
+  const titleText = isReport
     ? "พบเลขอ้างอิงซ้ำกับเอกสารในระบบ Report"
     : "พบเลขอ้างอิงซ้ำกับเอกสารในระบบ Error_BOL";
 
+  const inputRefNo = String(
+    result.inputRefNo ||
+    result.refNo ||
+    "-"
+  ).trim();
+
+  const standardRef = String(
+    result.rootRefComparable ||
+    result.displayRootRef ||
+    result.normalizedRefNo ||
+    result.rootRefNo ||
+    inputRefNo ||
+    "-"
+  ).trim();
+
   const commonTop = `
-    <div class="swalKv"><div class="swalKvLabel">ระบบที่พบข้อมูลซ้ำ</div><div class="swalKvValue">${escapeHtml(systemLabel)}</div></div>
-    <div class="swalKv"><div class="swalKvLabel">Ref ที่กรอก</div><div class="swalKvValue">${escapeHtml(result?.inputRefNo || "-")}</div></div>
-    <div class="swalKv"><div class="swalKvLabel">Ref มาตรฐาน</div><div class="swalKvValue">${escapeHtml(result?.rootRefComparable || "-")}</div></div>
+    <div class="swalKv"><div class="swalKvLabel">ระบบที่พบข้อมูลซ้ำ</div><div class="swalKvValue">${escapeHtml(systemLabel || "-")}</div></div>
+    <div class="swalKv"><div class="swalKvLabel">Ref ที่กรอก</div><div class="swalKvValue">${escapeHtml(inputRefNo || "-")}</div></div>
+    <div class="swalKv"><div class="swalKvLabel">Ref มาตรฐาน</div><div class="swalKvValue">${escapeHtml(standardRef || "-")}</div></div>
     <div class="swalKv"><div class="swalKvLabel">Ref เดิม</div><div class="swalKvValue">${escapeHtml(matched.refNo || "-")}</div></div>
-    <div class="swalKv"><div class="swalKvLabel">Revision</div><div class="swalKvValue">${escapeHtml(matched.revisionLabel || "-")}</div></div>
+    <div class="swalKv"><div class="swalKvLabel">Revision</div><div class="swalKvValue">${escapeHtml(matched.revisionLabel || matched.revisionNo || "-")}</div></div>
   `;
 
-  const detailHtml = sourceSystem === "REPORT500"
+  const detailHtml = isReport
     ? `
       <div class="swalKv"><div class="swalKvLabel">เรื่อง</div><div class="swalKvValue">${escapeHtml(matched.subject || "-")}</div></div>
       <div class="swalKv"><div class="swalKvLabel">Reported by</div><div class="swalKvValue">${escapeHtml(matched.reportedBy || "-")}</div></div>
@@ -969,20 +1206,20 @@ async function checkRefDuplicate_(formType, refNo, opts = {}) {
     };
   }
 
-  if (!opts.force && state.checked && state.lastRefNo === normalizedRef && state.result) {
-    if (state.duplicated) {
-      setRefDuplicateHint_(formType, state.result.message || "เลขอ้างอิงซ้ำ", true);
-      setRefFieldInvalidState_(formType, true);
-    } else {
-      resetRefDuplicateUi_(formType);
-    }
-    return {
-      ok: true,
-      duplicated: state.duplicated,
-      cached: true,
-      result: state.result
-    };
+if (!opts.force && state.checked && state.lastRefNo === normalizedRef && state.result) {
+  if (state.duplicated) {
+    setRefDuplicateResult_(formType, state.result);
+  } else {
+    clearRefDuplicateDisplayOnly_(formType);
   }
+
+  return {
+    ok: true,
+    duplicated: state.duplicated,
+    cached: true,
+    result: state.result
+  };
+}
 
   const url = `${apiUrl("/checkRefDuplicate")}?formType=${encodeURIComponent(formType)}&refNo=${encodeURIComponent(normalizedRef)}`;
 
@@ -1008,9 +1245,8 @@ async function checkRefDuplicate_(formType, refNo, opts = {}) {
   state.checked = true;
   state.result = json;
 
- if (json.duplicated) {
-  setRefDuplicateHint_(formType, json.message || "เลขอ้างอิงซ้ำ", true);
-  setRefFieldInvalidState_(formType, true);
+if (json.duplicated) {
+  setRefDuplicateResult_(formType, json);
 } else {
   clearRefDuplicateDisplayOnly_(formType);
 }
@@ -1143,7 +1379,7 @@ async function init() {
   buildInitialUploadFields();
   buildWorkAgeOptions();
   buildShiftOptions();
-  buildInitialUploadFields();
+
   
  
 
