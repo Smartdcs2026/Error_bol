@@ -5057,3 +5057,660 @@ body.report500-editing #btnRptSubmit{
     font-size:11px;
   }
 }
+
+
+
+
+/* =========================================================
+   MOBILE SPACE OPTIMIZATION PATCH
+   ปรับเฉพาะ CSS ให้มือถือใช้พื้นที่คุ้มขึ้น
+   - คงตัวแปรเดิมทั้งหมด
+   - Error_BOL + Report500
+   - ช่องข้อมูลหลักให้กลับมา 2 คอลัมน์เมื่อเหมาะสม
+   ========================================================= */
+
+/* ---------- Global compact on mobile ---------- */
+@media (max-width:720px){
+
+  .container{
+    padding:8px 6px 18px;
+  }
+
+  .card{
+    padding:10px;
+    margin-bottom:10px;
+    border-radius:16px;
+  }
+
+  .panel,
+  .emailPanel,
+  .rptPanel{
+    padding:10px;
+    border-radius:14px;
+  }
+
+  .sectionTitle{
+    gap:7px;
+    margin:10px 0 6px;
+    padding:0 1px 7px;
+  }
+
+  .sectionTitle .dot{
+    width:9px;
+    height:9px;
+    flex-basis:9px;
+    margin-top:4px;
+    box-shadow:0 0 0 4px rgba(59,130,246,.10);
+  }
+
+  .sectionMain{
+    font-size:12.5px;
+  }
+
+  .sectionSub{
+    font-size:9.8px;
+    line-height:1.3;
+  }
+
+  label{
+    font-size:10.5px;
+    line-height:1.2;
+  }
+
+  input,
+  select,
+  textarea{
+    font-size:12px;
+    padding:7px 9px;
+    border-radius:11px;
+  }
+
+  input,
+  select{
+    min-height:36px;
+  }
+
+  textarea{
+    min-height:72px;
+  }
+
+  .btn{
+    min-height:36px;
+    padding:8px 10px;
+    border-radius:12px;
+    font-size:12px;
+  }
+
+  .panelActions{
+    margin-top:8px;
+    gap:6px;
+  }
+}
+
+/* ---------- Topbar: one compact row ---------- */
+@media (max-width:720px){
+
+  .topbar{
+    position:sticky;
+    top:0;
+    z-index:50;
+    grid-template-columns:minmax(0,1fr) auto;
+    gap:4px;
+    min-height:36px;
+    padding:3px 5px;
+    background:rgba(255,255,255,.96);
+    backdrop-filter:blur(8px);
+    border-bottom:1px solid var(--line);
+  }
+
+  .brandInline{
+    gap:5px;
+  }
+
+  .logo,
+  .brandLogoImg{
+    width:24px;
+    height:24px;
+    flex:0 0 24px;
+    border-radius:7px;
+  }
+
+  .brandTextInline{
+    gap:5px;
+    min-width:0;
+  }
+
+  .brandTextInline .title{
+    max-width:86px;
+    font-size:10px;
+    line-height:1;
+  }
+
+  .brandTextInline .subtitle{
+    display:none;
+  }
+
+  .topLoginUserWrap{
+    max-width:76px;
+    min-height:20px;
+    padding:2px 5px;
+    font-size:8.5px;
+    border-radius:999px;
+  }
+
+  .topLoginUserLabel{
+    display:none;
+  }
+
+  .tabsInline{
+    gap:3px;
+  }
+
+  .tab{
+    min-height:26px;
+    padding:4px 8px;
+    font-size:9px;
+    border-radius:999px;
+  }
+}
+
+@media (max-width:380px){
+  .brandTextInline .title{
+    max-width:62px;
+    font-size:9.2px;
+  }
+
+  .topLoginUserWrap{
+    max-width:58px;
+    font-size:8px;
+  }
+
+  .tab{
+    min-height:25px;
+    padding:4px 6px;
+    font-size:8.5px;
+  }
+}
+
+/* ---------- Main grids: keep 2 columns on mobile where useful ---------- */
+@media (max-width:720px){
+
+  .gridCompact,
+  .gridEmployee{
+    grid-template-columns:repeat(2,minmax(0,1fr)) !important;
+    gap:8px !important;
+  }
+
+  .gridCompact .field,
+  .gridEmployee .field{
+    min-width:0;
+  }
+
+  .gridCompact .fieldSpan2,
+  .gridEmployee .fieldSpan2,
+  .field.fieldSpan2{
+    grid-column:1 / -1 !important;
+  }
+
+  /*
+    ช่องที่ควรเต็มแถว เพราะเป็นข้อความยาว / textarea / lookup display
+  */
+  .field:has(textarea),
+  .field:has(#itemDisplay),
+  .field:has(#employeeConfirmText),
+  .field:has(#rptSubject),
+  .field:has(#rptWhatHappen),
+  .field:has(#rptWhereDidItHappen),
+  .field:has(#rptArea),
+  .field:has(#rptEmailOther),
+  .field:has(#rptOffenderStatement),
+  .field:has(#rptSummaryText){
+    grid-column:1 / -1 !important;
+  }
+
+  .refTopGrid{
+    grid-template-columns:1.12fr .88fr !important;
+    gap:8px !important;
+  }
+
+  .refRow{
+    grid-template-columns:minmax(0,1fr) 10px 74px;
+    gap:4px;
+  }
+
+  .refDash{
+    font-size:18px;
+  }
+
+  #refYear,
+  #rptRefYear{
+    min-width:64px;
+    font-size:11px;
+    padding-inline:5px;
+  }
+
+  #refNo,
+  #rptRefNo{
+    font-weight:900;
+  }
+
+  #lps,
+  #rptReportedBy{
+    font-size:11px;
+  }
+}
+
+@media (max-width:380px){
+  .refTopGrid{
+    grid-template-columns:1fr !important;
+  }
+
+  .refRow{
+    grid-template-columns:minmax(0,1fr) 10px 76px;
+  }
+}
+
+/* ---------- Error_BOL compact sections ---------- */
+@media (max-width:720px){
+
+  .lpsSignStatusPanel{
+    margin-top:8px;
+    padding:8px 9px;
+    border-radius:12px;
+    grid-template-columns:minmax(0,1fr) auto;
+    gap:8px;
+  }
+
+  .lpsSignStatusHead{
+    font-size:10.8px;
+    gap:6px;
+  }
+
+  .lpsSignStatusSub{
+    font-size:9.5px;
+    line-height:1.35;
+  }
+
+  .lpsSignDot{
+    width:7px;
+    height:7px;
+    flex-basis:7px;
+  }
+
+  .lpsSignActions{
+    display:flex;
+    justify-content:flex-end;
+    gap:5px;
+  }
+
+  .lpsSignActions .btn{
+    width:auto;
+    min-height:30px;
+    padding:6px 8px;
+    font-size:9.8px;
+    white-space:nowrap;
+  }
+
+  .confirmCauseGrid{
+    grid-template-columns:repeat(2,minmax(0,1fr)) !important;
+    gap:6px;
+  }
+
+  .confirmCauseCard,
+  .optionChoiceCard{
+    min-height:40px;
+    padding:8px;
+    gap:7px;
+    border-radius:12px;
+  }
+
+  .confirmCauseText,
+  .optionChoiceText{
+    font-size:10.5px;
+    line-height:1.3;
+  }
+
+  .confirmCauseMark,
+  .optionChoiceMark{
+    width:15px;
+    height:15px;
+    flex-basis:15px;
+    border-radius:5px;
+  }
+
+  .confirmCauseGroupTitle{
+    min-height:23px;
+    padding:3px 8px;
+    margin-bottom:6px;
+    font-size:9.8px;
+  }
+
+  .uploadGrid{
+    grid-template-columns:repeat(2,minmax(0,1fr)) !important;
+    gap:8px;
+  }
+
+  .uploadBox{
+    padding:8px;
+    border-radius:13px;
+  }
+
+  .uploadBox .cap{
+    font-size:10.5px;
+    margin-bottom:6px;
+  }
+
+  .uploadBox input[type="file"]{
+    min-height:34px;
+    padding:6px;
+    font-size:10px;
+  }
+
+  .previewImg{
+    aspect-ratio:1 / 1;
+    max-height:150px;
+    margin-top:7px;
+  }
+
+  .small{
+    margin-top:5px;
+    font-size:9.5px;
+  }
+
+  .btnEditImage{
+    min-height:30px;
+    padding:6px 8px;
+    font-size:10px;
+  }
+
+  .emailSelector,
+  .checkList{
+    grid-template-columns:repeat(2,minmax(0,1fr)) !important;
+    gap:7px;
+  }
+
+  .emailItem{
+    min-height:38px;
+    padding:8px;
+    gap:7px;
+    border-radius:12px;
+  }
+
+  .emailText{
+    font-size:10px;
+    line-height:1.25;
+  }
+
+  .emailCheckBox{
+    width:15px;
+    height:15px;
+    flex-basis:15px;
+    border-radius:5px;
+  }
+}
+
+/* ---------- Report500 compact grids ---------- */
+@media (max-width:720px){
+
+  .optionMatrix{
+    grid-template-columns:repeat(2,minmax(0,1fr)) !important;
+    gap:6px;
+  }
+
+  .rptUtilityBar{
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:7px;
+  }
+
+  .rptUtilityBar .btn{
+    min-height:38px;
+    border-radius:13px;
+    font-size:11px;
+  }
+
+  .rptLookupSummary{
+    padding:9px 10px;
+    border-radius:13px;
+    gap:8px;
+  }
+
+  .rptLookupSummaryTitle{
+    font-size:11.5px;
+  }
+
+  .rptLookupSummaryMeta{
+    font-size:10px;
+  }
+
+  .rptLookupSummaryActions .btn{
+    min-height:32px;
+    padding:6px 8px;
+    font-size:10px;
+  }
+
+  .rptRepeaterList{
+    gap:9px;
+  }
+
+  .rptRepeatCard,
+  .rptBlock{
+    padding:8px;
+    border-radius:14px;
+  }
+
+  .rptCardHead{
+    padding:8px 9px;
+    gap:8px;
+  }
+
+  .rptCardTitle{
+    font-size:11.5px;
+  }
+
+  .rptRowIndex{
+    min-width:28px;
+    height:24px;
+    padding:0 7px;
+    font-size:9.5px;
+  }
+
+  .rptCardStatus{
+    min-height:20px;
+    padding:2px 7px;
+    font-size:9px;
+  }
+
+  .rptCardSummary{
+    font-size:10px;
+  }
+
+  .rptToggleBtn{
+    min-width:32px;
+    height:32px;
+    border-radius:10px;
+  }
+
+  .rptCardBody{
+    padding:9px;
+  }
+
+  /*
+    ข้างใน card ของ Report500 ให้ field สั้น ๆ เป็น 2 คอลัมน์
+    แต่ textarea / รูปภาพ / ปุ่ม actions ยังเต็มแถว
+  */
+  .rptCardBody{
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:8px;
+  }
+
+  .rptCardBody .field{
+    margin-top:0 !important;
+  }
+
+  .rptCardBody .field:has(textarea),
+  .rptCardBody .field:has(input[type="file"]),
+  .rptCardBody .rptImageActions,
+  .rptCardBody .rptImagePreviewWrap,
+  .rptCardBody .panelActions,
+  .rptCardBody .rptCardFooterActions{
+    grid-column:1 / -1 !important;
+  }
+
+  .rptCardBody textarea{
+    min-height:70px;
+  }
+
+  .rptCardFooterActions{
+    margin-top:6px;
+    gap:6px;
+  }
+
+  .rptCardFooterActions .btn,
+  .rptRepeatCard .btn,
+  .rptBlock .btn{
+    min-height:32px;
+    padding:6px 9px;
+    font-size:10.5px;
+    border-radius:10px;
+  }
+
+  .rptRepeatAddBottom{
+    margin-top:8px;
+  }
+
+  .rptRepeatAddBottomBtn{
+    min-width:0;
+    width:100% !important;
+    min-height:38px;
+    padding:8px 10px;
+    font-size:11px;
+    border-radius:13px;
+  }
+}
+
+/* ---------- Bottom actions: save buttons tighter ---------- */
+@media (max-width:720px){
+
+  .actions{
+    grid-template-columns:1fr;
+    gap:7px;
+    margin-top:10px;
+  }
+
+  .actions .btn{
+    min-height:38px;
+    border-radius:13px;
+    font-size:12px;
+  }
+
+  /*
+    บางหน้าจอมี 2 ปุ่มหลัก ดูสรุป + บันทึก
+    ถ้าจอกว้างพอให้กลับเป็น 2 คอลัมน์
+  */
+  @media (min-width:390px){
+    .actions{
+      grid-template-columns:repeat(2,minmax(0,1fr));
+    }
+  }
+}
+
+/* ---------- Duplicate Ref display compact but clear ---------- */
+@media (max-width:720px){
+
+  .refDuplicateWrap{
+    margin-top:8px;
+  }
+
+  .refDuplicateHintBox{
+    padding:9px 10px;
+    border-radius:13px;
+  }
+
+  .refDupLine{
+    font-size:10.5px;
+    line-height:1.35;
+  }
+
+  .refDupMain{
+    font-size:11px;
+  }
+
+  .refDupMeta{
+    font-size:10px;
+  }
+
+  .refDupBlock{
+    margin-top:5px;
+  }
+}
+
+/* ---------- SweetAlert mobile compact ---------- */
+@media (max-width:720px){
+
+  .swal2-popup{
+    width:calc(100vw - 14px) !important;
+    border-radius:18px !important;
+  }
+
+  .swalKvGrid,
+  .rptLookupResultGrid,
+  .rptLookupResultGridCompact{
+    grid-template-columns:repeat(2,minmax(0,1fr)) !important;
+    gap:6px;
+  }
+
+  .swalKv{
+    padding:8px;
+    border-radius:11px;
+  }
+
+  .swalKvLabel{
+    font-size:9.5px;
+  }
+
+  .swalKvValue{
+    font-size:10.8px;
+  }
+
+  .swalSection{
+    padding:9px;
+    border-radius:13px;
+  }
+
+  .swalSectionTitle{
+    font-size:11.5px;
+  }
+
+  .galGrid{
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:7px;
+  }
+}
+
+/* ---------- Ultra small: keep readability ---------- */
+@media (max-width:340px){
+
+  .gridCompact,
+  .gridEmployee,
+  .confirmCauseGrid,
+  .optionMatrix,
+  .uploadGrid,
+  .emailSelector,
+  .checkList,
+  .swalKvGrid{
+    grid-template-columns:1fr !important;
+  }
+
+  .lpsSignStatusPanel{
+    grid-template-columns:1fr;
+  }
+
+  .lpsSignActions{
+    justify-content:stretch;
+  }
+
+  .lpsSignActions .btn{
+    width:100%;
+  }
+}
