@@ -4865,3 +4865,195 @@ body.report500-editing #btnRptSubmit{
     font-size:8.8px;
   }
 }
+/* =========================================================
+   ERROR_BOL: LPS SIGNATURE STATUS
+   ใช้เฉพาะกล่องสถานะลายเซ็น LPS ผู้บันทึก
+   ไม่แสดงรูปภาพลายเซ็นในหน้าฟอร์ม
+   ========================================================= */
+
+.lpsSignStatusPanel{
+  margin-top:12px;
+  padding:12px 14px;
+  border:1.3px solid var(--line);
+  border-radius:16px;
+  background:linear-gradient(180deg,#ffffff 0%,#f8fbff 100%);
+  box-shadow:0 6px 18px rgba(15,23,42,.045);
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto;
+  align-items:center;
+  gap:12px;
+}
+
+.lpsSignStatusPanel.ready{
+  border-color:rgba(22,163,74,.28);
+  background:
+    linear-gradient(180deg,rgba(240,253,244,.88) 0%,#ffffff 100%);
+}
+
+.lpsSignStatusPanel.missing{
+  border-color:rgba(217,119,6,.28);
+  background:
+    linear-gradient(180deg,rgba(255,251,235,.82) 0%,#ffffff 100%);
+}
+
+.lpsSignStatusMain{
+  min-width:0;
+  display:grid;
+  gap:4px;
+}
+
+.lpsSignStatusHead{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  min-width:0;
+  color:#0f172a;
+  font-size:13px;
+  font-weight:900;
+  line-height:1.3;
+}
+
+.lpsSignDot{
+  width:9px;
+  height:9px;
+  flex:0 0 9px;
+  border-radius:999px;
+  background:#94a3b8;
+  box-shadow:0 0 0 5px rgba(148,163,184,.14);
+}
+
+.lpsSignDot.ready{
+  background:var(--success);
+  box-shadow:0 0 0 5px rgba(22,163,74,.14);
+}
+
+.lpsSignDot.missing{
+  background:var(--warning);
+  box-shadow:0 0 0 5px rgba(217,119,6,.16);
+}
+
+#lpsSignStatusText{
+  min-width:0;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+
+.lpsSignStatusSub{
+  color:var(--muted);
+  font-size:11.5px;
+  font-weight:600;
+  line-height:1.45;
+}
+
+.lpsSignActions{
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  gap:8px;
+  flex-wrap:wrap;
+}
+
+.lpsSignActions .btn{
+  min-height:34px;
+  padding:7px 12px;
+  border-radius:999px;
+  font-size:11.5px;
+  line-height:1.1;
+  white-space:nowrap;
+}
+
+#btnManageLpsSign{
+  border-color:rgba(37,99,235,.24);
+  background:#ffffff;
+}
+
+#btnDeleteLpsSign{
+  border-color:rgba(220,38,38,.26);
+}
+
+/* สถานะลายเซ็น LPS ของเอกสารเดิมใน edit mode */
+#errorBolEditLpsSignStatusText{
+  font-weight:900;
+}
+
+#errorBolEditLpsSignStatusText.ready{
+  color:var(--success);
+}
+
+#errorBolEditLpsSignStatusText.missing{
+  color:var(--warning);
+}
+
+/* =========================================================
+   RESPONSIVE: LPS SIGNATURE STATUS
+   ========================================================= */
+
+@media (max-width:720px){
+
+  .lpsSignStatusPanel{
+    grid-template-columns:1fr;
+    align-items:stretch;
+    gap:10px;
+    padding:11px 12px;
+    border-radius:15px;
+  }
+
+  .lpsSignStatusHead{
+    font-size:12.5px;
+  }
+
+  #lpsSignStatusText{
+    white-space:normal;
+    overflow:visible;
+    text-overflow:clip;
+  }
+
+  .lpsSignStatusSub{
+    font-size:11px;
+  }
+
+  .lpsSignActions{
+    justify-content:stretch;
+    display:grid;
+    grid-template-columns:1fr;
+    gap:8px;
+  }
+
+  .lpsSignActions .btn{
+    width:100%;
+    min-height:38px;
+    justify-content:center;
+    font-size:11.5px;
+  }
+}
+
+@media (max-width:420px){
+
+  .lpsSignStatusPanel{
+    margin-top:10px;
+    padding:10px;
+    border-radius:14px;
+  }
+
+  .lpsSignStatusHead{
+    gap:7px;
+    font-size:12px;
+  }
+
+  .lpsSignDot{
+    width:8px;
+    height:8px;
+    flex-basis:8px;
+  }
+
+  .lpsSignStatusSub{
+    font-size:10.5px;
+  }
+
+  .lpsSignActions .btn{
+    min-height:36px;
+    padding:7px 10px;
+    font-size:11px;
+  }
+}
