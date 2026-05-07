@@ -482,7 +482,7 @@ function renderLpsSignatureStatus_() {
 
   if (el.sub) {
     el.sub.textContent = has
-      ? "ระบบจะใช้ลายเซ็นนี้เฉพาะการบันทึก Error_BOL และแสดงใน PDF เท่านั้น"
+      ? "ระบบจะใช้ลายเซ็นนี้"
       : "กรุณาเพิ่มลายเซ็น LPS ก่อนบันทึกรายงาน Error_BOL";
   }
 
