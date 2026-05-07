@@ -16,7 +16,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-  <link rel="stylesheet" href="./style.css?v=report500-edit-v1">
+  <link rel="stylesheet" href="./style.css?v=errorbol-lps-sign-v1">
 </head>
 <body>
   <header class="topbar">
@@ -106,6 +106,25 @@
           </div>
         </div>
 
+        <!-- LPS SIGNATURE STATUS: Error_BOL only -->
+        <div id="lpsSignStatusPanel" class="lpsSignStatusPanel" aria-live="polite">
+          <div class="lpsSignStatusMain">
+            <div class="lpsSignStatusHead">
+              <span id="lpsSignDot" class="lpsSignDot missing" aria-hidden="true"></span>
+              <span id="lpsSignStatusText">กำลังตรวจสอบลายเซ็น LPS...</span>
+            </div>
+
+            <div id="lpsSignStatusSub" class="lpsSignStatusSub">
+              ระบบจะใช้ลายเซ็นนี้เฉพาะการบันทึก Error_BOL และแสดงใน PDF เท่านั้น
+            </div>
+          </div>
+
+          <div class="lpsSignActions">
+            <button id="btnManageLpsSign" type="button" class="btn ghost">เพิ่ม/แก้ไขลายเซ็น</button>
+            <button id="btnDeleteLpsSign" type="button" class="btn danger hidden">ลบลายเซ็น</button>
+          </div>
+        </div>
+
         <div class="panelActions refEditActions">
           <button id="btnErrorBolLoadRef" class="btn ghost" type="button">ดึงข้อมูล Ref เดิม</button>
           <button id="btnErrorBolExitEdit" class="btn danger hidden" type="button">ออกจากโหมดแก้ไข</button>
@@ -146,6 +165,11 @@
                 <a id="errorBolEditPdfLink" class="editPdfLink hidden" href="#" target="_blank" rel="noopener">เปิด PDF เดิม</a>
                 <span id="errorBolEditPdfEmpty">-</span>
               </div>
+            </div>
+
+            <div class="editModeItem">
+              <div class="editModeLabel">ลายเซ็น LPS เอกสารเดิม</div>
+              <div id="errorBolEditLpsSignStatusText" class="editModeValue">-</div>
             </div>
           </div>
 
@@ -896,6 +920,6 @@
   <script src="./report500.js?v=report500-edit-v2"></script>
 
   <!-- Main app -->
-  <script src="./app.js?v=report500-edit-v1"></script>
+  <script src="./app.js?v=errorbol-lps-sign-v1"></script>
 </body>
 </html>
