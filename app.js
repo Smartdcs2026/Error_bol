@@ -187,7 +187,12 @@ let OPTIONS = {
   nationalityList: []
 };
 
-let AUTH = { name: "", pass: "" };
+let AUTH = {
+  name: "",
+  pass: "",
+  signImageId: "",
+  hasLpsSignature: false
+};
 
 let ITEM_LOOKUP_STATE = {
   item: "",
@@ -409,6 +414,318 @@ window.apiUrl = apiUrl;
 window.safeSetLoginMsg = safeSetLoginMsg;
 window.AUTH = AUTH;
 window.API_BASE = API_BASE;
+
+/** ==========================
+ *  LPS SIGNATURE STATUS
+ *  ใช้เฉพาะ Error_BOL เท่านั้น
+ *  ========================== */
+
+function normalizeLpsSignatureAuth_(src) {
+  const data = src && typeof src === "object" ? src : {};
+
+  return {
+    signImageId: String(data.signImageId || "").trim(),
+    hasLpsSignature: !!data.hasLpsSignature || !!String(data.signImageId || "").trim()
+  };
+}
+
+function updateAuthLpsSignature_(src) {
+  const next = normalizeLpsSignatureAuth_(src);
+
+  AUTH = {
+    ...(AUTH || {}),
+    signImageId: next.signImageId,
+    hasLpsSignature: next.hasLpsSignature
+  };
+
+  window.AUTH = AUTH;
+  renderLpsSignatureStatus_();
+
+  return AUTH;
+}
+
+function getLpsSignEls_() {
+  return {
+    panel: document.getElementById("lpsSignStatusPanel"),
+    dot: document.getElementById("lpsSignDot"),
+    text: document.getElementById("lpsSignStatusText"),
+    sub: document.getElementById("lpsSignStatusSub"),
+    btnManage: document.getElementById("btnManageLpsSign"),
+    btnDelete: document.getElementById("btnDeleteLpsSign")
+  };
+}
+
+function renderLpsSignatureStatus_() {
+  const el = getLpsSignEls_();
+  if (!el.panel) return;
+
+  const has = !!(AUTH && AUTH.hasLpsSignature);
+  const loggedIn = !!(AUTH && AUTH.pass && AUTH.name);
+
+  el.panel.classList.toggle("ready", has);
+  el.panel.classList.toggle("missing", !has);
+
+  if (el.dot) {
+    el.dot.classList.toggle("ready", has);
+    el.dot.classList.toggle("missing", !has);
+  }
+
+  if (el.text) {
+    if (!loggedIn) {
+      el.text.textContent = "ยังไม่ได้เข้าสู่ระบบ";
+    } else if (has) {
+      el.text.textContent = "มีลายเซ็น LPS พร้อมใช้งาน";
+    } else {
+      el.text.textContent = "ยังไม่ได้ตั้งค่าลายเซ็น LPS";
+    }
+  }
+
+  if (el.sub) {
+    el.sub.textContent = has
+      ? "ระบบจะใช้ลายเซ็นนี้เฉพาะการบันทึก Error_BOL และแสดงใน PDF เท่านั้น"
+      : "กรุณาเพิ่มลายเซ็น LPS ก่อนบันทึกรายงาน Error_BOL";
+  }
+
+  if (el.btnDelete) {
+    el.btnDelete.classList.toggle("hidden", !has);
+  }
+
+  if (el.btnManage) {
+    el.btnManage.textContent = has ? "แก้ไข/เปลี่ยนลายเซ็น" : "เพิ่มลายเซ็น";
+  }
+}
+
+async function refreshMyLpsSignatureStatus_() {
+  if (!AUTH || !AUTH.pass) {
+    updateAuthLpsSignature_({
+      signImageId: "",
+      hasLpsSignature: false
+    });
+    return AUTH;
+  }
+
+  const res = await fetch(apiUrl("/getMyLpsSignature"), {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      pass: AUTH.pass
+    })
+  });
+
+  const text = await res.text();
+  let json = {};
+
+  try {
+    json = JSON.parse(text);
+  } catch (_) {
+    throw new Error("Backend ตอบกลับไม่ใช่ JSON");
+  }
+
+  if (!res.ok || !json.ok) {
+    throw new Error(json?.error || "ตรวจสอบสถานะลายเซ็น LPS ไม่สำเร็จ");
+  }
+
+  updateAuthLpsSignature_(json);
+  return AUTH;
+}
+
+async function openLpsSignatureManageFlow_() {
+  if (!AUTH || !AUTH.pass) {
+    return Swal.fire({
+      icon: "warning",
+      title: "ยังไม่ได้เข้าสู่ระบบ",
+      text: "กรุณาเข้าสู่ระบบก่อนเพิ่มลายเซ็น LPS",
+      confirmButtonText: "ตกลง"
+    });
+  }
+
+  const result = await signatureModal(
+    "ลายเซ็น LPS ผู้บันทึก",
+    `ผู้เซ็น: ${AUTH.name || "-"}`
+  );
+
+  if (!result || !result.ok || !result.base64) return;
+
+  const dataUrl = String(result.base64 || "").startsWith("data:")
+    ? result.base64
+    : `data:image/png;base64,${result.base64}`;
+
+  let json = {};
+
+  try {
+    const res = await fetch(apiUrl("/saveMyLpsSignature"), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        pass: AUTH.pass,
+        signature: {
+          dataUrl,
+          filename: "lps-signature.png"
+        }
+      })
+    });
+
+    const text = await res.text();
+
+    try {
+      json = JSON.parse(text);
+    } catch (_) {
+      throw new Error("Backend ตอบกลับไม่ใช่ JSON");
+    }
+
+    if (!res.ok || !json.ok) {
+      throw new Error(json?.error || "บันทึกลายเซ็น LPS ไม่สำเร็จ");
+    }
+
+    updateAuthLpsSignature_(json);
+
+    await Swal.fire({
+      icon: "success",
+      title: "บันทึกลายเซ็น LPS สำเร็จ",
+      text: "ระบบพร้อมใช้ลายเซ็นนี้ในการบันทึก Error_BOL",
+      confirmButtonText: "ตกลง"
+    });
+
+  } catch (err) {
+    await Swal.fire({
+      icon: "error",
+      title: "บันทึกลายเซ็น LPS ไม่สำเร็จ",
+      text: err?.message || String(err),
+      confirmButtonText: "ตกลง"
+    });
+  }
+}
+
+async function deleteMyLpsSignatureFlow_() {
+  if (!AUTH || !AUTH.pass) {
+    return Swal.fire({
+      icon: "warning",
+      title: "ยังไม่ได้เข้าสู่ระบบ",
+      text: "กรุณาเข้าสู่ระบบก่อนลบลายเซ็น LPS",
+      confirmButtonText: "ตกลง"
+    });
+  }
+
+  const ok = await Swal.fire({
+    icon: "warning",
+    title: "ยืนยันลบลายเซ็น LPS?",
+    html: `
+      <div style="text-align:left;line-height:1.7">
+        <div>ระบบจะล้างสถานะลายเซ็นของผู้ใช้งานนี้ออกจากชีท <b>list_Name</b></div>
+        <div style="color:#64748b;font-size:13px;margin-top:6px">
+          ไฟล์ลายเซ็นจริงใน Google Drive จะไม่ถูกลบ
+        </div>
+      </div>
+    `,
+    showCancelButton: true,
+    confirmButtonText: "ยืนยันลบ",
+    cancelButtonText: "ยกเลิก",
+    confirmButtonColor: "#dc2626"
+  });
+
+  if (!ok.isConfirmed) return;
+
+  let json = {};
+
+  try {
+    const res = await fetch(apiUrl("/deleteMyLpsSignature"), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        pass: AUTH.pass
+      })
+    });
+
+    const text = await res.text();
+
+    try {
+      json = JSON.parse(text);
+    } catch (_) {
+      throw new Error("Backend ตอบกลับไม่ใช่ JSON");
+    }
+
+    if (!res.ok || !json.ok) {
+      throw new Error(json?.error || "ลบลายเซ็น LPS ไม่สำเร็จ");
+    }
+
+    updateAuthLpsSignature_({
+      signImageId: "",
+      hasLpsSignature: false
+    });
+
+    await Swal.fire({
+      icon: "success",
+      title: "ลบลายเซ็น LPS แล้ว",
+      text: "หากต้องการบันทึก Error_BOL ครั้งถัดไป กรุณาเพิ่มลายเซ็นใหม่ก่อน",
+      confirmButtonText: "ตกลง"
+    });
+
+  } catch (err) {
+    await Swal.fire({
+      icon: "error",
+      title: "ลบลายเซ็น LPS ไม่สำเร็จ",
+      text: err?.message || String(err),
+      confirmButtonText: "ตกลง"
+    });
+  }
+}
+
+async function ensureLpsSignatureBeforeErrorBolSubmit_() {
+  if (!AUTH || !AUTH.pass) {
+    await Swal.fire({
+      icon: "warning",
+      title: "ยังไม่ได้เข้าสู่ระบบ",
+      text: "กรุณาเข้าสู่ระบบก่อนบันทึกรายงาน Error_BOL",
+      confirmButtonText: "ตกลง"
+    });
+    return false;
+  }
+
+  if (AUTH.hasLpsSignature) return true;
+
+  try {
+    await refreshMyLpsSignatureStatus_();
+  } catch (err) {
+    await Swal.fire({
+      icon: "error",
+      title: "ตรวจสอบลายเซ็น LPS ไม่สำเร็จ",
+      text: err?.message || String(err),
+      confirmButtonText: "ตกลง"
+    });
+    return false;
+  }
+
+  if (AUTH.hasLpsSignature) return true;
+
+  await Swal.fire({
+    icon: "warning",
+    title: "ยังไม่ได้ตั้งค่าลายเซ็น LPS",
+    text: "ยังไม่ได้ตั้งค่าลายเซ็น LPS กรุณากดเพิ่มลายเซ็นก่อนบันทึกรายงาน Error_BOL",
+    confirmButtonText: "ตกลง"
+  });
+
+  renderLpsSignatureStatus_();
+  return false;
+}
+
+function bindLpsSignatureButtons_() {
+  const el = getLpsSignEls_();
+
+  if (el.btnManage && !el.btnManage.__lpsSignBound) {
+    el.btnManage.__lpsSignBound = true;
+    el.btnManage.addEventListener("click", openLpsSignatureManageFlow_);
+  }
+
+  if (el.btnDelete && !el.btnDelete.__lpsSignBound) {
+    el.btnDelete.__lpsSignBound = true;
+    el.btnDelete.addEventListener("click", deleteMyLpsSignatureFlow_);
+  }
+
+  renderLpsSignatureStatus_();
+}
+
+window.renderLpsSignatureStatus_ = renderLpsSignatureStatus_;
+window.refreshMyLpsSignatureStatus_ = refreshMyLpsSignatureStatus_;
 
 /** ==========================
  *  REF HELPERS
@@ -1224,10 +1541,17 @@ async function onLogin() {
     return;
   }
 
-  AUTH = { name: lpsName, pass };
-  window.AUTH = AUTH;
+  AUTH = {
+  name: lpsName,
+  pass,
+  signImageId: String(json.signImageId || "").trim(),
+  hasLpsSignature: !!json.hasLpsSignature || !!String(json.signImageId || "").trim()
+};
 
-  setLpsFromLogin(lpsName);
+window.AUTH = AUTH;
+
+setLpsFromLogin(lpsName);
+renderLpsSignatureStatus_();
 
   if ($("rptReportedBy")) {
     $("rptReportedBy").value = lpsName || "";
@@ -1923,6 +2247,9 @@ async function submitForm() {
     });
   }
 
+  const hasLpsSign = await ensureLpsSignatureBeforeErrorBolSubmit_();
+  if (!hasLpsSign) return;
+
   try {
     const dup = await checkRefDuplicate_("error_bol", getRefNoValue(), { force: true });
     if (dup.duplicated) {
@@ -1985,9 +2312,9 @@ async function submitForm() {
 
     ProgressUI.activateOnly("upload", 28, "กำลังเตรียมรูปภาพและลายเซ็น");
     await safeDelay(180);
-    ProgressUI.markDone("upload", 42, `เตรียมไฟล์เรียบร้อย (${files.length} รูป + ลายเซ็น)`);
+    ProgressUI.markDone("upload", 42, `เตรียมไฟล์เรียบร้อย (${files.length} รูป)`);
 
-    ProgressUI.activateOnly("save", 56, "กำลังบันทึกข้อมูลลงระบบ");
+    ProgressUI.activateOnly("save", 58, "กำลังส่งข้อมูลไปยังระบบ");
 
     const res = await fetch(apiUrl("/submit"), {
       method: "POST",
@@ -1997,7 +2324,6 @@ async function submitForm() {
 
     const text = await res.text();
     let json = {};
-
     try {
       json = JSON.parse(text);
     } catch (_) {
@@ -2005,20 +2331,19 @@ async function submitForm() {
     }
 
     if (!res.ok || !json.ok) {
-      throw new Error(json?.error || `บันทึกข้อมูลไม่สำเร็จ (HTTP ${res.status})`);
+      throw new Error(json?.error || `บันทึกไม่สำเร็จ (HTTP ${res.status})`);
     }
 
     ProgressUI.markDone("save", 72, "บันทึกข้อมูลลงระบบเรียบร้อย");
 
-    ProgressUI.activateOnly("pdf", 84, "กำลังสร้างไฟล์ PDF");
-    await safeDelay(180);
+    ProgressUI.activateOnly("pdf", 86, "กำลังสร้างไฟล์ PDF");
+    await safeDelay(160);
 
-    const pdfOk = !!(json.pdfFileId || json.pdfUrl);
-    if (pdfOk) {
+    if (json.pdfFileId || json.pdfUrl) {
       const sizeText = json.pdfSizeText ? ` (${json.pdfSizeText})` : "";
       ProgressUI.markDone("pdf", 94, `สร้างไฟล์ PDF เรียบร้อย${sizeText}`);
     } else {
-      ProgressUI.markError("pdf", "ไม่สามารถสร้าง PDF ได้", 94);
+      ProgressUI.markDone("pdf", 94, "สร้างไฟล์ PDF เรียบร้อย");
     }
 
     ProgressUI.activateOnly("email", 98, "กำลังตรวจสอบผลการส่งอีเมล");
@@ -2063,69 +2388,45 @@ async function submitForm() {
       html: `
         <div class="swalSummary">
           <div class="swalHero">
-            <div class="swalHeroTitle">บันทึกรายการเรียบร้อยแล้ว</div>
-            <div class="swalHeroSub">ระบบจัดเก็บข้อมูล รูปภาพ ลายเซ็น และเอกสาร PDF เรียบร้อย</div>
+            <div class="swalHeroTitle">บันทึกข้อมูลเรียบร้อย</div>
+            <div class="swalHeroSub">ระบบสร้าง PDF และประมวลผลอีเมลเสร็จแล้ว</div>
             <div class="swalPillRow">
-              <div class="swalPill primary">LPS: ${escapeHtml(AUTH.name || json.lpsName || "-")}</div>
-              <div class="swalPill">Ref: ${escapeHtml(p.refNo || "-")}</div>
-              <div class="swalPill">รูป ${Number((json.imageIds || []).length)}</div>
+              <div class="swalPill primary">Ref: ${escapeHtml(json.refNo || p.refNo || "-")}</div>
+              <div class="swalPill">PDF ${escapeHtml(pdfSizeText)}</div>
+              <div class="swalPill">${escapeHtml(emailInfo.emailModeText || "-")}</div>
             </div>
           </div>
 
           <div class="swalSection">
-            <div class="swalSectionTitle">ข้อมูลเอกสาร</div>
-            <div class="swalKvGrid">
-              <div class="swalKv"><div class="swalKvLabel">วันที่เวลา</div><div class="swalKvValue">${escapeHtml(json.timestamp || "-")}</div></div>
-              <div class="swalKv"><div class="swalKvLabel">Ref:No.</div><div class="swalKvValue">${escapeHtml(p.refNo || "-")}</div></div>
-              <div class="swalKv"><div class="swalKvLabel">Label CID</div><div class="swalKvValue">${escapeHtml(p.labelCid || "-")}</div></div>
-              <div class="swalKv"><div class="swalKvLabel">ขนาด PDF</div><div class="swalKvValue">${escapeHtml(pdfSizeText)}</div></div>
-            </div>
-          </div>
-
-          <div class="swalSection">
-            <div class="swalSectionTitle">สถานะอีเมล</div>
-            ${
-              emailInfo.emailSkipped
-                ? `<div class="swalNote">ไม่ได้ส่งอีเมล เพราะยังไม่ได้เลือกผู้รับ</div>`
-                : emailInfo.emailOk
-                  ? `<div class="swalEmailOk">ส่งอีเมลสำเร็จ ${Number(emailInfo.emailResult.count || 0)} รายการ ${emailInfo.emailResult.attachmentMode ? `• ${escapeHtml(emailInfo.emailResult.attachmentMode)}` : ""}</div>`
-                  : `<div class="swalEmailFail">บันทึกข้อมูลสำเร็จ แต่ส่งอีเมลไม่สำเร็จ: ${escapeHtml(emailInfo.emailResult.error || "-")}</div>`
-            }
-          </div>
-
-          <div class="swalSection">
-            <div class="swalSectionTitle">ลายเซ็น</div>
-            <div class="sigGrid">
-              <div>
-                <div class="sigBoxTitle">หัวหน้างาน</div>
+            <div class="swalSectionTitle">ลายเซ็นที่แนบในรายงาน</div>
+            <div class="sigThumbGrid">
+              <div class="sigThumbCard">
+                <div class="sigThumbLabel">หัวหน้างาน</div>
                 ${supSignThumb}
-                <div class="sigName">${escapeHtml(p.otm || "-")}</div>
               </div>
-              <div>
-                <div class="sigBoxTitle">พนักงาน</div>
+              <div class="sigThumbCard">
+                <div class="sigThumbLabel">พนักงาน</div>
                 ${empSignThumb}
-                <div class="sigName">${escapeHtml(p.employeeName || "-")}</div>
               </div>
-              <div>
-                <div class="sigBoxTitle">ล่ามแปลภาษา</div>
+              <div class="sigThumbCard">
+                <div class="sigThumbLabel">ล่าม</div>
                 ${intSignThumb}
-                <div class="sigName">${escapeHtml(p.interpreterName || "-")}</div>
               </div>
             </div>
           </div>
 
-          <div class="swalSection">
-            <div class="swalSectionTitle">รูปภาพแนบ</div>
-            ${galleryHtml || `<div class="swalNote">ไม่มีรูปภาพแนบ</div>`}
-          </div>
+          ${galleryHtml}
 
-          <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:18px">
-            ${
-              json.pdfUrl
-                ? `<button type="button" id="btnOpenPdfAfterSave" class="swal2-confirm swal2-styled" style="background:#2563eb">เปิด PDF</button>`
-                : ``
-            }
-            <button type="button" id="btnCloseAfterSave" class="swal2-cancel swal2-styled" style="display:inline-block;background:#64748b">ปิดหน้าต่าง</button>
+          <div class="swalSection">
+            <div class="swalSectionTitle">ไฟล์ PDF</div>
+            <div class="swalActionRow">
+              ${
+                json.pdfUrl
+                  ? `<button id="btnOpenPdfAfterSave" class="btn primary" type="button">เปิด PDF</button>`
+                  : `<div class="swalNote">ไม่พบลิงก์ PDF</div>`
+              }
+              <button id="btnCloseAfterSave" class="btn ghost" type="button">ปิดหน้าต่าง</button>
+            </div>
           </div>
         </div>
       `,
@@ -2135,18 +2436,13 @@ async function submitForm() {
         const btnOpen = document.getElementById("btnOpenPdfAfterSave");
         const btnClose = document.getElementById("btnCloseAfterSave");
 
-        if (btnOpen && json.pdfUrl) {
-          btnOpen.addEventListener("click", () => {
+        btnOpen?.addEventListener("click", () => {
+          if (json.pdfUrl) {
             window.open(json.pdfUrl, "_blank", "noopener,noreferrer");
-            Swal.close();
-          });
-        }
+          }
+        });
 
-        if (btnClose) {
-          btnClose.addEventListener("click", () => {
-            Swal.close();
-          });
-        }
+        btnClose?.addEventListener("click", () => Swal.close());
       },
       willClose: () => {
         resetRefDuplicateUi_("error_bol");
@@ -2154,19 +2450,18 @@ async function submitForm() {
       }
     });
 
-    return json;
-  } catch (err2) {
-    console.error(err2);
-    ProgressUI.markError("save", err2?.message || "เกิดข้อผิดพลาด", 58);
+  } catch (err) {
+    console.error(err);
+    ProgressUI.markError("save", err?.message || "เกิดข้อผิดพลาด", 100);
     ProgressUI.setHint("กรุณาตรวจสอบข้อมูล เครือข่าย หรือ backend แล้วลองใหม่อีกครั้ง");
 
     await Swal.fire({
       icon: "error",
       title: "บันทึกไม่สำเร็จ",
-      text: err2?.message || String(err2),
+      text: err?.message || String(err),
       confirmButtonText: "ตกลง"
     });
-  } finally {
+
     ProgressUI.hide(180);
   }
 }
@@ -2683,7 +2978,8 @@ const ERROR_BOL_EDIT_STATE = {
 
   pdfUrl: "",
   pdfFileId: "",
-
+  existingLpsSignImageId: "",
+  hasExistingLpsSignature: false,
   payload: {},
   existingImages: [],
   existingSigns: {},
@@ -2737,7 +3033,20 @@ function errorBolEditSetText_(id, value) {
   if (!el) return;
   el.textContent = errorBolEditNorm_(value) || "-";
 }
+ function errorBolEditRenderExistingLpsSignatureStatus_() {
+  const el = document.getElementById("errorBolEditLpsSignStatusText");
+  if (!el) return;
 
+  const has = !!ERROR_BOL_EDIT_STATE.hasExistingLpsSignature ||
+    !!String(ERROR_BOL_EDIT_STATE.existingLpsSignImageId || "").trim();
+
+  el.textContent = has
+    ? "เอกสารเดิมมีลายเซ็น LPS แล้ว"
+    : "เอกสารเดิมไม่มีลายเซ็น LPS";
+
+  el.classList.toggle("ready", has);
+  el.classList.toggle("missing", !has);
+}
 function errorBolEditSetValue_(id, value) {
   const el = document.getElementById(id);
   if (!el) return;
@@ -3286,6 +3595,7 @@ function errorBolEditRenderPanel_() {
 
   errorBolEditRenderExistingImages_();
   errorBolEditRenderExistingSigns_();
+  errorBolEditRenderExistingLpsSignatureStatus_();
 }
 
 function errorBolEditClearState_() {
@@ -3307,6 +3617,9 @@ function errorBolEditClearState_() {
   ERROR_BOL_EDIT_STATE.existingImages = [];
   ERROR_BOL_EDIT_STATE.existingSigns = {};
   ERROR_BOL_EDIT_STATE.removedImageIds = [];
+  ERROR_BOL_EDIT_STATE.existingLpsSignImageId = "";
+ERROR_BOL_EDIT_STATE.hasExistingLpsSignature = false;
+errorBolEditRenderExistingLpsSignatureStatus_();
 
   errorBolEditRenderPanel_();
 }
@@ -3325,6 +3638,9 @@ async function errorBolEditExitMode_() {
 
 errorBolEditClearState_();
 errorBolEditClearFormFields_();
+  ERROR_BOL_EDIT_STATE.existingLpsSignImageId = "";
+ERROR_BOL_EDIT_STATE.hasExistingLpsSignature = false;
+errorBolEditRenderExistingLpsSignatureStatus_();
 }
 
 async function loadErrorBolForEdit() {
@@ -3414,23 +3730,39 @@ async function loadErrorBolForEdit() {
     if (!confirm.isConfirmed) return;
 
     ERROR_BOL_EDIT_STATE.active = true;
-    ERROR_BOL_EDIT_STATE.loadedRefNo = loadedRefNo;
-    ERROR_BOL_EDIT_STATE.currentRefNo = loadedRefNo;
-    ERROR_BOL_EDIT_STATE.rootRefNo = rootRefNo;
-    ERROR_BOL_EDIT_STATE.documentId = errorBolEditNorm_(payload.documentId || normalized.revision.documentId);
-    ERROR_BOL_EDIT_STATE.revisionNo = revisionNo;
-    ERROR_BOL_EDIT_STATE.revisionLabel = revisionLabel;
+ERROR_BOL_EDIT_STATE.loadedRefNo = loadedRefNo;
+ERROR_BOL_EDIT_STATE.currentRefNo = loadedRefNo;
+ERROR_BOL_EDIT_STATE.rootRefNo = rootRefNo;
+ERROR_BOL_EDIT_STATE.documentId = errorBolEditNorm_(payload.documentId || normalized.revision.documentId);
+ERROR_BOL_EDIT_STATE.revisionNo = revisionNo;
+ERROR_BOL_EDIT_STATE.revisionLabel = revisionLabel;
 
-    ERROR_BOL_EDIT_STATE.pdfUrl = normalized.pdfUrl || "";
-    ERROR_BOL_EDIT_STATE.pdfFileId = normalized.pdfFileId || "";
+ERROR_BOL_EDIT_STATE.pdfUrl = normalized.pdfUrl || "";
+ERROR_BOL_EDIT_STATE.pdfFileId = normalized.pdfFileId || "";
 
-    ERROR_BOL_EDIT_STATE.payload = payload;
-    ERROR_BOL_EDIT_STATE.existingImages = images;
-    ERROR_BOL_EDIT_STATE.existingSigns = signs;
-    ERROR_BOL_EDIT_STATE.removedImageIds = [];
+ERROR_BOL_EDIT_STATE.payload = payload;
+ERROR_BOL_EDIT_STATE.existingImages = images;
+ERROR_BOL_EDIT_STATE.existingSigns = signs;
 
-    errorBolEditApplyPayloadToForm_(payload);
-    errorBolEditRenderPanel_();
+ERROR_BOL_EDIT_STATE.existingLpsSignImageId = String(
+  payload.lpsSignImageId ||
+  json.lpsSignImageId ||
+  json?.data?.lpsSignImageId ||
+  ""
+).trim();
+
+ERROR_BOL_EDIT_STATE.hasExistingLpsSignature = !!(
+  payload.hasExistingLpsSignature ||
+  json.hasExistingLpsSignature ||
+  json?.data?.hasExistingLpsSignature ||
+  ERROR_BOL_EDIT_STATE.existingLpsSignImageId
+);
+
+ERROR_BOL_EDIT_STATE.removedImageIds = [];
+
+errorBolEditApplyPayloadToForm_(payload);
+errorBolEditRenderPanel_();
+errorBolEditRenderExistingLpsSignatureStatus_();
 
     await Swal.fire({
       icon: "success",
@@ -3542,18 +3874,21 @@ async function submitErrorBolRevision() {
   }
 
   const pBase = collectPayload();
-  const err = validatePayload(pBase);
+const err = validatePayload(pBase);
 
-  if (err) {
-    return Swal.fire({
-      icon: "warning",
-      title: "ข้อมูลไม่ครบ",
-      text: err,
-      confirmButtonText: "ตกลง"
-    });
-  }
+if (err) {
+  return Swal.fire({
+    icon: "warning",
+    title: "ข้อมูลไม่ครบ",
+    text: err,
+    confirmButtonText: "ตกลง"
+  });
+}
 
-  const p = errorBolEditBuildRevisionPayload_(pBase);
+const hasLpsSign = await ensureLpsSignatureBeforeErrorBolSubmit_();
+if (!hasLpsSign) return;
+
+const p = errorBolEditBuildRevisionPayload_(pBase);
 
   const ok = await Swal.fire({
     icon: "question",
@@ -3760,6 +4095,9 @@ function bindErrorBolEditModeEvents_() {
 
   errorBolEditRenderPanel_();
 }
+
+bindLpsSignatureButtons_();
+renderLpsSignatureStatus_();
 
 bindErrorBolEditModeEvents_();
 
