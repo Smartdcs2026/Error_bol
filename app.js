@@ -770,6 +770,9 @@ function getRefNoValue() {
 function getRptRefNoValue() {
   return buildRefNo_("rptRefNo", "rptRefYear");
 }
+
+window.getRefNoValue = getRefNoValue;
+window.getRptRefNoValue = getRptRefNoValue;
 /** ==========================
  *  REF DUPLICATE CHECK HELPERS
  *  เพิ่มใน app.js
@@ -893,6 +896,21 @@ function resetRefDuplicateUi_(formType) {
 
   setRefFieldInvalidState_(formType, false);
 }
+
+function clearRefDuplicateDisplayOnly_(formType) {
+  const hintEl = formType === "report500"
+    ? getReportRefHintEl_()
+    : getErrorBolRefHintEl_();
+
+  const wrapEl = formType === "report500"
+    ? getReportRefWrapEl_()
+    : getErrorBolRefWrapEl_();
+
+  if (hintEl) hintEl.innerHTML = "";
+  if (wrapEl) wrapEl.classList.add("hidden");
+
+  setRefFieldInvalidState_(formType, false);
+}
 function buildDuplicateDetailHtml_(result) {
   const matched = result?.matched || {};
   const sourceSystem = String(matched?.sourceSystem || result?.system || "").trim().toUpperCase();
@@ -990,12 +1008,12 @@ async function checkRefDuplicate_(formType, refNo, opts = {}) {
   state.checked = true;
   state.result = json;
 
-  if (json.duplicated) {
-    setRefDuplicateHint_(formType, json.message || "เลขอ้างอิงซ้ำ", true);
-    setRefFieldInvalidState_(formType, true);
-  } else {
-    resetRefDuplicateUi_(formType);
-  }
+ if (json.duplicated) {
+  setRefDuplicateHint_(formType, json.message || "เลขอ้างอิงซ้ำ", true);
+  setRefFieldInvalidState_(formType, true);
+} else {
+  clearRefDuplicateDisplayOnly_(formType);
+}
 
   return {
     ok: true,
@@ -1021,12 +1039,17 @@ function bindDuplicateRefCheck_(runningId, yearId, formType) {
 
   let timer = null;
 
+  const getCurrentRef = () => {
+    if (formType === "report500") {
+      return buildRefNo_("rptRefNo", "rptRefYear");
+    }
+    return buildRefNo_("refNo", "refYear");
+  };
+
   const schedule = () => {
     if (timer) clearTimeout(timer);
 
-    const refNo = formType === "report500"
-      ? (typeof window.getRptRefNoValue === "function" ? window.getRptRefNoValue() : "")
-      : (typeof window.getRefNoValue === "function" ? window.getRefNoValue() : "");
+    const refNo = getCurrentRef();
 
     if (!normalizeFrontendRefNo_(refNo)) {
       resetRefDuplicateUi_(formType);
