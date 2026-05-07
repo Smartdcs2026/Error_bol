@@ -1113,10 +1113,16 @@ async function init() {
   applyStaticLogos();
   bindTabs();
   bindEvents();
+  bindLpsSignatureButtons_();
+  renderLpsSignatureStatus_();
+
   bindRefInputs();
   buildInitialUploadFields();
   buildWorkAgeOptions();
   buildShiftOptions();
+  buildInitialUploadFields();
+  
+ 
 
   try {
     await loadOptions();
