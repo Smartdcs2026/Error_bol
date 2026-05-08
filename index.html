@@ -253,16 +253,30 @@
       </div>
 
       <div class="panel">
-        <div class="gridEmployee">
-          <div class="field">
-            <label for="employeeName">ชื่อพนักงาน</label>
-            <input id="employeeName" placeholder="ชื่อ-นามสกุล">
-          </div>
+  <div class="gridEmployee">
+    <div class="field">
+      <label for="employeePrefix">คำนำหน้า / Title</label>
+      <select id="employeePrefix">
+        <option value="">-- เลือกคำนำหน้า --</option>
+        <option value="นาย">นาย</option>
+        <option value="นาง">นาง</option>
+        <option value="นางสาว">นางสาว</option>
+        <option value="Mr.">Mr.</option>
+        <option value="Mrs.">Mrs.</option>
+        <option value="Miss">Miss</option>
+        <option value="Ms.">Ms.</option>
+      </select>
+    </div>
 
-          <div class="field">
-            <label for="employeeCode">รหัสพนักงาน</label>
-            <input id="employeeCode" placeholder="รหัสพนักงาน">
-          </div>
+    <div class="field">
+      <label for="employeeName">ชื่อพนักงาน</label>
+      <input id="employeeName" placeholder="ชื่อ-นามสกุล ไม่ต้องใส่คำนำหน้า">
+    </div>
+
+    <div class="field">
+      <label for="employeeCode">รหัสพนักงาน</label>
+      <input id="employeeCode" placeholder="รหัสพนักงาน">
+    </div>
 
           <div class="field">
             <label for="workAgeYear">อายุงาน (ปี)</label>
