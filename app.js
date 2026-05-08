@@ -773,6 +773,113 @@ function getRptRefNoValue() {
 
 window.getRefNoValue = getRefNoValue;
 window.getRptRefNoValue = getRptRefNoValue;
+
+
+/** ==========================
+ *  EMPLOYEE PREFIX HELPERS
+ *  ใช้เฉพาะ Error_BOL
+ *  ========================== */
+
+const EMPLOYEE_PREFIX_OPTIONS = [
+  "นาย",
+  "นาง",
+  "นางสาว",
+  "Mr.",
+  "Mrs.",
+  "Miss",
+  "Ms."
+];
+
+function normalizeEmployeePrefix_(value) {
+  const s = norm(value);
+
+  const found = EMPLOYEE_PREFIX_OPTIONS.find((x) => {
+    return String(x || "").toLowerCase() === s.toLowerCase();
+  });
+
+  return found || "";
+}
+
+function bindEmployeePrefixOptions_() {
+  const el = $("employeePrefix");
+  if (!el) return;
+
+  const current = normalizeEmployeePrefix_(el.value);
+
+  el.innerHTML = [
+    `<option value="">-- เลือกคำนำหน้า --</option>`,
+    ...EMPLOYEE_PREFIX_OPTIONS.map((x) => {
+      return `<option value="${escapeHtml(x)}">${escapeHtml(x)}</option>`;
+    })
+  ].join("");
+
+  if (current) el.value = current;
+}
+
+function splitEmployeePrefixAndName_(fullName) {
+  const raw = norm(fullName);
+
+  if (!raw) {
+    return {
+      prefix: "",
+      name: ""
+    };
+  }
+
+  for (const prefix of EMPLOYEE_PREFIX_OPTIONS) {
+    const escaped = String(prefix).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const re = new RegExp("^" + escaped + "\\s+", "i");
+
+    if (re.test(raw)) {
+      return {
+        prefix,
+        name: raw.replace(re, "").trim()
+      };
+    }
+  }
+
+  return {
+    prefix: "",
+    name: raw
+  };
+}
+
+function buildEmployeeNameWithPrefix_(prefix, name) {
+  const p = normalizeEmployeePrefix_(prefix);
+  const n = norm(name).replace(/\s+/g, " ");
+
+  if (!p) return n;
+  if (!n) return p;
+
+  return `${p} ${n}`.trim();
+}
+
+function getEmployeePrefixValue_() {
+  return normalizeEmployeePrefix_($("employeePrefix")?.value);
+}
+
+function getEmployeeNameInputValue_() {
+  return norm($("employeeName")?.value).replace(/\s+/g, " ");
+}
+
+function getEmployeeFullNameForPayload_() {
+  return buildEmployeeNameWithPrefix_(
+    getEmployeePrefixValue_(),
+    getEmployeeNameInputValue_()
+  );
+}
+
+function setEmployeePrefixAndNameFromFullName_(fullName) {
+  const parsed = splitEmployeePrefixAndName_(fullName);
+
+  if ($("employeePrefix")) {
+    $("employeePrefix").value = parsed.prefix || "";
+  }
+
+  if ($("employeeName")) {
+    $("employeeName").value = parsed.name || "";
+  }
+}
 /** ==========================
  *  REF DUPLICATE CHECK HELPERS
  *  เพิ่มใน app.js
@@ -1371,7 +1478,9 @@ init().catch((err) => {
 async function init() {
   applyStaticLogos();
   bindTabs();
-  bindEvents();
+  ;
+  bindEmployeePrefixOptions_();
+
   bindLpsSignatureButtons_();
   renderLpsSignatureStatus_();
 
@@ -1475,6 +1584,7 @@ function bindEvents() {
   $("item")?.addEventListener("blur", onItemBlurLookup);
 
   [
+    "employeePrefix",
     "employeeName",
     "employeeCode",
     "errorDate",
@@ -2186,7 +2296,9 @@ function collectPayloadBase() {
     itemDescription: ITEM_LOOKUP_STATE.description || ITEM_NOT_FOUND_TEXT,
     itemDisplay: ITEM_LOOKUP_STATE.displayText || "",
     errorCaseQty: norm($("errorCaseQty")?.value),
-    employeeName: norm($("employeeName")?.value),
+    employeePrefix: getEmployeePrefixValue_(),
+employeeNameRaw: getEmployeeNameInputValue_(),
+employeeName: getEmployeeFullNameForPayload_(),
     employeeCode: norm($("employeeCode")?.value),
     workAgeYear: norm($("workAgeYear")?.value),
     workAgeMonth: norm($("workAgeMonth")?.value),
@@ -2279,7 +2391,8 @@ function validatePayload(p) {
     ["errorReason", "สาเหตุ Error"],
     ["item", "Item"],
     ["errorCaseQty", "จำนวน ErrorCase"],
-    ["employeeName", "ชื่อ-สกุลพนักงาน"],
+    ["employeePrefix", "คำนำหน้าชื่อพนักงาน"],
+    ["employeeName", "ชื่อพนักงาน"],
     ["employeeCode", "รหัสพนักงาน"],
     ["errorDate", "วันที่เบิกสินค้า Error"],
     ["shift", "กะ"],
@@ -2950,6 +3063,7 @@ function resetForm() {
     "item",
     "itemDisplay",
     "errorCaseQty",
+    "employeePrefix",
     "employeeName",
     "errorDate",
     "employeeCode",
@@ -2962,7 +3076,16 @@ function resetForm() {
     if (el) el.value = "";
   });
 
-  ["errorReason", "auditName", "shift", "osm", "otm", "workAgeYear", "workAgeMonth", "nationality"].forEach((id) => {
+  [
+    "errorReason",
+    "auditName",
+    "shift",
+    "osm",
+    "otm",
+    "workAgeYear",
+    "workAgeMonth",
+    "nationality"
+  ].forEach((id) => {
     const el = $(id);
     if (el) el.value = "";
   });
@@ -2987,7 +3110,6 @@ function resetForm() {
 
   if ($("lps")) $("lps").value = AUTH.name || "";
 }
-
 function buildResultActionButtons_(pdfUrl) {
   const hasPdf = !!String(pdfUrl || "").trim();
 
@@ -3561,7 +3683,7 @@ function errorBolEditApplyPayloadToForm_(payload) {
   errorBolEditSetValue_("errorReasonOther", errorReasonOther);
   errorBolEditSetValue_("errorDescription", p.errorDescription);
 
-  errorBolEditSetValue_("employeeName", p.employeeName);
+  setEmployeePrefixAndNameFromFullName_(p.employeeName);
   errorBolEditSetValue_("employeeCode", p.employeeCode);
   errorBolEditSetValue_("workAgeYear", p.workAgeYear);
   errorBolEditSetValue_("workAgeMonth", p.workAgeMonth);
