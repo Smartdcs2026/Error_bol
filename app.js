@@ -2279,96 +2279,6 @@ function addUploadField(label, opts = {}) {
 }
 
 
-
-/** ==========================
- *  EMPLOYEE PREFIX HELPERS
- *  ใช้เฉพาะ Error_BOL
- *  ========================== */
-
-const EMPLOYEE_PREFIX_OPTIONS = [
-  "นาย",
-  "นาง",
-  "นางสาว",
-  "Mr.",
-  "Mrs.",
-  "Miss",
-  "Ms."
-];
-
-function normalizeEmployeePrefix_(value) {
-  const s = norm(value);
-
-  const found = EMPLOYEE_PREFIX_OPTIONS.find((x) => {
-    return String(x || "").toLowerCase() === s.toLowerCase();
-  });
-
-  return found || "";
-}
-
-function splitEmployeePrefixAndName_(fullName) {
-  const raw = norm(fullName);
-
-  if (!raw) {
-    return {
-      prefix: "",
-      name: ""
-    };
-  }
-
-  for (const prefix of EMPLOYEE_PREFIX_OPTIONS) {
-    const escaped = String(prefix).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-    const re = new RegExp("^" + escaped + "\\s+", "i");
-
-    if (re.test(raw)) {
-      return {
-        prefix,
-        name: raw.replace(re, "").trim()
-      };
-    }
-  }
-
-  return {
-    prefix: "",
-    name: raw
-  };
-}
-
-function buildEmployeeNameWithPrefix_(prefix, name) {
-  const p = normalizeEmployeePrefix_(prefix);
-  const n = norm(name).replace(/\s+/g, " ");
-
-  if (!p) return n;
-  if (!n) return p;
-
-  return `${p} ${n}`.trim();
-}
-
-function getEmployeePrefixValue_() {
-  return normalizeEmployeePrefix_($("employeePrefix")?.value);
-}
-
-function getEmployeeNameInputValue_() {
-  return norm($("employeeName")?.value).replace(/\s+/g, " ");
-}
-
-function getEmployeeFullNameForPayload_() {
-  return buildEmployeeNameWithPrefix_(
-    getEmployeePrefixValue_(),
-    getEmployeeNameInputValue_()
-  );
-}
-
-function setEmployeePrefixAndNameFromFullName_(fullName) {
-  const parsed = splitEmployeePrefixAndName_(fullName);
-
-  if ($("employeePrefix")) {
-    $("employeePrefix").value = parsed.prefix || "";
-  }
-
-  if ($("employeeName")) {
-    $("employeeName").value = parsed.name || "";
-  }
-}
 /** ==========================
  *  Payload
  *  ========================== */
@@ -2462,15 +2372,18 @@ function updateEmployeeConfirmPreview() {
 
 function collectPayload() {
   const p = collectPayloadBase();
+
   p.itemDisplay = ITEM_LOOKUP_STATE.displayText || getItemDisplayText() || "";
   p.confirmCauseSelected = getSelectedConfirmCauses();
   p.confirmCauseOther = norm($("confirmCauseOther")?.value);
+
   p.employeeConfirmText = buildEmployeeConfirmText({
     ...p,
     confirmCauseSelected: getSelectedConfirmCausesForNarrative(),
     confirmCauseOther: p.confirmCauseOther,
     itemDisplay: p.itemDisplay
   });
+
   return p;
 }
 
@@ -4313,12 +4226,12 @@ async function errorBolEditChooseSignatureMode_(payload) {
 
 function errorBolEditBuildRevisionPayload_(basePayload) {
   const st = ERROR_BOL_EDIT_STATE;
-  const p = {
-    ...basePayload,
+ const p = {
+  ...basePayload,
 
-    rootRefNo: st.rootRefNo || basePayload.rootRefNo || basePayload.refNo,
-    editedFromRefNo: st.currentRefNo || st.loadedRefNo || basePayload.refNo,
-    editedBy: (window.AUTH && window.AUTH.name) || basePayload.lps || "",
+  rootRefNo: st.rootRefNo || basePayload.rootRefNo || basePayload.refNo,
+  editedFromRefNo: st.currentRefNo || st.loadedRefNo || basePayload.refNo,
+  editedBy: (window.AUTH && window.AUTH.name) || basePayload.lps || "",
 
     documentId: st.documentId || "",
     previousPdfFileId: st.pdfFileId || "",
