@@ -1478,7 +1478,7 @@ init().catch((err) => {
 async function init() {
   applyStaticLogos();
   bindTabs();
-  ;
+  bindEvents();
   bindEmployeePrefixOptions_();
 
   bindLpsSignatureButtons_();
@@ -1488,9 +1488,6 @@ async function init() {
   buildInitialUploadFields();
   buildWorkAgeOptions();
   buildShiftOptions();
-
-  
- 
 
   try {
     await loadOptions();
