@@ -2281,6 +2281,97 @@ function addUploadField(label, opts = {}) {
   });
 }
 
+
+
+/** ==========================
+ *  EMPLOYEE PREFIX HELPERS
+ *  ใช้เฉพาะ Error_BOL
+ *  ========================== */
+
+const EMPLOYEE_PREFIX_OPTIONS = [
+  "นาย",
+  "นาง",
+  "นางสาว",
+  "Mr.",
+  "Mrs.",
+  "Miss",
+  "Ms."
+];
+
+function normalizeEmployeePrefix_(value) {
+  const s = norm(value);
+
+  const found = EMPLOYEE_PREFIX_OPTIONS.find((x) => {
+    return String(x || "").toLowerCase() === s.toLowerCase();
+  });
+
+  return found || "";
+}
+
+function splitEmployeePrefixAndName_(fullName) {
+  const raw = norm(fullName);
+
+  if (!raw) {
+    return {
+      prefix: "",
+      name: ""
+    };
+  }
+
+  for (const prefix of EMPLOYEE_PREFIX_OPTIONS) {
+    const escaped = String(prefix).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const re = new RegExp("^" + escaped + "\\s+", "i");
+
+    if (re.test(raw)) {
+      return {
+        prefix,
+        name: raw.replace(re, "").trim()
+      };
+    }
+  }
+
+  return {
+    prefix: "",
+    name: raw
+  };
+}
+
+function buildEmployeeNameWithPrefix_(prefix, name) {
+  const p = normalizeEmployeePrefix_(prefix);
+  const n = norm(name).replace(/\s+/g, " ");
+
+  if (!p) return n;
+  if (!n) return p;
+
+  return `${p} ${n}`.trim();
+}
+
+function getEmployeePrefixValue_() {
+  return normalizeEmployeePrefix_($("employeePrefix")?.value);
+}
+
+function getEmployeeNameInputValue_() {
+  return norm($("employeeName")?.value).replace(/\s+/g, " ");
+}
+
+function getEmployeeFullNameForPayload_() {
+  return buildEmployeeNameWithPrefix_(
+    getEmployeePrefixValue_(),
+    getEmployeeNameInputValue_()
+  );
+}
+
+function setEmployeePrefixAndNameFromFullName_(fullName) {
+  const parsed = splitEmployeePrefixAndName_(fullName);
+
+  if ($("employeePrefix")) {
+    $("employeePrefix").value = parsed.prefix || "";
+  }
+
+  if ($("employeeName")) {
+    $("employeeName").value = parsed.name || "";
+  }
+}
 /** ==========================
  *  Payload
  *  ========================== */
@@ -2296,9 +2387,11 @@ function collectPayloadBase() {
     itemDescription: ITEM_LOOKUP_STATE.description || ITEM_NOT_FOUND_TEXT,
     itemDisplay: ITEM_LOOKUP_STATE.displayText || "",
     errorCaseQty: norm($("errorCaseQty")?.value),
+
     employeePrefix: getEmployeePrefixValue_(),
-employeeNameRaw: getEmployeeNameInputValue_(),
-employeeName: getEmployeeFullNameForPayload_(),
+    employeeNameRaw: getEmployeeNameInputValue_(),
+    employeeName: getEmployeeFullNameForPayload_(),
+
     employeeCode: norm($("employeeCode")?.value),
     workAgeYear: norm($("workAgeYear")?.value),
     workAgeMonth: norm($("workAgeMonth")?.value),
@@ -2385,25 +2478,27 @@ function collectPayload() {
 }
 
 function validatePayload(p) {
-  const required = [
-    ["refNo", "Ref:No."],
-    ["labelCid", "Label CID"],
-    ["errorReason", "สาเหตุ Error"],
-    ["item", "Item"],
-    ["errorCaseQty", "จำนวน ErrorCase"],
-    ["employeePrefix", "คำนำหน้าชื่อพนักงาน"],
-    ["employeeName", "ชื่อพนักงาน"],
-    ["employeeCode", "รหัสพนักงาน"],
-    ["errorDate", "วันที่เบิกสินค้า Error"],
-    ["shift", "กะ"],
-    ["workAgeYear", "อายุงาน (ปี)"],
-    ["workAgeMonth", "อายุงาน (เดือน)"],
-    ["nationality", "สัญชาติ"],
-    ["osm", "OSM"],
-    ["otm", "OTM"],
-    ["auditName", "พนง. AUDIT"]
-  ];
-
+ const required = [
+  ["refNo", "Ref:No."],
+  ["labelCid", "Label CID"],
+  ["errorReason", "สาเหตุ Error"],
+  ["item", "Item"],
+  ["errorCaseQty", "จำนวน ErrorCase"],
+  ["employeePrefix", "คำนำหน้าชื่อพนักงาน"],
+  ["employeeName", "ชื่อ-สกุลพนักงาน"],
+  ["employeeCode", "รหัสพนักงาน"],
+  ["errorDate", "วันที่เบิกสินค้า Error"],
+  ["shift", "กะ"],
+  ["workAgeYear", "อายุงาน (ปี)"],
+  ["workAgeMonth", "อายุงาน (เดือน)"],
+  ["nationality", "สัญชาติ"],
+  ["osm", "OSM"],
+  ["otm", "OTM"],
+  ["auditName", "พนง.ตรวจสอบ"]
+];
+if (!String(p.employeeNameRaw || "").trim()) {
+  return "กรุณากรอกชื่อ-สกุลพนักงาน";
+}
   for (const [k, n] of required) {
     if (!String(p[k] || "").trim()) return `กรุณากรอก ${n}`;
   }
